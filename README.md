@@ -16,6 +16,13 @@ Each application is implemented in a different language, showcasing their unique
 **Compile Command**: `cd rust && cargo build --release`  
 **Build Time**: ~30-60 seconds (first build), ~5-10 seconds (incremental)
 
+### 💎 **Ruby** (`./ruby/`)
+**Paradigm**: Object-oriented with dynamic typing  
+**Key Features**: Duck typing, blocks/iterators, metaprogramming, elegant syntax  
+**Run Command**: `cd ruby && ruby chess.rb`  
+**Build Time**: Interpreted (no compilation), ~100-200ms startup
+**Static Analysis**: RuboCop with performance checks
+
 ### 🐹 **Go** (`./go/`)  
 **Paradigm**: Simple, concurrent, compiled  
 **Key Features**: Goroutines, channels, fast compilation  
@@ -54,6 +61,9 @@ To benchmark compilation speeds across all implementations:
 # Rust (systems programming)
 time (cd rust && cargo build --release)
 
+# Ruby (interpreted, dynamic)
+time (cd ruby && ruby -c chess.rb)
+
 # Go (fast compilation focus)  
 time (cd go && go build ./cmd/chess)
 
@@ -65,6 +75,9 @@ time (cd typescript && npm run build)
 
 # Gleam (functional on BEAM VM)
 time (cd gleam && gleam build)
+
+# Ruby (interpreted language)
+time (cd ruby && ruby -c chess.rb && echo "Syntax check passed - no compilation needed")
 
 # Kotlin (JVM compilation)
 time (cd kotlin && ./gradlew build --no-daemon)
@@ -84,6 +97,7 @@ docker run -it chess-<language>
 ## Performance Notes
 
 - **Go**: Fastest compilation, designed for rapid development cycles
+- **Ruby**: No compilation needed (interpreted), fastest development iteration
 - **Dart**: Fast compilation with native code generation  
 - **Gleam**: Quick builds with excellent error messages
 - **TypeScript**: Moderate speed, depends on project size and dependencies
