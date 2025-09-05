@@ -151,31 +151,31 @@ function generate_king_moves(board::Board, square::Int, moves::Vector{Move})
     if !is_in_check(board, color)
         if color == WHITE
             if board.state.white_can_castle_kingside && 
-               is_empty_square(board, 61) && is_empty_square(board, 62) &&
-               !is_square_attacked(board, 61, BLACK) && !is_square_attacked(board, 62, BLACK)
-                move = Move(square, 62, piece, EMPTY_PIECE)
+               is_empty_square(board, 5) && is_empty_square(board, 6) &&
+               !is_square_attacked(board, 5, BLACK) && !is_square_attacked(board, 6, BLACK)
+                move = Move(square, 6, piece, EMPTY_PIECE)
                 move.is_castle = true
                 push!(moves, move)
             end
             if board.state.white_can_castle_queenside &&
-               is_empty_square(board, 57) && is_empty_square(board, 58) && is_empty_square(board, 59) &&
-               !is_square_attacked(board, 58, BLACK) && !is_square_attacked(board, 59, BLACK)
-                move = Move(square, 58, piece, EMPTY_PIECE)
+               is_empty_square(board, 1) && is_empty_square(board, 2) && is_empty_square(board, 3) &&
+               !is_square_attacked(board, 2, BLACK) && !is_square_attacked(board, 3, BLACK)
+                move = Move(square, 2, piece, EMPTY_PIECE)
                 move.is_castle = true
                 push!(moves, move)
             end
         else
             if board.state.black_can_castle_kingside &&
-               is_empty_square(board, 5) && is_empty_square(board, 6) &&
-               !is_square_attacked(board, 5, WHITE) && !is_square_attacked(board, 6, WHITE)
-                move = Move(square, 6, piece, EMPTY_PIECE)
+               is_empty_square(board, 61) && is_empty_square(board, 62) &&
+               !is_square_attacked(board, 61, WHITE) && !is_square_attacked(board, 62, WHITE)
+                move = Move(square, 62, piece, EMPTY_PIECE)
                 move.is_castle = true
                 push!(moves, move)
             end
             if board.state.black_can_castle_queenside &&
-               is_empty_square(board, 1) && is_empty_square(board, 2) && is_empty_square(board, 3) &&
-               !is_square_attacked(board, 2, WHITE) && !is_square_attacked(board, 3, WHITE)
-                move = Move(square, 2, piece, EMPTY_PIECE)
+               is_empty_square(board, 57) && is_empty_square(board, 58) && is_empty_square(board, 59) &&
+               !is_square_attacked(board, 58, WHITE) && !is_square_attacked(board, 59, WHITE)
+                move = Move(square, 58, piece, EMPTY_PIECE)
                 move.is_castle = true
                 push!(moves, move)
             end
@@ -212,6 +212,15 @@ function generate_moves(board::Board)
 end
 
 function make_move!(board::Board, move::Move)
+    # Backup current state in the move
+    move.prev_en_passant = board.state.en_passant_square
+    move.prev_white_can_castle_kingside = board.state.white_can_castle_kingside
+    move.prev_white_can_castle_queenside = board.state.white_can_castle_queenside
+    move.prev_black_can_castle_kingside = board.state.black_can_castle_kingside
+    move.prev_black_can_castle_queenside = board.state.black_can_castle_queenside
+    move.prev_halfmove_clock = board.state.halfmove_clock
+    move.prev_fullmove_number = board.state.fullmove_number
+    
     # Store move in history
     push!(board.move_history, move)
     
@@ -221,22 +230,22 @@ function make_move!(board::Board, move::Move)
     # Handle special moves
     if move.is_castle
         # Move the rook
-        if move.to == 62  # White kingside
-            rook = get_piece(board, 63)
-            set_piece!(board, 63, EMPTY_PIECE)
-            set_piece!(board, 61, rook)
-        elseif move.to == 58  # White queenside
-            rook = get_piece(board, 56)
-            set_piece!(board, 56, EMPTY_PIECE)
-            set_piece!(board, 59, rook)
-        elseif move.to == 6  # Black kingside
+        if move.to == 6  # White kingside
             rook = get_piece(board, 7)
             set_piece!(board, 7, EMPTY_PIECE)
             set_piece!(board, 5, rook)
-        elseif move.to == 2  # Black queenside
+        elseif move.to == 2  # White queenside
             rook = get_piece(board, 0)
             set_piece!(board, 0, EMPTY_PIECE)
             set_piece!(board, 3, rook)
+        elseif move.to == 62  # Black kingside
+            rook = get_piece(board, 63)
+            set_piece!(board, 63, EMPTY_PIECE)
+            set_piece!(board, 61, rook)
+        elseif move.to == 58  # Black queenside
+            rook = get_piece(board, 56)
+            set_piece!(board, 56, EMPTY_PIECE)
+            set_piece!(board, 59, rook)
         end
     elseif move.is_en_passant
         # Remove captured pawn
@@ -269,14 +278,14 @@ function make_move!(board::Board, move::Move)
             board.state.black_can_castle_queenside = false
         end
     elseif move.piece.type == ROOK
-        if move.from == 0
-            board.state.black_can_castle_queenside = false
-        elseif move.from == 7
-            board.state.black_can_castle_kingside = false
-        elseif move.from == 56
+        if move.from == 0  # White queenside rook
             board.state.white_can_castle_queenside = false
-        elseif move.from == 63
+        elseif move.from == 7  # White kingside rook
             board.state.white_can_castle_kingside = false
+        elseif move.from == 56  # Black queenside rook
+            board.state.black_can_castle_queenside = false
+        elseif move.from == 63  # Black kingside rook
+            board.state.black_can_castle_kingside = false
         end
     end
     
@@ -287,12 +296,13 @@ function make_move!(board::Board, move::Move)
         board.state.halfmove_clock += 1
     end
     
-    if !board.state.white_to_move
+    # Switch turn first
+    board.state.white_to_move = !board.state.white_to_move
+    
+    # Increment fullmove number after black moves (now it's white's turn)
+    if board.state.white_to_move
         board.state.fullmove_number += 1
     end
-    
-    # Switch turn
-    board.state.white_to_move = !board.state.white_to_move
 end
 
 function undo_move!(board::Board)
@@ -302,8 +312,15 @@ function undo_move!(board::Board)
     
     move = pop!(board.move_history)
     
-    # Switch turn back
+    # Restore game state
     board.state.white_to_move = !board.state.white_to_move
+    board.state.en_passant_square = move.prev_en_passant
+    board.state.white_can_castle_kingside = move.prev_white_can_castle_kingside
+    board.state.white_can_castle_queenside = move.prev_white_can_castle_queenside
+    board.state.black_can_castle_kingside = move.prev_black_can_castle_kingside
+    board.state.black_can_castle_queenside = move.prev_black_can_castle_queenside
+    board.state.halfmove_clock = move.prev_halfmove_clock
+    board.state.fullmove_number = move.prev_fullmove_number
     
     # Restore piece positions
     set_piece!(board, move.from, move.piece)
@@ -312,22 +329,22 @@ function undo_move!(board::Board)
     # Handle special moves
     if move.is_castle
         # Move the rook back
-        if move.to == 62  # White kingside
-            rook = get_piece(board, 61)
-            set_piece!(board, 61, EMPTY_PIECE)
-            set_piece!(board, 63, rook)
-        elseif move.to == 58  # White queenside
-            rook = get_piece(board, 59)
-            set_piece!(board, 59, EMPTY_PIECE)
-            set_piece!(board, 56, rook)
-        elseif move.to == 6  # Black kingside
+        if move.to == 6  # White kingside
             rook = get_piece(board, 5)
             set_piece!(board, 5, EMPTY_PIECE)
             set_piece!(board, 7, rook)
-        elseif move.to == 2  # Black queenside
+        elseif move.to == 2  # White queenside
             rook = get_piece(board, 3)
             set_piece!(board, 3, EMPTY_PIECE)
             set_piece!(board, 0, rook)
+        elseif move.to == 62  # Black kingside
+            rook = get_piece(board, 61)
+            set_piece!(board, 61, EMPTY_PIECE)
+            set_piece!(board, 63, rook)
+        elseif move.to == 58  # Black queenside
+            rook = get_piece(board, 59)
+            set_piece!(board, 59, EMPTY_PIECE)
+            set_piece!(board, 56, rook)
         end
     elseif move.is_en_passant
         # Restore captured pawn

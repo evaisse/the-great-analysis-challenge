@@ -28,7 +28,7 @@ end
 # Empty piece
 const EMPTY_PIECE = Piece(EMPTY, WHITE)
 
-# Move representation
+# Move representation with state backup
 mutable struct Move
     from::Int
     to::Int
@@ -38,8 +38,17 @@ mutable struct Move
     is_castle::Bool
     is_en_passant::Bool
     
-    Move(from, to) = new(from, to, EMPTY_PIECE, EMPTY_PIECE, EMPTY, false, false)
-    Move(from, to, piece, captured) = new(from, to, piece, captured, EMPTY, false, false)
+    # Backup of game state before move
+    prev_en_passant::Int
+    prev_white_can_castle_kingside::Bool
+    prev_white_can_castle_queenside::Bool
+    prev_black_can_castle_kingside::Bool
+    prev_black_can_castle_queenside::Bool
+    prev_halfmove_clock::Int
+    prev_fullmove_number::Int
+    
+    Move(from, to) = new(from, to, EMPTY_PIECE, EMPTY_PIECE, EMPTY, false, false, -1, true, true, true, true, 0, 1)
+    Move(from, to, piece, captured) = new(from, to, piece, captured, EMPTY, false, false, -1, true, true, true, true, 0, 1)
 end
 
 # Game state
