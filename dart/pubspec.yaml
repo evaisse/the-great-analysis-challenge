@@ -1,0 +1,7 @@
+name: chess_engine
+description: A command-line chess engine.
+version: 1.0.0
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  collection: ^1.18.0

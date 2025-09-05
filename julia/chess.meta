@@ -1,0 +1,10 @@
+{
+  "language": "julia",
+  "version": "1.9",
+  "author": "Julia Implementation",
+  "build": "true",
+  "run": "julia chess.jl",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 1000
+}

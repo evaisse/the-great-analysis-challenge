@@ -1,0 +1,50 @@
+# Docker ignore file for chess engine implementations
+
+# Node modules and package files
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build outputs
+dist/
+build/
+target/
+*.o
+*.hi
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git files
+.git/
+.gitignore
+
+# Test outputs
+test_output_*.txt
+*.log
+
+# Documentation
+README.md
+CHESS_ENGINE_SPECS.md
+
+# Other directories (when building specific implementation)
+typescript/
+ruby/
+crystal/
+rust/
+julia/
+kotlin/
+haskell/
+gleam/
+dart/
+elm/
+rescript/
