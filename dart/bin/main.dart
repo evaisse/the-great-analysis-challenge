@@ -95,3 +95,14 @@ void main() {
     }
   }
 }
+
+void _checkGameState(Game game) {
+  final gameState = game.getGameState();
+  if (gameState == GameState.checkmateWhiteWins) {
+    print('CHECKMATE: White wins');
+  } else if (gameState == GameState.checkmateBlackWins) {
+    print('CHECKMATE: Black wins');
+  } else if (gameState == GameState.stalemate) {
+    print('STALEMATE: Draw');
+  }
+}

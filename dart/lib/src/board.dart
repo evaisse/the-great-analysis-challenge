@@ -338,7 +338,7 @@ class Board {
 
   bool isSquareAttacked(int row, int col, PieceColor attackerColor) {
     // Check for pawn attacks
-    final direction = attackerColor == PieceColor.white ? 1 : -1;
+    final direction = attackerColor == PieceColor.white ? -1 : 1;
     if (row + direction >= 0 && row + direction < 8) {
       if (col - 1 >= 0) {
         final piece = squares[row + direction][col - 1];
