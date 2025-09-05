@@ -1,0 +1,269 @@
+{
+  "version": "1.0",
+  "test_categories": {
+    "basic": {
+      "description": "Fundamental chess rules and moves",
+      "required": true,
+      "tests": [
+        {
+          "id": "basic_movement",
+          "name": "Basic Piece Movement",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e2e4"},
+            {"cmd": "move e7e5"},
+            {"cmd": "move g1f3"},
+            {"cmd": "move b8c6"},
+            {"cmd": "export"}
+          ],
+          "expected_patterns": ["r1bqkb", "4p3/4P3"],
+          "timeout": 2000
+        },
+        {
+          "id": "invalid_move",
+          "name": "Invalid Move Detection",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e2e5"}
+          ],
+          "expected_patterns": ["ERROR"],
+          "timeout": 1000
+        },
+        {
+          "id": "turn_order",
+          "name": "Turn Order Enforcement",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e7e5"}
+          ],
+          "expected_patterns": ["ERROR"],
+          "timeout": 1000
+        }
+      ]
+    },
+    "special_moves": {
+      "description": "Castling, en passant, and promotion",
+      "required": true,
+      "tests": [
+        {
+          "id": "castling_kingside",
+          "name": "Kingside Castling",
+          "commands": [
+            {"cmd": "fen r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"},
+            {"cmd": "move e1g1"},
+            {"cmd": "export"}
+          ],
+          "expected_patterns": ["R4RK1", "5RK1"],
+          "timeout": 2000
+        },
+        {
+          "id": "castling_queenside",
+          "name": "Queenside Castling",
+          "commands": [
+            {"cmd": "fen r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"},
+            {"cmd": "move e1c1"},
+            {"cmd": "export"}
+          ],
+          "expected_patterns": ["2KR3R", "K1R"],
+          "timeout": 2000
+        },
+        {
+          "id": "en_passant",
+          "name": "En Passant Capture",
+          "commands": [
+            {"cmd": "fen rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3"},
+            {"cmd": "move e5f6"},
+            {"cmd": "export"}
+          ],
+          "expected_patterns": ["5P2"],
+          "timeout": 2000
+        },
+        {
+          "id": "promotion",
+          "name": "Pawn Promotion",
+          "commands": [
+            {"cmd": "fen 8/P7/8/8/8/8/8/8 w - - 0 1"},
+            {"cmd": "move a7a8"},
+            {"cmd": "export"}
+          ],
+          "expected_patterns": ["Q7", "Q"],
+          "timeout": 2000
+        }
+      ]
+    },
+    "game_end": {
+      "description": "Checkmate and stalemate detection",
+      "required": true,
+      "tests": [
+        {
+          "id": "fools_mate",
+          "name": "Fool's Mate",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move f2f3"},
+            {"cmd": "move e7e5"},
+            {"cmd": "move g2g4"},
+            {"cmd": "move d8h4"}
+          ],
+          "expected_patterns": ["CHECKMATE"],
+          "timeout": 2000
+        },
+        {
+          "id": "back_rank_mate",
+          "name": "Back Rank Mate",
+          "commands": [
+            {"cmd": "fen 6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"},
+            {"cmd": "move a1a8"}
+          ],
+          "expected_patterns": ["CHECKMATE"],
+          "timeout": 2000
+        },
+        {
+          "id": "stalemate",
+          "name": "Stalemate Detection",
+          "commands": [
+            {"cmd": "fen 7k/5Q2/8/8/8/8/8/7K w - - 0 1"},
+            {"cmd": "move f7f6"}
+          ],
+          "expected_patterns": ["STALEMATE"],
+          "timeout": 2000
+        }
+      ]
+    },
+    "ai": {
+      "description": "AI move generation and evaluation",
+      "required": true,
+      "tests": [
+        {
+          "id": "ai_basic",
+          "name": "AI Basic Move",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "ai 1"}
+          ],
+          "expected_patterns": ["AI:", "depth"],
+          "timeout": 2000
+        },
+        {
+          "id": "ai_capture",
+          "name": "AI Obvious Capture",
+          "commands": [
+            {"cmd": "fen rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2"},
+            {"cmd": "ai 2"}
+          ],
+          "expected_patterns": ["AI:", "d4e5"],
+          "timeout": 5000
+        },
+        {
+          "id": "ai_mate_in_one",
+          "name": "AI Finds Mate in One",
+          "commands": [
+            {"cmd": "fen 6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"},
+            {"cmd": "ai 2"}
+          ],
+          "expected_patterns": ["AI:", "a1a8"],
+          "timeout": 5000
+        }
+      ]
+    },
+    "fen": {
+      "description": "FEN import/export functionality",
+      "required": true,
+      "tests": [
+        {
+          "id": "fen_import",
+          "name": "FEN Import",
+          "commands": [
+            {"cmd": "fen rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2"},
+            {"cmd": "export"}
+          ],
+          "expected_patterns": ["rnbqkbnr/pp1ppppp/8/2p5/4P3"],
+          "timeout": 1000
+        },
+        {
+          "id": "fen_export",
+          "name": "FEN Export",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "export"}
+          ],
+          "expected_patterns": ["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "w", "KQkq"],
+          "timeout": 1000
+        }
+      ]
+    },
+    "performance": {
+      "description": "Performance and perft tests",
+      "required": false,
+      "tests": [
+        {
+          "id": "perft_3",
+          "name": "Perft Depth 3",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "perft 3"}
+          ],
+          "expected_patterns": ["8902"],
+          "timeout": 5000
+        },
+        {
+          "id": "perft_4",
+          "name": "Perft Depth 4",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "perft 4"}
+          ],
+          "expected_patterns": ["197281"],
+          "timeout": 10000
+        },
+        {
+          "id": "ai_depth_3",
+          "name": "AI Depth 3 Performance",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "ai 3"}
+          ],
+          "expected_patterns": ["AI:"],
+          "timeout": 10000,
+          "measure_time": true,
+          "max_time": 2000
+        },
+        {
+          "id": "ai_depth_5",
+          "name": "AI Depth 5 Performance",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "ai 5"}
+          ],
+          "expected_patterns": ["AI:"],
+          "timeout": 30000,
+          "measure_time": true,
+          "max_time": 10000
+        }
+      ]
+    }
+  },
+  "compliance_levels": {
+    "basic": {
+      "description": "Minimal chess engine",
+      "required_categories": ["basic", "special_moves", "fen"]
+    },
+    "standard": {
+      "description": "Full chess engine",
+      "required_categories": ["basic", "special_moves", "game_end", "ai", "fen"]
+    },
+    "advanced": {
+      "description": "Performance-optimized engine",
+      "required_categories": ["basic", "special_moves", "game_end", "ai", "fen", "performance"]
+    }
+  },
+  "test_positions": {
+    "starting": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "kiwipete": "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
+    "endgame_krk": "8/8/8/8/8/8/3k4/R3K3 w - - 0 1",
+    "midgame": "r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4",
+    "promotion": "8/P7/8/8/8/8/8/8 w - - 0 1",
+    "en_passant": "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3",
+    "castling": "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"
+  }
+}
