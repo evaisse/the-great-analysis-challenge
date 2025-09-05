@@ -51,10 +51,19 @@ function process_command(engine::ChessEngine, command::String)
         legal_moves = get_legal_moves(engine.board)
         legal = false
         for legal_move in legal_moves
-            if legal_move.from == move.from && legal_move.to == move.to && legal_move.promotion == move.promotion
-                move = legal_move  # Use the properly constructed move
-                legal = true
-                break
+            if legal_move.from == move.from && legal_move.to == move.to
+                # For promotion moves, if no piece specified, default to Queen
+                if move.promotion == EMPTY && legal_move.promotion != EMPTY
+                    if legal_move.promotion == QUEEN
+                        move = legal_move
+                        legal = true
+                        break
+                    end
+                elseif legal_move.promotion == move.promotion
+                    move = legal_move
+                    legal = true
+                    break
+                end
             end
         end
         
