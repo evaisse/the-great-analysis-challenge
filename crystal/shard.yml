@@ -1,0 +1,10 @@
+name: chess_engine
+version: 1.0.0
+
+targets:
+  chess_engine:
+    main: src/chess_engine.cr
+
+crystal: ">= 1.8.0"
+
+license: MIT

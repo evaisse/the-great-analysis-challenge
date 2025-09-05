@@ -1,0 +1,2 @@
+#!/bin/bash
+exec ./dist-newstyle/build/x86_64-linux/ghc-9.12.2/chess-1.0.0.0/x/chess/build/chess/chess "$@"

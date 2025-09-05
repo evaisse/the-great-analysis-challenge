@@ -1,0 +1,10 @@
+[package]
+name = "chess-engine"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "chess"
+path = "src/main.rs"
+
+[dependencies]

@@ -1,0 +1,11 @@
+{
+  "language": "python",
+  "version": "3.11",
+  "author": "Python Implementation",
+  "build": "python3 -m py_compile chess.py",
+  "run": "python3 chess.py",
+  "analyze": "python3 analyze.py",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 1000
+}

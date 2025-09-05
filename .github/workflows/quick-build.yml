@@ -1,0 +1,68 @@
+name: Quick Build Check
+
+on:
+  push:
+    paths:
+      - '*/Dockerfile'
+      - '*/src/**'
+      - '*/lib/**'
+      - '*/bin/**'
+      - '**/*.cr'
+      - '**/*.rs'
+      - '**/*.go'
+      - '**/*.dart'
+      - '**/*.ts'
+      - '**/*.gleam'
+      - '**/*.kt'
+      - '**/*.kts'
+  workflow_dispatch:
+
+jobs:
+  quick-build:
+    name: Quick Build Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build all implementations
+        run: |
+          echo "🚀 Quick build test for all chess engines"
+          echo "======================================="
+          
+          success_count=0
+          total_count=0
+          
+          for dir in rust go dart typescript gleam kotlin crystal ruby julia haskell elm; do
+            if [ -d "$dir" ] && [ -f "$dir/Dockerfile" ]; then
+              total_count=$((total_count + 1))
+              echo ""
+              echo "🏗️ Building $dir..."
+              
+              cd "$dir"
+              if docker build -t "chess-$dir-quick" . --quiet; then
+                echo "✅ $dir: Build successful"
+                success_count=$((success_count + 1))
+                docker rmi "chess-$dir-quick" || true
+              else
+                echo "❌ $dir: Build failed"
+              fi
+              cd ..
+            fi
+          done
+          
+          echo ""
+          echo "📊 Results: $success_count/$total_count builds successful"
+          
+          if [ $success_count -eq $total_count ]; then
+            echo "🎉 All builds passed!"
+            exit 0
+          else
+            echo "❌ Some builds failed"
+            exit 1
+          fi

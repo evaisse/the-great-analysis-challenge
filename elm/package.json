@@ -1,0 +1,17 @@
+{
+  "name": "chess-engine-elm",
+  "version": "1.0.0",
+  "description": "Chess engine implementation in Elm with Node.js CLI",
+  "scripts": {
+    "build": "elm make src/ChessEngine.elm --output=dist/chess.js --optimize",
+    "start": "node src/cli.js",
+    "chess": "npm run build && npm start",
+    "dev": "npm run build && npm start"
+  },
+  "dependencies": {
+    "readline": "^1.3.0"
+  },
+  "devDependencies": {
+    "elm": "^0.19.1-5"
+  }
+}

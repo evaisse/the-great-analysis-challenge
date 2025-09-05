@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+ruby '>= 3.0.0'
+
+# Static analysis and linting
+gem 'rubocop', '~> 1.50'
+gem 'rubocop-performance', '~> 1.18'
+
+# Development and testing
+group :development, :test do
+  gem 'rspec', '~> 3.12'
+end
