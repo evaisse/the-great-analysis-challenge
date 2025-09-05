@@ -1,0 +1,6 @@
+name = "ChessEngine"
+uuid = "abcd1234-5678-9012-3456-789012345678"
+authors = ["Julia Implementation"]
+version = "1.0.0"
+
+[deps]
