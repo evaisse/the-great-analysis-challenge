@@ -53,6 +53,12 @@ Each application is implemented in a different language, showcasing their unique
 **Compile Command**: `cd kotlin && ./gradlew build`  
 **Build Time**: ~15-30 seconds (first build), ~5-10 seconds (incremental)
 
+### 💎 **Crystal** (`./crystal/`)
+**Paradigm**: Ruby-like syntax with compile-time type safety  
+**Key Features**: Zero-cost abstractions, type inference, union types, static compilation  
+**Compile Command**: `cd crystal && crystal build src/chess_engine.cr --release`  
+**Build Time**: ~10-20 seconds
+
 ## Compilation Speed Comparison
 
 To benchmark compilation speeds across all implementations:
@@ -81,6 +87,9 @@ time (cd ruby && ruby -c chess.rb && echo "Syntax check passed - no compilation 
 
 # Kotlin (JVM compilation)
 time (cd kotlin && ./gradlew build --no-daemon)
+
+# Crystal (compiled with type safety)
+time (cd crystal && crystal build src/chess_engine.cr --release)
 ```
 
 ## Docker Build & Run
@@ -100,6 +109,7 @@ docker run -it chess-<language>
 - **Ruby**: No compilation needed (interpreted), fastest development iteration
 - **Dart**: Fast compilation with native code generation  
 - **Gleam**: Quick builds with excellent error messages
+- **Crystal**: Fast compilation with Ruby-like syntax and native performance
 - **TypeScript**: Moderate speed, depends on project size and dependencies
 - **Kotlin**: Moderate speed, benefits from Gradle's incremental compilation
 - **Rust**: Slowest compilation but produces highly optimized binaries
