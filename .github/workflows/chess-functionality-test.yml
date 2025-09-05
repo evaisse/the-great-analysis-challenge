@@ -18,7 +18,7 @@ jobs:
     
     strategy:
       matrix:
-        engine: [rust, go, dart, typescript, kotlin, crystal]
+        engine: [rust, go, dart, typescript, kotlin, crystal, ruby, julia, haskell]
         
     steps:
       - name: Checkout code
@@ -78,7 +78,7 @@ jobs:
           fi
 
       - name: Test move generation (Perft)
-        if: steps.check_engine.outputs.exists == 'true' && matrix.engine != 'gleam'
+        if: steps.check_engine.outputs.exists == 'true' && matrix.engine != 'gleam' && matrix.engine != 'elm'
         run: |
           echo "🧪 Testing move generation with Perft..."
           
@@ -96,7 +96,7 @@ jobs:
           fi
 
       - name: Test AI move generation
-        if: steps.check_engine.outputs.exists == 'true' && matrix.engine != 'gleam'
+        if: steps.check_engine.outputs.exists == 'true' && matrix.engine != 'gleam' && matrix.engine != 'elm'
         run: |
           echo "🧪 Testing AI move generation..."
           
@@ -117,7 +117,7 @@ jobs:
           fi
 
       - name: Test interactive commands
-        if: steps.check_engine.outputs.exists == 'true' && matrix.engine != 'gleam'
+        if: steps.check_engine.outputs.exists == 'true' && matrix.engine != 'gleam' && matrix.engine != 'elm'
         run: |
           echo "🧪 Testing interactive commands..."
           
@@ -138,7 +138,7 @@ jobs:
           fi
 
       - name: Performance benchmark
-        if: steps.check_engine.outputs.exists == 'true' && matrix.engine != 'gleam'
+        if: steps.check_engine.outputs.exists == 'true' && matrix.engine != 'gleam' && matrix.engine != 'elm'
         run: |
           echo "🏁 Running performance benchmark for ${{ matrix.engine }}..."
           

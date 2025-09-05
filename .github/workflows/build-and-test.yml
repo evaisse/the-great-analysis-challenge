@@ -79,6 +79,39 @@ jobs:
               echo "help" | timeout 30s docker run --rm -i chess-crystal || true
               echo "perft 3" | timeout 60s docker run --rm -i chess-crystal || true
               echo "quit" | timeout 10s docker run --rm -i chess-crystal || true
+          
+          - name: "Ruby"
+            directory: "ruby"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              echo "board" | timeout 30s docker run --rm -i chess-ruby || true
+              echo "help" | timeout 30s docker run --rm -i chess-ruby || true
+              echo "perft 3" | timeout 60s docker run --rm -i chess-ruby || true
+              echo "quit" | timeout 10s docker run --rm -i chess-ruby || true
+          
+          - name: "Julia"
+            directory: "julia"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              echo "board" | timeout 30s docker run --rm -i chess-julia || true
+              echo "help" | timeout 30s docker run --rm -i chess-julia || true
+              echo "perft 3" | timeout 60s docker run --rm -i chess-julia || true
+              echo "quit" | timeout 10s docker run --rm -i chess-julia || true
+          
+          - name: "Haskell"
+            directory: "haskell"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              echo "board" | timeout 30s docker run --rm -i chess-haskell || true
+              echo "help" | timeout 30s docker run --rm -i chess-haskell || true
+              echo "perft 3" | timeout 60s docker run --rm -i chess-haskell || true
+              echo "quit" | timeout 10s docker run --rm -i chess-haskell || true
+          
+          - name: "Elm"
+            directory: "elm"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              timeout 30s docker run --rm chess-elm || true
 
     steps:
       - name: Checkout code
@@ -182,7 +215,7 @@ jobs:
           echo "====================================="
           
           # Array of languages to benchmark
-          languages=("rust" "go" "dart" "typescript" "gleam" "kotlin" "crystal")
+          languages=("rust" "go" "dart" "typescript" "gleam" "kotlin" "crystal" "ruby" "julia" "haskell" "elm")
           
           for lang in "${languages[@]}"; do
             if [ -d "$lang" ] && [ -f "$lang/Dockerfile" ]; then
@@ -244,5 +277,9 @@ jobs:
           echo "- 🔥 Gleam (Functional on BEAM VM)"
           echo "- 🏗️ Kotlin (Modern JVM language)"
           echo "- 💎 Crystal (Ruby-like with static types)"
+          echo "- 💎 Ruby (Dynamic, interpreted)"
+          echo "- 🔬 Julia (Scientific computing)"
+          echo "- λ Haskell (Pure functional)"
+          echo "- 🌳 Elm (Functional frontend)"
           echo ""
           echo "View detailed results in the job logs above! 📝"

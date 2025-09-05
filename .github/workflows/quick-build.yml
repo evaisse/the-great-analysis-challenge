@@ -38,7 +38,7 @@ jobs:
           success_count=0
           total_count=0
           
-          for dir in rust go dart typescript gleam kotlin crystal; do
+          for dir in rust go dart typescript gleam kotlin crystal ruby julia haskell elm; do
             if [ -d "$dir" ] && [ -f "$dir/Dockerfile" ]; then
               total_count=$((total_count + 1))
               echo ""

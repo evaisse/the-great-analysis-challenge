@@ -73,9 +73,13 @@ Add these badges to your main README to show build status:
 | TypeScript | ✅         | ✅                | ✅               | ✅         | ✅              |
 | Kotlin     | ✅         | ✅                | ✅               | ✅         | ✅              |
 | Crystal    | ✅         | ✅                | ✅               | ✅         | ✅              |
+| Ruby       | ✅         | ✅                | ✅               | ✅         | ✅              |
+| Julia      | ✅         | ✅                | ✅               | ✅         | ✅              |
+| Haskell    | ✅         | ✅                | ✅               | ✅         | ✅              |
 | Gleam      | ✅         | ✅                | ⏭️               | ⏭️         | ⏭️              |
+| Elm        | ✅         | ✅                | ⏭️               | ⏭️         | ⏭️              |
 
-*Note: Gleam has limited interactive testing due to its demo-mode implementation*
+*Note: Gleam and Elm have limited interactive testing due to their demo-mode implementations*
 
 ## Performance Benchmarking
 
