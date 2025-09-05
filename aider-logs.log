@@ -1,0 +1,7 @@
+{"event": "launched", "properties": {}, "user_id": "2771b5ec-2978-47e1-b649-613cd238737e", "time": 1757107230}
+{"event": "repo", "properties": {"num_files": 4}, "user_id": "2771b5ec-2978-47e1-b649-613cd238737e", "time": 1757107230}
+{"event": "auto_commits", "properties": {"enabled": true}, "user_id": "2771b5ec-2978-47e1-b649-613cd238737e", "time": 1757107230}
+{"event": "cli session", "properties": {"main_model": "openrouter/anthropic/claude-sonnet-4", "weak_model": "openrouter/anthropic/claude-3-5-haiku", "editor_model": "openrouter/anthropic/claude-sonnet-4", "edit_format": "diff"}, "user_id": "2771b5ec-2978-47e1-b649-613cd238737e", "time": 1757107230}
+{"event": "command_add", "properties": {}, "user_id": "2771b5ec-2978-47e1-b649-613cd238737e", "time": 1757107253}
+{"event": "message_send_starting", "properties": {}, "user_id": "2771b5ec-2978-47e1-b649-613cd238737e", "time": 1757107284}
+{"event": "exit", "properties": {"reason": "Control-C"}, "user_id": "2771b5ec-2978-47e1-b649-613cd238737e", "time": 1757107297}
