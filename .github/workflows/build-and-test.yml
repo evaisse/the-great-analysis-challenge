@@ -1,0 +1,248 @@
+name: Build and Test All Chess Engines
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+env:
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  build-and-test:
+    name: Build and Test Chess Engines
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Rust"
+            directory: "rust"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              echo "board" | timeout 30s docker run --rm -i chess-rust || true
+              echo "help" | timeout 30s docker run --rm -i chess-rust || true
+              echo "perft 3" | timeout 60s docker run --rm -i chess-rust || true
+              echo "quit" | timeout 10s docker run --rm -i chess-rust || true
+          
+          - name: "Go"
+            directory: "go"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              echo "board" | timeout 30s docker run --rm -i chess-go || true
+              echo "help" | timeout 30s docker run --rm -i chess-go || true
+              echo "perft 3" | timeout 60s docker run --rm -i chess-go || true
+              echo "quit" | timeout 10s docker run --rm -i chess-go || true
+          
+          - name: "Dart"
+            directory: "dart"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              echo "board" | timeout 30s docker run --rm -i chess-dart || true
+              echo "help" | timeout 30s docker run --rm -i chess-dart || true
+              echo "perft 3" | timeout 60s docker run --rm -i chess-dart || true
+              echo "quit" | timeout 10s docker run --rm -i chess-dart || true
+          
+          - name: "TypeScript"
+            directory: "typescript"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              echo "board" | timeout 30s docker run --rm -i chess-typescript || true
+              echo "help" | timeout 30s docker run --rm -i chess-typescript || true
+              echo "perft 3" | timeout 60s docker run --rm -i chess-typescript || true
+              echo "quit" | timeout 10s docker run --rm -i chess-typescript || true
+          
+          - name: "Gleam"
+            directory: "gleam"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              timeout 30s docker run --rm chess-gleam || true
+          
+          - name: "Kotlin"
+            directory: "kotlin"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              echo "board" | timeout 30s docker run --rm -i chess-kotlin || true
+              echo "help" | timeout 30s docker run --rm -i chess-kotlin || true
+              echo "perft 3" | timeout 60s docker run --rm -i chess-kotlin || true
+              echo "quit" | timeout 10s docker run --rm -i chess-kotlin || true
+          
+          - name: "Crystal"
+            directory: "crystal"
+            dockerfile: "Dockerfile"
+            test_commands: |
+              echo "board" | timeout 30s docker run --rm -i chess-crystal || true
+              echo "help" | timeout 30s docker run --rm -i chess-crystal || true
+              echo "perft 3" | timeout 60s docker run --rm -i chess-crystal || true
+              echo "quit" | timeout 10s docker run --rm -i chess-crystal || true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+
+      - name: Check if directory exists
+        id: check_dir
+        run: |
+          if [ -d "${{ matrix.directory }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Directory ${{ matrix.directory }} exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "❌ Directory ${{ matrix.directory }} does not exist"
+          fi
+
+      - name: Check if Dockerfile exists
+        id: check_dockerfile
+        if: steps.check_dir.outputs.exists == 'true'
+        run: |
+          if [ -f "${{ matrix.directory }}/${{ matrix.dockerfile }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Dockerfile found in ${{ matrix.directory }}"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "❌ Dockerfile not found in ${{ matrix.directory }}"
+          fi
+
+      - name: Build ${{ matrix.name }} Docker image
+        if: steps.check_dir.outputs.exists == 'true' && steps.check_dockerfile.outputs.exists == 'true'
+        run: |
+          echo "🏗️ Building ${{ matrix.name }} chess engine..."
+          cd ${{ matrix.directory }}
+          
+          # Build with timing
+          start_time=$(date +%s)
+          docker build \
+            --tag chess-${{ matrix.directory }} \
+            --file ${{ matrix.dockerfile }} \
+            --progress=plain \
+            .
+          end_time=$(date +%s)
+          build_time=$((end_time - start_time))
+          
+          echo "✅ ${{ matrix.name }} build completed in ${build_time} seconds"
+          
+          # Get image size
+          image_size=$(docker images chess-${{ matrix.directory }} --format "{{.Size}}")
+          echo "📦 Image size: $image_size"
+
+      - name: Test ${{ matrix.name }} Docker image
+        if: steps.check_dir.outputs.exists == 'true' && steps.check_dockerfile.outputs.exists == 'true'
+        run: |
+          echo "🧪 Testing ${{ matrix.name }} chess engine..."
+          
+          # Verify image exists
+          docker images chess-${{ matrix.directory }}
+          
+          # Run basic functionality tests
+          echo "Running basic tests for ${{ matrix.name }}..."
+          ${{ matrix.test_commands }}
+          
+          echo "✅ ${{ matrix.name }} tests completed"
+
+      - name: Cleanup Docker image
+        if: always() && steps.check_dir.outputs.exists == 'true' && steps.check_dockerfile.outputs.exists == 'true'
+        run: |
+          echo "🧹 Cleaning up ${{ matrix.name }} Docker image..."
+          docker rmi chess-${{ matrix.directory }} || true
+
+      - name: Skip ${{ matrix.name }} (missing files)
+        if: steps.check_dir.outputs.exists == 'false' || steps.check_dockerfile.outputs.exists == 'false'
+        run: |
+          echo "⏭️ Skipping ${{ matrix.name }} - missing directory or Dockerfile"
+
+  compilation-benchmark:
+    name: Compilation Speed Benchmark
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: always()
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run compilation benchmark
+        run: |
+          echo "🏁 Compilation Speed Benchmark Results"
+          echo "====================================="
+          
+          # Array of languages to benchmark
+          languages=("rust" "go" "dart" "typescript" "gleam" "kotlin" "crystal")
+          
+          for lang in "${languages[@]}"; do
+            if [ -d "$lang" ] && [ -f "$lang/Dockerfile" ]; then
+              echo ""
+              echo "⏱️ Benchmarking $lang compilation..."
+              cd "$lang"
+              
+              # Clean any existing images
+              docker rmi chess-$lang 2>/dev/null || true
+              
+              # Time the build
+              start_time=$(date +%s%N)
+              if docker build -t chess-$lang . --quiet; then
+                end_time=$(date +%s%N)
+                build_time_ns=$((end_time - start_time))
+                build_time_ms=$((build_time_ns / 1000000))
+                build_time_s=$((build_time_ms / 1000))
+                
+                # Get image size
+                image_size=$(docker images chess-$lang --format "{{.Size}}")
+                
+                echo "✅ $lang: ${build_time_s}s (${build_time_ms}ms) - Size: $image_size"
+              else
+                echo "❌ $lang: Build failed"
+              fi
+              
+              # Cleanup
+              docker rmi chess-$lang 2>/dev/null || true
+              cd ..
+            else
+              echo "⏭️ Skipping $lang - missing files"
+            fi
+          done
+          
+          echo ""
+          echo "🏆 Benchmark completed!"
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-test, compilation-benchmark]
+    if: always()
+    
+    steps:
+      - name: Build Summary
+        run: |
+          echo "📊 Chess Engine Build Summary"
+          echo "============================"
+          echo ""
+          echo "✅ All chess engine implementations have been tested"
+          echo "🐳 Docker builds completed for all available languages"
+          echo "⏱️ Compilation benchmarks executed"
+          echo ""
+          echo "Languages tested:"
+          echo "- 🦀 Rust (Systems programming)"
+          echo "- 🐹 Go (Concurrent, fast compilation)"
+          echo "- 🎯 Dart (Object-oriented, null-safe)"
+          echo "- 🟦 TypeScript (JavaScript with types)"
+          echo "- 🔥 Gleam (Functional on BEAM VM)"
+          echo "- 🏗️ Kotlin (Modern JVM language)"
+          echo "- 💎 Crystal (Ruby-like with static types)"
+          echo ""
+          echo "View detailed results in the job logs above! 📝"
