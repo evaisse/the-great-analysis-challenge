@@ -1,0 +1,11 @@
+[pylint]
+disable = missing-module-docstring,missing-class-docstring,missing-function-docstring,too-few-public-methods,too-many-instance-attributes,too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+
+[pylint.FORMAT]
+max-line-length = 100
+
+[pylint.DESIGN]
+max-args = 8
+max-locals = 20
+max-branches = 15
+max-statements = 60
