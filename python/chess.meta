@@ -4,7 +4,7 @@
   "author": "Python Implementation",
   "build": "python3 -m py_compile chess.py",
   "run": "python3 chess.py",
-  "analyze": "cd python && python3 -m mypy . && python3 -m pylint . && python3 -m flake8 . && python3 -m black --check . && python3 -m bandit -r .",
+  "analyze": "python3 analyze.py",
   "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
   "max_ai_depth": 5,
   "estimated_perft4_ms": 1000
