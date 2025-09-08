@@ -1,10 +1,10 @@
 # Makefile for Chess Engine Implementations
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 
-.PHONY: all test build clean help docker-test-all docker-build-all
+.PHONY: all test build clean help test-all build-all
 
 # Default target
-all: docker-build-all docker-test-all
+all: build-all test-all
 
 # Help command
 help:
@@ -13,32 +13,42 @@ help:
 	@echo "ALL COMMANDS RUN INSIDE DOCKER CONTAINERS"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  make test             - Run all tests in Docker containers"
-	@echo "  make build            - Build all implementations in Docker"
+	@echo "  make test-all         - Run all tests in Docker containers"
+	@echo "  make build-all        - Build all implementations in Docker"
+	@echo "  make test             - Alias for test-all"
+	@echo "  make build            - Alias for build-all"
 	@echo "  make test-<lang>      - Test specific implementation (e.g., make test-ruby)"
 	@echo "  make build-<lang>     - Build specific implementation (e.g., make build-typescript)"
 	@echo "  make clean            - Remove Docker images and build artifacts"
 	@echo "  make help             - Show this help message"
 
 # Main test target - runs all tests in Docker
-test: docker-test-all
+test: test-all
 
 # Main build target - builds all implementations in Docker
-build: docker-build-all
+build: build-all
 
-# Run all tests using Docker
-docker-test-all:
+# Define list of languages
+LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript
+
+# Run all tests using Docker - pure Makefile implementation
+test-all:
 	@echo "Running all tests in Docker containers..."
-	@./run_tests_docker.sh
+	@for lang in $(LANGUAGES); do \
+		if [ -d "$$lang" ] && [ -f "$$lang/Dockerfile" ]; then \
+			echo "Testing $$lang implementation..."; \
+			$(MAKE) test-$$lang || true; \
+		fi; \
+	done
 
-# Build all Docker images
-docker-build-all:
+# Build all Docker images - pure Makefile implementation
+build-all:
 	@echo "Building all Docker images..."
-	@for dir in typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript; do \
-		if [ -d "$$dir" ] && [ -f "$$dir/Dockerfile" ]; then \
-			echo "Building $$dir Docker image..."; \
-			docker build -t chess-$$dir -f $$dir/Dockerfile $$dir || true; \
-		fi \
+	@for lang in $(LANGUAGES); do \
+		if [ -d "$$lang" ] && [ -f "$$lang/Dockerfile" ]; then \
+			echo "Building $$lang Docker image..."; \
+			$(MAKE) build-$$lang || true; \
+		fi; \
 	done
 
 # Individual language targets
@@ -134,7 +144,9 @@ build-rescript:
 # Clean up Docker images and containers
 clean:
 	@echo "Cleaning up Docker images..."
-	@docker rmi chess-typescript chess-ruby chess-crystal chess-rust chess-julia chess-kotlin chess-haskell chess-gleam chess-dart chess-elm chess-rescript 2>/dev/null || true
+	@for lang in $(LANGUAGES); do \
+		docker rmi chess-$$lang 2>/dev/null || true; \
+	done
 	@echo "Cleaned up successfully"
 
 # Docker requirement enforcement
