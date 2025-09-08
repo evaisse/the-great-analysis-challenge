@@ -1,0 +1,11 @@
+{
+  "language": "elm",
+  "version": "0.19.1",
+  "author": "Elm Implementation",
+  "build": "npm install && npm run build",
+  "run": "npm start",
+  "features": ["fen", "basic"],
+  "max_ai_depth": 3,
+  "estimated_perft4_ms": 2000,
+  "notes": "Elm implementation is primarily for frontend, limited chess functionality"
+}

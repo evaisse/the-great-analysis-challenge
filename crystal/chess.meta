@@ -1,0 +1,10 @@
+{
+  "language": "crystal",
+  "version": "1.14",
+  "author": "Crystal Implementation",
+  "build": "crystal build src/chess_engine.cr --release -o chess_engine",
+  "run": "./chess_engine",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 700
+}

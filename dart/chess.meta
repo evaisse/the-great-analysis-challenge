@@ -1,0 +1,10 @@
+{
+  "language": "dart",
+  "version": "3.x",
+  "author": "Dart Implementation",
+  "build": "dart pub get && dart compile exe bin/main.dart -o bin/chess_engine",
+  "run": "./bin/chess_engine",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 800
+}

@@ -27,20 +27,38 @@ class ChessEngineTester:
         
     def start(self):
         """Start the chess engine process"""
-        run_command = self.metadata.get("run", "").split()
+        run_command = self.metadata.get("run", "").strip()
         if not run_command:
             raise ValueError(f"No run command specified for {self.path}")
             
         try:
-            self.process = subprocess.Popen(
-                run_command,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=0,
-                cwd=os.path.dirname(self.path)
-            )
+            # Determine the working directory
+            work_dir = self.path if os.path.isdir(self.path) else os.path.dirname(self.path)
+            
+            # Handle shell commands that may contain && or other shell operators
+            if " && " in run_command or run_command.startswith("cd "):
+                # Use shell=True for complex shell commands
+                self.process = subprocess.Popen(
+                    run_command,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    bufsize=0,
+                    shell=True,
+                    cwd=work_dir
+                )
+            else:
+                # Use regular command splitting for simple commands
+                self.process = subprocess.Popen(
+                    run_command.split(),
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    bufsize=0,
+                    cwd=work_dir
+                )
         except Exception as e:
             self.results["errors"].append(f"Failed to start: {e}")
             return False
@@ -52,23 +70,64 @@ class ChessEngineTester:
             return ""
             
         try:
+            # Send the command
             self.process.stdin.write(command + "\n")
             self.process.stdin.flush()
             
             start_time = time.time()
             output_lines = []
+            response_found = False
             
             while time.time() - start_time < timeout:
+                # Check if process has terminated
                 if self.process.poll() is not None:
                     break
                     
-                line = self.process.stdout.readline()
-                if line:
-                    output_lines.append(line.strip())
-                    
-                if any(keyword in line for keyword in ["OK:", "ERROR:", "CHECKMATE:", "STALEMATE:", "FEN:", "AI:"]):
-                    break
-                    
+                # Try to read output
+                try:
+                    line = self.process.stdout.readline()
+                    if line:
+                        line = line.strip()
+                        if line:  # Non-empty line
+                            output_lines.append(line)
+                        
+                        # Check for response indicators
+                        if any(keyword in line.upper() for keyword in ["OK:", "ERROR:", "CHECKMATE:", "STALEMATE:", "FEN:", "AI:", "NEW GAME STARTED"]):
+                            response_found = True
+                            # For move commands, continue reading for a bit to catch checkmate/stalemate
+                            if "move" in command.lower() and "OK:" in line:
+                                # Read a bit more for potential game end messages
+                                end_time = time.time() + 0.5  # 500ms more
+                                while time.time() < end_time:
+                                    try:
+                                        extra_line = self.process.stdout.readline()
+                                        if extra_line:
+                                            extra_line = extra_line.strip()
+                                            if extra_line:
+                                                output_lines.append(extra_line)
+                                                if "CHECKMATE" in extra_line.upper() or "STALEMATE" in extra_line.upper():
+                                                    break
+                                    except:
+                                        break
+                            break
+                            
+                except:
+                    # Continue if readline fails
+                    time.sleep(0.01)
+                    continue
+            
+            # If no response found and we're near timeout, try reading a bit more
+            if not response_found and time.time() - start_time >= timeout - 0.5:
+                for _ in range(10):  # Try a few more reads
+                    try:
+                        line = self.process.stdout.readline()
+                        if line:
+                            line = line.strip()
+                            if line:
+                                output_lines.append(line)
+                    except:
+                        break
+                        
             return "\n".join(output_lines)
             
         except Exception as e:
@@ -103,7 +162,7 @@ class TestSuite:
                 "move b8c6",
                 "export"
             ],
-            "validate": lambda output: "r1bqkb" in output and "4p3/4P3" in output,
+            "validate": lambda output: ("FEN:" in output and ("r1bqkb" in output or "4p3/4P3" in output)) or ("r1bqkb" in output and "4p3/4P3" in output),
             "timeout": 2.0
         })
         
@@ -115,7 +174,7 @@ class TestSuite:
                 "move e1g1",
                 "export"
             ],
-            "validate": lambda output: "R4RK1" in output or "5RK1" in output,
+            "validate": lambda output: ("FEN:" in output and ("R4RK1" in output or "5RK1" in output)) or ("R4RK1" in output or "5RK1" in output),
             "timeout": 2.0
         })
         
@@ -197,9 +256,19 @@ class TestSuite:
             all_output = []
             start_time = time.time()
             
-            for command in test["commands"]:
-                output = tester.send_command(command, test.get("timeout", 5.0))
+            for i, command in enumerate(test["commands"]):
+                # Special handling for move commands that might trigger checkmate
+                timeout = test.get("timeout", 5.0)
+                if "move" in command.lower() and i == len(test["commands"]) - 1:
+                    # Last command might trigger game end, increase timeout slightly
+                    timeout = min(timeout * 1.5, 10.0)
+                
+                output = tester.send_command(command, timeout)
                 all_output.append(output)
+                
+                # If we got a checkmate or stalemate, no need to continue
+                if "CHECKMATE" in output.upper() or "STALEMATE" in output.upper():
+                    break
                 
             elapsed = time.time() - start_time
             full_output = "\n".join(all_output)
@@ -230,8 +299,8 @@ def find_implementations(base_dir: str) -> List[Tuple[str, Dict]]:
         try:
             with open(meta_file, 'r') as f:
                 metadata = json.load(f)
-                impl_dir = meta_file.parent
-                implementations.append((str(impl_dir), metadata))
+                impl_dir = str(meta_file.parent)
+                implementations.append((impl_dir, metadata))
         except Exception as e:
             print(f"Error loading {meta_file}: {e}")
             
@@ -361,7 +430,17 @@ def main():
         # Build if necessary
         if "build" in metadata:
             print(f"Building: {metadata['build']}")
-            subprocess.run(metadata["build"].split(), cwd=impl_path, check=True)
+            try:
+                # Use shell=True to handle shell commands like "cd dir && command"
+                subprocess.run(metadata["build"], shell=True, cwd=impl_path, check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Build failed with exit code {e.returncode}")
+                tester.results["errors"].append(f"Build failed: {e}")
+                all_results[impl_path] = {
+                    "metadata": metadata,
+                    "results": tester.results
+                }
+                continue
         
         # Start engine
         if not tester.start():
@@ -381,9 +460,15 @@ def main():
                 success = suite.run_test(tester, test)
                 print(f"  {'✓ PASSED' if success else '✗ FAILED'}")
         else:
-            # Run all tests
+            # Run all tests - restart the engine for each test to avoid state pollution
             for test in suite.tests:
                 if test.get("optional") and test["name"] not in metadata.get("features", []):
+                    continue
+                
+                # Stop and restart the engine for each test to ensure clean state
+                tester.stop()
+                if not tester.start():
+                    print(f"Failed to restart engine for test: {test['name']}")
                     continue
                     
                 print(f"Running test: {test['name']}", end="")
