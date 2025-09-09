@@ -1,0 +1,12 @@
+{
+  "language": "nim",
+  "version": "1.6.14",
+  "author": "Nim Implementation",
+  "build": "cd nim && nim compile --opt:speed chess.nim",
+  "run": "nim/chess",
+  "analyze": "cd nim && nim check chess.nim",
+  "features": ["fen", "basic_moves"],
+  "max_ai_depth": 0,
+  "estimated_perft4_ms": 0,
+  "notes": "Basic implementation with FEN support and move parsing. AI and advanced features to be implemented."
+}
