@@ -18,7 +18,7 @@ NC='\033[0m'
 test_ruby() {
     echo -e "${YELLOW}Testing Ruby implementation...${NC}"
     if command -v ruby &> /dev/null; then
-        cd ruby
+        cd ../ruby
         if echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ruby chess.rb | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR"; then
             echo -e "${GREEN}✓ Ruby tests passed${NC}"
         else
@@ -34,7 +34,7 @@ test_ruby() {
 test_typescript() {
     echo -e "${YELLOW}Testing TypeScript implementation...${NC}"
     if command -v node &> /dev/null; then
-        cd typescript
+        cd ../typescript
         if [ -f "dist/chess.js" ]; then
             if echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | node dist/chess.js | grep -q "FEN:"; then
                 echo -e "${GREEN}✓ TypeScript tests ran (check output for correctness)${NC}"

@@ -30,9 +30,6 @@ All test and build commands are now enforced to run in Docker containers:
    - `make build` - Build all Docker images
 
 2. **Test Scripts**:
-   - `run_tests_docker.sh` - Simple Docker test runner
-   - `docker_test_comprehensive.sh` - Comprehensive test with fallbacks
-   - `docker_test_offline.sh` - Uses local Docker images
    - `test_local.sh` - Fallback for when Docker is unavailable
 
 ### ⚠️ Current Issues
@@ -63,7 +60,7 @@ make test-typescript
 ### Without Docker (Local Testing)
 ```bash
 # Run local test script
-./test_local.sh
+cd test && ./test_local.sh
 
 # Test Ruby directly
 cd ruby && echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ruby chess.rb
