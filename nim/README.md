@@ -7,11 +7,14 @@ This directory contains a chess engine implementation in Nim, following the spec
 - ✅ **Basic Board Representation**: 8x8 board with piece storage
 - ✅ **FEN Import/Export**: Load and save positions in FEN notation
 - ✅ **Command Parser**: Interactive command-line interface
-- ✅ **Basic Move Execution**: Simple move parsing and execution
+- ✅ **Move Validation**: Proper chess rules validation for all piece types
+- ✅ **Path Checking**: Sliding pieces (rook, bishop, queen) check for clear paths
+- ✅ **Turn Validation**: Ensures players can only move their own pieces
 - ✅ **Board Display**: ASCII board visualization
-- ❌ **Move Validation**: Currently simplified (all moves accepted if basic format is correct)
+- ✅ **Error Handling**: Specific error messages for different invalid move types
 - ❌ **AI Engine**: Not yet implemented
 - ❌ **Special Moves**: Castling, en passant, promotion not implemented
+- ❌ **Check Detection**: King safety not validated
 - ❌ **Perft Testing**: Not yet implemented
 
 ## Building and Running
@@ -39,13 +42,20 @@ docker run -it chess-nim
 
 Basic functionality test:
 ```bash
-echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ./chess
+echo -e "new\nmove e2e4\nmove e7e5\nmove g1f3\nmove b8c6\nexport\nquit" | ./chess
 ```
 
 Expected output should include:
 ```
-FEN: rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1
+FEN: r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1
 ```
+
+Test move validation:
+```bash
+echo -e "new\nmove e2e5\nmove h1h3\nmove b1d2\nquit" | ./chess
+```
+
+Expected: All moves should be rejected with "ERROR: Illegal move"
 
 ## Implementation Notes
 
@@ -59,21 +69,24 @@ This implementation showcases Nim's features:
 
 ## Current Limitations
 
-1. **Move Validation**: The current implementation does not perform proper chess move validation. Any move with correct algebraic notation format will be accepted regardless of legality.
+1. **Special Moves**: Castling, en passant, and pawn promotion are not implemented.
 
-2. **Special Moves**: Castling, en passant, and pawn promotion are not implemented.
+2. **Check Detection**: The engine doesn't detect or prevent moves that leave the king in check.
 
 3. **AI**: No artificial intelligence or move search algorithm implemented yet.
 
 4. **Game End Detection**: Checkmate and stalemate detection not implemented.
 
+5. **Move History**: Undo functionality is not fully implemented.
+
 ## Next Steps
 
-1. Implement proper move validation with chess rules
+1. Implement check detection and prevention
 2. Add support for special moves (castling, en passant, promotion)
 3. Implement minimax AI with alpha-beta pruning
 4. Add perft testing for move generation verification
 5. Implement game end detection (checkmate, stalemate)
+6. Add move history and proper undo functionality
 
 ## Architecture
 
