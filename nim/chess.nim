@@ -1,79 +1,85 @@
-import std/[strutils, sequtils, tables, algorithm, math, random]
+import std/[strutils, sequtils, tables, strformat]
 
-# Core types
+# ================================
+# Type Definitions
+# ================================
+
 type
-  PieceKind* = enum
-    Empty = 0
-    Pawn = 1
-    Knight = 2
-    Bishop = 3
-    Rook = 4
-    Queen = 5
-    King = 6
+  PieceType* = enum
+    ptNone = 0
+    ptPawn = 1
+    ptKnight = 2
+    ptBishop = 3
+    ptRook = 4
+    ptQueen = 5
+    ptKing = 6
 
   Color* = enum
-    White = 0
-    Black = 1
+    cWhite = 0
+    cBlack = 1
 
-  Piece* = tuple
-    kind: PieceKind
-    color: Color
+  Piece* = object
+    pieceType*: PieceType
+    color*: Color
 
   Square* = range[0..63]
 
   Move* = object
-    source*: Square
-    target*: Square
-    promotion*: PieceKind
-    capturedPiece*: Piece
+    fromSquare*: Square
+    toSquare*: Square
+    promotion*: PieceType
+    isCapture*: bool
+    isEnPassant*: bool
+    isCastling*: bool
 
-  CastleRights* = object
+  CastlingRights* = object
     whiteKingside*: bool
     whiteQueenside*: bool
     blackKingside*: bool
     blackQueenside*: bool
 
-  Position* = object
-    board*: array[64, Piece]
-    sideToMove*: Color
-    castleRights*: CastleRights
-    enPassantSquare*: int  # -1 for none, otherwise 0-63
-    halfMoveClock*: int
-    fullMoveNumber*: int
+  Board* = object
+    squares*: array[64, Piece]
+    activeColor*: Color
+    castlingRights*: CastlingRights
+    enPassantTarget*: int  # -1 if none, otherwise 0-63
+    halfmoveClock*: int
+    fullmoveNumber*: int
 
   GameState* = object
-    position*: Position
-    history*: seq[Move]
-    positionHistory*: seq[Position]
+    board*: Board
+    moveHistory*: seq[Move]
+    boardHistory*: seq[Board]
 
+# ================================
 # Constants
+# ================================
+
 const
-  EmptyPiece* = (kind: Empty, color: White)
+  InitialFEN* = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
   
-  StartingFEN* = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+  EmptyPiece* = Piece(pieceType: ptNone, color: cWhite)
   
-  FileA* = 0
-  FileH* = 7
-  Rank1* = 0
-  Rank8* = 7
+  # Direction offsets for move generation
+  KnightMoves* = @[17, 15, 10, 6, -6, -10, -15, -17]
+  KingMoves* = @[8, -8, 1, -1, 9, -9, 7, -7]
+  RookDirections* = @[8, -8, 1, -1]
+  BishopDirections* = @[9, -9, 7, -7]
   
   # Piece values for evaluation
-  PieceValues*: array[PieceKind, int] = [0, 100, 320, 330, 500, 900, 20000]
-  
-  # Direction offsets for sliding pieces
-  RookDirections* = [8, -8, 1, -1]
-  BishopDirections* = [9, -9, 7, -7]
-  KnightOffsets* = [17, 15, 10, 6, -6, -10, -15, -17]
-  KingOffsets* = [8, -8, 1, -1, 9, -9, 7, -7]
+  PieceValues*: array[PieceType, int] = [0, 100, 320, 330, 500, 900, 20000]
 
-# Utility functions
-proc opposite*(color: Color): Color =
-  if color == White: Black else: White
+# ================================
+# Utility Functions
+# ================================
 
-proc fileOf*(sq: Square): int =
+proc opposite*(c: Color): Color =
+  if c == cWhite: cBlack else: cWhite
+
+proc getFile*(sq: Square): int =
   sq mod 8
 
-proc rankOf*(sq: Square): int =
+proc getRank*(sq: Square): int =
   sq div 8
 
 proc makeSquare*(file, rank: int): Square =
@@ -82,68 +88,93 @@ proc makeSquare*(file, rank: int): Square =
   else:
     Square(0)
 
-proc toAlgebraic*(sq: Square): string =
-  let file = char('a'.ord + fileOf(sq))
-  let rank = char('1'.ord + rankOf(sq))
+proc algebraicToSquare*(notation: string): int =
+  if notation.len != 2:
+    return -1
+  let file = notation[0].ord - 'a'.ord
+  let rank = notation[1].ord - '1'.ord
+  if file in 0..7 and rank in 0..7:
+    return rank * 8 + file
+  return -1
+
+proc squareToAlgebraic*(sq: Square): string =
+  let file = char('a'.ord + getFile(sq))
+  let rank = char('1'.ord + getRank(sq))
   return $file & $rank
 
-proc fromAlgebraic*(s: string): int =
-  if s.len != 2:
-    return -1
-  let file = s[0].ord - 'a'.ord
-  let rank = s[1].ord - '1'.ord
-  if file notin 0..7 or rank notin 0..7:
-    return -1
-  return rank * 8 + file
-
-proc pieceChar*(p: Piece): char =
-  if p.kind == Empty:
+proc pieceToChar*(p: Piece): char =
+  if p.pieceType == ptNone:
     return '.'
-  let c = case p.kind
-    of Pawn: 'p'
-    of Knight: 'n'
-    of Bishop: 'b'
-    of Rook: 'r'
-    of Queen: 'q'
-    of King: 'k'
+  
+  let ch = case p.pieceType
+    of ptPawn: 'p'
+    of ptKnight: 'n'
+    of ptBishop: 'b'
+    of ptRook: 'r'
+    of ptQueen: 'q'
+    of ptKing: 'k'
     else: '.'
   
-  if p.color == White:
-    c.toUpperAscii
+  if p.color == cWhite:
+    ch.toUpperAscii
   else:
-    c
+    ch
 
-proc charToPiece*(c: char): Piece =
-  let color = if c.isUpperAscii: White else: Black
-  let kind = case c.toLowerAscii
-    of 'p': Pawn
-    of 'n': Knight
-    of 'b': Bishop
-    of 'r': Rook
-    of 'q': Queen
-    of 'k': King
-    else: Empty
+proc charToPiece*(ch: char): Piece =
+  let color = if ch.isUpperAscii: cWhite else: cBlack
+  let pieceType = case ch.toLowerAscii
+    of 'p': ptPawn
+    of 'n': ptKnight
+    of 'b': ptBishop
+    of 'r': ptRook
+    of 'q': ptQueen
+    of 'k': ptKing
+    else: ptNone
   
-  (kind: kind, color: color)
+  Piece(pieceType: pieceType, color: color)
 
-# Board initialization
-proc clearPosition*(pos: var Position) =
+# ================================
+# Board Functions
+# ================================
+
+proc clearBoard*(board: var Board) =
   for i in 0..63:
-    pos.board[i] = EmptyPiece
-  pos.sideToMove = White
-  pos.castleRights = CastleRights()
-  pos.enPassantSquare = -1
-  pos.halfMoveClock = 0
-  pos.fullMoveNumber = 1
+    board.squares[i] = EmptyPiece
+  board.activeColor = cWhite
+  board.castlingRights = CastlingRights()
+  board.enPassantTarget = -1
+  board.halfmoveClock = 0
+  board.fullmoveNumber = 1
 
-proc parseFEN*(fen: string): Position =
-  result.clearPosition()
+proc getPiece*(board: Board, sq: Square): Piece =
+  board.squares[sq]
+
+proc setPiece*(board: var Board, sq: Square, piece: Piece) =
+  board.squares[sq] = piece
+
+proc isEmpty*(board: Board, sq: Square): bool =
+  board.squares[sq].pieceType == ptNone
+
+proc isEnemy*(board: Board, sq: Square, color: Color): bool =
+  let p = board.getPiece(sq)
+  p.pieceType != ptNone and p.color != color
+
+proc isFriendly*(board: Board, sq: Square, color: Color): bool =
+  let p = board.getPiece(sq)
+  p.pieceType != ptNone and p.color == color
+
+# ================================
+# FEN Functions
+# ================================
+
+proc parseFEN*(fen: string): Board =
+  result.clearBoard()
   
   let parts = fen.split(' ')
   if parts.len != 6:
-    raise newException(ValueError, "Invalid FEN string")
+    raise newException(ValueError, "Invalid FEN: must have 6 parts")
   
-  # Parse board
+  # Parse piece placement
   var rank = 7
   var file = 0
   
@@ -153,53 +184,54 @@ proc parseFEN*(fen: string): Position =
       rank.dec
       file = 0
     of '1'..'8':
-      let skip = ch.ord - '0'.ord
-      file += skip
+      file += ch.ord - '0'.ord
     else:
+      if file > 7:
+        raise newException(ValueError, "Invalid FEN: file overflow")
       let sq = makeSquare(file, rank)
-      result.board[sq] = charToPiece(ch)
+      result.setPiece(sq, charToPiece(ch))
       file.inc
   
-  # Parse side to move
-  result.sideToMove = if parts[1] == "w": White else: Black
+  # Parse active color
+  result.activeColor = if parts[1] == "w": cWhite else: cBlack
   
   # Parse castling rights
   for ch in parts[2]:
     case ch
-    of 'K': result.castleRights.whiteKingside = true
-    of 'Q': result.castleRights.whiteQueenside = true
-    of 'k': result.castleRights.blackKingside = true
-    of 'q': result.castleRights.blackQueenside = true
+    of 'K': result.castlingRights.whiteKingside = true
+    of 'Q': result.castlingRights.whiteQueenside = true
+    of 'k': result.castlingRights.blackKingside = true
+    of 'q': result.castlingRights.blackQueenside = true
     of '-': discard
     else: discard
   
-  # Parse en passant
+  # Parse en passant target
   if parts[3] != "-":
-    result.enPassantSquare = fromAlgebraic(parts[3])
+    result.enPassantTarget = algebraicToSquare(parts[3])
   else:
-    result.enPassantSquare = -1
+    result.enPassantTarget = -1
   
-  # Parse clocks
-  result.halfMoveClock = parseInt(parts[4])
-  result.fullMoveNumber = parseInt(parts[5])
+  # Parse move clocks
+  result.halfmoveClock = parseInt(parts[4])
+  result.fullmoveNumber = parseInt(parts[5])
 
-proc toFEN*(pos: Position): string =
+proc toFEN*(board: Board): string =
   result = ""
   
-  # Board
+  # Piece placement
   for rank in countdown(7, 0):
     var emptyCount = 0
     for file in 0..7:
       let sq = makeSquare(file, rank)
-      let piece = pos.board[sq]
+      let piece = board.getPiece(sq)
       
-      if piece.kind == Empty:
+      if piece.pieceType == ptNone:
         emptyCount.inc
       else:
         if emptyCount > 0:
           result.add($emptyCount)
           emptyCount = 0
-        result.add(pieceChar(piece))
+        result.add(pieceToChar(piece))
     
     if emptyCount > 0:
       result.add($emptyCount)
@@ -207,131 +239,128 @@ proc toFEN*(pos: Position): string =
     if rank > 0:
       result.add('/')
   
-  # Side to move
+  # Active color
   result.add(' ')
-  result.add(if pos.sideToMove == White: 'w' else: 'b')
+  result.add(if board.activeColor == cWhite: 'w' else: 'b')
   
   # Castling rights
   result.add(' ')
   var castling = ""
-  if pos.castleRights.whiteKingside: castling.add('K')
-  if pos.castleRights.whiteQueenside: castling.add('Q')
-  if pos.castleRights.blackKingside: castling.add('k')
-  if pos.castleRights.blackQueenside: castling.add('q')
+  if board.castlingRights.whiteKingside: castling.add('K')
+  if board.castlingRights.whiteQueenside: castling.add('Q')
+  if board.castlingRights.blackKingside: castling.add('k')
+  if board.castlingRights.blackQueenside: castling.add('q')
   if castling.len == 0: castling = "-"
   result.add(castling)
   
   # En passant
   result.add(' ')
-  if pos.enPassantSquare >= 0:
-    result.add(toAlgebraic(Square(pos.enPassantSquare)))
+  if board.enPassantTarget >= 0:
+    result.add(squareToAlgebraic(Square(board.enPassantTarget)))
   else:
     result.add('-')
   
-  # Clocks
+  # Move clocks
   result.add(' ')
-  result.add($pos.halfMoveClock)
+  result.add($board.halfmoveClock)
   result.add(' ')
-  result.add($pos.fullMoveNumber)
+  result.add($board.fullmoveNumber)
 
-proc displayBoard*(pos: Position): string =
+# ================================
+# Board Display
+# ================================
+
+proc displayBoard*(board: Board): string =
   result = "\n  a b c d e f g h\n"
   
   for rank in countdown(7, 0):
     result.add($(rank + 1) & " ")
     for file in 0..7:
       let sq = makeSquare(file, rank)
-      result.add(pieceChar(pos.board[sq]) & " ")
+      result.add(pieceToChar(board.getPiece(sq)) & " ")
     result.add($(rank + 1) & "\n")
   
   result.add("  a b c d e f g h\n\n")
-  result.add(if pos.sideToMove == White: "White to move\n" else: "Black to move\n")
+  result.add(if board.activeColor == cWhite: "White to move\n" else: "Black to move\n")
 
-# Move validation helpers
-proc isOnBoard*(file, rank: int): bool =
-  file in 0..7 and rank in 0..7
+# ================================
+# Move Validation
+# ================================
 
-proc isEmpty*(pos: Position, sq: Square): bool =
-  pos.board[sq].kind == Empty
-
-proc isEnemy*(pos: Position, sq: Square, color: Color): bool =
-  let piece = pos.board[sq]
-  piece.kind != Empty and piece.color != color
-
-proc isFriendly*(pos: Position, sq: Square, color: Color): bool =
-  let piece = pos.board[sq]
-  piece.kind != Empty and piece.color == color
-
-proc findKing*(pos: Position, color: Color): Square =
+proc findKing*(board: Board, color: Color): Square =
   for sq in 0..63:
-    let piece = pos.board[sq]
-    if piece.kind == King and piece.color == color:
+    let p = board.getPiece(Square(sq))
+    if p.pieceType == ptKing and p.color == color:
       return Square(sq)
   return Square(0)  # Should never happen in valid position
 
-proc isAttacked*(pos: Position, sq: Square, byColor: Color): bool =
+proc isSquareAttacked*(board: Board, sq: Square, byColor: Color): bool =
   # Check pawn attacks
-  let pawnDirection = if byColor == White: -8 else: 8
-  let pawnRank = rankOf(sq)
-  let pawnFile = fileOf(sq)
+  let pawnDir = if byColor == cWhite: -8 else: 8
+  let pawnRank = getRank(sq)
+  let pawnFile = getFile(sq)
   
-  if byColor == White and pawnRank > 0:
+  if byColor == cWhite and pawnRank > 0:
     if pawnFile > 0:
-      let attackSq = sq + pawnDirection - 1
-      if pos.board[attackSq] == (kind: Pawn, color: White):
+      let attackSq = Square(sq.int + pawnDir - 1)
+      let p = board.getPiece(attackSq)
+      if p.pieceType == ptPawn and p.color == cWhite:
         return true
     if pawnFile < 7:
-      let attackSq = sq + pawnDirection + 1
-      if pos.board[attackSq] == (kind: Pawn, color: White):
+      let attackSq = Square(sq.int + pawnDir + 1)
+      let p = board.getPiece(attackSq)
+      if p.pieceType == ptPawn and p.color == cWhite:
         return true
-  elif byColor == Black and pawnRank < 7:
+  elif byColor == cBlack and pawnRank < 7:
     if pawnFile > 0:
-      let attackSq = sq + pawnDirection - 1
-      if pos.board[attackSq] == (kind: Pawn, color: Black):
+      let attackSq = Square(sq.int + pawnDir - 1)
+      let p = board.getPiece(attackSq)
+      if p.pieceType == ptPawn and p.color == cBlack:
         return true
     if pawnFile < 7:
-      let attackSq = sq + pawnDirection + 1
-      if pos.board[attackSq] == (kind: Pawn, color: Black):
+      let attackSq = Square(sq.int + pawnDir + 1)
+      let p = board.getPiece(attackSq)
+      if p.pieceType == ptPawn and p.color == cBlack:
         return true
   
   # Check knight attacks
-  for offset in KnightOffsets:
-    let targetSq = sq.int + offset
+  for delta in KnightMoves:
+    let targetSq = sq.int + delta
     if targetSq >= 0 and targetSq <= 63:
       let targetFile = targetSq mod 8
       let targetRank = targetSq div 8
-      let sourceFile = fileOf(sq)
-      let sourceRank = rankOf(sq)
+      let fileDiff = abs(targetFile - getFile(sq))
+      let rankDiff = abs(targetRank - getRank(sq))
       
-      if abs(targetFile - sourceFile) <= 2 and abs(targetRank - sourceRank) <= 2:
-        let piece = pos.board[targetSq]
-        if piece.kind == Knight and piece.color == byColor:
+      if (fileDiff == 2 and rankDiff == 1) or (fileDiff == 1 and rankDiff == 2):
+        let p = board.getPiece(Square(targetSq))
+        if p.pieceType == ptKnight and p.color == byColor:
           return true
   
   # Check king attacks
-  for offset in KingOffsets:
-    let targetSq = sq.int + offset
+  for delta in KingMoves:
+    let targetSq = sq.int + delta
     if targetSq >= 0 and targetSq <= 63:
       let targetFile = targetSq mod 8
       let targetRank = targetSq div 8
-      if abs(targetFile - fileOf(sq)) <= 1 and abs(targetRank - rankOf(sq)) <= 1:
-        let piece = pos.board[targetSq]
-        if piece.kind == King and piece.color == byColor:
+      if abs(targetFile - getFile(sq)) <= 1 and abs(targetRank - getRank(sq)) <= 1:
+        let p = board.getPiece(Square(targetSq))
+        if p.pieceType == ptKing and p.color == byColor:
           return true
   
-  # Check sliding pieces (rook, bishop, queen)
+  # Check sliding pieces
   for dir in RookDirections:
     var currentSq = sq.int + dir
-    var prevFile = fileOf(sq)
+    var prevFile = getFile(sq)
     
     while currentSq >= 0 and currentSq <= 63:
       let currentFile = currentSq mod 8
-      if abs(currentFile - prevFile) > 1:  # Wrapped around board edge
+      if abs(currentFile - prevFile) > 1:
         break
       
-      let piece = pos.board[currentSq]
-      if piece.kind != Empty:
-        if piece.color == byColor and piece.kind in [Rook, Queen]:
+      let p = board.getPiece(Square(currentSq))
+      if p.pieceType != ptNone:
+        if p.color == byColor and p.pieceType in [ptRook, ptQueen]:
           return true
         break
       
@@ -340,16 +369,16 @@ proc isAttacked*(pos: Position, sq: Square, byColor: Color): bool =
   
   for dir in BishopDirections:
     var currentSq = sq.int + dir
-    var prevFile = fileOf(sq)
+    var prevFile = getFile(sq)
     
     while currentSq >= 0 and currentSq <= 63:
       let currentFile = currentSq mod 8
-      if abs(currentFile - prevFile) != 1:  # Invalid diagonal move
+      if abs(currentFile - prevFile) != 1:
         break
       
-      let piece = pos.board[currentSq]
-      if piece.kind != Empty:
-        if piece.color == byColor and piece.kind in [Bishop, Queen]:
+      let p = board.getPiece(Square(currentSq))
+      if p.pieceType != ptNone:
+        if p.color == byColor and p.pieceType in [ptBishop, ptQueen]:
           return true
         break
       
@@ -358,257 +387,272 @@ proc isAttacked*(pos: Position, sq: Square, byColor: Color): bool =
   
   return false
 
-proc isInCheck*(pos: Position, color: Color): bool =
-  let kingSquare = pos.findKing(color)
-  return pos.isAttacked(kingSquare, opposite(color))
+proc isInCheck*(board: Board, color: Color): bool =
+  let kingSq = board.findKing(color)
+  return board.isSquareAttacked(kingSq, opposite(color))
 
-# Move generation
-proc generatePawnMoves*(pos: Position, sq: Square, moves: var seq[Move]) =
-  let piece = pos.board[sq]
-  let direction = if piece.color == White: 8 else: -8
-  let startRank = if piece.color == White: 1 else: 6
-  let promotionRank = if piece.color == White: 7 else: 0
+# ================================
+# Move Generation
+# ================================
+
+proc generatePawnMoves*(board: Board, sq: Square, moves: var seq[Move]) =
+  let piece = board.getPiece(sq)
+  let direction = if piece.color == cWhite: 8 else: -8
+  let startRank = if piece.color == cWhite: 1 else: 6
+  let promoRank = if piece.color == cWhite: 7 else: 0
   
   # Single push
   let push1 = sq.int + direction
-  if push1 >= 0 and push1 <= 63 and pos.isEmpty(Square(push1)):
-    if rankOf(Square(push1)) == promotionRank:
-      for promo in [Queen, Rook, Bishop, Knight]:
-        moves.add(Move(source: sq, target: Square(push1), promotion: promo))
+  if push1 >= 0 and push1 <= 63 and board.isEmpty(Square(push1)):
+    if getRank(Square(push1)) == promoRank:
+      for promoType in [ptQueen, ptRook, ptBishop, ptKnight]:
+        moves.add(Move(fromSquare: sq, toSquare: Square(push1), promotion: promoType))
     else:
-      moves.add(Move(source: sq, target: Square(push1)))
+      moves.add(Move(fromSquare: sq, toSquare: Square(push1)))
     
-    # Double push from starting position
-    if rankOf(sq) == startRank:
+    # Double push
+    if getRank(sq) == startRank:
       let push2 = sq.int + direction * 2
-      if pos.isEmpty(Square(push2)):
-        moves.add(Move(source: sq, target: Square(push2)))
+      if board.isEmpty(Square(push2)):
+        moves.add(Move(fromSquare: sq, toSquare: Square(push2)))
   
   # Captures
   for captureOffset in [-1, 1]:
     let targetSq = sq.int + direction + captureOffset
     if targetSq >= 0 and targetSq <= 63:
       let targetFile = targetSq mod 8
-      let sourceFile = fileOf(sq)
+      let sourceFile = getFile(sq)
       
-      if abs(targetFile - sourceFile) == 1:  # Valid diagonal
-        if pos.isEnemy(Square(targetSq), piece.color):
-          if rankOf(Square(targetSq)) == promotionRank:
-            for promo in [Queen, Rook, Bishop, Knight]:
-              moves.add(Move(source: sq, target: Square(targetSq), promotion: promo))
+      if abs(targetFile - sourceFile) == 1:
+        if board.isEnemy(Square(targetSq), piece.color):
+          if getRank(Square(targetSq)) == promoRank:
+            for promoType in [ptQueen, ptRook, ptBishop, ptKnight]:
+              moves.add(Move(fromSquare: sq, toSquare: Square(targetSq), 
+                           promotion: promoType, isCapture: true))
           else:
-            moves.add(Move(source: sq, target: Square(targetSq)))
+            moves.add(Move(fromSquare: sq, toSquare: Square(targetSq), isCapture: true))
         
         # En passant
-        if targetSq == pos.enPassantSquare:
-          moves.add(Move(source: sq, target: Square(targetSq)))
+        if targetSq == board.enPassantTarget:
+          moves.add(Move(fromSquare: sq, toSquare: Square(targetSq), 
+                       isCapture: true, isEnPassant: true))
 
-proc generateKnightMoves*(pos: Position, sq: Square, moves: var seq[Move]) =
-  let piece = pos.board[sq]
+proc generateKnightMoves*(board: Board, sq: Square, moves: var seq[Move]) =
+  let piece = board.getPiece(sq)
   
-  for offset in KnightOffsets:
-    let targetSq = sq.int + offset
+  for delta in KnightMoves:
+    let targetSq = sq.int + delta
     if targetSq >= 0 and targetSq <= 63:
       let targetFile = targetSq mod 8
       let targetRank = targetSq div 8
-      let sourceFile = fileOf(sq)
-      let sourceRank = rankOf(sq)
+      let sourceFile = getFile(sq)
+      let sourceRank = getRank(sq)
       
-      # Verify valid knight move (not wrapping around board)
       let fileDiff = abs(targetFile - sourceFile)
       let rankDiff = abs(targetRank - sourceRank)
       
       if (fileDiff == 2 and rankDiff == 1) or (fileDiff == 1 and rankDiff == 2):
-        if not pos.isFriendly(Square(targetSq), piece.color):
-          moves.add(Move(source: sq, target: Square(targetSq)))
+        if not board.isFriendly(Square(targetSq), piece.color):
+          let isCapture = board.isEnemy(Square(targetSq), piece.color)
+          moves.add(Move(fromSquare: sq, toSquare: Square(targetSq), isCapture: isCapture))
 
-proc generateSlidingMoves*(pos: Position, sq: Square, directions: openArray[int], moves: var seq[Move]) =
-  let piece = pos.board[sq]
+proc generateSlidingMoves*(board: Board, sq: Square, directions: seq[int], moves: var seq[Move]) =
+  let piece = board.getPiece(sq)
   
   for dir in directions:
     var currentSq = sq.int + dir
-    var prevFile = fileOf(sq)
+    var prevFile = getFile(sq)
     
     while currentSq >= 0 and currentSq <= 63:
       let currentFile = currentSq mod 8
       
-      # Check for board edge wrapping
-      if dir in [-1, 1]:  # Horizontal movement
+      # Check for wrapping
+      if dir in [-1, 1]:  # Horizontal
         if abs(currentFile - prevFile) != 1:
           break
-      elif dir in [-9, -7, 7, 9]:  # Diagonal movement
+      elif dir in [-9, -7, 7, 9]:  # Diagonal
         if abs(currentFile - prevFile) != 1:
           break
       
-      if pos.isFriendly(Square(currentSq), piece.color):
+      if board.isFriendly(Square(currentSq), piece.color):
         break
       
-      moves.add(Move(source: sq, target: Square(currentSq)))
+      let isCapture = board.isEnemy(Square(currentSq), piece.color)
+      moves.add(Move(fromSquare: sq, toSquare: Square(currentSq), isCapture: isCapture))
       
-      if pos.isEnemy(Square(currentSq), piece.color):
+      if isCapture:
         break
       
       prevFile = currentFile
       currentSq += dir
 
-proc generateKingMoves*(pos: Position, sq: Square, moves: var seq[Move]) =
-  let piece = pos.board[sq]
+proc generateKingMoves*(board: Board, sq: Square, moves: var seq[Move]) =
+  let piece = board.getPiece(sq)
   
-  for offset in KingOffsets:
-    let targetSq = sq.int + offset
+  for delta in KingMoves:
+    let targetSq = sq.int + delta
     if targetSq >= 0 and targetSq <= 63:
       let targetFile = targetSq mod 8
       let targetRank = targetSq div 8
-      let sourceFile = fileOf(sq)
-      let sourceRank = rankOf(sq)
       
-      if abs(targetFile - sourceFile) <= 1 and abs(targetRank - sourceRank) <= 1:
-        if not pos.isFriendly(Square(targetSq), piece.color):
-          moves.add(Move(source: sq, target: Square(targetSq)))
+      if abs(targetFile - getFile(sq)) <= 1 and abs(targetRank - getRank(sq)) <= 1:
+        if not board.isFriendly(Square(targetSq), piece.color):
+          let isCapture = board.isEnemy(Square(targetSq), piece.color)
+          moves.add(Move(fromSquare: sq, toSquare: Square(targetSq), isCapture: isCapture))
   
   # Castling
-  if not pos.isInCheck(piece.color):
-    if piece.color == White:
-      if pos.castleRights.whiteKingside:
-        if pos.isEmpty(Square(5)) and pos.isEmpty(Square(6)):
-          if not pos.isAttacked(Square(5), Black) and not pos.isAttacked(Square(6), Black):
-            moves.add(Move(source: sq, target: Square(6)))
+  if not board.isInCheck(piece.color):
+    if piece.color == cWhite:
+      if board.castlingRights.whiteKingside:
+        if board.isEmpty(Square(5)) and board.isEmpty(Square(6)):
+          if not board.isSquareAttacked(Square(5), cBlack) and 
+             not board.isSquareAttacked(Square(6), cBlack):
+            moves.add(Move(fromSquare: sq, toSquare: Square(6), isCastling: true))
       
-      if pos.castleRights.whiteQueenside:
-        if pos.isEmpty(Square(3)) and pos.isEmpty(Square(2)) and pos.isEmpty(Square(1)):
-          if not pos.isAttacked(Square(3), Black) and not pos.isAttacked(Square(2), Black):
-            moves.add(Move(source: sq, target: Square(2)))
+      if board.castlingRights.whiteQueenside:
+        if board.isEmpty(Square(3)) and board.isEmpty(Square(2)) and board.isEmpty(Square(1)):
+          if not board.isSquareAttacked(Square(3), cBlack) and 
+             not board.isSquareAttacked(Square(2), cBlack):
+            moves.add(Move(fromSquare: sq, toSquare: Square(2), isCastling: true))
     else:
-      if pos.castleRights.blackKingside:
-        if pos.isEmpty(Square(61)) and pos.isEmpty(Square(62)):
-          if not pos.isAttacked(Square(61), White) and not pos.isAttacked(Square(62), White):
-            moves.add(Move(source: sq, target: Square(62)))
+      if board.castlingRights.blackKingside:
+        if board.isEmpty(Square(61)) and board.isEmpty(Square(62)):
+          if not board.isSquareAttacked(Square(61), cWhite) and 
+             not board.isSquareAttacked(Square(62), cWhite):
+            moves.add(Move(fromSquare: sq, toSquare: Square(62), isCastling: true))
       
-      if pos.castleRights.blackQueenside:
-        if pos.isEmpty(Square(59)) and pos.isEmpty(Square(58)) and pos.isEmpty(Square(57)):
-          if not pos.isAttacked(Square(59), White) and not pos.isAttacked(Square(58), White):
-            moves.add(Move(source: sq, target: Square(58)))
+      if board.castlingRights.blackQueenside:
+        if board.isEmpty(Square(59)) and board.isEmpty(Square(58)) and board.isEmpty(Square(57)):
+          if not board.isSquareAttacked(Square(59), cWhite) and 
+             not board.isSquareAttacked(Square(58), cWhite):
+            moves.add(Move(fromSquare: sq, toSquare: Square(58), isCastling: true))
 
-proc generateAllMoves*(pos: Position): seq[Move] =
+proc generateLegalMoves*(board: Board): seq[Move] =
   result = @[]
   
   for sq in 0..63:
-    let piece = pos.board[sq]
-    if piece.kind != Empty and piece.color == pos.sideToMove:
-      case piece.kind
-      of Pawn:
-        pos.generatePawnMoves(Square(sq), result)
-      of Knight:
-        pos.generateKnightMoves(Square(sq), result)
-      of Bishop:
-        pos.generateSlidingMoves(Square(sq), BishopDirections, result)
-      of Rook:
-        pos.generateSlidingMoves(Square(sq), RookDirections, result)
-      of Queen:
-        pos.generateSlidingMoves(Square(sq), RookDirections & BishopDirections, result)
-      of King:
-        pos.generateKingMoves(Square(sq), result)
+    let piece = board.getPiece(Square(sq))
+    if piece.pieceType != ptNone and piece.color == board.activeColor:
+      case piece.pieceType
+      of ptPawn:
+        board.generatePawnMoves(Square(sq), result)
+      of ptKnight:
+        board.generateKnightMoves(Square(sq), result)
+      of ptBishop:
+        board.generateSlidingMoves(Square(sq), BishopDirections, result)
+      of ptRook:
+        board.generateSlidingMoves(Square(sq), RookDirections, result)
+      of ptQueen:
+        board.generateSlidingMoves(Square(sq), RookDirections & BishopDirections, result)
+      of ptKing:
+        board.generateKingMoves(Square(sq), result)
       else:
         discard
 
-proc makeMove*(pos: var Position, move: Move): bool =
-  let piece = pos.board[move.source]
-  if piece.kind == Empty or piece.color != pos.sideToMove:
+# ================================
+# Move Execution
+# ================================
+
+proc makeMove*(board: var Board, move: Move): bool =
+  let piece = board.getPiece(move.fromSquare)
+  if piece.pieceType == ptNone or piece.color != board.activeColor:
     return false
   
-  # Store captured piece
-  let capturedPiece = pos.board[move.target]
-  
   # Handle castling
-  if piece.kind == King:
-    let fileDiff = fileOf(move.target) - fileOf(move.source)
-    if abs(fileDiff) == 2:  # Castling move
-      if fileDiff > 0:  # Kingside
-        let rookFrom = if piece.color == White: Square(7) else: Square(63)
-        let rookTo = if piece.color == White: Square(5) else: Square(61)
-        pos.board[rookTo] = pos.board[rookFrom]
-        pos.board[rookFrom] = EmptyPiece
-      else:  # Queenside
-        let rookFrom = if piece.color == White: Square(0) else: Square(56)
-        let rookTo = if piece.color == White: Square(3) else: Square(59)
-        pos.board[rookTo] = pos.board[rookFrom]
-        pos.board[rookFrom] = EmptyPiece
+  if move.isCastling:
+    let fileDiff = getFile(move.toSquare) - getFile(move.fromSquare)
+    if fileDiff > 0:  # Kingside
+      let rookFrom = if piece.color == cWhite: Square(7) else: Square(63)
+      let rookTo = if piece.color == cWhite: Square(5) else: Square(61)
+      board.setPiece(rookTo, board.getPiece(rookFrom))
+      board.setPiece(rookFrom, EmptyPiece)
+    else:  # Queenside
+      let rookFrom = if piece.color == cWhite: Square(0) else: Square(56)
+      let rookTo = if piece.color == cWhite: Square(3) else: Square(59)
+      board.setPiece(rookTo, board.getPiece(rookFrom))
+      board.setPiece(rookFrom, EmptyPiece)
   
   # Handle en passant capture
-  if piece.kind == Pawn and move.target == pos.enPassantSquare:
-    let captureSquare = if piece.color == White:
-      Square(pos.enPassantSquare - 8)
+  if move.isEnPassant:
+    let captureSquare = if piece.color == cWhite:
+      Square(board.enPassantTarget - 8)
     else:
-      Square(pos.enPassantSquare + 8)
-    pos.board[captureSquare] = EmptyPiece
+      Square(board.enPassantTarget + 8)
+    board.setPiece(captureSquare, EmptyPiece)
   
   # Move the piece
-  pos.board[move.target] = piece
-  pos.board[move.source] = EmptyPiece
+  board.setPiece(move.toSquare, piece)
+  board.setPiece(move.fromSquare, EmptyPiece)
   
   # Handle promotion
-  if move.promotion != Empty:
-    pos.board[move.target] = (kind: move.promotion, color: piece.color)
+  if move.promotion != ptNone:
+    board.setPiece(move.toSquare, Piece(pieceType: move.promotion, color: piece.color))
   
   # Update en passant square
-  if piece.kind == Pawn and abs(rankOf(move.target) - rankOf(move.source)) == 2:
-    pos.enPassantSquare = (move.source.int + move.target.int) div 2
+  if piece.pieceType == ptPawn and abs(getRank(move.toSquare) - getRank(move.fromSquare)) == 2:
+    board.enPassantTarget = (move.fromSquare.int + move.toSquare.int) div 2
   else:
-    pos.enPassantSquare = -1
+    board.enPassantTarget = -1
   
   # Update castling rights
-  if piece.kind == King:
-    if piece.color == White:
-      pos.castleRights.whiteKingside = false
-      pos.castleRights.whiteQueenside = false
+  if piece.pieceType == ptKing:
+    if piece.color == cWhite:
+      board.castlingRights.whiteKingside = false
+      board.castlingRights.whiteQueenside = false
     else:
-      pos.castleRights.blackKingside = false
-      pos.castleRights.blackQueenside = false
-  elif piece.kind == Rook:
-    if move.source == 0: pos.castleRights.whiteQueenside = false
-    elif move.source == 7: pos.castleRights.whiteKingside = false
-    elif move.source == 56: pos.castleRights.blackQueenside = false
-    elif move.source == 63: pos.castleRights.blackKingside = false
+      board.castlingRights.blackKingside = false
+      board.castlingRights.blackQueenside = false
+  elif piece.pieceType == ptRook:
+    if move.fromSquare == 0: board.castlingRights.whiteQueenside = false
+    elif move.fromSquare == 7: board.castlingRights.whiteKingside = false
+    elif move.fromSquare == 56: board.castlingRights.blackQueenside = false
+    elif move.fromSquare == 63: board.castlingRights.blackKingside = false
   
-  # Update clocks
-  if piece.kind == Pawn or capturedPiece.kind != Empty:
-    pos.halfMoveClock = 0
+  # Update move clocks
+  if piece.pieceType == ptPawn or move.isCapture:
+    board.halfmoveClock = 0
   else:
-    pos.halfMoveClock.inc
+    board.halfmoveClock.inc
   
-  if pos.sideToMove == Black:
-    pos.fullMoveNumber.inc
+  if board.activeColor == cBlack:
+    board.fullmoveNumber.inc
   
-  # Switch side
-  pos.sideToMove = opposite(pos.sideToMove)
+  # Switch active color
+  board.activeColor = opposite(board.activeColor)
   
   return true
 
+# ================================
 # Evaluation
-proc evaluatePosition*(pos: Position): int =
+# ================================
+
+proc evaluatePosition*(board: Board): int =
   result = 0
   
   for sq in 0..63:
-    let piece = pos.board[sq]
-    if piece.kind != Empty:
-      let value = PieceValues[piece.kind]
-      if piece.color == White:
+    let piece = board.getPiece(Square(sq))
+    if piece.pieceType != ptNone:
+      let value = PieceValues[piece.pieceType]
+      if piece.color == cWhite:
         result += value
       else:
         result -= value
   
   # Return from perspective of side to move
-  if pos.sideToMove == Black:
+  if board.activeColor == cBlack:
     result = -result
 
-# Simple AI - minimax with alpha-beta pruning
-proc minimax*(pos: Position, depth: int, alpha: int, beta: int, maximizing: bool): tuple[score: int, move: Move] =
+# ================================
+# Simple AI
+# ================================
+
+proc minimax*(board: Board, depth: int, alpha: int, beta: int, maximizing: bool): tuple[score: int, move: Move] =
   if depth == 0:
-    return (score: evaluatePosition(pos), move: Move())
+    return (score: evaluatePosition(board), move: Move())
   
-  let moves = generateAllMoves(pos)
+  let moves = generateLegalMoves(board)
   if moves.len == 0:
-    if pos.isInCheck(pos.sideToMove):
+    if board.isInCheck(board.activeColor):
       return (score: if maximizing: -30000 else: 30000, move: Move())
     else:
       return (score: 0, move: Move())  # Stalemate
@@ -620,9 +664,9 @@ proc minimax*(pos: Position, depth: int, alpha: int, beta: int, maximizing: bool
   if maximizing:
     var maxEval = -100000
     for move in moves:
-      var newPos = pos
-      if newPos.makeMove(move):
-        let eval = minimax(newPos, depth - 1, currentAlpha, currentBeta, false).score
+      var newBoard = board
+      if newBoard.makeMove(move):
+        let eval = minimax(newBoard, depth - 1, currentAlpha, currentBeta, false).score
         if eval > maxEval:
           maxEval = eval
           bestMove = move
@@ -633,9 +677,9 @@ proc minimax*(pos: Position, depth: int, alpha: int, beta: int, maximizing: bool
   else:
     var minEval = 100000
     for move in moves:
-      var newPos = pos
-      if newPos.makeMove(move):
-        let eval = minimax(newPos, depth - 1, currentAlpha, currentBeta, true).score
+      var newBoard = board
+      if newBoard.makeMove(move):
+        let eval = minimax(newBoard, depth - 1, currentAlpha, currentBeta, true).score
         if eval < minEval:
           minEval = eval
           bestMove = move
@@ -644,46 +688,61 @@ proc minimax*(pos: Position, depth: int, alpha: int, beta: int, maximizing: bool
           break
     return (score: minEval, move: bestMove)
 
-proc findBestMove*(pos: Position, depth: int): Move =
-  let result = minimax(pos, depth, -100000, 100000, true)
+proc findBestMove*(board: Board, depth: int): Move =
+  let result = minimax(board, depth, -100000, 100000, true)
   return result.move
 
-# Game management
-proc newGame*(): GameState =
-  result.position = parseFEN(StartingFEN)
-  result.history = @[]
-  result.positionHistory = @[]
+# ================================
+# Game Management
+# ================================
 
-proc parseUCIMove*(moveStr: string): Move =
-  if moveStr.len < 4:
-    return Move(source: Square(0), target: Square(0))
+proc newGame*(): GameState =
+  result.board = parseFEN(InitialFEN)
+  result.moveHistory = @[]
+  result.boardHistory = @[]
+
+proc parseUCIMove*(notation: string): Move =
+  if notation.len < 4:
+    return Move()
   
-  let source = fromAlgebraic(moveStr[0..1])
-  let target = fromAlgebraic(moveStr[2..3])
+  let source = algebraicToSquare(notation[0..1])
+  let target = algebraicToSquare(notation[2..3])
   
   if source < 0 or target < 0:
-    return Move(source: Square(0), target: Square(0))
+    return Move()
   
-  var promotion = Empty
-  if moveStr.len == 5:
-    promotion = case moveStr[4]
-      of 'q': Queen
-      of 'r': Rook
-      of 'b': Bishop
-      of 'n': Knight
-      else: Empty
+  var promotion = ptNone
+  if notation.len == 5:
+    promotion = case notation[4]
+      of 'q': ptQueen
+      of 'r': ptRook
+      of 'b': ptBishop
+      of 'n': ptKnight
+      else: ptNone
   
-  return Move(source: Square(source), target: Square(target), promotion: promotion)
+  return Move(fromSquare: Square(source), toSquare: Square(target), promotion: promotion)
 
 proc moveToUCI*(move: Move): string =
-  result = toAlgebraic(move.source) & toAlgebraic(move.target)
-  if move.promotion != Empty:
+  result = squareToAlgebraic(move.fromSquare) & squareToAlgebraic(move.toSquare)
+  if move.promotion != ptNone:
     result.add(case move.promotion
-      of Queen: 'q'
-      of Rook: 'r'
-      of Bishop: 'b'
-      of Knight: 'n'
+      of ptQueen: 'q'
+      of ptRook: 'r'
+      of ptBishop: 'b'
+      of ptKnight: 'n'
       else: ' ')
+
+proc isMoveLegal*(board: Board, move: Move): bool =
+  let legalMoves = generateLegalMoves(board)
+  for legalMove in legalMoves:
+    if legalMove.fromSquare == move.fromSquare and legalMove.toSquare == move.toSquare:
+      if move.promotion == ptNone or move.promotion == legalMove.promotion:
+        return true
+  return false
+
+# ================================
+# Command Processing
+# ================================
 
 proc processCommand*(game: var GameState, command: string): string =
   let parts = command.strip().split()
@@ -701,33 +760,24 @@ proc processCommand*(game: var GameState, command: string): string =
     
     let move = parseUCIMove(parts[1])
     
-    # Validate move is in legal moves
-    let legalMoves = generateAllMoves(game.position)
-    var isLegal = false
-    for legalMove in legalMoves:
-      if legalMove.source == move.source and legalMove.target == move.target:
-        if move.promotion == Empty or move.promotion == legalMove.promotion:
-          isLegal = true
-          break
-    
-    if not isLegal:
+    if not game.board.isMoveLegal(move):
       return "ERROR: Illegal move"
     
-    game.positionHistory.add(game.position)
-    if game.position.makeMove(move):
-      game.history.add(move)
+    game.boardHistory.add(game.board)
+    if game.board.makeMove(move):
+      game.moveHistory.add(move)
       return "OK: " & parts[1]
     else:
       return "ERROR: Invalid move"
   
   of "undo":
-    if game.history.len == 0:
+    if game.moveHistory.len == 0:
       return "ERROR: No moves to undo"
     
-    if game.positionHistory.len > 0:
-      game.position = game.positionHistory[^1]
-      game.positionHistory.setLen(game.positionHistory.len - 1)
-      game.history.setLen(game.history.len - 1)
+    if game.boardHistory.len > 0:
+      game.board = game.boardHistory[^1]
+      game.boardHistory.setLen(game.boardHistory.len - 1)
+      game.moveHistory.setLen(game.moveHistory.len - 1)
       return "OK: Move undone"
     else:
       return "ERROR: Cannot undo"
@@ -738,30 +788,30 @@ proc processCommand*(game: var GameState, command: string): string =
     
     try:
       let fenStr = parts[1..^1].join(" ")
-      game.position = parseFEN(fenStr)
-      game.history = @[]
-      game.positionHistory = @[]
+      game.board = parseFEN(fenStr)
+      game.moveHistory = @[]
+      game.boardHistory = @[]
       return "OK: Position loaded"
     except:
       return "ERROR: Invalid FEN string"
   
   of "export":
-    return "FEN: " & toFEN(game.position)
+    return "FEN: " & toFEN(game.board)
   
   of "eval":
-    let score = evaluatePosition(game.position)
+    let score = evaluatePosition(game.board)
     return "EVAL: " & $score
   
   of "ai":
     let depth = if parts.len > 1: parseInt(parts[1]) else: 3
-    let move = findBestMove(game.position, depth)
+    let move = findBestMove(game.board, depth)
     
-    if move.source == move.target:
+    if move.fromSquare == move.toSquare:
       return "ERROR: No legal moves"
     
-    game.positionHistory.add(game.position)
-    if game.position.makeMove(move):
-      game.history.add(move)
+    game.boardHistory.add(game.board)
+    if game.board.makeMove(move):
+      game.moveHistory.add(move)
       return "AI: " & moveToUCI(move)
     else:
       return "ERROR: AI move failed"
@@ -772,19 +822,19 @@ proc processCommand*(game: var GameState, command: string): string =
     
     let depth = parseInt(parts[1])
     
-    proc perft(pos: Position, depth: int): int =
+    proc perft(board: Board, depth: int): int =
       if depth == 0:
         return 1
       
-      let moves = generateAllMoves(pos)
+      let moves = generateLegalMoves(board)
       result = 0
       
       for move in moves:
-        var newPos = pos
-        if newPos.makeMove(move):
-          result += perft(newPos, depth - 1)
+        var newBoard = board
+        if newBoard.makeMove(move):
+          result += perft(newBoard, depth - 1)
     
-    let nodes = perft(game.position, depth)
+    let nodes = perft(game.board, depth)
     return "PERFT: " & $nodes & " nodes"
   
   of "help":
@@ -805,14 +855,16 @@ quit - Exit program"""
   else:
     return "ERROR: Unknown command (type 'help' for commands)"
 
-# Main program
+# ================================
+# Main Program
+# ================================
+
 when isMainModule:
-  randomize()
   var game = newGame()
   
-  echo "Nim Chess Engine"
+  echo "Nim Chess Engine v2.0"
   echo "Type 'help' for commands\n"
-  echo game.position.displayBoard()
+  echo game.board.displayBoard()
   
   while true:
     stdout.write("> ")
@@ -833,4 +885,4 @@ when isMainModule:
     # Display board after moves
     if input.startsWith("move") or input.startsWith("new") or 
        input.startsWith("fen") or input.startsWith("ai") or input.startsWith("undo"):
-      echo game.position.displayBoard()
+      echo game.board.displayBoard()

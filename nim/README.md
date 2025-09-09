@@ -1,21 +1,22 @@
 # Nim Chess Engine Implementation
 
-This directory contains a chess engine implementation in Nim, following the specification defined in `../CHESS_ENGINE_SPECS.md`.
+This directory contains a complete chess engine implementation in Nim, rewritten from the ground up with a clean, modular architecture.
 
 ## Features Implemented
 
-- ✅ **Basic Board Representation**: 8x8 board with piece storage
+- ✅ **Basic Board Representation**: 8x8 board with efficient piece storage
 - ✅ **FEN Import/Export**: Load and save positions in FEN notation
 - ✅ **Command Parser**: Interactive command-line interface
-- ✅ **Move Validation**: Proper chess rules validation for all piece types
+- ✅ **Move Validation**: Complete chess rules validation for all piece types
 - ✅ **Path Checking**: Sliding pieces (rook, bishop, queen) check for clear paths
 - ✅ **Turn Validation**: Ensures players can only move their own pieces
-- ✅ **Board Display**: ASCII board visualization
+- ✅ **Board Display**: Clear ASCII board visualization
 - ✅ **Error Handling**: Specific error messages for different invalid move types
-- ❌ **AI Engine**: Not yet implemented
-- ❌ **Special Moves**: Castling, en passant, promotion not implemented
-- ❌ **Check Detection**: King safety not validated
-- ❌ **Perft Testing**: Not yet implemented
+- ✅ **AI Engine**: Minimax algorithm with alpha-beta pruning
+- ✅ **Special Moves**: Castling, en passant, and pawn promotion fully implemented
+- ✅ **Check Detection**: Complete king safety validation
+- ✅ **Perft Testing**: Performance testing for move generation verification
+- ✅ **Game State Management**: Full move history and undo functionality
 
 ## Building and Running
 
@@ -67,34 +68,34 @@ This implementation showcases Nim's features:
 - **Type Safety**: Compile-time type checking
 - **Minimal Dependencies**: Uses only standard library
 
-## Current Limitations
-
-1. **Special Moves**: Castling, en passant, and pawn promotion are not implemented.
-
-2. **Check Detection**: The engine doesn't detect or prevent moves that leave the king in check.
-
-3. **AI**: No artificial intelligence or move search algorithm implemented yet.
-
-4. **Game End Detection**: Checkmate and stalemate detection not implemented.
-
-5. **Move History**: Undo functionality is not fully implemented.
-
-## Next Steps
-
-1. Implement check detection and prevention
-2. Add support for special moves (castling, en passant, promotion)
-3. Implement minimax AI with alpha-beta pruning
-4. Add perft testing for move generation verification
-5. Implement game end detection (checkmate, stalemate)
-6. Add move history and proper undo functionality
-
 ## Architecture
 
-The implementation uses a straightforward object-oriented approach:
+The new implementation features a clean, modular design organized into logical sections:
 
-- `Piece`: Represents a chess piece (type + color)
-- `Board`: Holds the 8x8 board state and game metadata
-- `Move`: Represents a chess move
-- `ChessEngine`: Main game controller
+### Core Types
+- `PieceType`: Enumeration for all piece types (none, pawn, knight, bishop, rook, queen, king)
+- `Color`: White and black enumeration
+- `Piece`: Object combining piece type and color
+- `Square`: Range type for board squares (0-63)
+- `Move`: Comprehensive move representation with flags for special moves
+- `Board`: Complete board state including position, castling rights, en passant
+- `GameState`: Game management with move history and board history
 
-The code is structured as a single file for simplicity, but could be split into modules as it grows.
+### Key Features
+- **Type Safety**: Strong typing prevents common chess programming errors
+- **Efficient Representation**: 64-square array with 0x88-style utilities
+- **Complete Move Generation**: All legal moves including special cases
+- **Attack Detection**: Fast square attack checking for check validation
+- **Game Management**: Full game state with undo/redo functionality
+- **AI Integration**: Minimax search with alpha-beta pruning
+- **Performance Testing**: Perft implementation for move generation verification
+
+### Code Organization
+The code is organized into clear sections with comprehensive documentation:
+1. Type definitions and constants
+2. Utility functions for square manipulation
+3. Board management and FEN parsing
+4. Move validation and generation
+5. Game state management
+6. AI implementation
+7. Command processing and main loop
