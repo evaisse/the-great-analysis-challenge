@@ -1,0 +1,12 @@
+{
+  "language": "nim",
+  "version": "1.6.14",
+  "author": "Nim Implementation",
+  "build": "nim compile --opt:speed chess.nim",
+  "run": "./chess",
+  "analyze": "nim check chess.nim",
+  "features": ["fen", "basic_moves", "move_validation"],
+  "max_ai_depth": 0,
+  "estimated_perft4_ms": 0,
+  "notes": "Implementation with FEN support, proper move validation, and piece-specific movement rules. Passes basic specification test cases."
+}
