@@ -59,6 +59,12 @@ Each application is implemented in a different language, showcasing their unique
 **Compile Command**: `cd crystal && crystal build src/chess_engine.cr --release`  
 **Build Time**: ~10-20 seconds
 
+### ⚡ **Zig** (`./zig/`)
+**Paradigm**: Systems programming with simplicity and performance focus  
+**Key Features**: Comptime execution, manual memory management with safety, cross-compilation  
+**Compile Command**: `cd zig && zig build -Doptimize=ReleaseFast`  
+**Build Time**: ~5-15 seconds
+
 ## Compilation Speed Comparison
 
 To benchmark compilation speeds across all implementations:
@@ -90,6 +96,9 @@ time (cd kotlin && ./gradlew build --no-daemon)
 
 # Crystal (compiled with type safety)
 time (cd crystal && crystal build src/chess_engine.cr --release)
+
+# Zig (systems programming with simplicity)
+time (cd zig && zig build -Doptimize=ReleaseFast)
 ```
 
 ## Docker Build & Run
@@ -110,6 +119,7 @@ docker run -it chess-<language>
 - **Dart**: Fast compilation with native code generation  
 - **Gleam**: Quick builds with excellent error messages
 - **Crystal**: Fast compilation with Ruby-like syntax and native performance
+- **Zig**: Very fast compilation with excellent performance and cross-compilation support
 - **TypeScript**: Moderate speed, depends on project size and dependencies
 - **Kotlin**: Moderate speed, benefits from Gradle's incremental compilation
 - **Rust**: Slowest compilation but produces highly optimized binaries
