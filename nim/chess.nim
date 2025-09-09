@@ -88,6 +88,7 @@ proc charToPiece*(c: char): Piece =
 
 # Forward declarations
 proc parseFEN*(fen: string): Board
+proc isPathClear*(board: Board, fromSq: Square, toSq: Square): bool
 
 # Initialize board to starting position
 proc initBoard*(): Board =
@@ -211,7 +212,7 @@ proc displayBoard*(board: Board): string =
   result.add("  a b c d e f g h\n\n")
   result.add(if board.toMove == cWhite: "White to move" else: "Black to move")
 
-# Basic move validation (simplified for now)
+# Basic move validation (improved)
 proc isValidMove*(board: Board, move: Move): bool =
   if move.fromSq < 0 or move.fromSq > 63 or move.toSq < 0 or move.toSq > 63:
     return false
@@ -222,8 +223,89 @@ proc isValidMove*(board: Board, move: Move): bool =
   
   if piece.color != board.toMove:
     return false
+    
+  # Can't capture own piece
+  let targetPiece = board.squares[move.toSq]
+  if targetPiece.pieceType != ptNone and targetPiece.color == piece.color:
+    return false
   
-  # Basic validation - more complex logic would go here
+  let fromFile = move.fromSq mod 8
+  let fromRank = move.fromSq div 8
+  let toFile = move.toSq mod 8
+  let toRank = move.toSq div 8
+  
+  let deltaFile = toFile - fromFile
+  let deltaRank = toRank - fromRank
+  
+  # Piece-specific validation
+  case piece.pieceType:
+  of ptPawn:
+    let direction = if piece.color == cWhite: 1 else: -1
+    let startingRank = if piece.color == cWhite: 1 else: 6
+    
+    # Forward move
+    if deltaFile == 0:
+      if deltaRank == direction and targetPiece.pieceType == ptNone:
+        return true
+      elif fromRank == startingRank and deltaRank == 2 * direction and targetPiece.pieceType == ptNone:
+        return true
+    # Diagonal capture
+    elif abs(deltaFile) == 1 and deltaRank == direction:
+      if targetPiece.pieceType != ptNone:
+        return true
+    
+    return false
+    
+  of ptKnight:
+    return (abs(deltaFile) == 2 and abs(deltaRank) == 1) or
+           (abs(deltaFile) == 1 and abs(deltaRank) == 2)
+  
+  of ptBishop:
+    if abs(deltaFile) != abs(deltaRank):
+      return false
+    return isPathClear(board, move.fromSq, move.toSq)
+  
+  of ptRook:
+    if deltaFile != 0 and deltaRank != 0:
+      return false
+    return isPathClear(board, move.fromSq, move.toSq)
+  
+  of ptQueen:
+    if deltaFile != 0 and deltaRank != 0 and abs(deltaFile) != abs(deltaRank):
+      return false
+    return isPathClear(board, move.fromSq, move.toSq)
+  
+  of ptKing:
+    return abs(deltaFile) <= 1 and abs(deltaRank) <= 1
+  
+  else:
+    return false
+
+# Check if path is clear between two squares (exclusive of endpoints)
+proc isPathClear*(board: Board, fromSq: Square, toSq: Square): bool =
+  let fromFile = fromSq mod 8
+  let fromRank = fromSq div 8
+  let toFile = toSq mod 8
+  let toRank = toSq div 8
+  
+  let deltaFile = toFile - fromFile
+  let deltaRank = toRank - fromRank
+  
+  # Determine step direction
+  let fileStep = if deltaFile == 0: 0 elif deltaFile > 0: 1 else: -1
+  let rankStep = if deltaRank == 0: 0 elif deltaRank > 0: 1 else: -1
+  
+  var checkFile = fromFile + fileStep
+  var checkRank = fromRank + rankStep
+  
+  while checkFile != toFile or checkRank != toRank:
+    let checkSq = checkRank * 8 + checkFile
+    if board.squares[checkSq].pieceType != ptNone:
+      return false
+    
+    checkFile += fileStep
+    checkRank += rankStep
+  
   return true
 
 # Make move (simplified)
@@ -285,6 +367,13 @@ proc processCommand*(engine: var ChessEngine, command: string): string =
     let move = parseMove(parts[1])
     if move.fromSq == -1:
       return "ERROR: Invalid move format"
+    
+    let piece = engine.board.squares[move.fromSq]
+    if piece.pieceType == ptNone:
+      return "ERROR: No piece at source square"
+    
+    if piece.color != engine.board.toMove:
+      return "ERROR: Wrong color piece"
     
     if makeMove(engine.board, move):
       engine.moveHistory.add(move)
