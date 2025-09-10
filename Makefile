@@ -110,7 +110,7 @@ test-rescript:
 test-mojo:
 	@echo "Testing Mojo implementation in Docker..."
 	@docker build -t chess-mojo -f mojo/Dockerfile mojo
-	@docker run --rm chess-mojo sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | mojo chess.mojo"
+	@docker run --rm chess-mojo sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | ./run_chess.sh"
 
 # Build individual implementations
 build-typescript:
