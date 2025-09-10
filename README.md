@@ -65,6 +65,13 @@ Each application is implemented in a different language, showcasing their unique
 **Compile Command**: `cd zig && zig build -Doptimize=ReleaseFast`  
 **Build Time**: ~5-15 seconds
 
+### 🔥 **Mojo** (`./mojo/`)
+**Paradigm**: Python-compatible systems programming with performance focus  
+**Key Features**: Zero-cost abstractions, value semantics, compile-time safety, Python interop  
+**Compile Command**: `cd mojo && mojo chess.mojo`  
+**Build Time**: ~2-5 seconds (when Mojo runtime available)
+**Status**: Demo implementation (full source ready for Mojo runtime)
+
 ## Compilation Speed Comparison
 
 To benchmark compilation speeds across all implementations:
@@ -99,6 +106,9 @@ time (cd crystal && crystal build src/chess_engine.cr --release)
 
 # Zig (systems programming with simplicity)
 time (cd zig && zig build -Doptimize=ReleaseFast)
+
+# Mojo (Python-compatible systems programming)
+time (cd mojo && mojo chess.mojo)  # When Mojo runtime is available
 ```
 
 ## Docker Build & Run
@@ -120,6 +130,7 @@ docker run -it chess-<language>
 - **Gleam**: Quick builds with excellent error messages
 - **Crystal**: Fast compilation with Ruby-like syntax and native performance
 - **Zig**: Very fast compilation with excellent performance and cross-compilation support
+- **Mojo**: Very fast compilation with Python compatibility and native performance
 - **TypeScript**: Moderate speed, depends on project size and dependencies
 - **Kotlin**: Moderate speed, benefits from Gradle's incremental compilation
 - **Rust**: Slowest compilation but produces highly optimized binaries
