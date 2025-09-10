@@ -1,0 +1,10 @@
+{
+  "language": "mojo",
+  "version": "0.6.0",
+  "author": "Mojo Implementation",
+  "build": "mojo chess.mojo",
+  "run": "mojo chess.mojo",
+  "features": ["ai", "fen", "move_validation"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 800
+}
