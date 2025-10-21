@@ -1,19 +1,22 @@
-# Multi-stage build for Zig Chess Engine
-FROM alpine:3.18 AS builder
+FROM ubuntu:24.04
 
-# Install dependencies
-RUN apk add --no-cache \
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
     curl \
-    xz \
-    tar
+    wget \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
 
-# Download and install Zig
-RUN curl -L https://ziglang.org/builds/zig-linux-x86_64-0.13.0.tar.xz -o /tmp/zig.tar.xz && \
-    cd /tmp && \
-    tar -xf zig.tar.xz && \
-    mv zig-linux-x86_64-0.13.0 /usr/local/zig
-
-ENV PATH="/usr/local/zig:${PATH}"
+# Install Zig
+RUN ZIG_VERSION="0.11.0" \
+    && wget "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
+    && tar -xf "zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
+    && mv "zig-linux-x86_64-${ZIG_VERSION}" /opt/zig \
+    && ln -s /opt/zig/zig /usr/local/bin/zig \
+    && rm "zig-linux-x86_64-${ZIG_VERSION}.tar.xz"
 
 WORKDIR /app
 
@@ -22,18 +25,10 @@ COPY build.zig ./
 COPY src/ ./src/
 
 # Build the application
-RUN zig build -Doptimize=ReleaseFast
-
-# Final stage with minimal base image
-FROM alpine:3.18
-
-WORKDIR /app
-
-# Copy the built binary
-COPY --from=builder /app/zig-out/bin/chess ./
+RUN zig build
 
 # Make executable
-RUN chmod +x chess
+RUN chmod +x zig-out/bin/chess
 
 # Default command
-CMD ["./chess"]
+CMD ["./zig-out/bin/chess"]

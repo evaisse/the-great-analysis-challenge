@@ -1,9 +1,22 @@
-FROM node:20-alpine
+FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and Node.js
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
 
 WORKDIR /app
 
 # Install Elm
-RUN npm install -g elm@latest-0.19.1
+RUN npm install -g elm@0.19.1
 
 # Copy package files
 COPY package.json elm.json ./
@@ -15,7 +28,7 @@ RUN npm install
 COPY src ./src
 
 # Build the Elm application
-RUN npm run build
+RUN elm make src/ChessEngine.elm --output=chess_engine.js
 
 # Run the chess engine
-CMD ["npm", "start"]
+CMD ["node", "src/cli.js"]

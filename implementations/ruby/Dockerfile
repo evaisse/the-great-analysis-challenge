@@ -1,8 +1,16 @@
-# Use Ruby official image
-FROM ruby:3.2-alpine
+# Use Ubuntu base image
+FROM ubuntu:24.04
 
-# Install build dependencies and git (needed for some gems)
-RUN apk add --no-cache build-base git
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and Ruby
+RUN apt-get update && apt-get install -y \
+    ruby \
+    ruby-dev \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
