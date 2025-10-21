@@ -3,18 +3,18 @@ name: Quick Build Check
 on:
   push:
     paths:
-      - '*/Dockerfile'
-      - '*/src/**'
-      - '*/lib/**'
-      - '*/bin/**'
-      - '**/*.cr'
-      - '**/*.rs'
-      - '**/*.go'
-      - '**/*.dart'
-      - '**/*.ts'
-      - '**/*.gleam'
-      - '**/*.kt'
-      - '**/*.kts'
+      - 'implementations/*/Dockerfile'
+      - 'implementations/*/src/**'
+      - 'implementations/*/lib/**'
+      - 'implementations/*/bin/**'
+      - 'implementations/**/*.cr'
+      - 'implementations/**/*.rs'
+      - 'implementations/**/*.go'
+      - 'implementations/**/*.dart'
+      - 'implementations/**/*.ts'
+      - 'implementations/**/*.gleam'
+      - 'implementations/**/*.kt'
+      - 'implementations/**/*.kts'
   workflow_dispatch:
 
 jobs:
@@ -38,19 +38,20 @@ jobs:
           success_count=0
           total_count=0
           
-          for dir in rust go dart typescript gleam kotlin crystal ruby julia haskell elm; do
+          for lang in rust go dart typescript gleam kotlin crystal ruby julia haskell elm; do
+            dir="implementations/$lang"
             if [ -d "$dir" ] && [ -f "$dir/Dockerfile" ]; then
               total_count=$((total_count + 1))
               echo ""
-              echo "🏗️ Building $dir..."
+              echo "🏗️ Building $lang..."
               
               cd "$dir"
-              if docker build -t "chess-$dir-quick" . --quiet; then
-                echo "✅ $dir: Build successful"
+              if docker build -t "chess-$lang-quick" . --quiet; then
+                echo "✅ $lang: Build successful"
                 success_count=$((success_count + 1))
-                docker rmi "chess-$dir-quick" || true
+                docker rmi "chess-$lang-quick" || true
               else
-                echo "❌ $dir: Build failed"
+                echo "❌ $lang: Build failed"
               fi
               cd ..
             fi
