@@ -5,11 +5,11 @@ FROM dart:stable AS build
 WORKDIR /app
 
 # Copy the pubspec files and get dependencies.
-COPY dart/pubspec.* ./
+COPY pubspec.* ./
 RUN dart pub get
 
 # Copy the rest of the application source code.
-COPY dart/. .
+COPY . .
 
 # Compile the application.
 RUN dart compile exe bin/main.dart -o bin/chess_engine
