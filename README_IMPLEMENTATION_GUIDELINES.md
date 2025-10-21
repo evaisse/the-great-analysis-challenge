@@ -12,13 +12,58 @@ Each language implementation should follow this structure:
 ```
 <language>/
 ├── Dockerfile           # Docker container definition
+├── Makefile            # Build automation (required)
 ├── chess.meta          # Metadata file (JSON)
 ├── <main_file>         # Entry point (chess.py, chess.rb, etc.)
 ├── src/ or lib/        # Source code modules
 └── README.md           # Language-specific documentation
 ```
 
-### 2. Essential Commands
+### 2. Makefile Requirements
+
+Every implementation **MUST** include a `Makefile` with these standard targets:
+
+| Target | Purpose | Example |
+|--------|---------|---------|
+| `make` | Default build | Compile/prepare the chess engine |
+| `make test` | Run tests | Execute basic functionality tests |
+| `make analyze` | Static analysis | Run linters, type checkers, etc. |
+| `make clean` | Clean build artifacts | Remove generated files |
+| `make docker-build` | Build Docker image | `docker build -t chess-<lang> .` |
+| `make docker-test` | Test in Docker | Run tests inside container |
+
+**Example Makefile structure:**
+```makefile
+.PHONY: all test analyze clean docker-build docker-test
+
+# Default target - build the chess engine
+all: build
+
+# Build target (language-specific)
+build:
+	# Language-specific build command here
+
+# Run basic tests
+test:
+	# Language-specific test commands here
+
+# Static analysis and code quality
+analyze:
+	# Run linters, type checkers, formatters here
+
+# Clean build artifacts
+clean:
+	# Remove generated files here
+
+# Docker targets
+docker-build:
+	docker build -t chess-$(shell basename $(PWD)) .
+
+docker-test: docker-build
+	docker run --rm -i chess-$(shell basename $(PWD)) sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | <run_command>"
+```
+
+### 3. Essential Commands
 
 Every implementation **MUST** support these commands:
 
@@ -31,7 +76,7 @@ Every implementation **MUST** support these commands:
 | `ai` | AI move (depth 1-5) | `ai 3` |
 | `quit` | Exit program | `quit` |
 
-### 3. Board Display Format
+### 4. Board Display Format
 
 ```
   a b c d e f g h
@@ -53,7 +98,7 @@ White to move
 - Lowercase = Black (k, q, r, b, n, p)
 - Dot (.) = Empty square
 
-### 4. Required Components
+### 5. Required Components
 
 Each implementation must include:
 
@@ -65,7 +110,7 @@ Each implementation must include:
 6. **Command Parser** - Process user input
 7. **Display Renderer** - ASCII board output
 
-### 5. AI Implementation
+### 6. AI Implementation
 
 #### Minimax Algorithm (Required)
 ```
@@ -87,14 +132,14 @@ Position bonuses:
 - Depth 3: < 2s
 - Depth 5: < 10s
 
-### 6. Special Moves
+### 7. Special Moves
 
 Must implement:
 - **Castling** (O-O, O-O-O)
 - **En Passant** capture
 - **Pawn Promotion** (auto-Queen or specified piece)
 
-### 7. Error Handling
+### 8. Error Handling
 
 Required error messages:
 ```
@@ -105,7 +150,7 @@ ERROR: Wrong color piece
 ERROR: King would be in check
 ```
 
-### 8. Metadata File (chess.meta)
+### 9. Metadata File (chess.meta)
 
 ```json
 {
@@ -114,11 +159,25 @@ ERROR: King would be in check
   "author": "Your Name",
   "build": "python3 -m py_compile chess.py",
   "run": "python3 chess.py",
+  "analyze": "python3 -m pylint chess.py && python3 -m mypy chess.py",
+  "test": "python3 test_engine.py",
   "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
   "max_ai_depth": 5,
   "estimated_perft4_ms": 1000
 }
 ```
+
+**Required fields:**
+- `language`: Programming language name
+- `version`: Language version
+- `author`: Implementation author
+- `build`: Command to build/compile the implementation
+- `run`: Command to run the chess engine
+- `analyze`: Command to run static analysis (linters, type checkers)
+- `test`: Command to run tests
+- `features`: Array of implemented features
+- `max_ai_depth`: Maximum supported AI search depth
+- `estimated_perft4_ms`: Estimated time for perft(4) in milliseconds
 
 ## Testing Requirements
 
