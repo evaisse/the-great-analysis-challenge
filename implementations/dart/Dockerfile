@@ -6,6 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install system dependencies and Dart
 RUN apt-get update && apt-get install -y \
     curl \
+    wget \
     gnupg \
     apt-transport-https \
     && rm -rf /var/lib/apt/lists/*
@@ -28,7 +29,7 @@ RUN dart pub get
 COPY . .
 
 # Compile the application.
-RUN dart compile exe bin/chess_engine.dart -o bin/chess_engine
+RUN dart compile exe bin/main.dart -o bin/chess_engine
 
 # Set the entrypoint for the container.
 ENTRYPOINT ["./bin/chess_engine"]
