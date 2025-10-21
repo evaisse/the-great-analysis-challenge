@@ -1,9 +1,16 @@
-# Use Python official image
-FROM python:3.11-slim
+# Use Ubuntu base image
+FROM ubuntu:24.04
 
-# Install system dependencies
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and Python
 RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
     build-essential \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -13,14 +20,14 @@ WORKDIR /app
 COPY requirements.txt ./
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
 # Copy source code
 COPY . .
 
 # Create a non-root user
-RUN addgroup --gid 1001 --system python && \
-    adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group chess
+RUN addgroup --system python && \
+    adduser --no-create-home --shell /bin/false --disabled-password --system --ingroup python chess
 
 # Change ownership of the app directory
 RUN chown -R chess:python /app
