@@ -13,6 +13,6 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY . .
 
-RUN go build -o chess chess.go
+RUN cp src/*.go . && sed -i '/import "math"/d' ai.go && go build -ldflags="-s -w" -o chess *.go
 
 CMD ["./chess"]

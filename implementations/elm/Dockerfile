@@ -28,7 +28,7 @@ RUN npm install
 COPY src ./src
 
 # Build the Elm application
-RUN elm make src/ChessEngine.elm --output=chess_engine.js
+RUN mkdir -p dist && elm make src/ChessEngine.elm --output=dist/chess.js
 
 # Run the chess engine
 CMD ["node", "src/cli.js"]

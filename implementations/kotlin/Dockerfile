@@ -28,4 +28,4 @@ COPY . .
 RUN gradle build
 
 # Run the chess engine
-CMD ["java", "-jar", "build/libs/chess-1.0.jar"]
+CMD ["java", "-jar", "build/libs/chess-1.0.0.jar"]
