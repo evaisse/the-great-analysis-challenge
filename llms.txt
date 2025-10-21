@@ -1,0 +1,37 @@
+# llms.txt - LLM Context Files
+# This file lists the essential documentation files that LLMs and AI agents should read
+# to understand this project. Files are listed in order of importance.
+
+# Core Specification (REQUIRED - Read First)
+CHESS_ENGINE_SPECS.md
+
+# Agent Instructions (REQUIRED for AI agents)
+AGENTS.md
+
+# Quick Reference Guide
+README_IMPLEMENTATION_GUIDELINES.md
+
+# Project Overview
+README.md
+
+# Test Suite Definition
+test/test_suite.json
+
+# Build and Test Automation
+Makefile
+
+# CI/CD Workflows Documentation
+.github/workflows/README.md
+
+# Example Implementation (for reference)
+ruby/README.md
+ruby/chess.meta
+
+# Alternative Example (TypeScript)
+typescript/README.md
+typescript/chess.meta
+
+# Additional Context (optional but helpful)
+# - Review any <language>/README.md for language-specific implementation details
+# - Check test/test_summary.md for test results across implementations
+# - See .github/workflows/*.yml for CI/CD pipeline details
