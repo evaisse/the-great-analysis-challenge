@@ -10,65 +10,65 @@ Each application is implemented in a different language, showcasing their unique
 
 ## Available Languages
 
-### 🦀 **Rust** (`./rust/`)
+### 🦀 **Rust** (`./implementations/rust/`)
 **Paradigm**: Systems programming with memory safety  
 **Key Features**: Zero-cost abstractions, ownership system, pattern matching  
-**Compile Command**: `cd rust && cargo build --release`  
+**Compile Command**: `cd implementations/rust && cargo build --release`  
 **Build Time**: ~30-60 seconds (first build), ~5-10 seconds (incremental)
 
-### 💎 **Ruby** (`./ruby/`)
+### 💎 **Ruby** (`./implementations/ruby/`)
 **Paradigm**: Object-oriented with dynamic typing  
 **Key Features**: Duck typing, blocks/iterators, metaprogramming, elegant syntax  
-**Run Command**: `cd ruby && ruby chess.rb`  
+**Run Command**: `cd implementations/ruby && ruby chess.rb`  
 **Build Time**: Interpreted (no compilation), ~100-200ms startup
 **Static Analysis**: RuboCop with performance checks
 
-### 🐹 **Go** (`./go/`)  
+### 🐹 **Go** (`./implementations/go/`)  
 **Paradigm**: Simple, concurrent, compiled  
 **Key Features**: Goroutines, channels, fast compilation  
-**Compile Command**: `cd go && go build ./cmd/chess`  
+**Compile Command**: `cd implementations/go && go build ./cmd/chess`  
 **Build Time**: ~2-5 seconds
 
-### 🎯 **Dart** (`./dart/`)
+### 🎯 **Dart** (`./implementations/dart/`)
 **Paradigm**: Object-oriented, null-safe  
 **Key Features**: Strong typing, async/await, Flutter ecosystem  
-**Compile Command**: `cd dart && dart compile exe bin/main.dart`  
+**Compile Command**: `cd implementations/dart && dart compile exe bin/main.dart`  
 **Build Time**: ~5-10 seconds
 
-### 🟦 **TypeScript** (`./typescript/`)
+### 🟦 **TypeScript** (`./implementations/typescript/`)
 **Paradigm**: JavaScript with static typing  
 **Key Features**: Type safety, modern ES features, large ecosystem  
-**Compile Command**: `cd typescript && npm run build`  
+**Compile Command**: `cd implementations/typescript && npm run build`  
 **Build Time**: ~10-15 seconds
 
-### 🔥 **Gleam** (`./gleam/`)
+### 🔥 **Gleam** (`./implementations/gleam/`)
 **Paradigm**: Functional programming on the BEAM VM  
 **Key Features**: Type safety, immutability, pattern matching, fault tolerance  
-**Compile Command**: `cd gleam && gleam build`  
+**Compile Command**: `cd implementations/gleam && gleam build`  
 **Build Time**: ~5-10 seconds
 
-### 🏗️ **Kotlin** (`./kotlin/`)
+### 🏗️ **Kotlin** (`./implementations/kotlin/`)
 **Paradigm**: Modern JVM language combining OOP and functional  
 **Key Features**: Null safety, data classes, coroutines, Java interop  
-**Compile Command**: `cd kotlin && ./gradlew build`  
+**Compile Command**: `cd implementations/kotlin && ./gradlew build`  
 **Build Time**: ~15-30 seconds (first build), ~5-10 seconds (incremental)
 
-### 💎 **Crystal** (`./crystal/`)
+### 💎 **Crystal** (`./implementations/crystal/`)
 **Paradigm**: Ruby-like syntax with compile-time type safety  
 **Key Features**: Zero-cost abstractions, type inference, union types, static compilation  
-**Compile Command**: `cd crystal && crystal build src/chess_engine.cr --release`  
+**Compile Command**: `cd implementations/crystal && crystal build src/chess_engine.cr --release`  
 **Build Time**: ~10-20 seconds
 
-### ⚡ **Zig** (`./zig/`)
+### ⚡ **Zig** (`./implementations/zig/`)
 **Paradigm**: Systems programming with simplicity and performance focus  
 **Key Features**: Comptime execution, manual memory management with safety, cross-compilation  
-**Compile Command**: `cd zig && zig build -Doptimize=ReleaseFast`  
+**Compile Command**: `cd implementations/zig && zig build -Doptimize=ReleaseFast`  
 **Build Time**: ~5-15 seconds
 
-### 🔥 **Mojo** (`./mojo/`)
+### 🔥 **Mojo** (`./implementations/mojo/`)
 **Paradigm**: Python-compatible systems programming with performance focus  
 **Key Features**: Zero-cost abstractions, value semantics, compile-time safety, Python interop  
-**Compile Command**: `cd mojo && mojo chess.mojo`  
+**Compile Command**: `cd implementations/mojo && mojo chess.mojo`  
 **Build Time**: ~2-5 seconds (when Mojo runtime available)
 **Status**: Demo implementation (full source ready for Mojo runtime)
 
@@ -78,37 +78,37 @@ To benchmark compilation speeds across all implementations:
 
 ```bash
 # Rust (systems programming)
-time (cd rust && cargo build --release)
+time (cd implementations/rust && cargo build --release)
 
 # Ruby (interpreted, dynamic)
-time (cd ruby && ruby -c chess.rb)
+time (cd implementations/ruby && ruby -c chess.rb)
 
 # Go (fast compilation focus)  
-time (cd go && go build ./cmd/chess)
+time (cd implementations/go && go build ./cmd/chess)
 
 # Dart (compiled native executables)
-time (cd dart && dart compile exe bin/main.dart)
+time (cd implementations/dart && dart compile exe bin/main.dart)
 
 # TypeScript (transpiled to JavaScript)
-time (cd typescript && npm run build)
+time (cd implementations/typescript && npm run build)
 
 # Gleam (functional on BEAM VM)
-time (cd gleam && gleam build)
+time (cd implementations/gleam && gleam build)
 
 # Ruby (interpreted language)
-time (cd ruby && ruby -c chess.rb && echo "Syntax check passed - no compilation needed")
+time (cd implementations/ruby && ruby -c chess.rb && echo "Syntax check passed - no compilation needed")
 
 # Kotlin (JVM compilation)
-time (cd kotlin && ./gradlew build --no-daemon)
+time (cd implementations/kotlin && ./gradlew build --no-daemon)
 
 # Crystal (compiled with type safety)
-time (cd crystal && crystal build src/chess_engine.cr --release)
+time (cd implementations/crystal && crystal build src/chess_engine.cr --release)
 
 # Zig (systems programming with simplicity)
-time (cd zig && zig build -Doptimize=ReleaseFast)
+time (cd implementations/zig && zig build -Doptimize=ReleaseFast)
 
 # Mojo (Python-compatible systems programming)
-time (cd mojo && mojo chess.mojo)  # When Mojo runtime is available
+time (cd implementations/mojo && mojo chess.mojo)  # When Mojo runtime is available
 ```
 
 ## Docker Build & Run

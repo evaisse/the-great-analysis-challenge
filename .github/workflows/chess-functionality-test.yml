@@ -30,7 +30,7 @@ jobs:
       - name: Check if engine exists
         id: check_engine
         run: |
-          if [ -d "${{ matrix.engine }}" ] && [ -f "${{ matrix.engine }}/Dockerfile" ]; then
+          if [ -d "implementations/${{ matrix.engine }}" ] && [ -f "implementations/${{ matrix.engine }}/Dockerfile" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "✅ ${{ matrix.engine }} engine found"
           else
@@ -41,7 +41,7 @@ jobs:
       - name: Build ${{ matrix.engine }} chess engine
         if: steps.check_engine.outputs.exists == 'true'
         run: |
-          cd ${{ matrix.engine }}
+          cd implementations/${{ matrix.engine }}
           echo "🏗️ Building ${{ matrix.engine }} chess engine..."
           docker build -t chess-${{ matrix.engine }}-test .
 

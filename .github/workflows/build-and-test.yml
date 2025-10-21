@@ -21,7 +21,7 @@ jobs:
       matrix:
         include:
           - name: "Rust"
-            directory: "rust"
+            directory: "implementations/rust"
             dockerfile: "Dockerfile"
             test_commands: |
               echo "board" | timeout 30s docker run --rm -i chess-rust || true
@@ -30,7 +30,7 @@ jobs:
               echo "quit" | timeout 10s docker run --rm -i chess-rust || true
           
           - name: "Go"
-            directory: "go"
+            directory: "implementations/go"
             dockerfile: "Dockerfile"
             test_commands: |
               echo "board" | timeout 30s docker run --rm -i chess-go || true
@@ -39,7 +39,7 @@ jobs:
               echo "quit" | timeout 10s docker run --rm -i chess-go || true
           
           - name: "Dart"
-            directory: "dart"
+            directory: "implementations/dart"
             dockerfile: "Dockerfile"
             test_commands: |
               echo "board" | timeout 30s docker run --rm -i chess-dart || true
@@ -48,7 +48,7 @@ jobs:
               echo "quit" | timeout 10s docker run --rm -i chess-dart || true
           
           - name: "TypeScript"
-            directory: "typescript"
+            directory: "implementations/typescript"
             dockerfile: "Dockerfile"
             test_commands: |
               echo "board" | timeout 30s docker run --rm -i chess-typescript || true
@@ -57,13 +57,13 @@ jobs:
               echo "quit" | timeout 10s docker run --rm -i chess-typescript || true
           
           - name: "Gleam"
-            directory: "gleam"
+            directory: "implementations/gleam"
             dockerfile: "Dockerfile"
             test_commands: |
               timeout 30s docker run --rm chess-gleam || true
           
           - name: "Kotlin"
-            directory: "kotlin"
+            directory: "implementations/kotlin"
             dockerfile: "Dockerfile"
             test_commands: |
               echo "board" | timeout 30s docker run --rm -i chess-kotlin || true
@@ -72,7 +72,7 @@ jobs:
               echo "quit" | timeout 10s docker run --rm -i chess-kotlin || true
           
           - name: "Crystal"
-            directory: "crystal"
+            directory: "implementations/crystal"
             dockerfile: "Dockerfile"
             test_commands: |
               echo "board" | timeout 30s docker run --rm -i chess-crystal || true
@@ -81,7 +81,7 @@ jobs:
               echo "quit" | timeout 10s docker run --rm -i chess-crystal || true
           
           - name: "Ruby"
-            directory: "ruby"
+            directory: "implementations/ruby"
             dockerfile: "Dockerfile"
             test_commands: |
               echo "board" | timeout 30s docker run --rm -i chess-ruby || true
@@ -90,7 +90,7 @@ jobs:
               echo "quit" | timeout 10s docker run --rm -i chess-ruby || true
           
           - name: "Julia"
-            directory: "julia"
+            directory: "implementations/julia"
             dockerfile: "Dockerfile"
             test_commands: |
               echo "board" | timeout 30s docker run --rm -i chess-julia || true
@@ -99,7 +99,7 @@ jobs:
               echo "quit" | timeout 10s docker run --rm -i chess-julia || true
           
           - name: "Haskell"
-            directory: "haskell"
+            directory: "implementations/haskell"
             dockerfile: "Dockerfile"
             test_commands: |
               echo "board" | timeout 30s docker run --rm -i chess-haskell || true
@@ -108,7 +108,7 @@ jobs:
               echo "quit" | timeout 10s docker run --rm -i chess-haskell || true
           
           - name: "Elm"
-            directory: "elm"
+            directory: "implementations/elm"
             dockerfile: "Dockerfile"
             test_commands: |
               timeout 30s docker run --rm chess-elm || true
@@ -215,7 +215,7 @@ jobs:
           echo "====================================="
           
           # Array of languages to benchmark
-          languages=("rust" "go" "dart" "typescript" "gleam" "kotlin" "crystal" "ruby" "julia" "haskell" "elm")
+          languages=("implementations/rust" "implementations/go" "implementations/dart" "implementations/typescript" "implementations/gleam" "implementations/kotlin" "implementations/crystal" "implementations/ruby" "implementations/julia" "implementations/haskell" "implementations/elm")
           
           for lang in "${languages[@]}"; do
             if [ -d "$lang" ] && [ -f "$lang/Dockerfile" ]; then
@@ -224,18 +224,19 @@ jobs:
               cd "$lang"
               
               # Clean any existing images
-              docker rmi chess-$lang 2>/dev/null || true
+              lang_name=$(basename $lang)
+              docker rmi chess-$lang_name 2>/dev/null || true
               
               # Time the build
               start_time=$(date +%s%N)
-              if docker build -t chess-$lang . --quiet; then
+              if docker build -t chess-$lang_name . --quiet; then
                 end_time=$(date +%s%N)
                 build_time_ns=$((end_time - start_time))
                 build_time_ms=$((build_time_ns / 1000000))
                 build_time_s=$((build_time_ms / 1000))
                 
                 # Get image size
-                image_size=$(docker images chess-$lang --format "{{.Size}}")
+                image_size=$(docker images chess-$lang_name --format "{{.Size}}")
                 
                 echo "✅ $lang: ${build_time_s}s (${build_time_ms}ms) - Size: $image_size"
               else
@@ -243,7 +244,7 @@ jobs:
               fi
               
               # Cleanup
-              docker rmi chess-$lang 2>/dev/null || true
+              docker rmi chess-$lang_name 2>/dev/null || true
               cd ..
             else
               echo "⏭️ Skipping $lang - missing files"
