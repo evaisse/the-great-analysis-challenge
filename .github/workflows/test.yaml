@@ -31,40 +31,24 @@ jobs:
       - name: Detect changed implementations
         id: changes
         run: |
-          # Determine if we should test all implementations
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.test_all }}" == "true" ]]; then
-            echo "🔄 Manual trigger: Testing all implementations"
-            CHANGED_IMPLEMENTATIONS="all"
-            HAS_CHANGES="true"
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "🔍 Pull Request: Detecting changes"
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- implementations/ || echo "")
-            
-            if [[ -n "$CHANGED_FILES" ]]; then
-              CHANGED_IMPLEMENTATIONS=$(echo "$CHANGED_FILES" | grep -E "^implementations/[^/]+/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
-              HAS_CHANGES="true"
-            else
-              CHANGED_IMPLEMENTATIONS=""
-              HAS_CHANGES="false"
-            fi
-          else
-            # For manual workflow_dispatch without test_all
-            echo "🔄 Manual trigger: Detecting recent changes"
-            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- implementations/ || echo "")
-            
-            if [[ -n "$CHANGED_FILES" ]]; then
-              CHANGED_IMPLEMENTATIONS=$(echo "$CHANGED_FILES" | grep -E "^implementations/[^/]+/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
-              HAS_CHANGES="true"
-            else
-              CHANGED_IMPLEMENTATIONS=""
-              HAS_CHANGES="false"
-            fi
-          fi
+          echo "=== Detecting Changed Implementations ==="
           
-          echo "Changed implementations: $CHANGED_IMPLEMENTATIONS"
-          echo "Has changes: $HAS_CHANGES"
+          # Use shared change detection script
+          TEST_ALL_FLAG="${{ github.event.inputs.test_all }}"
           
-          echo "implementations=$CHANGED_IMPLEMENTATIONS" >> $GITHUB_OUTPUT
+          RESULT=$(python3 .github/workflows/scripts/detect_changes.py \
+            "${{ github.event_name }}" \
+            "$TEST_ALL_FLAG" \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.sha }}" \
+            "${{ github.event.before }}")
+          
+          echo "Detection result: $RESULT"
+          
+          IMPLEMENTATIONS=$(echo "$RESULT" | python3 -c "import sys, json; print(json.load(sys.stdin)['implementations'])")
+          HAS_CHANGES=$(echo "$RESULT" | python3 -c "import sys, json; print(json.load(sys.stdin)['has_changes'])")
+          
+          echo "implementations=$IMPLEMENTATIONS" >> $GITHUB_OUTPUT
           echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
 
       - name: Set up Python
