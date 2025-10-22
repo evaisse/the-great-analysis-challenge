@@ -154,6 +154,11 @@ def check_chess_meta(meta_path: Path) -> Dict[str, List[str]]:
             if not isinstance(depth, int) or depth < 1 or depth > 10:
                 result['warnings'].append(f"max_ai_depth should be between 1-10, got: {depth}")
         
+        # Check path standards (Prevention Guideline 1)
+        path_issues = check_meta_path_standards(data, meta_path.parent.name)
+        result['errors'].extend(path_issues['errors'])
+        result['warnings'].extend(path_issues['warnings'])
+        
         # Validate JSON structure
         result['info'].append(f"Language: {data.get('language', 'unknown')}")
         result['info'].append(f"Version: {data.get('version', 'unknown')}")
@@ -162,6 +167,147 @@ def check_chess_meta(meta_path: Path) -> Dict[str, List[str]]:
         result['errors'].append(f"Invalid JSON format: {e}")
     except Exception as e:
         result['errors'].append(f"Error reading chess.meta: {e}")
+    
+    return result
+
+def check_meta_path_standards(data: dict, impl_name: str) -> Dict[str, List[str]]:
+    """Check chess.meta path standards (Prevention Guideline 1)."""
+    result = {'errors': [], 'warnings': []}
+    
+    path_fields = ['build', 'run', 'analyze', 'test']
+    
+    for field in path_fields:
+        if field in data:
+            command = data[field]
+            
+            # Check for directory prefixes that indicate wrong working directory assumptions
+            if f'cd {impl_name}' in command:
+                result['errors'].append(f"{field}: Contains 'cd {impl_name}' - should use relative paths from implementation directory")
+            
+            # Check for hardcoded directory paths in commands
+            if f'{impl_name}/' in command:
+                result['warnings'].append(f"{field}: Contains '{impl_name}/' prefix - should use relative paths")
+            
+            # Check for absolute paths
+            if command.startswith('/'):
+                result['warnings'].append(f"{field}: Uses absolute path - should use relative paths")
+            
+            # Check for parent directory references that might indicate wrong working dir
+            if '../' in command:
+                result['warnings'].append(f"{field}: Contains '../' - verify working directory assumptions")
+    
+    return result
+
+def check_package_dependencies(impl_dir: Path, language: str) -> Dict[str, List[str]]:
+    """Check package manager dependencies (Prevention Guidelines 3 & 4)."""
+    result = {'errors': [], 'warnings': [], 'info': []}
+    
+    if language.lower() == 'typescript' or language.lower() == 'javascript':
+        return check_npm_dependencies(impl_dir)
+    elif language.lower() == 'ruby':
+        return check_ruby_dependencies(impl_dir)
+    elif language.lower() == 'python':
+        return check_python_dependencies(impl_dir)
+    else:
+        result['info'].append(f"No dependency checks implemented for {language}")
+    
+    return result
+
+def check_npm_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
+    """Check NPM package.json for required scripts and dependencies."""
+    result = {'errors': [], 'warnings': [], 'info': []}
+    
+    package_json_path = impl_dir / 'package.json'
+    if not package_json_path.exists():
+        result['errors'].append("Missing package.json file")
+        return result
+    
+    try:
+        with open(package_json_path) as f:
+            package_data = json.load(f)
+        
+        # Check required scripts (Prevention Guideline 4)
+        required_scripts = {'build', 'test', 'lint'}
+        scripts = package_data.get('scripts', {})
+        
+        missing_scripts = required_scripts - set(scripts.keys())
+        if missing_scripts:
+            result['errors'].extend([f"Missing required npm script: {script}" for script in missing_scripts])
+        
+        # Check if scripts actually do something meaningful
+        for script in required_scripts:
+            if script in scripts:
+                if scripts[script].strip() in ['', 'echo "No tests specified" && exit 1']:
+                    result['warnings'].append(f"Script '{script}' appears to be placeholder - consider implementing")
+        
+        # Check for common tools used without being declared as dependencies
+        all_commands = ' '.join(scripts.values())
+        tools_to_check = {
+            'tsc': 'typescript',
+            'prettier': 'prettier', 
+            'eslint': 'eslint',
+            'jest': 'jest',
+            'mocha': 'mocha'
+        }
+        
+        dev_deps = package_data.get('devDependencies', {})
+        dependencies = package_data.get('dependencies', {})
+        all_deps = {**dev_deps, **dependencies}
+        
+        for tool, package in tools_to_check.items():
+            if tool in all_commands and package not in all_deps:
+                result['warnings'].append(f"Uses '{tool}' in scripts but '{package}' not in dependencies")
+        
+        result['info'].append(f"Found {len(scripts)} npm scripts")
+        result['info'].append(f"Dependencies: {len(dependencies)}, DevDependencies: {len(dev_deps)}")
+        
+    except json.JSONDecodeError as e:
+        result['errors'].append(f"Invalid package.json format: {e}")
+    except Exception as e:
+        result['errors'].append(f"Error reading package.json: {e}")
+    
+    return result
+
+def check_ruby_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
+    """Check Ruby Gemfile for dependencies."""
+    result = {'errors': [], 'warnings': [], 'info': []}
+    
+    gemfile_path = impl_dir / 'Gemfile'
+    if gemfile_path.exists():
+        try:
+            content = gemfile_path.read_text()
+            
+            # Check for common development gems
+            dev_gems = ['rubocop', 'rspec', 'bundler']
+            for gem in dev_gems:
+                if gem not in content:
+                    result['info'].append(f"Consider adding '{gem}' gem for development")
+            
+            result['info'].append("Found Gemfile")
+            
+        except Exception as e:
+            result['warnings'].append(f"Error reading Gemfile: {e}")
+    else:
+        result['warnings'].append("No Gemfile found - consider adding for dependency management")
+    
+    return result
+
+def check_python_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
+    """Check Python requirements for dependencies."""
+    result = {'errors': [], 'warnings': [], 'info': []}
+    
+    req_files = ['requirements.txt', 'requirements-dev.txt', 'pyproject.toml']
+    found_req_file = False
+    
+    for req_file in req_files:
+        req_path = impl_dir / req_file
+        if req_path.exists():
+            found_req_file = True
+            result['info'].append(f"Found {req_file}")
+            break
+    
+    if not found_req_file:
+        result['warnings'].append("No requirements file found - consider adding for dependency management")
     
     return result
 
@@ -216,6 +362,21 @@ def verify_implementation(impl_dir: Path) -> Dict:
         result['summary']['errors'] += len(meta_result['errors'])
         result['summary']['warnings'] += len(meta_result['warnings'])
         result['summary']['info'] += len(meta_result['info'])
+        
+        # Check package dependencies (Prevention Guidelines 3 & 4)
+        # Extract language from chess.meta data
+        try:
+            meta_content = meta_path.read_text()
+            meta_data = json.loads(meta_content)
+            language = meta_data.get('language', 'unknown')
+        except:
+            language = 'unknown'
+        
+        dependency_result = check_package_dependencies(impl_dir, language)
+        result['dependencies'] = dependency_result
+        result['summary']['errors'] += len(dependency_result['errors'])
+        result['summary']['warnings'] += len(dependency_result['warnings'])
+        result['summary']['info'] += len(dependency_result['info'])
     
     # Determine overall status
     if result['summary']['errors'] == 0:
@@ -282,6 +443,23 @@ def print_implementation_report(result: Dict):
     if meta.get('info'):
         print("\n📝 Chess.meta info:")
         for info in meta['info']:
+            print(f"   - {info}")
+    
+    # Dependencies issues (Prevention Guidelines 3 & 4)
+    deps = result.get('dependencies', {})
+    if deps.get('errors'):
+        print("\n❌ Dependency errors:")
+        for error in deps['errors']:
+            print(f"   - {error}")
+    
+    if deps.get('warnings'):
+        print("\n⚠️  Dependency warnings:")
+        for warning in deps['warnings']:
+            print(f"   - {warning}")
+    
+    if deps.get('info'):
+        print("\n📦 Dependency info:")
+        for info in deps['info']:
             print(f"   - {info}")
 
 def print_summary_report(results: List[Dict]):
