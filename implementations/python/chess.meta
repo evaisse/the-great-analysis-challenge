@@ -5,6 +5,7 @@
   "build": "python3 -m py_compile chess.py",
   "run": "python3 chess.py",
   "analyze": "python3 analyze.py",
+  "test": "python3 -m pytest test_chess.py || python3 -m unittest discover -s . -p 'test*.py'",
   "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
   "max_ai_depth": 5,
   "estimated_perft4_ms": 1000
