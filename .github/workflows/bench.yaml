@@ -93,26 +93,7 @@ jobs:
 
       - name: Run structure verification
         id: verify
-        run: |
-          echo "=== Running Implementation Structure Verification ==="
-          python3 test/verify_implementations.py > verification_results.txt 2>&1
-          
-          # Count implementations by status
-          EXCELLENT=$(grep -c "🟢.*excellent" verification_results.txt || echo "0")
-          GOOD=$(grep -c "🟡.*good" verification_results.txt || echo "0")
-          NEEDS_WORK=$(grep -c "🔴.*needs_work" verification_results.txt || echo "0")
-          TOTAL=$((EXCELLENT + GOOD + NEEDS_WORK))
-          
-          echo "excellent_count=$EXCELLENT" >> $GITHUB_OUTPUT
-          echo "good_count=$GOOD" >> $GITHUB_OUTPUT
-          echo "needs_work_count=$NEEDS_WORK" >> $GITHUB_OUTPUT
-          echo "total_count=$TOTAL" >> $GITHUB_OUTPUT
-          
-          echo "=== Verification Summary ==="
-          echo "Total implementations: $TOTAL"
-          echo "🟢 Excellent: $EXCELLENT"
-          echo "🟡 Good: $GOOD"
-          echo "🔴 Needs work: $NEEDS_WORK"
+        run: .github/workflows/scripts/count_verification_results.sh
 
   benchmark:
     name: Run Benchmarks
@@ -143,21 +124,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Run benchmark for ${{ matrix.name }}
-        run: |
-          echo "🏁 Running benchmark for ${{ matrix.name }}..."
-          
-          # Create reports directory
-          mkdir -p benchmark_reports
-          
-          # Run performance test for this specific implementation
-          python3 test/performance_test.py \
-            --impl "${{ matrix.directory }}" \
-            --timeout 900 \
-            --output "benchmark_reports/performance_report_${{ matrix.engine }}.txt" \
-            --json "benchmark_reports/performance_data_${{ matrix.engine }}.json" \
-            > "benchmark_reports/benchmark_output_${{ matrix.engine }}.txt" 2>&1 || true
-          
-          echo "✅ Benchmark completed for ${{ matrix.name }}"
+        run: .github/workflows/scripts/run_benchmark.sh ${{ matrix.engine }} ${{ matrix.directory }}
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
@@ -190,37 +157,11 @@ jobs:
           path: benchmark_artifacts/
 
       - name: Combine benchmark results
-        run: |
-          echo "=== Combining Benchmark Results ==="
-          
-          # Create combined reports directory
-          mkdir -p benchmark_reports
-          
-          # Copy all individual reports
-          find benchmark_artifacts/ -name "*.txt" -exec cp {} benchmark_reports/ \;
-          find benchmark_artifacts/ -name "*.json" -exec cp {} benchmark_reports/ \;
-          
-          # Combine JSON reports using existing script
-          python3 .github/workflows/scripts/combine_benchmark_results.py
-          
-          echo "✅ Benchmark results combined"
+        run: .github/workflows/scripts/combine_benchmark_artifacts.sh
 
       - name: Update README status table
         id: update
-        run: |
-          echo "=== Updating README Status Table ==="
-          
-          # Update README using existing script
-          python3 .github/workflows/scripts/update_readme_status.py
-          
-          # Check if README was modified
-          if git diff --quiet README.md; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "⚠️ README.md was not modified"
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "✅ README.md has been updated"
-          fi
+        run: .github/workflows/scripts/update_readme_and_check.sh
 
   release:
     name: Create Release
@@ -241,66 +182,7 @@ jobs:
 
       - name: Determine version and commit changes
         id: version
-        run: |
-          # Get current version
-          CURRENT_VERSION=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          
-          # Determine version bump
-          VERSION_TYPE="${{ github.event.inputs.version_type }}"
-          if [[ -z "$VERSION_TYPE" ]]; then
-            VERSION_TYPE="patch"
-          fi
-          echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
-          
-          # Calculate new version
-          IFS='.' read -r -a version_parts <<< "${CURRENT_VERSION#v}"
-          MAJOR=${version_parts[0]:-0}
-          MINOR=${version_parts[1]:-0}
-          PATCH=${version_parts[2]:-0}
-          
-          case $VERSION_TYPE in
-            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-            patch) PATCH=$((PATCH + 1)) ;;
-          esac
-          
-          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          
-          # Configure git and commit changes if README was updated
-          if [[ "${{ needs.combine-results.outputs.readme-changed }}" == "true" ]]; then
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            
-            # Copy benchmark reports to repo
-            mkdir -p benchmark_reports
-            find benchmark_artifacts/ -name "*.txt" -exec cp {} benchmark_reports/ \;
-            find benchmark_artifacts/ -name "*.json" -exec cp {} benchmark_reports/ \;
-            
-            git add benchmark_reports/ README.md
-            
-            git commit -m "$(cat <<'EOF'
-chore: update implementation status from benchmark suite
-
-Benchmark results summary:
-- Total implementations: ${{ needs.validation.outputs.total-count }}
-- 🟢 Excellent: ${{ needs.validation.outputs.excellent-count }}
-- 🟡 Good: ${{ needs.validation.outputs.good-count }}  
-- 🔴 Needs work: ${{ needs.validation.outputs.needs-work-count }}
-
-Performance testing completed with status updates.
-EOF
-)"
-            
-            git push origin master
-            echo "✅ Changes committed and pushed"
-          fi
-          
-          # Create and push tag
-          git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION - Benchmark Update"
-          git push origin "$NEW_VERSION"
-          echo "✅ Release tag $NEW_VERSION created"
+        run: .github/workflows/scripts/create_release.sh "${{ github.event.inputs.version_type }}" "${{ needs.combine-results.outputs.readme-changed }}" "${{ needs.validation.outputs.excellent-count }}" "${{ needs.validation.outputs.good-count }}" "${{ needs.validation.outputs.needs-work-count }}" "${{ needs.validation.outputs.total-count }}"
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
