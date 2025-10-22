@@ -17,6 +17,7 @@ test:
 # Static analysis and code quality
 analyze:
 	@echo "Running TypeScript static analysis..."
+	npm install
 	npm run lint || true
 	npx tsc --noEmit || true
 	npx prettier --check src/*.ts || true
