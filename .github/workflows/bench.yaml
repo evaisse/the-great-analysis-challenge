@@ -168,8 +168,12 @@ jobs:
       - name: Determine version and commit changes
         id: version
         run: |
+          VERSION_TYPE="${{ github.event.inputs.version_type }}"
+          if [ -z "$VERSION_TYPE" ]; then
+            VERSION_TYPE="patch"
+          fi
           ./workflow create-release \
-            --version-type "${{ github.event.inputs.version_type }}" \
+            --version-type "$VERSION_TYPE" \
             --readme-changed "${{ needs.combine-results.outputs.readme-changed }}" \
             --excellent-count "${{ needs.validation.outputs.excellent-count }}" \
             --good-count "${{ needs.validation.outputs.good-count }}" \
