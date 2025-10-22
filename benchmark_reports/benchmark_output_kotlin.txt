@@ -1,0 +1,56 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing kotlin implementation
+Path: implementations/kotlin
+============================================================
+🧹 Clearing build cache...
+⚠️  make clean returned non-zero exit code: Erreur : impossible de trouver ou de charger la classe principale "-Xdock:name=Gradle"
+Causé par : java.lang.ClassNotFoundException: "-Xdock:name=Gradle"
+make: *** [clean] Error 1
+
+✅ Cache clearing completed
+🔍 Running static analysis...
+✅ Analysis completed in 0.26s
+🔨 Building implementation...
+❌ Build failed in 0.13s
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:45
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+kotlin       failed         0.3s     0.1s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: KOTLIN
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.26s
+  Build Seconds: 0.13s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Build failed: Erreur : impossible de trouver ou de charger la classe principale "-Xdock:name=Gradle"
+Causé par : java.lang.ClassNotFoundException: "-Xdock:name=Gradle"
+make: *** [build] Error 1
+
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================
+
+📄 Text report saved to benchmark_reports/performance_report_kotlin.txt
+📄 JSON results saved to benchmark_reports/performance_data_kotlin.json
+
+❌ 1 implementation(s) failed testing

@@ -1,0 +1,52 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing julia implementation
+Path: implementations/julia
+============================================================
+🧹 Clearing build cache...
+✅ Local cache cleared with make clean
+✅ Cache clearing completed
+🔍 Running static analysis...
+✅ Analysis completed in 0.03s
+🔨 Building implementation...
+❌ Build failed in 0.02s
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:44
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+julia        failed         0.0s     0.0s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: JULIA
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.03s
+  Build Seconds: 0.02s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Build failed: /bin/sh: julia: command not found
+make: *** [build] Error 127
+
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================
+
+📄 Text report saved to benchmark_reports/performance_report_julia.txt
+📄 JSON results saved to benchmark_reports/performance_data_julia.json
+
+❌ 1 implementation(s) failed testing

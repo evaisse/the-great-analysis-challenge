@@ -1,0 +1,60 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing mojo implementation
+Path: implementations/mojo
+============================================================
+🧹 Clearing build cache...
+✅ Local cache cleared with make clean
+✅ Cache clearing completed
+🔍 Running static analysis...
+✅ Analysis completed in 0.03s
+🔨 Building implementation...
+✅ Build completed in 0.03s
+♟️  Running chess client tests...
+🐳 Running Docker tests...
+  Building Docker image...
+  ✅ Docker build completed in 0.56s
+  ❌ Docker test failed in 0.25s
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:46
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+mojo         completed      0.0s     0.0s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: MOJO
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.03s
+  Build Seconds: 0.03s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+DOCKER TESTS:
+  Build: ✅ (0.56s)
+  Test: ❌ (0.25s)
+
+ERRORS:
+  ❌ Failed to start chess engine
+  ❌ Docker test failed: timeout: failed to run command 'make': No such file or directory
+
+
+================================================================================
+
+📄 Text report saved to benchmark_reports/performance_report_mojo.txt
+📄 JSON results saved to benchmark_reports/performance_data_mojo.json
+
+✅ All 1 implementation(s) completed successfully

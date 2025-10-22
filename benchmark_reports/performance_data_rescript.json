@@ -1,0 +1,51 @@
+[
+  {
+    "language": "rescript",
+    "path": "implementations/rescript",
+    "metadata": {
+      "language": "rescript",
+      "version": "10.0",
+      "author": "ReScript Implementation",
+      "build": "npm install && npm run build",
+      "run": "node lib/js/src/Chess.js",
+      "analyze": "npx rescript build",
+      "test": "node lib/js/src/Chess.js",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 4,
+      "estimated_perft4_ms": 1500
+    },
+    "timings": {
+      "analyze_seconds": 0.14067602157592773,
+      "build_seconds": 3.4431731700897217
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {},
+    "test_results": {},
+    "errors": [
+      "Analysis warnings: sh: rescript: command not found\nmake: *** [analyze] Error 127\n",
+      "Build failed: \n  Warning number 3\n  /Users/evaisse/Sites/projects/the-great-analysis-challenge/implementations/rescript/bsconfig.json:8:20-22\n\n   6 \u2506   \"subdirs\": true\n   7 \u2506 },\n   8 \u2506 \"package-specs\": {\n   9 \u2506   \"module\": \"es6\",\n  10 \u2506   \"in-source\": true\n  11 \u2506 },\n\n  deprecated: Option \"es6\" is deprecated. Use \"esmodule\" instead.\n\nmake: *** [build] Error 1\n",
+      "Test failed: Build failed with exit code 2"
+    ],
+    "status": "failed"
+  }
+]

@@ -1,0 +1,30 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:42
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+dart         failed         1.0s    22.1s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: DART
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 1.00s
+  Build Seconds: 22.10s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Build failed: Got socket error trying to find package collection at https://jfrog.int.bourso.net/artifactory/api/pub/web-v-pub/.
+make: *** [build] Error 69
+
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================

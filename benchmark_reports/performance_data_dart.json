@@ -1,0 +1,50 @@
+[
+  {
+    "language": "dart",
+    "path": "implementations/dart",
+    "metadata": {
+      "language": "dart",
+      "version": "3.0",
+      "author": "Dart Implementation",
+      "build": "dart pub get && dart compile exe bin/main.dart -o bin/chess_engine",
+      "run": "./bin/chess_engine",
+      "analyze": "dart analyze && dart format --set-exit-if-changed .",
+      "test": "dart test",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 900
+    },
+    "timings": {
+      "analyze_seconds": 1.002135992050171,
+      "build_seconds": 22.101218223571777
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {},
+    "test_results": {},
+    "errors": [
+      "Build failed: Got socket error trying to find package collection at https://jfrog.int.bourso.net/artifactory/api/pub/web-v-pub/.\nmake: *** [build] Error 69\n",
+      "Test failed: Build failed with exit code 2"
+    ],
+    "status": "failed"
+  }
+]

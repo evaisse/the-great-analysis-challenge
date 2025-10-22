@@ -1,0 +1,81 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing elm implementation
+Path: implementations/elm
+============================================================
+🧹 Clearing build cache...
+✅ Local cache cleared with make clean
+✅ Cache clearing completed
+🔍 Running static analysis...
+✅ Analysis completed in 0.72s
+🔨 Building implementation...
+❌ Build failed in 0.85s
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:43
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+elm          failed         0.7s     0.8s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: ELM
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.72s
+  Build Seconds: 0.85s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Analysis warnings: -- TYPE MISMATCH ----------------------------------------- src/MoveGenerator.elm
+
+The 2nd argument to `setPiece` is not what I expect:
+
+477|                 |> setPiece move.to (Just finalPiece)
+                                          ^^^^^^^^^^^^^^^
+This `Just` call produces:
+
+    Maybe { color : Color, pieceType : PieceType }
+
+But `setPiece` needs the 2nd argument to be:
+
+    Square
+
+Hint: I always figure out the argument types from left to right. If an argument
+is acceptable, I assume it is
+  ❌ Build failed: -- TYPE MISMATCH ----------------------------------------- src/MoveGenerator.elm
+
+The 2nd argument to `setPiece` is not what I expect:
+
+477|                 |> setPiece move.to (Just finalPiece)
+                                          ^^^^^^^^^^^^^^^
+This `Just` call produces:
+
+    Maybe { color : Color, pieceType : PieceType }
+
+But `setPiece` needs the 2nd argument to be:
+
+    Square
+
+Hint: I always figure out the argument types from left to right. If an argument
+is acceptable, I assume it is
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================
+
+📄 Text report saved to benchmark_reports/performance_report_elm.txt
+📄 JSON results saved to benchmark_reports/performance_data_elm.json
+
+❌ 1 implementation(s) failed testing

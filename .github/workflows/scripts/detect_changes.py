@@ -27,7 +27,10 @@ def detect_changes(event_name: str, test_all: str = "false",
             else:
                 cmd = ["git", "diff", "--name-only", "HEAD~1", "HEAD", "--", "implementations/"]
             
+            print(f"🔧 Running: {' '.join(cmd)}")
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            if result.stdout.strip():
+                print(f"📤 Changed files:\n{result.stdout}")
             changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
             
             # Extract implementation names

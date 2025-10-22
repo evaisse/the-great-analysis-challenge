@@ -1,0 +1,51 @@
+[
+  {
+    "language": "gleam",
+    "path": "implementations/gleam",
+    "metadata": {
+      "language": "gleam",
+      "version": "1.2.1",
+      "author": "Gleam Implementation",
+      "build": "gleam build",
+      "run": "gleam run",
+      "analyze": "gleam format --check && gleam check",
+      "test": "gleam test",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800
+    },
+    "timings": {
+      "analyze_seconds": 0.027877092361450195,
+      "build_seconds": 0.015463829040527344
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {},
+    "test_results": {},
+    "errors": [
+      "Analysis warnings: /bin/sh: gleam: command not found\nmake: gleam: No such file or directory\nmake: *** [analyze] Error 1\n",
+      "Build failed: make: gleam: No such file or directory\nmake: *** [build] Error 1\n",
+      "Test failed: Build failed with exit code 2"
+    ],
+    "status": "failed"
+  }
+]

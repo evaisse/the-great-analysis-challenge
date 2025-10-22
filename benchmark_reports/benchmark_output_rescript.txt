@@ -1,0 +1,67 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing rescript implementation
+Path: implementations/rescript
+============================================================
+🧹 Clearing build cache...
+✅ Local cache cleared with make clean
+✅ Cache clearing completed
+🔍 Running static analysis...
+✅ Analysis completed in 0.14s
+🔨 Building implementation...
+❌ Build failed in 3.44s
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:52
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+rescript     failed         0.1s     3.4s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: RESCRIPT
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.14s
+  Build Seconds: 3.44s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Analysis warnings: sh: rescript: command not found
+make: *** [analyze] Error 127
+
+  ❌ Build failed: 
+  Warning number 3
+  /Users/evaisse/Sites/projects/the-great-analysis-challenge/implementations/rescript/bsconfig.json:8:20-22
+
+   6 ┆   "subdirs": true
+   7 ┆ },
+   8 ┆ "package-specs": {
+   9 ┆   "module": "es6",
+  10 ┆   "in-source": true
+  11 ┆ },
+
+  deprecated: Option "es6" is deprecated. Use "esmodule" instead.
+
+make: *** [build] Error 1
+
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================
+
+📄 Text report saved to benchmark_reports/performance_report_rescript.txt
+📄 JSON results saved to benchmark_reports/performance_data_rescript.json
+
+❌ 1 implementation(s) failed testing

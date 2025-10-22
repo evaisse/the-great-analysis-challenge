@@ -1,0 +1,30 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:18
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+crystal      failed         0.0s     0.0s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: CRYSTAL
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.04s
+  Build Seconds: 0.02s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Build failed: make: crystal: No such file or directory
+make: *** [build] Error 1
+
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================

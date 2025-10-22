@@ -1,0 +1,116 @@
+[
+  {
+    "language": "rust",
+    "path": "implementations/rust",
+    "metadata": {
+      "language": "rust",
+      "version": "1.70",
+      "author": "Rust Implementation",
+      "build": "cd rust && cargo build --release",
+      "run": "cd rust && cargo run --release --bin chess",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 600
+    },
+    "timings": {
+      "analyze_seconds": 0.8988640308380127,
+      "build_seconds": 0.5665981769561768,
+      "test_seconds": 0.518096923828125
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {
+      "build_time": 7.743052005767822,
+      "build_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        {
+          "test": "Basic Movement",
+          "output": "\n\n\n\n\n"
+        },
+        {
+          "test": "Castling",
+          "output": "\n\n"
+        },
+        {
+          "test": "En Passant",
+          "output": "\n\n"
+        },
+        {
+          "test": "Checkmate Detection",
+          "output": "\n\n\n\n"
+        },
+        {
+          "test": "AI Move Generation",
+          "output": "\n"
+        },
+        {
+          "test": "Invalid Move Handling",
+          "output": "\n"
+        },
+        {
+          "test": "Pawn Promotion",
+          "output": "\n\n"
+        }
+      ],
+      "performance": {},
+      "errors": [
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe"
+      ]
+    },
+    "errors": [
+      "Docker build failed: #0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 639B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/ubuntu:24.04\n#2 DONE 0.0s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [1/6] FROM docker.io/library/ubuntu:24.04\n#4 CACHED\n\n#5 [internal] load build context\n#5 transferring context: 2.52MB 0.0s done\n#5 DONE 0.0s\n\n#6 [2/6] RUN apt-get update && apt-g"
+    ],
+    "status": "completed"
+  }
+]

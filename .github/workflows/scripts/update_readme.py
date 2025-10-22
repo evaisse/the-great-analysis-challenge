@@ -102,8 +102,9 @@ def update_readme() -> bool:
             print("✅ README status table updated")
         
         # Check if README was modified
-        result = subprocess.run(["git", "diff", "--quiet", "README.md"], 
-                              capture_output=True, check=False)
+        cmd = ["git", "diff", "--quiet", "README.md"]
+        print(f"🔧 Running: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, check=False)
         readme_changed = result.returncode != 0
         
         if readme_changed:

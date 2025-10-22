@@ -1,0 +1,58 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing dart implementation
+Path: implementations/dart
+============================================================
+🧹 Clearing build cache...
+⚠️  make clean returned non-zero exit code: Could not find a command named "clean".
+
+Usage: dart <command|dart-file> [arguments]
+
+Global options:
+-v, --verbose               Show additional command output.
+    --version               Print the 
+✅ Cache clearing completed
+🔍 Running static analysis...
+✅ Analysis completed in 1.00s
+🔨 Building implementation...
+❌ Build failed in 22.10s
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:42
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+dart         failed         1.0s    22.1s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: DART
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 1.00s
+  Build Seconds: 22.10s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Build failed: Got socket error trying to find package collection at https://jfrog.int.bourso.net/artifactory/api/pub/web-v-pub/.
+make: *** [build] Error 69
+
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================
+
+📄 Text report saved to benchmark_reports/performance_report_dart.txt
+📄 JSON results saved to benchmark_reports/performance_data_dart.json
+
+❌ 1 implementation(s) failed testing

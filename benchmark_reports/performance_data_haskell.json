@@ -1,0 +1,48 @@
+[
+  {
+    "language": "haskell",
+    "path": "implementations/haskell",
+    "metadata": {
+      "language": "haskell",
+      "version": "9.0",
+      "author": "Haskell Implementation",
+      "build": "cabal build",
+      "run": "./chess",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000
+    },
+    "timings": {
+      "analyze_seconds": 0.04169893264770508,
+      "build_seconds": 0.014991998672485352
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {},
+    "test_results": {},
+    "errors": [
+      "Build failed: make: cabal: No such file or directory\nmake: *** [build] Error 1\n",
+      "Test failed: Build failed with exit code 2"
+    ],
+    "status": "failed"
+  }
+]

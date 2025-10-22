@@ -14,8 +14,15 @@ def verify_implementations() -> Dict:
     
     # Run verification script
     try:
-        result = subprocess.run(["python3", "test/verify_implementations.py"], 
-                              capture_output=True, text=True, check=False)
+        cmd = ["python3", "test/verify_implementations.py"]
+        print(f"🔧 Running: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        
+        if result.stdout.strip():
+            print(f"📤 Verification output:\n{result.stdout}")
+        if result.stderr.strip():
+            print(f"⚠️ Verification stderr:\n{result.stderr}")
+            
         with open("verification_results.txt", "w") as f:
             f.write(result.stdout)
             if result.stderr:

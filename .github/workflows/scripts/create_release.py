@@ -17,9 +17,11 @@ def create_release(version_type: str = "patch", readme_changed: str = "false",
     
     # Get current version
     try:
-        result = subprocess.run([
-            "git", "tag", "--sort=-version:refname"
-        ], capture_output=True, text=True, check=True)
+        cmd = ["git", "tag", "--sort=-version:refname"]
+        print(f"🔧 Running: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        if result.stdout.strip():
+            print(f"📤 Available tags:\n{result.stdout}")
         tags = [line for line in result.stdout.split('\n') 
                if re.match(r'^v\d+\.\d+\.\d+$', line.strip())]
         current_version = tags[0] if tags else "v0.0.0"
@@ -46,8 +48,13 @@ def create_release(version_type: str = "patch", readme_changed: str = "false",
     
     # Configure git and commit changes if README was updated
     if readme_changed == "true":
-        subprocess.run(["git", "config", "--local", "user.email", "action@github.com"], check=True)
-        subprocess.run(["git", "config", "--local", "user.name", "GitHub Action"], check=True)
+        cmd1 = ["git", "config", "--local", "user.email", "action@github.com"]
+        print(f"🔧 Running: {' '.join(cmd1)}")
+        subprocess.run(cmd1, check=True)
+        
+        cmd2 = ["git", "config", "--local", "user.name", "GitHub Action"]
+        print(f"🔧 Running: {' '.join(cmd2)}")
+        subprocess.run(cmd2, check=True)
         
         # Copy benchmark reports to repo
         os.makedirs("benchmark_reports", exist_ok=True)
@@ -60,7 +67,9 @@ def create_release(version_type: str = "patch", readme_changed: str = "false",
                 except Exception:
                     pass
         
-        subprocess.run(["git", "add", "benchmark_reports/", "README.md"], check=True)
+        cmd = ["git", "add", "benchmark_reports/", "README.md"]
+        print(f"🔧 Running: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True)
         
         commit_message = f"""chore: update implementation status from benchmark suite
 
@@ -72,13 +81,23 @@ Benchmark results summary:
 
 Performance testing completed with status updates."""
         
-        subprocess.run(["git", "commit", "-m", commit_message], check=True)
-        subprocess.run(["git", "push", "origin", "master"], check=True)
+        cmd = ["git", "commit", "-m", commit_message]
+        print(f"🔧 Running: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True)
+        
+        cmd = ["git", "push", "origin", "master"]
+        print(f"🔧 Running: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True)
         print("✅ Changes committed and pushed")
     
     # Create and push tag
-    subprocess.run(["git", "tag", "-a", new_version, "-m", f"Release {new_version} - Benchmark Update"], check=True)
-    subprocess.run(["git", "push", "origin", new_version], check=True)
+    cmd = ["git", "tag", "-a", new_version, "-m", f"Release {new_version} - Benchmark Update"]
+    print(f"🔧 Running: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+    
+    cmd = ["git", "push", "origin", new_version]
+    print(f"🔧 Running: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
     print(f"✅ Release tag {new_version} created")
     
     return True
