@@ -223,7 +223,7 @@ class ImplementationTester:
                 result = subprocess.run(
                     cmd, 
                     cwd=self.impl_path, 
-                    capture_output=True, 
+                    stderr=subprocess.PIPE,
                     text=True,
                     timeout=self.analyze_timeout
                 )
@@ -265,7 +265,7 @@ class ImplementationTester:
                 result = subprocess.run(
                     cmd, 
                     cwd=self.impl_path, 
-                    capture_output=True, 
+                    stderr=subprocess.PIPE,
                     text=True,
                     timeout=self.build_timeout
                 )
@@ -292,7 +292,7 @@ class ImplementationTester:
                     result = subprocess.run(
                         cmd, 
                         cwd=self.impl_path, 
-                        capture_output=True, 
+                        stderr=subprocess.PIPE,
                         text=True,
                         timeout=self.build_timeout
                     )
