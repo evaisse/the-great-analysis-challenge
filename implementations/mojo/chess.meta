@@ -4,7 +4,10 @@
   "author": "Mojo Implementation",
   "build": "mojo chess.mojo",
   "run": "mojo chess.mojo",
-  "features": ["ai", "fen", "move_validation"],
+  "analyze": "mojo chess.mojo",
+  "test": "mojo chess.mojo",
+  "features": ["ai", "fen", "castling", "en_passant", "promotion"],
   "max_ai_depth": 5,
-  "estimated_perft4_ms": 800
+  "estimated_perft4_ms": 1000,
+  "notes": "Implementation has castling, en_passant, and promotion in lib/ but missing perft function"
 }

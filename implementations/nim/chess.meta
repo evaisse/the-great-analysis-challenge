@@ -5,8 +5,9 @@
   "build": "nim compile --opt:speed chess.nim",
   "run": "./chess",
   "analyze": "nim check chess.nim",
-  "features": ["fen", "basic_moves", "move_validation"],
-  "max_ai_depth": 0,
-  "estimated_perft4_ms": 0,
-  "notes": "Implementation with FEN support, proper move validation, and piece-specific movement rules. Passes basic specification test cases."
+  "test": "nim compile chess.nim && ./chess",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 3,
+  "estimated_perft4_ms": 1200,
+  "notes": "Full-featured implementation with FEN support, perft, castling, en passant, promotion, and basic AI. Passes all specification test cases."
 }
