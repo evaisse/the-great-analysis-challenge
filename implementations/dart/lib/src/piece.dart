@@ -9,7 +9,8 @@ class Piece {
   Piece(this.type, this.color);
 
   factory Piece.fromChar(String char) {
-    final color = char.toUpperCase() == char ? PieceColor.white : PieceColor.black;
+    final color =
+        char.toUpperCase() == char ? PieceColor.white : PieceColor.black;
     final type = charToType(char.toLowerCase());
     return Piece(type, color);
   }

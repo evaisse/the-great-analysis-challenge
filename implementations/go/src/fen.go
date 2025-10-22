@@ -8,7 +8,7 @@ import (
 
 func (gs *GameState) ToFEN() string {
 	var fenParts []string
-	
+
 	// Board position
 	var boardStr strings.Builder
 	for rank := 7; rank >= 0; rank-- {
@@ -33,14 +33,14 @@ func (gs *GameState) ToFEN() string {
 		}
 	}
 	fenParts = append(fenParts, boardStr.String())
-	
+
 	// Active color
 	if gs.ActiveColor == White {
 		fenParts = append(fenParts, "w")
 	} else {
 		fenParts = append(fenParts, "b")
 	}
-	
+
 	// Castling availability
 	var castling strings.Builder
 	if gs.CastlingRights[White][KingsideCastle] {
@@ -59,20 +59,20 @@ func (gs *GameState) ToFEN() string {
 		castling.WriteRune('-')
 	}
 	fenParts = append(fenParts, castling.String())
-	
+
 	// En passant target
 	if gs.EnPassantTarget != nil {
 		fenParts = append(fenParts, gs.EnPassantTarget.ToAlgebraic())
 	} else {
 		fenParts = append(fenParts, "-")
 	}
-	
+
 	// Halfmove clock
 	fenParts = append(fenParts, strconv.Itoa(gs.HalfmoveClock))
-	
+
 	// Fullmove number
 	fenParts = append(fenParts, strconv.Itoa(gs.FullmoveNumber))
-	
+
 	return strings.Join(fenParts, " ")
 }
 
@@ -81,24 +81,24 @@ func (gs *GameState) FromFEN(fen string) error {
 	if len(parts) != 6 {
 		return fmt.Errorf("invalid FEN: expected 6 parts, got %d", len(parts))
 	}
-	
+
 	// Clear the board
 	for rank := 0; rank < 8; rank++ {
 		for file := 0; file < 8; file++ {
 			gs.Board[rank][file] = Piece{Type: Empty}
 		}
 	}
-	
+
 	// Parse board position
 	ranks := strings.Split(parts[0], "/")
 	if len(ranks) != 8 {
 		return fmt.Errorf("invalid FEN: expected 8 ranks, got %d", len(ranks))
 	}
-	
+
 	for rankIdx, rankStr := range ranks {
 		rank := 7 - rankIdx // FEN starts from rank 8 (index 7)
 		file := 0
-		
+
 		for _, char := range rankStr {
 			if char >= '1' && char <= '8' {
 				// Empty squares
@@ -117,12 +117,12 @@ func (gs *GameState) FromFEN(fen string) error {
 				file++
 			}
 		}
-		
+
 		if file != 8 {
 			return fmt.Errorf("invalid FEN: incomplete rank %d", rankIdx)
 		}
 	}
-	
+
 	// Parse active color
 	switch parts[1] {
 	case "w":
@@ -132,7 +132,7 @@ func (gs *GameState) FromFEN(fen string) error {
 	default:
 		return fmt.Errorf("invalid active color in FEN: %s", parts[1])
 	}
-	
+
 	// Parse castling rights
 	gs.CastlingRights = [2][2]bool{{false, false}, {false, false}}
 	if parts[2] != "-" {
@@ -151,7 +151,7 @@ func (gs *GameState) FromFEN(fen string) error {
 			}
 		}
 	}
-	
+
 	// Parse en passant target
 	if parts[3] != "-" {
 		square := AlgebraicToSquare(parts[3])
@@ -162,28 +162,28 @@ func (gs *GameState) FromFEN(fen string) error {
 	} else {
 		gs.EnPassantTarget = nil
 	}
-	
+
 	// Parse halfmove clock
 	halfmove, err := strconv.Atoi(parts[4])
 	if err != nil {
 		return fmt.Errorf("invalid halfmove clock in FEN: %s", parts[4])
 	}
 	gs.HalfmoveClock = halfmove
-	
+
 	// Parse fullmove number
 	fullmove, err := strconv.Atoi(parts[5])
 	if err != nil {
 		return fmt.Errorf("invalid fullmove number in FEN: %s", parts[5])
 	}
 	gs.FullmoveNumber = fullmove
-	
+
 	return nil
 }
 
 func pieceFromSymbol(symbol rune) (Piece, error) {
 	var pieceType PieceType
 	var color Color
-	
+
 	// Determine color (uppercase = white, lowercase = black)
 	if symbol >= 'A' && symbol <= 'Z' {
 		color = White
@@ -193,7 +193,7 @@ func pieceFromSymbol(symbol rune) (Piece, error) {
 	} else {
 		return Piece{}, fmt.Errorf("invalid piece symbol: %c", symbol)
 	}
-	
+
 	// Determine piece type
 	switch symbol {
 	case 'p':
@@ -211,7 +211,7 @@ func pieceFromSymbol(symbol rune) (Piece, error) {
 	default:
 		return Piece{}, fmt.Errorf("invalid piece symbol: %c", symbol)
 	}
-	
+
 	return NewPiece(pieceType, color), nil
 }
 

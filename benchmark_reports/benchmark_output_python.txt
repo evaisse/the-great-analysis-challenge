@@ -8,11 +8,14 @@ Testing python implementation
 Path: implementations/python
 ============================================================
 🧹 Clearing build cache...
+🔧 Running: make clean
 ✅ Local cache cleared with make clean
 ✅ Cache clearing completed
 🔍 Running static analysis...
-✅ Analysis completed in 0.21s
+🔧 Running: make analyze
+✅ Analysis completed in 0.19s
 🔨 Building implementation...
+🔧 Running: make build
 ✅ Build completed in 0.11s
 ♟️  Running chess client tests...
   ❌ Basic Movement
@@ -25,12 +28,14 @@ Path: implementations/python
 ✅ Tests completed in 0.53s (0 passed, 7 failed)
 🐳 Running Docker tests...
   Building Docker image...
-  ✅ Docker build completed in 0.42s
+  🔧 Running: docker build -t chess-python .
+  ✅ Docker build completed in 0.54s
+  🔧 Running: docker run --rm -i chess-python sh -c echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | timeout 30s make test
   ✅ Docker test completed in 0.73s
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:11:48
+Generated: 2025-10-22 22:49:10
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -44,7 +49,7 @@ DETAILED RESULTS: PYTHON
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.21s
+  Analyze Seconds: 0.19s
   Build Seconds: 0.11s
   Test Seconds: 0.53s
 
@@ -64,7 +69,7 @@ CHESS ENGINE TESTS: 0 passed, 7 failed
     ❌ Pawn Promotion
 
 DOCKER TESTS:
-  Build: ✅ (0.42s)
+  Build: ✅ (0.54s)
   Test: ✅ (0.73s)
 
 ================================================================================

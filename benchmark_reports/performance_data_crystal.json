@@ -22,8 +22,8 @@
       "estimated_perft4_ms": 800
     },
     "timings": {
-      "analyze_seconds": 0.03725004196166992,
-      "build_seconds": 0.018919944763183594
+      "analyze_seconds": 0.03845381736755371,
+      "build_seconds": 0.01781010627746582
     },
     "memory": {
       "analyze": {

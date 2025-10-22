@@ -6,7 +6,7 @@ packages:
     description:
       name: collection
       sha256: "2f5709ae4d3d59dd8f7cd309b4e023046b57d8a6c82130785d2b0e5868084e76"
-      url: "https://jfrog.int.bourso.net/artifactory/api/pub/web-v-pub/"
+      url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
 sdks:

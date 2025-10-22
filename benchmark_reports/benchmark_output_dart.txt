@@ -17,42 +17,31 @@ Global options:
     --version               Print the 
 ✅ Cache clearing completed
 🔍 Running static analysis...
-✅ Analysis completed in 1.00s
+✅ Analysis completed in 1.05s
 🔨 Building implementation...
-❌ Build failed in 22.10s
-
-================================================================================
-CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:11:42
-================================================================================
-
-PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-dart         failed         1.0s    22.1s     0.0s        0MB 0/0     
-
-============================================================
-DETAILED RESULTS: DART
-============================================================
-
-TIMING BREAKDOWN:
-  Analyze Seconds: 1.00s
-  Build Seconds: 22.10s
-
-MEMORY USAGE:
-  Analyze: Peak 0.0MB, Avg 0.0MB
-  Build: Peak 0.0MB, Avg 0.0MB
-
-ERRORS:
-  ❌ Build failed: Got socket error trying to find package collection at https://jfrog.int.bourso.net/artifactory/api/pub/web-v-pub/.
-make: *** [build] Error 69
-
-  ❌ Test failed: Build failed with exit code 2
-
-================================================================================
-
-📄 Text report saved to benchmark_reports/performance_report_dart.txt
-📄 JSON results saved to benchmark_reports/performance_data_dart.json
-
-❌ 1 implementation(s) failed testing
+Traceback (most recent call last):
+  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 637, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 604, in main
+    result = tester.run_full_test()
+  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 157, in run_full_test
+    self._run_build()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 253, in _run_build
+    result = subprocess.run(
+        ["make", "build"],
+    ...<3 lines>...
+        timeout=600  # 10 minute timeout
+    )
+  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 556, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 1222, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 2125, in _communicate
+    ready = selector.select(timeout)
+  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/selectors.py", line 398, in select
+    fd_event_list = self._selector.poll(timeout)
+KeyboardInterrupt
