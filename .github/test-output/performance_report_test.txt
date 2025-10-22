@@ -1,0 +1,40 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 10:30:58
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+python       completed      0.3s     0.1s     0.5s        0MB 0/7     
+
+============================================================
+DETAILED RESULTS: PYTHON
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.30s
+  Build Seconds: 0.12s
+  Test Seconds: 0.53s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+  Test: Peak 0.0MB, Avg 0.0MB
+
+CHESS ENGINE TESTS: 0 passed, 7 failed
+  Failed tests:
+    ❌ Basic Movement
+    ❌ Castling
+    ❌ En Passant
+    ❌ Checkmate Detection
+    ❌ AI Move Generation
+    ❌ Invalid Move Handling
+    ❌ Pawn Promotion
+
+DOCKER TESTS:
+  Build: ✅ (0.64s)
+  Test: ✅ (0.84s)
+
+================================================================================

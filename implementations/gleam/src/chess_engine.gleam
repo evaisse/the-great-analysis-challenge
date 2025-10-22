@@ -6,6 +6,10 @@ import gleam/list
 import gleam/int
 import gleam/result
 import gleam/option.{None, Some}
+
+@external(erlang, "io", "get_line")
+fn get_line(prompt: String) -> String
+
 import types.{
   type GameState, type Move, White, Black,
   algebraic_to_square, square_to_algebraic, opposite_color
@@ -31,22 +35,14 @@ pub fn main() {
 }
 
 fn game_loop(engine: ChessEngine) -> Nil {
-  // Simplified for demo - in a real implementation would read from stdin
-  // For now, just demonstrate some moves
-  let demo_commands = ["move e2e4", "move e7e5", "move g1f3", "move b8c6", "export", "quit"]
-  run_demo_commands(engine, demo_commands)
-}
-
-fn run_demo_commands(engine: ChessEngine, commands: List(String)) -> Nil {
-  case commands {
-    [] -> Nil
-    [command, ..rest] -> {
-      io.println("Command: " <> command)
+  let input = get_line("")
+  let command = string.trim(input)
+  
+  case command {
+    "quit" -> Nil
+    _ -> {
       let new_engine = process_command(engine, command)
-      case command {
-        "quit" -> Nil
-        _ -> run_demo_commands(new_engine, rest)
-      }
+      game_loop(new_engine)
     }
   }
 }
