@@ -184,7 +184,7 @@ class WorkflowTool:
         
         return matrix
     
-    def run_benchmark(self, impl_name: str, timeout: int = 300) -> bool:
+    def run_benchmark(self, impl_name: str, timeout: int = 60) -> bool:
         """Run benchmark for a specific implementation."""
         print(f"🏁 Running benchmark for {impl_name}...")
         
@@ -703,7 +703,7 @@ def main():
     # run-benchmark command
     benchmark_parser = subparsers.add_parser('run-benchmark', help='Run benchmark for implementation')
     benchmark_parser.add_argument('impl_name', nargs='?', help='Implementation name')
-    benchmark_parser.add_argument('--timeout', type=int, default=300, help='Timeout in seconds')
+    benchmark_parser.add_argument('--timeout', type=int, default=60, help='Timeout in seconds')
     benchmark_parser.add_argument('--all', action='store_true', help='Run benchmarks on all implementations')
     
     # verify-implementations command
