@@ -1,0 +1,48 @@
+[
+  {
+    "language": "nim",
+    "path": "implementations/nim",
+    "metadata": {
+      "language": "nim",
+      "version": "1.6.14",
+      "author": "Nim Implementation",
+      "build": "nim compile --opt:speed chess.nim",
+      "run": "./chess",
+      "analyze": "nim check chess.nim",
+      "features": [
+        "fen",
+        "basic_moves",
+        "move_validation"
+      ],
+      "max_ai_depth": 0,
+      "estimated_perft4_ms": 0,
+      "notes": "Implementation with FEN support, proper move validation, and piece-specific movement rules. Passes basic specification test cases."
+    },
+    "timings": {
+      "analyze_seconds": 0.03267097473144531,
+      "build_seconds": 0.029488801956176758
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {},
+    "test_results": {},
+    "errors": [
+      "Analysis warnings: make: nim: No such file or directory\nmake: *** [analyze] Error 1\n",
+      "Build failed: make: nim: No such file or directory\nmake: *** [build] Error 1\n",
+      "Test failed: Build failed with exit code 2"
+    ],
+    "status": "failed"
+  }
+]

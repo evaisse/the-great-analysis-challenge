@@ -5,7 +5,7 @@ Get test configuration from chess.meta files.
 
 import os
 import json
-from typing import Dict
+from typing import Dict, List
 
 
 def get_test_config(implementation: str) -> Dict:
@@ -67,24 +67,78 @@ def write_github_output(key: str, value: str):
         print(f"Would set GitHub output: {key}={value}")
 
 
+def discover_implementations() -> List[str]:
+    """Discover all implementations."""
+    implementations = []
+    impl_dir = "implementations"
+    
+    if not os.path.exists(impl_dir):
+        return implementations
+    
+    for name in os.listdir(impl_dir):
+        impl_path = os.path.join(impl_dir, name)
+        if os.path.isdir(impl_path):
+            implementations.append(name)
+    
+    return sorted(implementations)
+
+
+def get_all_test_configs() -> Dict[str, Dict]:
+    """Get test configurations for all implementations."""
+    implementations = discover_implementations()
+    
+    if not implementations:
+        print("❌ No implementations found!")
+        return {}
+    
+    configs = {}
+    print(f"🔧 Reading test configurations for {len(implementations)} implementations...")
+    
+    for impl_name in implementations:
+        config = get_test_config(impl_name)
+        if config:
+            configs[impl_name] = config
+            print(f"✅ {impl_name}: {config.get('language', 'unknown')}")
+        else:
+            print(f"❌ {impl_name}: No configuration found")
+    
+    return configs
+
+
 def main(args):
     """Main function for get-test-config command."""
-    config = get_test_config(args.implementation)
-    
-    # Write GitHub outputs
-    for key, value in config.items():
-        if key.startswith("supports_") or key == "test_mode":
-            write_github_output(key, str(value).lower())
-    
-    return config
+    if args.all:
+        configs = get_all_test_configs()
+        return configs
+    else:
+        config = get_test_config(args.implementation)
+        
+        # Write GitHub outputs
+        for key, value in config.items():
+            if key.startswith("supports_") or key == "test_mode":
+                write_github_output(key, str(value).lower())
+        
+        return config
 
 
 if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='Get test configuration')
-    parser.add_argument('implementation', help='Implementation name')
+    parser.add_argument('implementation', nargs='?', help='Implementation name')
+    parser.add_argument('--all', action='store_true', help='Get configurations for all implementations')
     
     args = parser.parse_args()
+    
+    if args.all:
+        if args.implementation:
+            print("ERROR: Cannot specify implementation when using --all")
+            exit(1)
+    else:
+        if not args.implementation:
+            print("ERROR: Implementation name required (or use --all)")
+            parser.print_help()
+            exit(1)
+    
     result = main(args)
-    print(json.dumps(result))
+    print(json.dumps(result, indent=2))

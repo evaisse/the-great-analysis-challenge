@@ -1,0 +1,58 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing gleam implementation
+Path: implementations/gleam
+============================================================
+🧹 Clearing build cache...
+⚠️  make clean returned non-zero exit code: make: gleam: No such file or directory
+make: *** [clean] Error 1
+
+✅ Cache clearing completed
+🔍 Running static analysis...
+✅ Analysis completed in 0.03s
+🔨 Building implementation...
+❌ Build failed in 0.02s
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:43
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+gleam        failed         0.0s     0.0s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: GLEAM
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.03s
+  Build Seconds: 0.02s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Analysis warnings: /bin/sh: gleam: command not found
+make: gleam: No such file or directory
+make: *** [analyze] Error 1
+
+  ❌ Build failed: make: gleam: No such file or directory
+make: *** [build] Error 1
+
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================
+
+📄 Text report saved to benchmark_reports/performance_report_gleam.txt
+📄 JSON results saved to benchmark_reports/performance_data_gleam.json
+
+❌ 1 implementation(s) failed testing

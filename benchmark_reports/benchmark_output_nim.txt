@@ -1,0 +1,55 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing nim implementation
+Path: implementations/nim
+============================================================
+🧹 Clearing build cache...
+✅ Local cache cleared with make clean
+✅ Cache clearing completed
+🔍 Running static analysis...
+✅ Analysis completed in 0.03s
+🔨 Building implementation...
+❌ Build failed in 0.03s
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:46
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+nim          failed         0.0s     0.0s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: NIM
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.03s
+  Build Seconds: 0.03s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Analysis warnings: make: nim: No such file or directory
+make: *** [analyze] Error 1
+
+  ❌ Build failed: make: nim: No such file or directory
+make: *** [build] Error 1
+
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================
+
+📄 Text report saved to benchmark_reports/performance_report_nim.txt
+📄 JSON results saved to benchmark_reports/performance_data_nim.json
+
+❌ 1 implementation(s) failed testing

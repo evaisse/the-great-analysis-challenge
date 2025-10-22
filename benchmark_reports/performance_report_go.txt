@@ -1,0 +1,49 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 22:11:44
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+go           failed         0.3s     0.2s     0.0s        0MB 0/0     
+
+============================================================
+DETAILED RESULTS: GO
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.28s
+  Build Seconds: 0.15s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+
+ERRORS:
+  ❌ Analysis warnings: # chess
+# [chess]
+vet: ./chess.go:18:13: undefined: GameState
+# chess/src
+# [chess/src]
+vet: src/ai.go:3:8: "math" imported and not used
+make: *** [analyze] Error 1
+
+  ❌ Build failed: # chess
+./chess.go:18:13: undefined: GameState
+./chess.go:19:13: undefined: AI
+./chess.go:24:14: undefined: NewGameState
+./chess.go:25:14: undefined: NewAI
+./chess.go:94:21: undefined: NewGameState
+./chess.go:107:10: undefined: AlgebraicToSquare
+./chess.go:108:8: undefined: AlgebraicToSquare
+./chess.go:116:21: undefined: PieceType
+./chess.go:120:21: undefined: Queen
+./chess.go:244:38: undefined: GameState
+./chess.go:120:21: too many errors
+make: *** [build] Error 1
+
+  ❌ Test failed: Build failed with exit code 2
+
+================================================================================

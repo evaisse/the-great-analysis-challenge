@@ -41,6 +41,10 @@ try:
     from combine_results import main as combine_results_main
     from update_readme import main as update_readme_main
     from get_test_config import main as get_test_config_main
+    from test_docker import (
+        main_test_basic_commands, main_test_advanced_features,
+        main_test_demo_mode, main_cleanup_docker
+    )
 except ImportError as e:
     print(f"Warning: Could not import command module: {e}")
     print("Falling back to inline implementations...")
@@ -60,19 +64,35 @@ class WorkflowTool:
         else:
             print(f"Would set GitHub output: {key}={value}")
     
-    def run_command(self, cmd: List[str], cwd: str = None, timeout: int = None, check: bool = True) -> subprocess.CompletedProcess:
-        """Run a shell command with error handling."""
+    def run_command(self, cmd: List[str], cwd: str = None, timeout: int = None, check: bool = True, show_output: bool = False, input: str = None) -> subprocess.CompletedProcess:
+        """Run a shell command with error handling and optional output logging."""
+        cmd_str = ' '.join(cmd)
+        print(f"🔧 Running: {cmd_str}")
+        if cwd:
+            print(f"   Working directory: {cwd}")
+        
         try:
-            return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, 
-                                timeout=timeout, check=check)
+            result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, 
+                                  timeout=timeout, check=check, input=input)
+            
+            if show_output and result.stdout.strip():
+                print(f"📤 Output:\n{result.stdout}")
+            if result.stderr.strip():
+                print(f"⚠️ Stderr:\n{result.stderr}")
+                
+            return result
+            
         except subprocess.CalledProcessError as e:
             if check:
-                print(f"Command failed: {' '.join(cmd)}")
-                print(f"Error: {e.stderr}")
+                print(f"❌ Command failed: {cmd_str}")
+                if e.stdout and e.stdout.strip():
+                    print(f"📤 Output:\n{e.stdout}")
+                if e.stderr and e.stderr.strip():
+                    print(f"❌ Error:\n{e.stderr}")
                 raise
             return e
         except subprocess.TimeoutExpired as e:
-            print(f"Command timed out: {' '.join(cmd)}")
+            print(f"⏰ Command timed out: {cmd_str}")
             raise
     
     def detect_changes(self, event_name: str, test_all: str = "false", 
@@ -94,7 +114,7 @@ class WorkflowTool:
                 else:
                     cmd = ["git", "diff", "--name-only", "HEAD~1", "HEAD", "--", "implementations/"]
                 
-                result = self.run_command(cmd)
+                result = self.run_command(cmd, show_output=True)
                 changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
                 
                 # Extract implementation names
@@ -204,7 +224,7 @@ class WorkflowTool:
         
         # Run verification script
         try:
-            result = self.run_command(["python3", "test/verify_implementations.py"], check=False)
+            result = self.run_command(["python3", "test/verify_implementations.py"], check=False, show_output=True)
             with open("verification_results.txt", "w") as f:
                 f.write(result.stdout)
                 if result.stderr:
@@ -382,7 +402,7 @@ class WorkflowTool:
                 print("✅ README status table updated")
             
             # Check if README was modified
-            result = self.run_command(["git", "diff", "--quiet", "README.md"], check=False)
+            result = self.run_command(["git", "diff", "--quiet", "README.md"], check=False, show_output=True)
             readme_changed = result.returncode != 0
             
             self.write_github_output("changed", str(readme_changed).lower())
@@ -408,7 +428,7 @@ class WorkflowTool:
         try:
             result = self.run_command([
                 "git", "tag", "--sort=-version:refname"
-            ])
+            ], show_output=True)
             tags = [line for line in result.stdout.split('\n') 
                    if re.match(r'^v\d+\.\d+\.\d+$', line.strip())]
             current_version = tags[0] if tags else "v0.0.0"
@@ -439,8 +459,8 @@ class WorkflowTool:
         
         # Configure git and commit changes if README was updated
         if readme_changed == "true":
-            self.run_command(["git", "config", "--local", "user.email", "action@github.com"])
-            self.run_command(["git", "config", "--local", "user.name", "GitHub Action"])
+            self.run_command(["git", "config", "--local", "user.email", "action@github.com"], show_output=True)
+            self.run_command(["git", "config", "--local", "user.name", "GitHub Action"], show_output=True)
             
             # Copy benchmark reports to repo
             os.makedirs("benchmark_reports", exist_ok=True)
@@ -453,7 +473,7 @@ class WorkflowTool:
                     except Exception:
                         pass
             
-            self.run_command(["git", "add", "benchmark_reports/", "README.md"])
+            self.run_command(["git", "add", "benchmark_reports/", "README.md"], show_output=True)
             
             commit_message = f"""chore: update implementation status from benchmark suite
 
@@ -465,13 +485,13 @@ Benchmark results summary:
 
 Performance testing completed with status updates."""
             
-            self.run_command(["git", "commit", "-m", commit_message])
-            self.run_command(["git", "push", "origin", "master"])
+            self.run_command(["git", "commit", "-m", commit_message], show_output=True)
+            self.run_command(["git", "push", "origin", "master"], show_output=True)
             print("✅ Changes committed and pushed")
         
         # Create and push tag
-        self.run_command(["git", "tag", "-a", new_version, "-m", f"Release {new_version} - Benchmark Update"])
-        self.run_command(["git", "push", "origin", new_version])
+        self.run_command(["git", "tag", "-a", new_version, "-m", f"Release {new_version} - Benchmark Update"], show_output=True)
+        self.run_command(["git", "push", "origin", new_version], show_output=True)
         print(f"✅ Release tag {new_version} created")
         
         return True
@@ -487,7 +507,7 @@ Performance testing completed with status updates."""
                 print(f"📋 Testing {cmd} command")
                 result = self.run_command([
                     "docker", "run", "--rm", "-i", f"chess-{engine}-test"
-                ], timeout=30, check=False)
+                ], timeout=30, check=False, show_output=True)
                 
                 with open(f"{cmd}_output.txt", "w") as f:
                     f.write(result.stdout)
@@ -515,7 +535,7 @@ Performance testing completed with status updates."""
                 print("🔍 Testing perft (move generation)")
                 result = self.run_command([
                     "docker", "run", "--rm", "-i", f"chess-{engine}-test"
-                ], timeout=120, check=False)
+                ], timeout=120, check=False, show_output=True)
                 
                 with open("perft_output.txt", "w") as f:
                     f.write("perft 3\n")
@@ -534,7 +554,7 @@ Performance testing completed with status updates."""
                 ai_input = "ai\nquit\n"
                 result = self.run_command([
                     "docker", "run", "--rm", "-i", f"chess-{engine}-test"
-                ], input=ai_input, timeout=60, check=False)
+                ], timeout=60, check=False, show_output=True, input=ai_input)
                 
                 with open("ai_output.txt", "w") as f:
                     f.write(result.stdout)
@@ -559,7 +579,7 @@ Performance testing completed with status updates."""
         try:
             result = self.run_command([
                 "docker", "run", "--rm", f"chess-{engine}-test"
-            ], timeout=30, check=False)
+            ], timeout=30, check=False, show_output=True)
             
             print("✅ Demo test completed")
             return True
@@ -670,9 +690,10 @@ def main():
     
     # run-benchmark command
     benchmark_parser = subparsers.add_parser('run-benchmark', help='Run benchmark for implementation')
-    benchmark_parser.add_argument('impl_name', help='Implementation name')
-    benchmark_parser.add_argument('impl_dir', help='Implementation directory')
+    benchmark_parser.add_argument('impl_name', nargs='?', help='Implementation name')
+    benchmark_parser.add_argument('impl_dir', nargs='?', help='Implementation directory')
     benchmark_parser.add_argument('--timeout', type=int, default=300, help='Timeout in seconds')
+    benchmark_parser.add_argument('--all', action='store_true', help='Run benchmarks on all implementations')
     
     # verify-implementations command
     subparsers.add_parser('verify-implementations', help='Run structure verification')
@@ -694,25 +715,30 @@ def main():
     
     # test-basic-commands command
     basic_parser = subparsers.add_parser('test-basic-commands', help='Test basic chess engine commands')
-    basic_parser.add_argument('engine', help='Engine name')
+    basic_parser.add_argument('engine', nargs='?', help='Engine name')
+    basic_parser.add_argument('--all', action='store_true', help='Test all implementations')
     
     # test-advanced-features command
     advanced_parser = subparsers.add_parser('test-advanced-features', help='Test advanced features')
-    advanced_parser.add_argument('engine', help='Engine name')
+    advanced_parser.add_argument('engine', nargs='?', help='Engine name')
     advanced_parser.add_argument('--supports-perft', type=bool, default=True, help='Supports perft')
     advanced_parser.add_argument('--supports-ai', type=bool, default=True, help='Supports AI')
+    advanced_parser.add_argument('--all', action='store_true', help='Test all implementations')
     
     # test-demo-mode command
     demo_parser = subparsers.add_parser('test-demo-mode', help='Test demo mode')
-    demo_parser.add_argument('engine', help='Engine name')
+    demo_parser.add_argument('engine', nargs='?', help='Engine name')
+    demo_parser.add_argument('--all', action='store_true', help='Test all implementations')
     
     # cleanup-docker command
     cleanup_parser = subparsers.add_parser('cleanup-docker', help='Cleanup Docker images')
-    cleanup_parser.add_argument('engine', help='Engine name')
+    cleanup_parser.add_argument('engine', nargs='?', help='Engine name')
+    cleanup_parser.add_argument('--all', action='store_true', help='Cleanup all implementations')
     
     # get-test-config command
     config_parser = subparsers.add_parser('get-test-config', help='Get test configuration')
-    config_parser.add_argument('implementation', help='Implementation name')
+    config_parser.add_argument('implementation', nargs='?', help='Implementation name')
+    config_parser.add_argument('--all', action='store_true', help='Get configurations for all implementations')
     
     args = parser.parse_args()
     
@@ -776,20 +802,32 @@ def main():
             return 0 if success else 1
         
         elif args.command == 'test-basic-commands':
-            success = tool.test_basic_commands(args.engine)
-            return 0 if success else 1
+            try:
+                return main_test_basic_commands(args)
+            except NameError:
+                success = tool.test_basic_commands(args.engine)
+                return 0 if success else 1
         
         elif args.command == 'test-advanced-features':
-            success = tool.test_advanced_features(args.engine, args.supports_perft, args.supports_ai)
-            return 0 if success else 1
+            try:
+                return main_test_advanced_features(args)
+            except NameError:
+                success = tool.test_advanced_features(args.engine, args.supports_perft, args.supports_ai)
+                return 0 if success else 1
         
         elif args.command == 'test-demo-mode':
-            success = tool.test_demo_mode(args.engine)
-            return 0 if success else 1
+            try:
+                return main_test_demo_mode(args)
+            except NameError:
+                success = tool.test_demo_mode(args.engine)
+                return 0 if success else 1
         
         elif args.command == 'cleanup-docker':
-            success = tool.cleanup_docker(args.engine)
-            return 0 if success else 1
+            try:
+                return main_cleanup_docker(args)
+            except NameError:
+                success = tool.cleanup_docker(args.engine)
+                return 0 if success else 1
         
         elif args.command == 'get-test-config':
             try:

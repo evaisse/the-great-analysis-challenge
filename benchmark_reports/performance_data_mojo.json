@@ -1,0 +1,50 @@
+[
+  {
+    "language": "mojo",
+    "path": "implementations/mojo",
+    "metadata": {
+      "language": "mojo",
+      "version": "0.6.0",
+      "author": "Mojo Implementation",
+      "build": "mojo chess.mojo",
+      "run": "mojo chess.mojo",
+      "features": [
+        "ai",
+        "fen",
+        "move_validation"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800
+    },
+    "timings": {
+      "analyze_seconds": 0.03330087661743164,
+      "build_seconds": 0.0332338809967041
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {
+      "build_time": 0.5642640590667725,
+      "build_success": true,
+      "test_time": 0.24996399879455566,
+      "test_success": false
+    },
+    "test_results": {},
+    "errors": [
+      "Failed to start chess engine",
+      "Docker test failed: timeout: failed to run command 'make': No such file or directory\n"
+    ],
+    "status": "completed"
+  }
+]
