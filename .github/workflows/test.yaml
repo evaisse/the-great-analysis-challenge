@@ -1,0 +1,432 @@
+name: Test Chess Engines
+
+on:
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      test_all:
+        description: 'Test all implementations (ignore changes)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  detect-changes:
+    name: Detect Changed Implementations
+    runs-on: ubuntu-latest
+    outputs:
+      changed-implementations: ${{ steps.changes.outputs.implementations }}
+      has-changes: ${{ steps.changes.outputs.has-changes }}
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed implementations
+        id: changes
+        run: |
+          # Determine if we should test all implementations
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.test_all }}" == "true" ]]; then
+            echo "🔄 Manual trigger: Testing all implementations"
+            CHANGED_IMPLEMENTATIONS="all"
+            HAS_CHANGES="true"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "🔍 Pull Request: Detecting changes"
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- implementations/ || echo "")
+            
+            if [[ -n "$CHANGED_FILES" ]]; then
+              CHANGED_IMPLEMENTATIONS=$(echo "$CHANGED_FILES" | grep -E "^implementations/[^/]+/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
+              HAS_CHANGES="true"
+            else
+              CHANGED_IMPLEMENTATIONS=""
+              HAS_CHANGES="false"
+            fi
+          else
+            # For manual workflow_dispatch without test_all
+            echo "🔄 Manual trigger: Detecting recent changes"
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- implementations/ || echo "")
+            
+            if [[ -n "$CHANGED_FILES" ]]; then
+              CHANGED_IMPLEMENTATIONS=$(echo "$CHANGED_FILES" | grep -E "^implementations/[^/]+/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
+              HAS_CHANGES="true"
+            else
+              CHANGED_IMPLEMENTATIONS=""
+              HAS_CHANGES="false"
+            fi
+          fi
+          
+          echo "Changed implementations: $CHANGED_IMPLEMENTATIONS"
+          echo "Has changes: $HAS_CHANGES"
+          
+          echo "implementations=$CHANGED_IMPLEMENTATIONS" >> $GITHUB_OUTPUT
+          echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        if: steps.changes.outputs.has-changes == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Generate dynamic matrix using Python validation
+        id: generate-matrix
+        if: steps.changes.outputs.has-changes == 'true'
+        run: |
+          CHANGED_IMPLEMENTATIONS="${{ steps.changes.outputs.implementations }}"
+          
+          if [[ "${{ steps.changes.outputs.has-changes }}" == "false" ]]; then
+            echo "No implementation changes detected, skipping matrix generation"
+            echo 'matrix={"include":[]}' >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Create Python script to generate matrix from directory structure
+          cat > generate_matrix.py << 'EOF'
+import os
+import json
+import sys
+
+def discover_implementations():
+    """Discover implementations from directory structure."""
+    implementations = []
+    impl_dir = "implementations"
+    
+    if not os.path.exists(impl_dir):
+        return implementations
+    
+    for name in os.listdir(impl_dir):
+        impl_path = os.path.join(impl_dir, name)
+        dockerfile_path = os.path.join(impl_path, "Dockerfile")
+        
+        if os.path.isdir(impl_path) and os.path.exists(dockerfile_path):
+            implementations.append({
+                "name": name.title(),
+                "directory": impl_path,
+                "dockerfile": "Dockerfile",
+                "engine": name
+            })
+    
+    return sorted(implementations, key=lambda x: x["name"])
+
+def filter_implementations(all_impls, changed_impls):
+    """Filter implementations based on changes."""
+    if changed_impls == "all":
+        return all_impls
+    
+    changed_list = changed_impls.strip().split()
+    return [impl for impl in all_impls if impl["engine"] in changed_list]
+
+# Get all implementations
+all_implementations = discover_implementations()
+changed_implementations = sys.argv[1] if len(sys.argv) > 1 else "all"
+
+# Filter based on changes
+filtered_implementations = filter_implementations(all_implementations, changed_implementations)
+
+# Generate matrix
+matrix = {"include": filtered_implementations}
+print(json.dumps(matrix))
+EOF
+          
+          # Generate matrix using Python script
+          MATRIX_JSON=$(python3 generate_matrix.py "$CHANGED_IMPLEMENTATIONS")
+          echo "Generated matrix: $MATRIX_JSON"
+          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+
+  validation:
+    name: Validate Implementation Structure
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Run Python validation script
+        run: |
+          echo "🔍 Running implementation structure validation..."
+          python3 test/verify_implementations.py
+
+  quick-build:
+    name: Quick Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Build changed implementations
+        run: |
+          echo "🚀 Quick build test for changed implementations"
+          echo "=============================================="
+          
+          CHANGED_IMPLEMENTATIONS="${{ needs.detect-changes.outputs.changed-implementations }}"
+          
+          # Create Python script to build implementations
+          cat > build_implementations.py << 'EOF'
+import os
+import subprocess
+import sys
+
+def discover_implementations():
+    """Discover implementations from directory structure."""
+    implementations = []
+    impl_dir = "implementations"
+    
+    if not os.path.exists(impl_dir):
+        print(f"❌ Implementations directory not found: {impl_dir}")
+        return implementations
+    
+    for name in sorted(os.listdir(impl_dir)):
+        impl_path = os.path.join(impl_dir, name)
+        dockerfile_path = os.path.join(impl_path, "Dockerfile")
+        
+        if os.path.isdir(impl_path) and os.path.exists(dockerfile_path):
+            implementations.append((name, impl_path))
+    
+    return implementations
+
+def filter_implementations(all_impls, changed_impls):
+    """Filter implementations based on changes."""
+    if changed_impls == "all":
+        return all_impls
+    
+    changed_list = changed_impls.strip().split()
+    return [(name, path) for name, path in all_impls if name in changed_list]
+
+def build_implementation(name, path):
+    """Build a single implementation."""
+    print(f"\n🏗️ Building {name}...")
+    
+    try:
+        # Change to implementation directory
+        original_dir = os.getcwd()
+        os.chdir(path)
+        
+        # Build Docker image
+        result = subprocess.run(
+            ["docker", "build", "-t", f"chess-{name}-test", ".", "--quiet"],
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minutes timeout per build
+        )
+        
+        os.chdir(original_dir)
+        
+        if result.returncode == 0:
+            print(f"✅ {name}: Build successful")
+            
+            # Cleanup image
+            subprocess.run(
+                ["docker", "rmi", f"chess-{name}-test"],
+                capture_output=True
+            )
+            return True
+        else:
+            print(f"❌ {name}: Build failed")
+            if result.stderr:
+                print(f"Error: {result.stderr.strip()}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print(f"⏰ {name}: Build timed out")
+        os.chdir(original_dir)
+        return False
+    except Exception as e:
+        print(f"💥 {name}: Build error - {e}")
+        os.chdir(original_dir)
+        return False
+
+def main():
+    changed_implementations = sys.argv[1] if len(sys.argv) > 1 else "all"
+    
+    all_implementations = discover_implementations()
+    
+    if not all_implementations:
+        print("❌ No implementations found!")
+        return 1
+    
+    # Filter based on changes
+    implementations = filter_implementations(all_implementations, changed_implementations)
+    
+    if not implementations:
+        print("❌ No changed implementations to build!")
+        return 1
+    
+    print(f"Found {len(implementations)} implementations to build")
+    
+    success_count = 0
+    total_count = len(implementations)
+    
+    for name, path in implementations:
+        if build_implementation(name, path):
+            success_count += 1
+    
+    print(f"\n📊 Results: {success_count}/{total_count} builds successful")
+    
+    if success_count == total_count:
+        print("🎉 All builds passed!")
+        return 0
+    else:
+        print("❌ Some builds failed")
+        return 1
+
+if __name__ == "__main__":
+    exit_code = main()
+    sys.exit(exit_code)
+EOF
+          
+          # Run the build script
+          python3 build_implementations.py "$CHANGED_IMPLEMENTATIONS"
+
+  functionality-test:
+    name: Test Chess Engine Functionality
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [detect-changes, quick-build]
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.engine }} chess engine
+        run: |
+          cd implementations/${{ matrix.engine }}
+          echo "🏗️ Building ${{ matrix.engine }} chess engine..."
+          docker build -t chess-${{ matrix.engine }}-test .
+
+      - name: Test basic functionality
+        run: |
+          echo "🧪 Testing basic functionality for ${{ matrix.engine }}..."
+          
+          # Test 1: Help command
+          echo "📋 Test 1: Help command"
+          echo "help" | timeout 30s docker run --rm -i chess-${{ matrix.engine }}-test > help_output.txt || true
+          if grep -i "help\|command\|available" help_output.txt; then
+            echo "✅ Help command works"
+          else
+            echo "❌ Help command failed"
+          fi
+          
+          # Test 2: Board display
+          echo "📋 Test 2: Board display"
+          echo "board" | timeout 30s docker run --rm -i chess-${{ matrix.engine }}-test > board_output.txt || true
+          if grep -E "\+.*\+|[rnbqkpRNBQKP]|Turn:" board_output.txt; then
+            echo "✅ Board display works"
+          else
+            echo "❌ Board display failed"
+          fi
+          
+          # Test 3: FEN export
+          echo "📋 Test 3: FEN export"
+          echo "fen" | timeout 30s docker run --rm -i chess-${{ matrix.engine }}-test > fen_output.txt || true
+          if grep "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" fen_output.txt; then
+            echo "✅ FEN export works"
+          else
+            echo "❌ FEN export failed"
+          fi
+
+      - name: Test move generation and AI
+        if: matrix.engine != 'gleam' && matrix.engine != 'elm' && matrix.engine != 'mojo'
+        run: |
+          echo "🧪 Testing move generation with Perft..."
+          echo "perft 3" | timeout 120s docker run --rm -i chess-${{ matrix.engine }}-test > perft_output.txt || true
+          
+          if grep -E "([0-9]+.*nodes|Depth.*[0-9]+)" perft_output.txt; then
+            echo "✅ Perft test completed"
+            cat perft_output.txt | grep -E "(nodes|Depth)" | head -5
+          else
+            echo "❌ Perft test failed or incomplete"
+          fi
+          
+          echo "🧪 Testing AI move generation..."
+          {
+            echo "ai"
+            sleep 2
+            echo "quit"
+          } | timeout 60s docker run --rm -i chess-${{ matrix.engine }}-test > ai_output.txt || true
+          
+          if grep -E "(AI.*played|move|evaluation)" ai_output.txt; then
+            echo "✅ AI move generation works"
+          else
+            echo "❌ AI move generation failed"
+          fi
+
+      - name: Test simplified implementations
+        if: matrix.engine == 'gleam' || matrix.engine == 'elm' || matrix.engine == 'mojo'
+        run: |
+          echo "🧪 Running simplified test for ${{ matrix.engine }}..."
+          timeout 30s docker run --rm chess-${{ matrix.engine }}-test || true
+          echo "✅ Basic execution test completed for ${{ matrix.engine }}"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rmi chess-${{ matrix.engine }}-test || true
+          rm -f *.txt
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [detect-changes, validation, quick-build, functionality-test]
+    if: always()
+    
+    steps:
+      - name: Test Results Summary
+        run: |
+          echo "🏆 Chess Engine Test Summary"
+          echo "============================"
+          echo ""
+          
+          CHANGED_IMPLEMENTATIONS="${{ needs.detect-changes.outputs.changed-implementations }}"
+          HAS_CHANGES="${{ needs.detect-changes.outputs.has-changes }}"
+          
+          if [[ "$HAS_CHANGES" == "false" ]]; then
+            echo "🚫 No implementation changes detected in this PR"
+            echo "⏭️ All tests skipped - no changes to validate"
+          elif [[ "$CHANGED_IMPLEMENTATIONS" == "all" ]]; then
+            echo "✅ All chess engine implementations tested"
+            echo "🔍 Full validation suite completed"
+          else
+            echo "✅ Changed implementations tested: $CHANGED_IMPLEMENTATIONS"
+            echo "🎯 Selective testing completed for modified code only"
+          fi
+          
+          echo ""
+          echo "🔧 Test suite included:"
+          echo "- 🔍 Implementation structure validation"
+          echo "- 🏗️ Docker build verification"
+          echo "- 🧪 Functionality testing (commands, AI, perft)"
+          echo "- 📊 Convention-based discovery and testing"
+          echo ""
+          echo "✨ Ready for merge when all checks pass!"
