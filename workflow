@@ -17,6 +17,10 @@ if __name__ == "__main__":
     # Change to the script directory so relative paths work correctly
     os.chdir(script_dir.parent.parent.parent)
     
+    # Ensure stdout is unbuffered for real-time output
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
+    
     # Import the workflow module
     from workflow import main
     
