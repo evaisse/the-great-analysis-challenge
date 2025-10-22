@@ -280,7 +280,8 @@ jobs:
             
             git add benchmark_reports/ README.md
             
-            git commit -m "chore: update implementation status from benchmark suite
+            git commit -m "$(cat <<'EOF'
+chore: update implementation status from benchmark suite
 
 Benchmark results summary:
 - Total implementations: ${{ needs.validation.outputs.total-count }}
@@ -288,7 +289,9 @@ Benchmark results summary:
 - 🟡 Good: ${{ needs.validation.outputs.good-count }}  
 - 🔴 Needs work: ${{ needs.validation.outputs.needs-work-count }}
 
-Performance testing completed with status updates."
+Performance testing completed with status updates.
+EOF
+)"
             
             git push origin master
             echo "✅ Changes committed and pushed"
