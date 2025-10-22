@@ -1,41 +1,37 @@
 const readline = require('readline');
-const { Elm } = require('../dist/chess.js');
+const { Elm } = require('./chess.js');
 
 // Initialize Elm app
-const app = Elm.ChessEngine.init();
+const app = Elm.ChessEngine.init({ flags: process.argv.slice(2) || [] });
 
 // Setup readline interface
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
-  prompt: '> '
+  terminal: false,
+  crlfDelay: Infinity
 });
 
 // Handle messages from Elm
-app.ports.sendCommand.subscribe(function(message) {
-  if (message === 'QUIT') {
-    console.log('\nGoodbye!');
-    process.exit(0);
-  } else {
+if (app.ports.stdout) {
+  app.ports.stdout.subscribe(function(message) {
     process.stdout.write(message);
-    if (!message.includes('ERROR') && !message.includes('OK') && !message.includes('AI:')) {
-      rl.prompt();
-    }
-  }
-});
+  });
+}
+
+if (app.ports.exit) {
+  app.ports.exit.subscribe(function(code) {
+    process.exit(code);
+  });
+}
 
 // Send commands to Elm
 rl.on('line', (line) => {
-  app.ports.receiveResponse.send(line);
-  if (line.trim() !== 'quit') {
-    rl.prompt();
+  if (app.ports.stdin) {
+    app.ports.stdin.send(line);
   }
 });
 
 rl.on('close', () => {
-  console.log('\nGoodbye!');
   process.exit(0);
 });
-
-// Initial prompt
-setTimeout(() => rl.prompt(), 100);
