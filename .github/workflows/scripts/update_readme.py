@@ -99,13 +99,17 @@ def classify_implementation_status(impl_data):
 
 
 def format_time(seconds):
-    """Format time duration"""
+    """Format time duration in milliseconds for better precision"""
     if seconds == 0:
-        return "~0s"
-    elif seconds < 1:
-        return f"~{seconds:.1f}s"
+        return "0ms"
     else:
-        return f"~{seconds:.0f}s"
+        ms = seconds * 1000
+        if ms < 1:
+            return "<1ms"
+        elif ms < 10:
+            return f"{ms:.1f}ms"
+        else:
+            return f"{ms:.0f}ms"
 
 
 def get_verification_status():
