@@ -332,6 +332,8 @@ class ImplementationTester:
         monitor.start_monitoring()
         
         start_time = time.time()
+        # Calculate reasonable timeout for chess tests (remaining time from main timeout)
+        chess_test_timeout = max(15, self.timeout // 3)  # At least 15s, up to 1/3 of main timeout
         
         try:
             # Use existing test harness
@@ -339,13 +341,27 @@ class ImplementationTester:
             suite = TestSuite()
             
             if tester.start():
-                # Run all non-optional tests
+                # Calculate shorter timeout per test based on available time
+                per_test_timeout = max(2, min(5, chess_test_timeout // len([t for t in suite.tests if not t.get("optional")])))
+                
+                # Run all non-optional tests with overall timeout
                 for test in suite.tests:
                     if test.get("optional"):
                         continue
-                        
-                    success = suite.run_test(tester, test)
-                    print(f"  {'✅' if success else '❌'} {test['name']}")
+                    
+                    # Check if we've exceeded the chess test timeout
+                    elapsed = time.time() - start_time
+                    if elapsed > chess_test_timeout:
+                        print(f"  ⏰ Chess tests timed out after {elapsed:.1f}s (limit: {chess_test_timeout}s)")
+                        self.results["errors"].append(f"Chess tests timeout ({chess_test_timeout}s)")
+                        break
+                    
+                    # Override test timeout to fit within our budget
+                    test_copy = test.copy()
+                    test_copy["timeout"] = per_test_timeout
+                    
+                    success = suite.run_test(tester, test_copy)
+                    print(f"  {'✅' if success else '❌'} {test['name']} ({per_test_timeout}s timeout)")
                 
                 tester.stop()
                 

@@ -21,9 +21,9 @@
       "estimated_perft4_ms": 1000
     },
     "timings": {
-      "analyze_seconds": 0.19300389289855957,
-      "build_seconds": 0.1065671443939209,
-      "test_seconds": 0.5325460433959961
+      "analyze_seconds": 0.20895004272460938,
+      "build_seconds": 0.10319304466247559,
+      "test_seconds": 0.5967466831207275
     },
     "memory": {
       "analyze": {
@@ -46,9 +46,9 @@
       }
     },
     "docker": {
-      "build_time": 0.5379278659820557,
+      "build_time": 0.7242679595947266,
       "build_success": true,
-      "test_time": 0.7292373180389404,
+      "test_time": 0.7838959693908691,
       "test_success": true
     },
     "test_results": {

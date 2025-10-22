@@ -1,3 +1,613 @@
+Running Ruby static analysis...
+bundle exec rubocop chess.rb lib/*.rb || true
+Inspecting 7 files
+WWWCCCW
+
+Offenses:
+
+chess.rb:1:1: W: Lint/ScriptPermission: Script file chess.rb doesn't have execute permission.
+#!/usr/bin/env ruby
+^^^^^^^^^^^^^^^^^^^
+chess.rb:12:3: C: Metrics/ClassLength: Class has too many lines. [211/200]
+  class ChessEngine ...
+  ^^^^^^^^^^^^^^^^^
+chess.rb:21:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:25:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:31:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:35:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:37:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:41:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:42:5: C: Metrics/AbcSize: Assignment Branch Condition size for process_command is too high. [<3, 27, 17> 32.05/20]
+    def process_command(command) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+chess.rb:42:5: C: Metrics/CyclomaticComplexity: Cyclomatic complexity for process_command is too high. [18/10]
+    def process_command(command) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+chess.rb:42:5: C: Metrics/MethodLength: Method has too many lines. [32/30]
+    def process_command(command) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+chess.rb:42:5: C: Metrics/PerceivedComplexity: Perceived complexity for process_command is too high. [11/8]
+    def process_command(command) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+chess.rb:45:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:56:25: C: [Correctable] Style/SlicingWithRange: Prefer [1..] over [1..-1].
+        handle_fen(parts[1..-1]&.join(' '))
+                        ^^^^^^^
+chess.rb:77:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:78:5: C: Metrics/AbcSize: Assignment Branch Condition size for handle_move is too high. [<4, 26, 13> 29.34/20]
+    def handle_move(move_str) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+chess.rb:78:5: C: Metrics/PerceivedComplexity: Perceived complexity for handle_move is too high. [9/8]
+    def handle_move(move_str) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+chess.rb:84:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:91:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:101:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:107:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:111:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:115:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:119:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:126:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:129:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:134:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:142:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:147:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:154:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:161:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:165:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:169:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:172:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:179:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:184:9: C: [Correctable] Style/IdenticalConditionalBranches: Move flush_output out of the conditional.
+        flush_output
+        ^^^^^^^^^^^^
+chess.rb:187:9: C: [Correctable] Style/IdenticalConditionalBranches: Move flush_output out of the conditional.
+        flush_output
+        ^^^^^^^^^^^^
+chess.rb:190:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:196:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:203:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:210:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:215:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:232:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:235:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:245:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:249:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:254:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:262:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+chess.rb:269:1: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+if __FILE__ == $PROGRAM_NAME
+^^
+chess.rb:271:4: C: [Correctable] Layout/TrailingEmptyLines: Final newline missing.
+end
+   
+lib/ai.rb:9:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:14:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:15:5: C: Metrics/AbcSize: Assignment Branch Condition size for find_best_move is too high. [<13, 19, 7> 24.06/20]
+    def find_best_move(depth, color = nil) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:18:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:21:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:24:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:28:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:30:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:35:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:39:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:42:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:50:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:52:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:53:5: C: Metrics/AbcSize: Assignment Branch Condition size for minimax is too high. [<13, 24, 17> 32.16/20]
+    def minimax(depth, alpha, beta, maximizing_player, color) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:53:5: C: Metrics/CyclomaticComplexity: Cyclomatic complexity for minimax is too high. [12/10]
+    def minimax(depth, alpha, beta, maximizing_player, color) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:53:5: C: Metrics/MethodLength: Method has too many lines. [35/30]
+    def minimax(depth, alpha, beta, maximizing_player, color) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:53:5: C: Metrics/PerceivedComplexity: Perceived complexity for minimax is too high. [13/8]
+    def minimax(depth, alpha, beta, maximizing_player, color) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:58:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:59:7: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+      if @move_generator.in_stalemate?(color)
+      ^^
+lib/ai.rb:62:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:64:42: C: [Correctable] Style/NumericPredicate: Use depth.zero? instead of depth == 0.
+      return evaluate_position(color) if depth == 0
+                                         ^^^^^^^^^^
+lib/ai.rb:65:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:67:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:70:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:74:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:78:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:81:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:84:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:88:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:92:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:96:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:99:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:102:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:106:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:109:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:112:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:115:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:118:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:122:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:127:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:129:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:137:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:141:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:142:5: C: Metrics/AbcSize: Assignment Branch Condition size for evaluate_position_bonuses is too high. [<23, 17, 25> 37.99/20]
+    def evaluate_position_bonuses(perspective_color) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:142:5: C: Metrics/CyclomaticComplexity: Cyclomatic complexity for evaluate_position_bonuses is too high. [17/10]
+    def evaluate_position_bonuses(perspective_color) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:142:5: C: Metrics/MethodLength: Method has too many lines. [40/30]
+    def evaluate_position_bonuses(perspective_color) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:142:5: C: Metrics/PerceivedComplexity: Perceived complexity for evaluate_position_bonuses is too high. [19/8]
+    def evaluate_position_bonuses(perspective_color) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:144:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:150:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:151:45: C: Style/IdenticalConditionalBranches: Move 10 out of the conditional.
+        piece_bonus = piece.type == :pawn ? 10 : 10
+                                            ^^
+lib/ai.rb:151:50: W: Lint/DuplicateBranch: Duplicate branch body detected.
+        piece_bonus = piece.type == :pawn ? 10 : 10
+                                                 ^^
+lib/ai.rb:151:50: C: Style/IdenticalConditionalBranches: Move 10 out of the conditional.
+        piece_bonus = piece.type == :pawn ? 10 : 10
+                                                 ^^
+lib/ai.rb:158:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:163:11: C: [Correctable] Layout/EmptyLineAfterGuardClause: Add empty line after guard clause.
+          next unless piece && piece.type == :pawn
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/ai.rb:166:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:174:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:179:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:181:9: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+        if king_exposed?(king_row, king_col, perspective_color)
+        ^^
+lib/ai.rb:185:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:189:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:191:9: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+        if king_exposed?(enemy_king_row, enemy_king_col, perspective_color == :white ? :black : :white)
+        ^^
+lib/ai.rb:195:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:198:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:202:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:205:19: C: [Correctable] Style/NumericPredicate: Use row_offset.zero? instead of row_offset == 0.
+          next if row_offset == 0 && col_offset == 0
+                  ^^^^^^^^^^^^^^^
+lib/ai.rb:205:38: C: [Correctable] Style/NumericPredicate: Use col_offset.zero? instead of col_offset == 0.
+          next if row_offset == 0 && col_offset == 0
+                                     ^^^^^^^^^^^^^^^
+lib/ai.rb:206:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:209:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:211:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:216:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:219:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:229:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/ai.rb:238:4: C: [Correctable] Layout/TrailingEmptyLines: Final newline missing.
+end
+   
+lib/board.rb:6:3: C: Metrics/ClassLength: Class has too many lines. [230/200]
+  class Board ...
+  ^^^^^^^^^^^
+lib/board.rb:8:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:18:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:25:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:33:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:36:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:39:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:40:9: C: Naming/PredicateMethod: Predicate method names should end with ?.
+    def set_piece(row, col, piece)
+        ^^^^^^^^^
+lib/board.rb:42:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:46:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:49:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:54:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:58:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:59:5: C: Metrics/AbcSize: Assignment Branch Condition size for make_move is too high. [<3, 24, 9> 25.81/20]
+    def make_move(move) ...
+    ^^^^^^^^^^^^^^^^^^^
+lib/board.rb:59:9: C: Naming/PredicateMethod: Predicate method names should end with ?.
+    def make_move(move)
+        ^^^^^^^^^
+lib/board.rb:62:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:65:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:68:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:71:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:78:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:81:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:84:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:87:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:88:5: C: Metrics/AbcSize: Assignment Branch Condition size for undo_move is too high. [<2, 21, 6> 21.93/20]
+    def undo_move(move) ...
+    ^^^^^^^^^^^^^^^^^^^
+lib/board.rb:88:9: C: Naming/PredicateMethod: Predicate method names should end with ?.
+    def undo_move(move)
+        ^^^^^^^^^
+lib/board.rb:91:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:94:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:97:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:104:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:107:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:110:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:113:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:117:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:121:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:127:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:133:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:143:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:159:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:161:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:162:5: C: Metrics/AbcSize: Assignment Branch Condition size for handle_special_moves is too high. [<3, 21, 9> 23.04/20]
+    def handle_special_moves(move, piece) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/board.rb:168:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:170:7: C: [Correctable] Style/GuardClause: Use a guard clause (return unless piece.type == :pawn && move.to_col != move.from_col && !piece_at(move.to_row, move.to_col)) instead of wrapping the code inside a conditional expression.
+      if piece.type == :pawn && move.to_col != move.from_col && !piece_at(move.to_row, move.to_col)
+      ^^
+lib/board.rb:176:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:179:7: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+      if move.is_castling
+      ^^
+lib/board.rb:182:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:184:7: C: [Correctable] Style/GuardClause: Use a guard clause (return unless move.is_en_passant && move.en_passant_target) instead of wrapping the code inside a conditional expression.
+      if move.is_en_passant && move.en_passant_target
+      ^^
+lib/board.rb:189:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:191:7: W: [Correctable] Lint/UselessAssignment: Useless assignment to variable - color.
+      color = @current_turn
+      ^^^^^
+lib/board.rb:200:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:201:29: W: [Correctable] Lint/UnusedMethodArgument: Unused method argument - color. If it's necessary, use _ or _color as an argument name to indicate that it won't be used. If it's unnecessary, remove it.
+    def undo_castling(move, color)
+                            ^^^^^
+lib/board.rb:210:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:214:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:221:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:228:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:231:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:232:5: C: Metrics/PerceivedComplexity: Perceived complexity for update_castling_rights is too high. [9/8]
+    def update_castling_rights(move, piece) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/board.rb:233:21: C: [Correctable] Style/MultipleComparison: Avoid comparing a variable with multiple items in a conditional, use Array#include? instead.
+      return unless piece.type == :king || piece.type == :rook
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/board.rb:234:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:236:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:241:12: C: [Correctable] Style/NumericPredicate: Use move.from_col.zero? instead of move.from_col == 0.
+        if move.from_col == 0 # Queenside rook
+           ^^^^^^^^^^^^^^^^^^
+lib/board.rb:248:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:267:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:272:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:278:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:281:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:284:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:287:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:290:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:295:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:299:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:303:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:306:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:309:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:313:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/board.rb:317:4: C: [Correctable] Layout/TrailingEmptyLines: Final newline missing.
+end
+   
+lib/fen_parser.rb:10:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:11:5: C: Metrics/AbcSize: Assignment Branch Condition size for parse is too high. [<10, 18, 8> 22.09/20]
+    def parse(fen_string) ...
+    ^^^^^^^^^^^^^^^^^^^^^
+lib/fen_parser.rb:14:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:21:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:24:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:27:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:30:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:33:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:36:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:40:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:45:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:53:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:56:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:58:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:66:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:67:9: C: Naming/PredicateMethod: Predicate method names should end with ?.
+    def parse_board_position(board_part)
+        ^^^^^^^^^^^^^^^^^^^^
+lib/fen_parser.rb:70:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:81:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:85:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:88:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:91:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:94:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:98:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:108:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:111:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:117:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:119:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:133:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:136:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:139:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:142:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:145:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:148:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:152:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:155:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:157:41: C: [Correctable] Style/NumericPredicate: Use empty_count.positive? instead of empty_count > 0.
+            rank += empty_count.to_s if empty_count > 0
+                                        ^^^^^^^^^^^^^^^
+lib/fen_parser.rb:164:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:165:37: C: [Correctable] Style/NumericPredicate: Use empty_count.positive? instead of empty_count > 0.
+        rank += empty_count.to_s if empty_count > 0
+                                    ^^^^^^^^^^^^^^^
+lib/fen_parser.rb:168:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:171:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:173:14: C: Style/HashLikeCase: Consider replacing case-when with a hash lookup.
+      char = case piece.type ...
+             ^^^^^^^^^^^^^^^
+lib/fen_parser.rb:181:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:184:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:187:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:192:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:195:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:198:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/fen_parser.rb:205:4: C: [Correctable] Layout/TrailingEmptyLines: Final newline missing.
+end
+   
+lib/move_generator.rb:6:3: C: Metrics/ClassLength: Class has too many lines. [223/200]
+  class MoveGenerator ...
+  ^^^^^^^^^^^^^^^^^^^
+lib/move_generator.rb:10:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:14:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:17:9: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+        if legal_move?(move)
+        ^^
+lib/move_generator.rb:21:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:24:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:29:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:34:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:38:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:41:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:44:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:47:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:50:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:53:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:55:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:58:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:63:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:67:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:70:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:73:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:92:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:93:5: C: Metrics/AbcSize: Assignment Branch Condition size for generate_pawn_moves is too high. [<11, 33, 30> 45.93/20]
+    def generate_pawn_moves(color, row, col) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/move_generator.rb:93:5: C: Metrics/CyclomaticComplexity: Cyclomatic complexity for generate_pawn_moves is too high. [20/10]
+    def generate_pawn_moves(color, row, col) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/move_generator.rb:93:5: C: Metrics/MethodLength: Method has too many lines. [40/30]
+    def generate_pawn_moves(color, row, col) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/move_generator.rb:93:5: C: Metrics/PerceivedComplexity: Perceived complexity for generate_pawn_moves is too high. [22/8]
+    def generate_pawn_moves(color, row, col) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/move_generator.rb:98:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:110:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:119:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:124:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:126:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:131:13: C: Performance/CollectionLiteralInLoop: Avoid immutable Array literals in loops. It is better to extract it into a local variable or a constant.
+            %i[queen rook bishop knight].each do |promotion_piece|
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/move_generator.rb:138:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:140:9: C: [Correctable] Style/Next: Use next to skip iteration.
+        if @board.en_passant_target &&  ...
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/move_generator.rb:140:39: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+        if @board.en_passant_target && 
+                                      ^
+lib/move_generator.rb:141:53: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+           @board.en_passant_target[0] == new_row && 
+                                                    ^
+lib/move_generator.rb:146:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:149:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:156:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:160:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:162:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:165:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:166:9: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+        if !target_piece || target_piece.color != piece.color
+        ^^
+lib/move_generator.rb:170:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:173:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:177:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:181:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:184:9: C: [Correctable] Layout/FirstArrayElementIndentation: Use 2 spaces for indentation in an array, relative to the first position after the preceding left parenthesis.
+        [-1, -1], [-1, 0], [-1, 1],
+        ^^^^^^^^
+lib/move_generator.rb:187:7: C: [Correctable] Layout/FirstArrayElementIndentation: Indent the right bracket the same as the first position after the preceding left parenthesis.
+      ])
+      ^
+lib/move_generator.rb:189:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:197:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:201:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:203:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:206:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:207:9: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+        if !target_piece || target_piece.color != piece.color
+        ^^
+lib/move_generator.rb:211:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:214:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:218:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:222:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:225:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:228:13: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+            if target_piece.color != piece.color
+            ^^
+lib/move_generator.rb:236:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:241:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:244:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:248:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:250:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:253:9: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+        if can_castle_kingside?(color, king_row)
+        ^^
+lib/move_generator.rb:253:9: C: [Correctable] Style/SoleNestedConditional: Consider merging nested conditions into outer if conditions.
+        if can_castle_kingside?(color, king_row)
+        ^^
+lib/move_generator.rb:257:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:260:9: C: [Correctable] Style/IfUnlessModifier: Favor modifier if usage when having a single-line body. Another good alternative is the usage of control flow &&/||.
+        if can_castle_queenside?(color, king_row)
+        ^^
+lib/move_generator.rb:260:9: C: [Correctable] Style/SoleNestedConditional: Consider merging nested conditions into outer if conditions.
+        if can_castle_queenside?(color, king_row)
+        ^^
+lib/move_generator.rb:264:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:267:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:271:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:274:57: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+      !@board.under_attack?(king_row, 5, enemy_color) && 
+                                                        ^
+lib/move_generator.rb:277:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:280:54: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+      return false if @board.piece_at(king_row, 3) || 
+                                                     ^
+lib/move_generator.rb:281:54: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+                      @board.piece_at(king_row, 2) || 
+                                                     ^
+lib/move_generator.rb:283:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:286:57: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+      !@board.under_attack?(king_row, 3, enemy_color) && 
+                                                        ^
+lib/move_generator.rb:289:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:299:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/move_generator.rb:308:4: C: [Correctable] Layout/TrailingEmptyLines: Final newline missing.
+end
+   
+lib/perft.rb:11:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:15:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:17:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:20:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:27:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:31:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:34:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:38:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:39:56: C: [Correctable] Style/NestedTernaryOperator: Ternary operators must not be nested. Prefer if or else constructs instead.
+        nodes = depth > 1 ? perft_recursive(depth - 1, color == :white ? :black : :white) : 1
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/perft.rb:42:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:46:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:53:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:55:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:57:19: C: [Correctable] Style/NumericPredicate: Use depth.zero? instead of depth == 0.
+      return 1 if depth == 0
+                  ^^^^^^^^^^
+lib/perft.rb:58:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:61:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:64:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:68:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:70:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:74:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:77:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:87:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/perft.rb:96:4: C: [Correctable] Layout/TrailingEmptyLines: Final newline missing.
+end
+   
+lib/types.rb:6:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:9:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:15:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:25:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:30:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:42:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:49:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:50:5: C: Metrics/AbcSize: Assignment Branch Condition size for from_algebraic is too high. [<7, 19, 8> 21.77/20]
+    def self.from_algebraic(move_str) ...
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+lib/types.rb:52:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:57:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:61:21: C: Style/HashLikeCase: Consider replacing case-when with a hash lookup.
+        promotion = case promotion_char ...
+                    ^^^^^^^^^^^^^^^^^^^
+lib/types.rb:62:20: C: [Correctable] Layout/CaseIndentation: Indent when as deep as case.
+                   when 'q' then :queen
+                   ^^^^
+lib/types.rb:63:20: C: [Correctable] Layout/CaseIndentation: Indent when as deep as case.
+                   when 'r' then :rook
+                   ^^^^
+lib/types.rb:64:20: C: [Correctable] Layout/CaseIndentation: Indent when as deep as case.
+                   when 'b' then :bishop
+                   ^^^^
+lib/types.rb:65:20: C: [Correctable] Layout/CaseIndentation: Indent when as deep as case.
+                   when 'n' then :knight
+                   ^^^^
+lib/types.rb:66:20: W: [Correctable] Layout/EndAlignment: end at 66, 19 is not aligned with case at 61, 20.
+                   end
+                   ^^^
+lib/types.rb:68:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:72:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:76:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:81:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:85:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:89:1: C: [Correctable] Layout/TrailingWhitespace: Trailing whitespace detected.
+lib/types.rb:94:4: C: [Correctable] Layout/TrailingEmptyLines: Final newline missing.
+end
+   
+
+7 files inspected, 374 offenses detected, 335 offenses autocorrectable
+
+Tip: Based on detected gems, the following RuboCop extension libraries might be helpful:
+  * rubocop-rspec (https://rubygems.org/gems/rubocop-rspec)
+
+You can opt out of this message by adding the following to your config (see https://docs.rubocop.org/rubocop/extensions.html#extension-suggestions for more options):
+  AllCops:
+    SuggestExtensions: false
+ruby -w chess.rb -c 2>/dev/null || true
+  a b c d e f g h
+8 r n b q k b n r 8
+7 p p p p p p p p 7
+6 . . . . . . . . 6
+5 . . . . . . . . 5
+4 . . . . . . . . 4
+3 . . . . . . . . 3
+2 P P P P P P P P 2
+1 R N B Q K B N R 1
+  a b c d e f g h
+
+White to move
+
+> bundle install
+Using ast 2.4.3
+Using bundler 2.4.10
+Using diff-lcs 1.6.2
+Using json 2.15.1
+Using language_server-protocol 3.17.0.5
+Using lint_roller 1.1.0
+Using parallel 1.27.0
+Using racc 1.8.1
+Using parser 3.3.9.0
+Using prism 1.6.0
+Using rainbow 3.1.1
+Using regexp_parser 2.11.3
+Using rspec-support 3.13.6
+Using rspec-core 3.13.6
+Using rspec-expectations 3.13.5
+Using rspec-mocks 3.13.6
+Using rspec 3.13.2
+Using rubocop-ast 1.47.1
+Using ruby-progressbar 1.13.0
+Using unicode-emoji 4.1.0
+Using unicode-display_width 3.2.0
+Using rubocop 1.81.6
+Using rubocop-performance 1.26.1
+Bundle complete! 3 Gemfile dependencies, 23 gems now installed.
+Use `bundle info [gemname]` to see where a bundled gem is installed.
 ⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
@@ -13,21 +623,42 @@ Path: implementations/ruby
 ✅ Cache clearing completed
 🔍 Running static analysis...
 🔧 Running: make analyze
+✅ Analysis completed in 1.33s
+🔨 Building implementation...
+🔧 Running: make build
+✅ Build completed in 0.32s
+♟️  Running chess client tests...
+  ✅ Basic Movement (2s timeout)
+  ✅ Castling (2s timeout)
+  ✅ En Passant (2s timeout)
+  ❌ Checkmate Detection (2s timeout)
+  ❌ AI Move Generation (2s timeout)
+  ❌ Invalid Move Handling (2s timeout)
+  ✅ Pawn Promotion (2s timeout)
+✅ Tests completed in 1.83s (4 passed, 3 failed)
+🐳 Running Docker tests...
+  Building Docker image...
+  🔧 Running: docker build -t chess-ruby .
 Traceback (most recent call last):
-  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 647, in <module>
+  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 669, in <module>
     sys.exit(main())
              ~~~~^^
-  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 614, in main
+  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 636, in main
     result = tester.run_full_test()
-  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 154, in run_full_test
-    self._run_analyze()
-    ~~~~~~~~~~~~~~~~~^^
-  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 217, in _run_analyze
-    result = subprocess.run(
-        cmd,
-    ...<3 lines>...
-        timeout=300  # 5 minute timeout
+  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 169, in run_full_test
+    self._run_docker_tests()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 400, in _run_docker_tests
+    success, build_time, output = DockerManager.build_image(
+                                  ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        str(self.impl_path),
+        ^^^^^^^^^^^^^^^^^^^^
+        image_name
+        ^^^^^^^^^^
     )
+    ^
+  File "/Users/evaisse/Sites/projects/the-great-analysis-challenge/test/performance_test.py", line 114, in build_image
+    result = subprocess.run(cmd, cwd=dockerfile_path, capture_output=True, text=True, check=True)
   File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 556, in run
     stdout, stderr = process.communicate(input, timeout=timeout)
                      ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^

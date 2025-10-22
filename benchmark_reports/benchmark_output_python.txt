@@ -1,3 +1,11 @@
+Running Python static analysis...
+python3 -m pylint chess.py lib/*.py --disable=C0114,C0115,C0116 || true
+python3 -m mypy chess.py lib/*.py || true
+python3 -m flake8 chess.py lib/*.py --max-line-length=100 --ignore=E203,W503 || true
+python3 -m black --check --diff chess.py lib/*.py || true
+python3 -m bandit -r . -f txt || true
+python3 -m py_compile chess.py
+python3 -m py_compile lib/*.py
 ⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
@@ -13,45 +21,45 @@ Path: implementations/python
 ✅ Cache clearing completed
 🔍 Running static analysis...
 🔧 Running: make analyze
-✅ Analysis completed in 0.19s
+✅ Analysis completed in 0.21s
 🔨 Building implementation...
 🔧 Running: make build
-✅ Build completed in 0.11s
+✅ Build completed in 0.10s
 ♟️  Running chess client tests...
-  ❌ Basic Movement
-  ❌ Castling
-  ❌ En Passant
-  ❌ Checkmate Detection
-  ❌ AI Move Generation
-  ❌ Invalid Move Handling
-  ❌ Pawn Promotion
-✅ Tests completed in 0.53s (0 passed, 7 failed)
+  ❌ Basic Movement (2s timeout)
+  ❌ Castling (2s timeout)
+  ❌ En Passant (2s timeout)
+  ❌ Checkmate Detection (2s timeout)
+  ❌ AI Move Generation (2s timeout)
+  ❌ Invalid Move Handling (2s timeout)
+  ❌ Pawn Promotion (2s timeout)
+✅ Tests completed in 0.60s (0 passed, 7 failed)
 🐳 Running Docker tests...
   Building Docker image...
   🔧 Running: docker build -t chess-python .
-  ✅ Docker build completed in 0.54s
+  ✅ Docker build completed in 0.72s
   🔧 Running: docker run --rm -i chess-python sh -c echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | timeout 30s make test
-  ✅ Docker test completed in 0.73s
+  ✅ Docker test completed in 0.78s
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:49:10
+Generated: 2025-10-22 23:15:11
 ================================================================================
 
 PERFORMANCE SUMMARY
 --------------------------------------------------------------------------------
 Language     Status     Analyze  Build    Test     Memory     Tests   
 --------------------------------------------------------------------------------
-python       completed      0.2s     0.1s     0.5s        0MB 0/7     
+python       completed      0.2s     0.1s     0.6s        0MB 0/7     
 
 ============================================================
 DETAILED RESULTS: PYTHON
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.19s
-  Build Seconds: 0.11s
-  Test Seconds: 0.53s
+  Analyze Seconds: 0.21s
+  Build Seconds: 0.10s
+  Test Seconds: 0.60s
 
 MEMORY USAGE:
   Analyze: Peak 0.0MB, Avg 0.0MB
@@ -69,8 +77,8 @@ CHESS ENGINE TESTS: 0 passed, 7 failed
     ❌ Pawn Promotion
 
 DOCKER TESTS:
-  Build: ✅ (0.54s)
-  Test: ✅ (0.73s)
+  Build: ✅ (0.72s)
+  Test: ✅ (0.78s)
 
 ================================================================================
 

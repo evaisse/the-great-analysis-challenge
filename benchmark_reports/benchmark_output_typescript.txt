@@ -1,0 +1,31 @@
+Running TypeScript static analysis...
+npm install
+
+added 4 packages, and audited 5 packages in 469ms
+
+1 package is looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm run lint || true
+
+> typescript@1.0.0 lint
+> echo "No linter configured yet" && exit 0
+
+No linter configured yet
+npx tsc --noEmit || true
+npx prettier --check src/*.ts || true
+Checking formatting...
+npm install
+
+up to date, audited 5 packages in 480ms
+
+1 package is looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm run build
+
+> typescript@1.0.0 build
+> tsc
+

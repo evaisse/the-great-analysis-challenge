@@ -1,0 +1,86 @@
+[
+  {
+    "language": "ruby",
+    "path": "implementations/ruby",
+    "metadata": {
+      "language": "ruby",
+      "version": "3.2",
+      "author": "Ruby Implementation",
+      "build": "bundle install",
+      "run": "ruby chess.rb",
+      "analyze": "bundle exec rubocop",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000
+    },
+    "timings": {
+      "analyze_seconds": 1.661067008972168,
+      "build_seconds": 0.3543376922607422,
+      "test_seconds": 1.8503429889678955
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {
+      "build_time": 7.826535940170288,
+      "build_success": false
+    },
+    "test_results": {
+      "passed": [
+        "Basic Movement",
+        "Castling",
+        "En Passant",
+        "Pawn Promotion"
+      ],
+      "failed": [
+        {
+          "test": "Checkmate Detection",
+          "output": "\n> OK: New game started\na b c d e f g h\n8 r n b q k b n r 8\n7 p p p p p p p p 7\n6 . . . . . . . . 6\n5 . . . . . . . . 5\n4 . . . . . . . . 4\n3 . . . . . . . . 3\n2 P P P P P P P P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nWhite to move\n\n> OK: f2f3\na b c d e f g h\n8 r n b q k b n r 8\n7 p p p p p p p p 7\n6 . . . . . . . . 6\n5 . . . . . . . . 5\n4 . . . . . . . . 4\n3 . . . . . P . . 3\n2 P P P P P . P P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nBlack to move\n\n> OK: e7e5\na b c d e f g h\n8 r n b q k b n r 8\n7 "
+        },
+        {
+          "test": "AI Move Generation",
+          "output": "a b c d e f g h\n8 r n b . k b n r 8\n7 p p p p . p p p 7\n6 . . . . . . . . 6\n5 . . . . p . . . 5\n4 . . . . . . P q 4\n3 . . . . . P . . 3\n2 P P P P P . . P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nWhite to move\nCHECKMATE: Black wins\n\n> OK: New game started"
+        },
+        {
+          "test": "Invalid Move Handling",
+          "output": "a b c d e f g h\n8 r n b q k b n r 8\n7 p p p p p p p p 7\n6 . . . . . . . . 6\n5 . . . . . . . . 5\n4 . . . . . . . . 4\n3 . . . . . . . . 3\n2 P P P P P P P P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nWhite to move\n\n> AI: d2d4 (depth=3, eval=20, time=1169ms)\na b c d e f g h\n8 r n b q k b n r 8\n7 p p p p p p p p 7\n6 . . . . . . . . 6\n5 . . . . . . . . 5\n4 . . . P . . . . 4\n3 . . . . . . . . 3\n2 P P P . P P P P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nBlack to move\n\n> OK: New game started"
+        }
+      ],
+      "performance": {
+        "Basic Movement": 0.16405582427978516,
+        "Castling": 0.0012121200561523438,
+        "En Passant": 0.001383066177368164,
+        "Pawn Promotion": 0.0006139278411865234
+      },
+      "errors": []
+    },
+    "errors": [
+      "Docker build failed: #0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 1.21kB done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/ubuntu:24.04\n#2 DONE 0.0s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 200B done\n#3 DONE 0.0s\n\n#4 [ 1/10] FROM docker.io/library/ubuntu:24.04\n#4 CACHED\n\n#5 [internal] load build context\n#5 transferring context: 49.68kB done\n#5 DONE 0.1s\n\n#6 [ 2/10] RUN apt-get update && a"
+    ],
+    "status": "completed"
+  }
+]
