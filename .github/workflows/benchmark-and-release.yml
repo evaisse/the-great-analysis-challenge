@@ -259,12 +259,12 @@ def generate_status_table(performance_data):
         }.get(status, '')
         
         # Create table row
-        row = f"| {emoji} **{lang}** | {status.title()} | {build_time} | {analyze_time} | {features} | {makefile} | {docker_status} | {notes_text} |"
+        row = f"| {emoji} **{lang}** | {build_time} | {analyze_time} | {features} | {makefile} | {docker_status} | {notes_text} |"
         table_rows.append(row)
     
     # Create complete table
-    table_header = """| Language | Status | Build Time | Analysis Time | Features | Makefile | Docker | Notes |
-|----------|--------|------------|---------------|----------|----------|--------|-------|"""
+    table_header = """| Language | Build Time | Analysis Time | Features | Makefile | Docker | Notes |
+|----------|------------|---------------|----------|----------|--------|-------|"""
     
     return table_header + "\n" + "\n".join(table_rows)
 
