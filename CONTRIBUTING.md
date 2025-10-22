@@ -90,8 +90,11 @@ Improve test coverage and test infrastructure.
 ### Initial Setup
 
 1. **Fork the repository:**
-   ```bash
-   # Via GitHub UI or gh CLI
+   # Via GitHub UI:
+   # 1. Go to https://github.com/evaisse/the-great-analysis-challenge
+   # 2. Click the "Fork" button in the top-right corner.
+   #
+   # Or via gh CLI:
    gh repo fork evaisse/the-great-analysis-challenge --clone
    ```
 
