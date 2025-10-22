@@ -1,0 +1,117 @@
+[
+  {
+    "language": "python",
+    "path": "../../implementations/python",
+    "metadata": {
+      "language": "python",
+      "version": "3.11",
+      "author": "Python Implementation",
+      "build": "python3 -m py_compile chess.py",
+      "run": "python3 chess.py",
+      "analyze": "python3 analyze.py",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000
+    },
+    "timings": {
+      "analyze_seconds": 0.29651808738708496,
+      "build_seconds": 0.11833381652832031,
+      "test_seconds": 0.5339958667755127
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {
+      "build_time": 0.6417520046234131,
+      "build_success": true,
+      "test_time": 0.8368320465087891,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        {
+          "test": "Basic Movement",
+          "output": "\n\n\n\n\n"
+        },
+        {
+          "test": "Castling",
+          "output": "\n\n"
+        },
+        {
+          "test": "En Passant",
+          "output": "\n\n"
+        },
+        {
+          "test": "Checkmate Detection",
+          "output": "\n\n\n\n"
+        },
+        {
+          "test": "AI Move Generation",
+          "output": "\n"
+        },
+        {
+          "test": "Invalid Move Handling",
+          "output": "\n"
+        },
+        {
+          "test": "Pawn Promotion",
+          "output": "\n\n"
+        }
+      ],
+      "performance": {},
+      "errors": [
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe"
+      ]
+    },
+    "errors": [],
+    "status": "completed"
+  }
+]

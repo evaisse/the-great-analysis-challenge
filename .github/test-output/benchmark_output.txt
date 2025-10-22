@@ -1,0 +1,75 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing python implementation
+Path: ../../implementations/python
+============================================================
+🧹 Clearing build cache...
+✅ Local cache cleared with make clean
+✅ Cache clearing completed
+🔍 Running static analysis...
+✅ Analysis completed in 0.30s
+🔨 Building implementation...
+✅ Build completed in 0.12s
+♟️  Running chess client tests...
+  ❌ Basic Movement
+  ❌ Castling
+  ❌ En Passant
+  ❌ Checkmate Detection
+  ❌ AI Move Generation
+  ❌ Invalid Move Handling
+  ❌ Pawn Promotion
+✅ Tests completed in 0.53s (0 passed, 7 failed)
+🐳 Running Docker tests...
+  Building Docker image...
+  ✅ Docker build completed in 0.64s
+  ✅ Docker test completed in 0.84s
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-10-22 10:30:58
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+python       completed      0.3s     0.1s     0.5s        0MB 0/7     
+
+============================================================
+DETAILED RESULTS: PYTHON
+============================================================
+
+TIMING BREAKDOWN:
+  Analyze Seconds: 0.30s
+  Build Seconds: 0.12s
+  Test Seconds: 0.53s
+
+MEMORY USAGE:
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 0.0MB, Avg 0.0MB
+  Test: Peak 0.0MB, Avg 0.0MB
+
+CHESS ENGINE TESTS: 0 passed, 7 failed
+  Failed tests:
+    ❌ Basic Movement
+    ❌ Castling
+    ❌ En Passant
+    ❌ Checkmate Detection
+    ❌ AI Move Generation
+    ❌ Invalid Move Handling
+    ❌ Pawn Promotion
+
+DOCKER TESTS:
+  Build: ✅ (0.64s)
+  Test: ✅ (0.84s)
+
+================================================================================
+
+📄 Text report saved to performance_report_test.txt
+📄 JSON results saved to performance_data_test.json
+
+✅ All 1 implementation(s) completed successfully

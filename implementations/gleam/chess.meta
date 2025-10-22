@@ -2,8 +2,10 @@
   "language": "gleam",
   "version": "1.2.1",
   "author": "Gleam Implementation",
-  "build": "cd gleam && docker build -t chess-gleam .",
-  "run": "cd gleam && docker run -i chess-gleam",
+  "build": "gleam build",
+  "run": "gleam run",
+  "analyze": "gleam format --check && gleam check",
+  "test": "gleam test",
   "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
   "max_ai_depth": 5,
   "estimated_perft4_ms": 800
