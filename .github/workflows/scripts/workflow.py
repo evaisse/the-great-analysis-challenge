@@ -184,12 +184,20 @@ class WorkflowTool:
         
         return matrix
     
-    def run_benchmark(self, impl_name: str, impl_dir: str, timeout: int = 300) -> bool:
+    def run_benchmark(self, impl_name: str, timeout: int = 300) -> bool:
         """Run benchmark for a specific implementation."""
         print(f"🏁 Running benchmark for {impl_name}...")
         
-        if not impl_name or not impl_dir:
-            print("Error: Implementation name and directory required")
+        if not impl_name:
+            print("Error: Implementation name required")
+            return False
+        
+        # Derive implementation directory from name
+        impl_dir = f"implementations/{impl_name}"
+        
+        # Check if implementation directory exists
+        if not os.path.exists(impl_dir):
+            print(f"❌ Implementation directory not found: {impl_dir}")
             return False
         
         # Create reports directory
@@ -695,7 +703,6 @@ def main():
     # run-benchmark command
     benchmark_parser = subparsers.add_parser('run-benchmark', help='Run benchmark for implementation')
     benchmark_parser.add_argument('impl_name', nargs='?', help='Implementation name')
-    benchmark_parser.add_argument('impl_dir', nargs='?', help='Implementation directory')
     benchmark_parser.add_argument('--timeout', type=int, default=300, help='Timeout in seconds')
     benchmark_parser.add_argument('--all', action='store_true', help='Run benchmarks on all implementations')
     
@@ -774,7 +781,7 @@ def main():
             try:
                 return run_benchmark_main(args)
             except NameError:
-                success = tool.run_benchmark(args.impl_name, args.impl_dir, args.timeout)
+                success = tool.run_benchmark(args.impl_name, args.timeout)
                 return 0 if success else 1
         
         elif args.command == 'verify-implementations':
