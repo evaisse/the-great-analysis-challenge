@@ -87,8 +87,15 @@ jobs:
           echo "implementations=$CHANGED_IMPLEMENTATIONS" >> $GITHUB_OUTPUT
           echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
 
-      - name: Generate dynamic matrix
+      - name: Set up Python
+        if: steps.changes.outputs.has-changes == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Generate dynamic matrix using Python validation
         id: generate-matrix
+        if: steps.changes.outputs.has-changes == 'true'
         run: |
           CHANGED_IMPLEMENTATIONS="${{ steps.changes.outputs.implementations }}"
           
@@ -98,60 +105,55 @@ jobs:
             exit 0
           fi
           
-          # Define all available implementations
-          declare -A IMPLEMENTATIONS=(
-            ["rust"]='{"name": "Rust", "directory": "implementations/rust", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-rust || true\necho \"help\" | timeout 30s docker run --rm -i chess-rust || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-rust || true\necho \"quit\" | timeout 10s docker run --rm -i chess-rust || true"}'
-            ["go"]='{"name": "Go", "directory": "implementations/go", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-go || true\necho \"help\" | timeout 30s docker run --rm -i chess-go || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-go || true\necho \"quit\" | timeout 10s docker run --rm -i chess-go || true"}'
-            ["dart"]='{"name": "Dart", "directory": "implementations/dart", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-dart || true\necho \"help\" | timeout 30s docker run --rm -i chess-dart || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-dart || true\necho \"quit\" | timeout 10s docker run --rm -i chess-dart || true"}'
-            ["typescript"]='{"name": "TypeScript", "directory": "implementations/typescript", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-typescript || true\necho \"help\" | timeout 30s docker run --rm -i chess-typescript || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-typescript || true\necho \"quit\" | timeout 10s docker run --rm -i chess-typescript || true"}'
-            ["gleam"]='{"name": "Gleam", "directory": "implementations/gleam", "dockerfile": "Dockerfile", "test_commands": "timeout 30s docker run --rm chess-gleam || true"}'
-            ["kotlin"]='{"name": "Kotlin", "directory": "implementations/kotlin", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-kotlin || true\necho \"help\" | timeout 30s docker run --rm -i chess-kotlin || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-kotlin || true\necho \"quit\" | timeout 10s docker run --rm -i chess-kotlin || true"}'
-            ["crystal"]='{"name": "Crystal", "directory": "implementations/crystal", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-crystal || true\necho \"help\" | timeout 30s docker run --rm -i chess-crystal || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-crystal || true\necho \"quit\" | timeout 10s docker run --rm -i chess-crystal || true"}'
-            ["ruby"]='{"name": "Ruby", "directory": "implementations/ruby", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-ruby || true\necho \"help\" | timeout 30s docker run --rm -i chess-ruby || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-ruby || true\necho \"quit\" | timeout 10s docker run --rm -i chess-ruby || true"}'
-            ["julia"]='{"name": "Julia", "directory": "implementations/julia", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-julia || true\necho \"help\" | timeout 30s docker run --rm -i chess-julia || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-julia || true\necho \"quit\" | timeout 10s docker run --rm -i chess-julia || true"}'
-            ["haskell"]='{"name": "Haskell", "directory": "implementations/haskell", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-haskell || true\necho \"help\" | timeout 30s docker run --rm -i chess-haskell || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-haskell || true\necho \"quit\" | timeout 10s docker run --rm -i chess-haskell || true"}'
-            ["elm"]='{"name": "Elm", "directory": "implementations/elm", "dockerfile": "Dockerfile", "test_commands": "timeout 30s docker run --rm chess-elm || true"}'
-            ["python"]='{"name": "Python", "directory": "implementations/python", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-python || true\necho \"help\" | timeout 30s docker run --rm -i chess-python || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-python || true\necho \"quit\" | timeout 10s docker run --rm -i chess-python || true"}'
-            ["nim"]='{"name": "Nim", "directory": "implementations/nim", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-nim || true\necho \"help\" | timeout 30s docker run --rm -i chess-nim || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-nim || true\necho \"quit\" | timeout 10s docker run --rm -i chess-nim || true"}'
-            ["zig"]='{"name": "Zig", "directory": "implementations/zig", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-zig || true\necho \"help\" | timeout 30s docker run --rm -i chess-zig || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-zig || true\necho \"quit\" | timeout 10s docker run --rm -i chess-zig || true"}'
-            ["mojo"]='{"name": "Mojo", "directory": "implementations/mojo", "dockerfile": "Dockerfile", "test_commands": "timeout 30s docker run --rm chess-mojo || true"}'
-            ["rescript"]='{"name": "ReScript", "directory": "implementations/rescript", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-rescript || true\necho \"help\" | timeout 30s docker run --rm -i chess-rescript || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-rescript || true\necho \"quit\" | timeout 10s docker run --rm -i chess-rescript || true"}'
-            ["swift"]='{"name": "Swift", "directory": "implementations/swift", "dockerfile": "Dockerfile", "test_commands": "echo \"board\" | timeout 30s docker run --rm -i chess-swift || true\necho \"help\" | timeout 30s docker run --rm -i chess-swift || true\necho \"perft 3\" | timeout 60s docker run --rm -i chess-swift || true\necho \"quit\" | timeout 10s docker run --rm -i chess-swift || true"}'
-          )
+          # Create Python script to generate matrix from directory structure
+          cat > generate_matrix.py << 'EOF'
+import os
+import json
+import sys
+
+def discover_implementations():
+    """Discover implementations from directory structure."""
+    implementations = []
+    impl_dir = "implementations"
+    
+    if not os.path.exists(impl_dir):
+        return implementations
+    
+    for name in os.listdir(impl_dir):
+        impl_path = os.path.join(impl_dir, name)
+        dockerfile_path = os.path.join(impl_path, "Dockerfile")
+        
+        if os.path.isdir(impl_path) and os.path.exists(dockerfile_path):
+            implementations.append({
+                "name": name.title(),
+                "directory": impl_path,
+                "dockerfile": "Dockerfile"
+            })
+    
+    return sorted(implementations, key=lambda x: x["name"])
+
+def filter_implementations(all_impls, changed_impls):
+    """Filter implementations based on changes."""
+    if changed_impls == "all":
+        return all_impls
+    
+    changed_list = changed_impls.strip().split()
+    return [impl for impl in all_impls if impl["name"].lower() in changed_list]
+
+# Get all implementations
+all_implementations = discover_implementations()
+changed_implementations = sys.argv[1] if len(sys.argv) > 1 else "all"
+
+# Filter based on changes
+filtered_implementations = filter_implementations(all_implementations, changed_implementations)
+
+# Generate matrix
+matrix = {"include": filtered_implementations}
+print(json.dumps(matrix))
+EOF
           
-          MATRIX_INCLUDE="["
-          FIRST=true
-          
-          if [[ "$CHANGED_IMPLEMENTATIONS" == "all" ]]; then
-            echo "Testing all implementations"
-            for impl in "${!IMPLEMENTATIONS[@]}"; do
-              if [[ "$FIRST" == "true" ]]; then
-                FIRST=false
-              else
-                MATRIX_INCLUDE+=","
-              fi
-              MATRIX_INCLUDE+="${IMPLEMENTATIONS[$impl]}"
-            done
-          else
-            echo "Testing changed implementations: $CHANGED_IMPLEMENTATIONS"
-            for impl in $CHANGED_IMPLEMENTATIONS; do
-              if [[ -n "${IMPLEMENTATIONS[$impl]}" ]]; then
-                if [[ "$FIRST" == "true" ]]; then
-                  FIRST=false
-                else
-                  MATRIX_INCLUDE+=","
-                fi
-                MATRIX_INCLUDE+="${IMPLEMENTATIONS[$impl]}"
-                echo "Added $impl to matrix"
-              else
-                echo "Warning: Unknown implementation '$impl'"
-              fi
-            done
-          fi
-          
-          MATRIX_INCLUDE+="]"
-          
-          MATRIX_JSON="{\"include\":$MATRIX_INCLUDE}"
+          # Generate matrix using Python script
+          MATRIX_JSON=$(python3 generate_matrix.py "$CHANGED_IMPLEMENTATIONS")
           echo "Generated matrix: $MATRIX_JSON"
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
@@ -169,155 +171,97 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
 
-      - name: Check if directory exists
-        id: check_dir
+      - name: Verify implementation structure
         run: |
           if [ -d "${{ matrix.directory }}" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
             echo "✅ Directory ${{ matrix.directory }} exists"
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
             echo "❌ Directory ${{ matrix.directory }} does not exist"
+            exit 1
           fi
-
-      - name: Check if Dockerfile exists
-        id: check_dockerfile
-        if: steps.check_dir.outputs.exists == 'true'
-        run: |
+          
           if [ -f "${{ matrix.directory }}/${{ matrix.dockerfile }}" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
             echo "✅ Dockerfile found in ${{ matrix.directory }}"
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
             echo "❌ Dockerfile not found in ${{ matrix.directory }}"
+            exit 1
           fi
 
       - name: Build ${{ matrix.name }} Docker image
-        if: steps.check_dir.outputs.exists == 'true' && steps.check_dockerfile.outputs.exists == 'true'
         run: |
           echo "🏗️ Building ${{ matrix.name }} chess engine..."
           cd ${{ matrix.directory }}
           
-          # Build with timing
           start_time=$(date +%s)
-          docker build \
-            --tag chess-${{ matrix.directory }} \
-            --file ${{ matrix.dockerfile }} \
-            --progress=plain \
-            .
+          docker build --tag chess-$(basename ${{ matrix.directory }}) --file ${{ matrix.dockerfile }} .
           end_time=$(date +%s)
           build_time=$((end_time - start_time))
           
           echo "✅ ${{ matrix.name }} build completed in ${build_time} seconds"
           
           # Get image size
-          image_size=$(docker images chess-${{ matrix.directory }} --format "{{.Size}}")
+          image_size=$(docker images chess-$(basename ${{ matrix.directory }}) --format "{{.Size}}")
           echo "📦 Image size: $image_size"
 
-      - name: Test ${{ matrix.name }} Docker image
-        if: steps.check_dir.outputs.exists == 'true' && steps.check_dockerfile.outputs.exists == 'true'
+      - name: Run standard tests using Make targets
         run: |
-          echo "🧪 Testing ${{ matrix.name }} chess engine..."
+          echo "🧪 Testing ${{ matrix.name }} chess engine using standard commands..."
           
-          # Verify image exists
-          docker images chess-${{ matrix.directory }}
+          # Get the implementation name for docker image
+          IMPL_NAME=$(basename ${{ matrix.directory }})
           
-          # Run basic functionality tests
-          echo "Running basic tests for ${{ matrix.name }}..."
-          ${{ matrix.test_commands }}
+          # Standard test commands - same for all implementations
+          echo "Testing basic commands..."
+          echo "board" | timeout 30s docker run --rm -i chess-$IMPL_NAME || true
+          echo "help" | timeout 30s docker run --rm -i chess-$IMPL_NAME || true
+          echo "fen" | timeout 30s docker run --rm -i chess-$IMPL_NAME || true
+          
+          # Test perft if not Elm/Gleam (they have different interfaces)
+          if [[ "$IMPL_NAME" != "elm" && "$IMPL_NAME" != "gleam" && "$IMPL_NAME" != "mojo" ]]; then
+            echo "Running perft test..."
+            echo "perft 3" | timeout 60s docker run --rm -i chess-$IMPL_NAME || true
+          else
+            echo "Running basic test for $IMPL_NAME..."
+            timeout 30s docker run --rm chess-$IMPL_NAME || true
+          fi
           
           echo "✅ ${{ matrix.name }} tests completed"
 
       - name: Cleanup Docker image
-        if: always() && steps.check_dir.outputs.exists == 'true' && steps.check_dockerfile.outputs.exists == 'true'
+        if: always()
         run: |
+          IMPL_NAME=$(basename ${{ matrix.directory }})
           echo "🧹 Cleaning up ${{ matrix.name }} Docker image..."
-          docker rmi chess-${{ matrix.directory }} || true
+          docker rmi chess-$IMPL_NAME || true
 
-      - name: Skip ${{ matrix.name }} (missing files)
-        if: steps.check_dir.outputs.exists == 'false' || steps.check_dockerfile.outputs.exists == 'false'
-        run: |
-          echo "⏭️ Skipping ${{ matrix.name }} - missing directory or Dockerfile"
-
-  compilation-benchmark:
-    name: Compilation Speed Benchmark
+  validation:
+    name: Validate Implementation Structure
     runs-on: ubuntu-latest
-    needs: [detect-changes, build-and-test]
-    if: always() && needs.detect-changes.outputs.has-changes == 'true'
-    timeout-minutes: 45
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-      - name: Run compilation benchmark
+      - name: Run Python validation script
         run: |
-          echo "🏁 Compilation Speed Benchmark Results"
-          echo "====================================="
+          echo "🔍 Running implementation structure validation..."
+          python3 test/verify_implementations.py
           
-          CHANGED_IMPLEMENTATIONS="${{ needs.detect-changes.outputs.changed-implementations }}"
-          
-          if [[ "$CHANGED_IMPLEMENTATIONS" == "all" ]]; then
-            echo "Benchmarking all implementations"
-            languages=("rust" "go" "dart" "typescript" "gleam" "kotlin" "crystal" "ruby" "julia" "haskell" "elm" "python" "nim" "zig" "mojo" "rescript" "swift")
-          else
-            echo "Benchmarking changed implementations: $CHANGED_IMPLEMENTATIONS"
-            read -a languages <<< "$CHANGED_IMPLEMENTATIONS"
-          fi
-          
-          for lang in "${languages[@]}"; do
-            lang_dir="implementations/$lang"
-            if [ -d "$lang_dir" ] && [ -f "$lang_dir/Dockerfile" ]; then
-              echo ""
-              echo "⏱️ Benchmarking $lang compilation..."
-              cd "$lang_dir"
-              
-              # Clean any existing images
-              docker rmi chess-$lang 2>/dev/null || true
-              
-              # Time the build
-              start_time=$(date +%s%N)
-              if docker build -t chess-$lang . --quiet; then
-                end_time=$(date +%s%N)
-                build_time_ns=$((end_time - start_time))
-                build_time_ms=$((build_time_ns / 1000000))
-                build_time_s=$((build_time_ms / 1000))
-                
-                # Get image size
-                image_size=$(docker images chess-$lang --format "{{.Size}}")
-                
-                echo "✅ $lang: ${build_time_s}s (${build_time_ms}ms) - Size: $image_size"
-              else
-                echo "❌ $lang: Build failed"
-              fi
-              
-              # Cleanup
-              docker rmi chess-$lang 2>/dev/null || true
-              cd ../..
-            else
-              echo "⏭️ Skipping $lang - missing files"
-            fi
-          done
-          
-          echo ""
-          echo "🏆 Benchmark completed for changed implementations!"
-
   summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [detect-changes, build-and-test, compilation-benchmark]
+    needs: [detect-changes, build-and-test, validation]
     if: always()
     
     steps:
@@ -333,50 +277,21 @@ jobs:
           if [[ "$HAS_CHANGES" == "false" ]]; then
             echo "🚫 No implementation changes detected"
             echo "⏭️ Workflow skipped - no testing required"
-            echo ""
-            echo "ℹ️ To force testing all implementations, use workflow_dispatch with 'test_all' option"
           elif [[ "$CHANGED_IMPLEMENTATIONS" == "all" ]]; then
-            echo "✅ All chess engine implementations have been tested"
+            echo "✅ All chess engine implementations tested using convention-based approach"
             echo "🐳 Docker builds completed for all available languages"
-            echo "⏱️ Compilation benchmarks executed"
-            echo ""
-            echo "Languages tested: All implementations"
+            echo "🔍 Implementation structure validation completed"
           else
-            echo "✅ Changed chess engine implementations have been tested"
+            echo "✅ Changed chess engine implementations tested using convention-based approach"
+            echo "🎯 Selective testing - only changed implementations: $CHANGED_IMPLEMENTATIONS"
             echo "🐳 Docker builds completed for changed languages only"
-            echo "⏱️ Compilation benchmarks executed for changed implementations"
-            echo ""
-            echo "🎯 Selective testing - only changed implementations:"
-            for impl in $CHANGED_IMPLEMENTATIONS; do
-              case $impl in
-                rust) echo "- 🦀 Rust (Systems programming)" ;;
-                go) echo "- 🐹 Go (Concurrent, fast compilation)" ;;
-                dart) echo "- 🎯 Dart (Object-oriented, null-safe)" ;;
-                typescript) echo "- 🟦 TypeScript (JavaScript with types)" ;;
-                gleam) echo "- 🔥 Gleam (Functional on BEAM VM)" ;;
-                kotlin) echo "- 🏗️ Kotlin (Modern JVM language)" ;;
-                crystal) echo "- 💎 Crystal (Ruby-like with static types)" ;;
-                ruby) echo "- 💎 Ruby (Dynamic, interpreted)" ;;
-                julia) echo "- 🔬 Julia (Scientific computing)" ;;
-                haskell) echo "- λ Haskell (Pure functional)" ;;
-                elm) echo "- 🌳 Elm (Functional frontend)" ;;
-                python) echo "- 🐍 Python (Dynamic, interpreted)" ;;
-                nim) echo "- 👑 Nim (Python syntax, C performance)" ;;
-                zig) echo "- ⚡ Zig (Low-level, explicit control)" ;;
-                mojo) echo "- 🔥 Mojo (Python-compatible systems programming)" ;;
-                rescript) echo "- 📜 ReScript (Functional, type-safe)" ;;
-                swift) echo "- 🦉 Swift (Modern, safe)" ;;
-                *) echo "- 🔹 $impl" ;;
-              esac
-            done
-            echo ""
-            echo "💡 This saves time and resources by only testing what changed!"
+            echo "🔍 Implementation structure validation completed"
           fi
+          
           echo ""
-          echo "📝 View detailed results in the job logs above!"
-          echo ""
-          echo "🔧 Workflow features:"
+          echo "🔧 Convention-based workflow features:"
           echo "- 🎯 Smart change detection for selective testing"
-          echo "- 🔄 Manual trigger with option to test all implementations"
-          echo "- ⏱️ Compilation benchmarking for performance tracking"
-          echo "- 🐳 Docker containerization for consistent environments"
+          echo "- 📁 Automatic discovery from implementations/ directory structure"
+          echo "- 🐍 Python validation script integration"
+          echo "- 🐳 Standard Docker build and test commands"
+          echo "- 📏 Consistent testing approach across all languages"
