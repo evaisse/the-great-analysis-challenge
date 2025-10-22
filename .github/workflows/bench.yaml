@@ -43,7 +43,7 @@ jobs:
       - name: Detect changed implementations
         id: changes
         run: |
-          python3 .github/workflows/scripts/workflow.py detect-changes \
+          ./workflow detect-changes \
             "${{ github.event_name }}" \
             --test-all "true" \
             --base-sha "${{ github.event.pull_request.base.sha }}" \
@@ -54,7 +54,7 @@ jobs:
         id: generate-matrix
         if: steps.changes.outputs.has-changes == 'true'
         run: |
-          python3 .github/workflows/scripts/workflow.py generate-matrix \
+          ./workflow generate-matrix \
             "${{ steps.changes.outputs.implementations }}"
 
   validation:
@@ -78,7 +78,7 @@ jobs:
 
       - name: Run structure verification
         id: verify
-        run: python3 .github/workflows/scripts/workflow.py verify-implementations
+        run: ./workflow verify-implementations
 
   benchmark:
     name: Run Benchmarks
@@ -109,7 +109,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Run benchmark for ${{ matrix.name }}
-        run: python3 .github/workflows/scripts/workflow.py run-benchmark ${{ matrix.engine }} ${{ matrix.directory }} --timeout 300
+        run: ./workflow run-benchmark ${{ matrix.engine }} ${{ matrix.directory }} --timeout 300
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
@@ -142,11 +142,11 @@ jobs:
           path: benchmark_artifacts/
 
       - name: Combine benchmark results
-        run: python3 .github/workflows/scripts/workflow.py combine-results
+        run: ./workflow combine-results
 
       - name: Update README status table
         id: update
-        run: python3 .github/workflows/scripts/workflow.py update-readme
+        run: ./workflow update-readme
 
   release:
     name: Create Release
@@ -168,7 +168,7 @@ jobs:
       - name: Determine version and commit changes
         id: version
         run: |
-          python3 .github/workflows/scripts/workflow.py create-release \
+          ./workflow create-release \
             --version-type "${{ github.event.inputs.version_type }}" \
             --readme-changed "${{ needs.combine-results.outputs.readme-changed }}" \
             --excellent-count "${{ needs.validation.outputs.excellent-count }}" \
