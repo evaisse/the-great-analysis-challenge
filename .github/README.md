@@ -12,17 +12,19 @@ Automatically runs comprehensive performance benchmarks on all chess engine impl
 1. **Manual Trigger** (`workflow_dispatch`):
    - Can be triggered manually from GitHub Actions tab
    - Allows selection of version bump type (patch/minor/major)
-   - Useful for immediate testing or custom releases
+   - Always runs full benchmark suite on all implementations
 
 2. **Scheduled Execution**:
    - Runs every Sunday at 6:00 AM UTC
    - Provides weekly status updates
-   - Ensures README stays current with implementation changes
+   - Always runs full benchmark suite on all implementations
 
-3. **Automatic on Changes**:
+3. **Automatic on Changes** (Smart Selective Testing):
    - Triggers on pushes to master branch
    - Only when changes affect implementations/ or test/ directories
-   - Ensures status table reflects latest code changes
+   - **Intelligently detects which implementations changed**
+   - **Only tests changed implementations** (saves time and resources)
+   - Skips workflow entirely if no implementation changes detected
 
 ### Workflow Overview
 
@@ -38,6 +40,9 @@ The workflow performs these key steps:
 ### Key Features
 
 #### 📊 Comprehensive Testing
+- **Smart Detection**: Automatically identifies changed implementations
+- **Selective Testing**: Only tests modified implementations (on push events)
+- **Full Testing**: Tests all implementations (manual/scheduled triggers)
 - Cache clearing with `make clean`
 - Static analysis timing (`make analyze`)
 - Build performance (`make build`)
