@@ -10,25 +10,25 @@ Each application is implemented in a different language, showcasing their unique
 
 ## 📊 Implementation Status Overview
 
-| Language | Status | Build Time | Analysis Time | Features | Makefile | Docker | Notes |
-|----------|--------|------------|---------------|----------|----------|--------|-------|
-| 🟢 **Crystal** | Excellent | ~8-12s | ~3-5s | ✅ Complete | ✅ Full | ✅ Working | Fast compilation, Ruby-like syntax |
-| 🟢 **Dart** | Excellent | ~5-8s | ~2-3s | ✅ Complete | ✅ Full | ✅ Working | AOT compilation, strong typing |
-| 🟢 **Elm** | Excellent | ~4-6s | ~2-4s | ✅ Complete | ✅ Full | ✅ Working | Functional, no runtime errors |
-| 🟡 **Gleam** | Good | ~3-5s | ~2-3s | ✅ Complete | ✅ Full | ✅ Working | Missing some meta fields |
-| 🟡 **Go** | Good | ~0.8s | ~1-2s | ✅ Complete | ✅ Full | 🔧 Build Issue | Fast compilation, simple syntax |
-| 🟡 **Haskell** | Good | ~15-25s | ~5-8s | ✅ Complete | ✅ Full | ✅ Working | Pure functional, lazy evaluation |
-| 🟡 **Julia** | Good | ~2-4s | ~3-5s | ✅ Complete | ✅ Full | ✅ Working | Scientific computing focus |
-| 🟡 **Kotlin** | Good | ~10-15s | ~8-12s | ✅ Complete | ✅ Full | ✅ Working | JVM-based, Java interop |
-| 🟡 **Mojo** | Good | ~0.1s | ~0.1s | 🔧 Demo | ✅ Full | ✅ Working | Early stage, Python-like |
-| 🟡 **Nim** | Good | ~3-6s | ~2-4s | ✅ Complete | ✅ Full | ✅ Working | Python syntax, C performance |
-| 🟡 **Python** | Good | ~0.14s | ~0.2s | ✅ Complete | ✅ Full | ✅ Working | Interpreted, extensive tooling |
-| 🔴 **ReScript** | Needs Work | ~2-4s | ~1-2s | ✅ Complete | ❌ Missing | ✅ Working | Missing README |
-| 🟡 **Ruby** | Good | ~0.1s | ~1-3s | ✅ Complete | ✅ Full | ✅ Working | Interpreted, elegant syntax |
-| 🔴 **Rust** | Needs Work | ~5.3s | ~3-8s | ✅ Complete | ❌ Warnings | ✅ Working | Memory safety, performance |
-| 🔴 **Swift** | Needs Work | ~8-12s | ~4-6s | ✅ Complete | ❌ Missing | ✅ Working | Missing chess.meta |
-| 🟡 **TypeScript** | Good | ~1.5s | ~2-4s | ✅ Complete | ✅ Full | ✅ Working | Type-safe JavaScript |
-| 🟡 **Zig** | Good | ~3-7s | ~2-4s | ✅ Complete | ✅ Full | ✅ Working | Low-level, explicit control |
+| Language | Build Time | Analysis Time | Features | Makefile | Docker | Notes |
+|----------|------------|---------------|----------|----------|--------|-------|
+| 🟢 **Crystal** | ~8-12s | ~3-5s | ✅ Complete | ✅ Full | ✅ Working | Fast compilation, Ruby-like syntax |
+| 🟢 **Dart** | ~5-8s | ~2-3s | ✅ Complete | ✅ Full | ✅ Working | AOT compilation, strong typing |
+| 🟢 **Elm** | ~4-6s | ~2-4s | ✅ Complete | ✅ Full | ✅ Working | Functional, no runtime errors |
+| 🟡 **Gleam** | ~3-5s | ~2-3s | ✅ Complete | ✅ Full | ✅ Working | Missing some meta fields |
+| 🟡 **Go** | ~0.8s | ~1-2s | ✅ Complete | ✅ Full | 🔧 Build Issue | Fast compilation, simple syntax |
+| 🟡 **Haskell** | ~15-25s | ~5-8s | ✅ Complete | ✅ Full | ✅ Working | Pure functional, lazy evaluation |
+| 🟡 **Julia** | ~2-4s | ~3-5s | ✅ Complete | ✅ Full | ✅ Working | Scientific computing focus |
+| 🟡 **Kotlin** | ~10-15s | ~8-12s | ✅ Complete | ✅ Full | ✅ Working | JVM-based, Java interop |
+| 🟡 **Mojo** | ~0.1s | ~0.1s | 🔧 Demo | ✅ Full | ✅ Working | Early stage, Python-like |
+| 🟡 **Nim** | ~3-6s | ~2-4s | ✅ Complete | ✅ Full | ✅ Working | Python syntax, C performance |
+| 🟡 **Python** | ~0.14s | ~0.2s | ✅ Complete | ✅ Full | ✅ Working | Interpreted, extensive tooling |
+| 🔴 **ReScript** | ~2-4s | ~1-2s | ✅ Complete | ❌ Missing | ✅ Working | Missing README |
+| 🟡 **Ruby** | ~0.1s | ~1-3s | ✅ Complete | ✅ Full | ✅ Working | Interpreted, elegant syntax |
+| 🔴 **Rust** | ~5.3s | ~3-8s | ✅ Complete | ❌ Warnings | ✅ Working | Memory safety, performance |
+| 🔴 **Swift** | ~8-12s | ~4-6s | ✅ Complete | ❌ Missing | ✅ Working | Missing chess.meta |
+| 🟡 **TypeScript** | ~1.5s | ~2-4s | ✅ Complete | ✅ Full | ✅ Working | Type-safe JavaScript |
+| 🟡 **Zig** | ~3-7s | ~2-4s | ✅ Complete | ✅ Full | ✅ Working | Low-level, explicit control |
 
 ### Status Legend
 - 🟢 **Excellent**: All files present, full compliance, no issues
