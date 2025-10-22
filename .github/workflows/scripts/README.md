@@ -1,18 +1,46 @@
-# Unified Workflow Script
+# Modular Workflow Scripts
 
-This directory contains a unified Python script (`workflow.py`) that replaces multiple bash and Python scripts with a single, argparse-based tool for chess engine benchmarking and CI/CD operations.
+This directory contains a modular workflow system with individual Python modules for each command, orchestrated by a unified `workflow.py` dispatcher. Each subcommand has its own dedicated module for better organization and maintainability.
 
 A convenient entrypoint script (`/workflow`) is provided at the project root for easier command-line usage.
+
+## Architecture
+
+- **`workflow.py`** - Main dispatcher that delegates to individual command modules
+- **Individual modules** - Each subcommand has its own Python file (e.g., `detect_changes.py`, `generate_matrix.py`)
+- **Fallback support** - If modules can't be imported, falls back to inline implementations
+- **Standalone capability** - Each module can be run independently if needed
 
 ## Usage
 
 ```bash
-# From project root directory
+# From project root directory (recommended)
 ./workflow <command> [arguments]
 
 # Or directly from scripts directory  
 python3 workflow.py <command> [arguments]
+
+# Or run individual modules directly
+python3 .github/workflows/scripts/detect_changes.py <args>
+python3 .github/workflows/scripts/generate_matrix.py <args>
 ```
+
+## Individual Modules
+
+Each command is implemented in its own module:
+
+| Module | Command | Description |
+|--------|---------|-------------|
+| `detect_changes.py` | `detect-changes` | Detect changed implementations from git diff |
+| `generate_matrix.py` | `generate-matrix` | Generate GitHub Actions matrix for parallel jobs |
+| `run_benchmark.py` | `run-benchmark` | Run benchmark for specific implementation |
+| `verify_implementations.py` | `verify-implementations` | Run structure verification and count results |
+| `combine_results.py` | `combine-results` | Combine benchmark artifacts from multiple jobs |
+| `update_readme.py` | `update-readme` | Update README status table with latest results |
+| `get_test_config.py` | `get-test-config` | Get test configuration from chess.meta files |
+| `create_release.py` | `create-release` | Create and tag releases with version bumping |
+
+All modules can be run standalone with their own `--help` for detailed usage.
 
 ## Available Commands
 
