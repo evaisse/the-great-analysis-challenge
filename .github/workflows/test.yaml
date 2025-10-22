@@ -2,7 +2,7 @@ name: Test Chess Engines
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [master]
   workflow_dispatch:
     inputs:
       test_all:
@@ -28,47 +28,46 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
       - name: Detect changed implementations
         id: changes
         run: |
           echo "=== Detecting Changed Implementations ==="
-          
+
           # Use shared change detection script
           TEST_ALL_FLAG="${{ github.event.inputs.test_all }}"
-          
+
           RESULT=$(python3 .github/workflows/scripts/detect_changes.py \
             "${{ github.event_name }}" \
             "$TEST_ALL_FLAG" \
             "${{ github.event.pull_request.base.sha }}" \
             "${{ github.sha }}" \
             "${{ github.event.before }}")
-          
+
           echo "Detection result: $RESULT"
-          
+
           IMPLEMENTATIONS=$(echo "$RESULT" | python3 -c "import sys, json; print(json.load(sys.stdin)['implementations'])")
           HAS_CHANGES=$(echo "$RESULT" | python3 -c "import sys, json; print(json.load(sys.stdin)['has_changes'])")
-          
+
           echo "implementations=$IMPLEMENTATIONS" >> $GITHUB_OUTPUT
           echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
-
-      - name: Set up Python
-        if: steps.changes.outputs.has-changes == 'true'
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
 
       - name: Generate dynamic matrix
         id: generate-matrix
         if: steps.changes.outputs.has-changes == 'true'
         run: |
           CHANGED_IMPLEMENTATIONS="${{ steps.changes.outputs.implementations }}"
-          
+
           if [[ "${{ steps.changes.outputs.has-changes }}" == "false" ]]; then
             echo "No implementation changes detected, skipping matrix generation"
             echo 'matrix={"include":[]}' >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           # Generate matrix using external Python script
           MATRIX_JSON=$(python3 .github/workflows/scripts/generate_matrix.py "$CHANGED_IMPLEMENTATIONS")
           echo "Generated matrix: $MATRIX_JSON"
@@ -79,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.has-changes == 'true'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -100,11 +99,11 @@ jobs:
     timeout-minutes: 45
     needs: [detect-changes, validation]
     if: needs.detect-changes.outputs.has-changes == 'true'
-    
+
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
-        
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -123,13 +122,13 @@ jobs:
           echo "🔧 Reading test configuration from chess.meta..."
           CONFIG=$(python3 .github/workflows/scripts/get_test_config.py ${{ matrix.engine }})
           echo "Configuration: $CONFIG"
-          
+
           # Parse configuration
           SUPPORTS_INTERACTIVE=$(echo "$CONFIG" | python3 -c "import sys, json; print(json.load(sys.stdin)['supports_interactive'])")
           SUPPORTS_PERFT=$(echo "$CONFIG" | python3 -c "import sys, json; print(json.load(sys.stdin)['supports_perft'])")
           SUPPORTS_AI=$(echo "$CONFIG" | python3 -c "import sys, json; print(json.load(sys.stdin)['supports_ai'])")
           TEST_MODE=$(echo "$CONFIG" | python3 -c "import sys, json; print(json.load(sys.stdin)['test_mode'])")
-          
+
           echo "supports_interactive=$SUPPORTS_INTERACTIVE" >> $GITHUB_OUTPUT
           echo "supports_perft=$SUPPORTS_PERFT" >> $GITHUB_OUTPUT
           echo "supports_ai=$SUPPORTS_AI" >> $GITHUB_OUTPUT
@@ -144,17 +143,17 @@ jobs:
       - name: Test basic commands
         run: |
           echo "🧪 Testing basic functionality for ${{ matrix.engine }}..."
-          
+
           # Test basic commands that all implementations should support
           echo "📋 Testing help command"
           echo "help" | timeout 30s docker run --rm -i chess-${{ matrix.engine }}-test > help_output.txt || true
-          
+
           echo "📋 Testing board display"
           echo "board" | timeout 30s docker run --rm -i chess-${{ matrix.engine }}-test > board_output.txt || true
-          
+
           echo "📋 Testing FEN export"
           echo "fen" | timeout 30s docker run --rm -i chess-${{ matrix.engine }}-test > fen_output.txt || true
-          
+
           # Basic validation - just check if commands execute without major errors
           if [[ -s help_output.txt ]] && [[ -s board_output.txt ]] && [[ -s fen_output.txt ]]; then
             echo "✅ Basic commands executed successfully"
@@ -166,7 +165,7 @@ jobs:
         if: steps.config.outputs.test_mode == 'full'
         run: |
           echo "🧪 Testing advanced features for ${{ matrix.engine }}..."
-          
+
           # Test perft if supported
           if [[ "${{ steps.config.outputs.supports_perft }}" == "true" ]]; then
             echo "🔍 Testing perft (move generation)"
@@ -180,7 +179,7 @@ jobs:
           else
             echo "⏭️ Perft not supported, skipping"
           fi
-          
+
           # Test AI if supported
           if [[ "${{ steps.config.outputs.supports_ai }}" == "true" ]]; then
             echo "🤖 Testing AI move generation"
@@ -217,17 +216,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: [detect-changes, validation, build-test]
     if: always()
-    
+
     steps:
       - name: Test Results Summary
         run: |
           echo "🏆 Chess Engine Test Summary"
           echo "============================"
           echo ""
-          
+
           CHANGED_IMPLEMENTATIONS="${{ needs.detect-changes.outputs.changed-implementations }}"
           HAS_CHANGES="${{ needs.detect-changes.outputs.has-changes }}"
-          
+
           if [[ "$HAS_CHANGES" == "false" ]]; then
             echo "🚫 No implementation changes detected in this PR"
             echo "⏭️ All tests skipped - no changes to validate"
@@ -238,7 +237,7 @@ jobs:
             echo "✅ Changed implementations tested: $CHANGED_IMPLEMENTATIONS"
             echo "🎯 Selective testing completed for modified code only"
           fi
-          
+
           echo ""
           echo "🔧 Convention-based testing features:"
           echo "- 📋 chess.meta file configuration"
