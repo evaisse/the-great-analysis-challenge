@@ -19,7 +19,6 @@ on:
           - major
 
 env:
-  BENCHMARK_TIMEOUT: 3600  # 1 hour timeout
   PYTHON_VERSION: '3.11'
 
 jobs:
@@ -29,81 +28,52 @@ jobs:
     outputs:
       changed-implementations: ${{ steps.changes.outputs.implementations }}
       has-changes: ${{ steps.changes.outputs.has-changes }}
-      test-mode: ${{ steps.changes.outputs.test_mode }}
-      impl-count: ${{ steps.changes.outputs.impl_count }}
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
       - name: Detect changed implementations
         id: changes
         run: |
           echo "=== Detecting Changed Implementations ==="
           
-          # For scheduled runs or manual triggers, test all implementations
-          if [[ "${{ github.event_name }}" == "schedule" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "Full test requested (scheduled or manual trigger)"
-            
-            # Count implementations dynamically
-            IMPL_COUNT=$(find implementations -name "Dockerfile" -type f | wc -l)
-            
-            echo "changed_impls=all" >> $GITHUB_OUTPUT
-            echo "test_mode=full" >> $GITHUB_OUTPUT
-            echo "impl_count=$IMPL_COUNT" >> $GITHUB_OUTPUT
-            echo "has-changes=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+          # Use reusable change detection script
+          RESULT=$(python3 .github/workflows/scripts/detect_changes.py \
+            "${{ github.event_name }}" \
+            "true" \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.sha }}" \
+            "${{ github.event.before }}")
           
-          # For push events, detect which implementations changed
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            # Get the previous commit to compare against
-            PREV_COMMIT="${{ github.event.before }}"
-            
-            # If this is the first commit, compare against HEAD~1
-            if [[ "$PREV_COMMIT" == "0000000000000000000000000000000000000000" ]]; then
-              PREV_COMMIT="HEAD~1"
-            fi
-            
-            echo "Comparing against: $PREV_COMMIT"
-            
-            # Get changed files in implementations directory
-            CHANGED_FILES=$(git diff --name-only $PREV_COMMIT HEAD -- implementations/ || echo "")
-            
-            if [[ -z "$CHANGED_FILES" ]]; then
-              echo "No implementation changes detected"
-              echo "changed_impls=none" >> $GITHUB_OUTPUT
-              echo "test_mode=none" >> $GITHUB_OUTPUT
-              echo "impl_count=0" >> $GITHUB_OUTPUT
-              echo "has-changes=false" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-            
-            echo "Changed files:"
-            echo "$CHANGED_FILES"
-            
-            # Extract unique implementation directories
-            CHANGED_IMPLEMENTATIONS=$(echo "$CHANGED_FILES" | grep -E "^implementations/[^/]+/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
-            
-            if [[ -z "$CHANGED_IMPLEMENTATIONS" ]]; then
-              echo "No specific implementations changed"
-              echo "changed_impls=none" >> $GITHUB_OUTPUT
-              echo "test_mode=none" >> $GITHUB_OUTPUT
-              echo "impl_count=0" >> $GITHUB_OUTPUT
-              echo "has-changes=false" >> $GITHUB_OUTPUT
-            else
-              echo "Changed implementations: $CHANGED_IMPLEMENTATIONS"
-              IMPL_COUNT=$(echo "$CHANGED_IMPLEMENTATIONS" | wc -w)
-              echo "changed_impls=$CHANGED_IMPLEMENTATIONS" >> $GITHUB_OUTPUT
-              echo "test_mode=selective" >> $GITHUB_OUTPUT
-              echo "impl_count=$IMPL_COUNT" >> $GITHUB_OUTPUT
-              echo "has-changes=true" >> $GITHUB_OUTPUT
-            fi
-          fi
+          echo "Detection result: $RESULT"
+          
+          IMPLEMENTATIONS=$(echo "$RESULT" | python3 -c "import sys, json; print(json.load(sys.stdin)['implementations'])")
+          HAS_CHANGES=$(echo "$RESULT" | python3 -c "import sys, json; print(json.load(sys.stdin)['has_changes'])")
+          
+          echo "implementations=$IMPLEMENTATIONS" >> $GITHUB_OUTPUT
+          echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+
+      - name: Generate matrix for benchmarking
+        id: generate-matrix
+        if: steps.changes.outputs.has-changes == 'true'
+        run: |
+          CHANGED_IMPLEMENTATIONS="${{ steps.changes.outputs.implementations }}"
+          
+          # Generate matrix using existing script
+          MATRIX_JSON=$(python3 .github/workflows/scripts/generate_matrix.py "$CHANGED_IMPLEMENTATIONS")
+          echo "Generated matrix: $MATRIX_JSON"
+          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
   validation:
-    name: Run Structure Verification
+    name: Validate Structure
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.has-changes == 'true'
@@ -143,29 +113,28 @@ jobs:
           echo "🟢 Excellent: $EXCELLENT"
           echo "🟡 Good: $GOOD"
           echo "🔴 Needs work: $NEEDS_WORK"
-          
-          cat verification_results.txt
 
   benchmark:
-    name: Run Performance Benchmarks
+    name: Run Benchmarks
     runs-on: ubuntu-latest
     needs: [detect-changes, validation]
     if: needs.detect-changes.outputs.has-changes == 'true'
     timeout-minutes: 90
-    outputs:
-      benchmark-success: ${{ steps.benchmark.outputs.success }}
+    
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install psutil gitpython
@@ -173,90 +142,41 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Run performance benchmark suite
-        id: benchmark
+      - name: Run benchmark for ${{ matrix.name }}
         run: |
-          echo "=== Running Performance Benchmark Suite ==="
-          
-          TEST_MODE="${{ needs.detect-changes.outputs.test-mode }}"
-          CHANGED_IMPLS="${{ needs.detect-changes.outputs.changed-implementations }}"
-          IMPL_COUNT="${{ needs.detect-changes.outputs.impl-count }}"
-          
-          echo "Test mode: $TEST_MODE"
-          echo "Implementation count: $IMPL_COUNT"
+          echo "🏁 Running benchmark for ${{ matrix.name }}..."
           
           # Create reports directory
           mkdir -p benchmark_reports
           
-          if [[ "$TEST_MODE" == "full" ]]; then
-            echo "Running full benchmark suite on all implementations"
-            python3 test/performance_test.py \
-              --timeout ${{ env.BENCHMARK_TIMEOUT }} \
-              --output benchmark_reports/performance_report.txt \
-              --json benchmark_reports/performance_data.json \
-              > benchmark_reports/benchmark_output.txt 2>&1
-          elif [[ "$TEST_MODE" == "selective" ]]; then
-            echo "Running selective benchmark on changed implementations: $CHANGED_IMPLS"
-            
-            # Test each changed implementation individually
-            for impl in $CHANGED_IMPLS; do
-              echo "Testing implementation: $impl"
-              
-              if [[ -d "implementations/$impl" ]]; then
-                python3 test/performance_test.py \
-                  --impl "implementations/$impl" \
-                  --timeout 900 \
-                  --output "benchmark_reports/performance_report_$impl.txt" \
-                  --json "benchmark_reports/performance_data_$impl.json" \
-                  >> benchmark_reports/benchmark_output.txt 2>&1
-              else
-                echo "⚠️ Implementation directory not found: implementations/$impl"
-              fi
-            done
-            
-            # Combine individual JSON reports
-            python3 .github/workflows/scripts/combine_benchmark_results.py >> benchmark_reports/benchmark_output.txt 2>&1
-            
-            # Combine text reports
-            cat benchmark_reports/performance_report_*.txt > benchmark_reports/performance_report.txt 2>/dev/null || echo "No text reports to combine"
-          fi
+          # Run performance test for this specific implementation
+          python3 test/performance_test.py \
+            --impl "${{ matrix.directory }}" \
+            --timeout 900 \
+            --output "benchmark_reports/performance_report_${{ matrix.engine }}.txt" \
+            --json "benchmark_reports/performance_data_${{ matrix.engine }}.json" \
+            > "benchmark_reports/benchmark_output_${{ matrix.engine }}.txt" 2>&1 || true
           
-          BENCHMARK_EXIT_CODE=$?
-          echo "success=$([[ $BENCHMARK_EXIT_CODE -eq 0 ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          
-          # Extract key metrics for summary
-          if [[ -f benchmark_reports/performance_data.json ]]; then
-            echo "=== Benchmark completed successfully ==="
-          else
-            echo "⚠️ Performance data JSON not generated"
-          fi
-          
-          # Always show benchmark output
-          echo "=== Benchmark Output ==="
-          cat benchmark_reports/benchmark_output.txt
+          echo "✅ Benchmark completed for ${{ matrix.name }}"
 
-      - name: Upload benchmark artifacts
+      - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always()
         with:
-          name: benchmark-reports-${{ github.sha }}
-          path: |
-            benchmark_reports/
-            verification_results.txt
+          name: benchmark-${{ matrix.engine }}-${{ github.sha }}
+          path: benchmark_reports/
           retention-days: 30
 
-  update-readme:
-    name: Update README Status
+  combine-results:
+    name: Combine Benchmark Results
     runs-on: ubuntu-latest
     needs: [detect-changes, validation, benchmark]
-    if: needs.detect-changes.outputs.has-changes == 'true' && needs.benchmark.outputs.benchmark-success == 'true'
+    if: needs.detect-changes.outputs.has-changes == 'true'
     outputs:
       readme-changed: ${{ steps.update.outputs.changed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
@@ -264,38 +184,49 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Download benchmark artifacts
+      - name: Download all benchmark artifacts
         uses: actions/download-artifact@v3
         with:
-          name: benchmark-reports-${{ github.sha }}
+          path: benchmark_artifacts/
 
-      - name: Generate updated README status table
+      - name: Combine benchmark results
+        run: |
+          echo "=== Combining Benchmark Results ==="
+          
+          # Create combined reports directory
+          mkdir -p benchmark_reports
+          
+          # Copy all individual reports
+          find benchmark_artifacts/ -name "*.txt" -exec cp {} benchmark_reports/ \;
+          find benchmark_artifacts/ -name "*.json" -exec cp {} benchmark_reports/ \;
+          
+          # Combine JSON reports using existing script
+          python3 .github/workflows/scripts/combine_benchmark_results.py
+          
+          echo "✅ Benchmark results combined"
+
+      - name: Update README status table
         id: update
         run: |
-          echo "=== Generating Updated README Status Table ==="
+          echo "=== Updating README Status Table ==="
           
-          # Run the update script
+          # Update README using existing script
           python3 .github/workflows/scripts/update_readme_status.py
-          UPDATE_SUCCESS=$?
           
-          # Check if README was actually modified
+          # Check if README was modified
           if git diff --quiet README.md; then
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "⚠️ README.md was not modified"
           else
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "✅ README.md has been updated"
-            
-            # Show the diff
-            echo "=== README Changes ==="
-            git diff README.md
           fi
 
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [detect-changes, validation, benchmark, update-readme]
-    if: needs.update-readme.outputs.readme-changed == 'true' || github.event_name == 'workflow_dispatch'
+    needs: [detect-changes, validation, combine-results]
+    if: needs.combine-results.outputs.readme-changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -306,36 +237,20 @@ jobs:
       - name: Download benchmark artifacts
         uses: actions/download-artifact@v3
         with:
-          name: benchmark-reports-${{ github.sha }}
+          path: benchmark_artifacts/
 
-      - name: Determine version bump
+      - name: Determine version and commit changes
         id: version
         run: |
-          # Get current version from git tags
-          CURRENT_VERSION=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
-          
-          if [[ -z "$CURRENT_VERSION" ]]; then
-            CURRENT_VERSION="v0.0.0"
-            echo "No previous version tags found, starting from $CURRENT_VERSION"
-          fi
-          
+          # Get current version
+          CURRENT_VERSION=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           
-          # Determine version bump type
+          # Determine version bump
           VERSION_TYPE="${{ github.event.inputs.version_type }}"
-          
-          # Auto-determine version type if not manually specified
           if [[ -z "$VERSION_TYPE" ]]; then
-            EXCELLENT_COUNT="${{ needs.validation.outputs.excellent-count }}"
-            NEEDS_WORK_COUNT="${{ needs.validation.outputs.needs-work-count }}"
-            
-            if [[ $NEEDS_WORK_COUNT -eq 0 && $EXCELLENT_COUNT -gt 10 ]]; then
-              VERSION_TYPE="minor"  # Significant improvement
-            else
-              VERSION_TYPE="patch"  # Regular update
-            fi
+            VERSION_TYPE="patch"
           fi
-          
           echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
           
           # Calculate new version
@@ -345,56 +260,27 @@ jobs:
           PATCH=${version_parts[2]:-0}
           
           case $VERSION_TYPE in
-            major)
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-              ;;
-            minor)
-              MINOR=$((MINOR + 1))
-              PATCH=0
-              ;;
-            patch)
-              PATCH=$((PATCH + 1))
-              ;;
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
           esac
           
           NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           
-          echo "=== Version Information ==="
-          echo "Current version: $CURRENT_VERSION"
-          echo "Version bump type: $VERSION_TYPE"
-          echo "New version: $NEW_VERSION"
-
-      - name: Commit and push changes
-        id: commit
-        if: needs.update-readme.outputs.readme-changed == 'true'
-        run: |
-          # Configure git
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          # Add benchmark reports
-          git add benchmark_reports/ || true
-          
-          # Add updated README
-          git add README.md
-          
-          # Create commit message
-          TEST_MODE="${{ needs.detect-changes.outputs.test-mode }}"
-          CHANGED_IMPLS="${{ needs.detect-changes.outputs.changed-implementations }}"
-          
-          if [[ "$TEST_MODE" == "selective" ]]; then
-            COMMIT_MESSAGE="chore: update status for changed implementations ($CHANGED_IMPLS)
-
-Selective benchmark results:
-- Changed implementations: $CHANGED_IMPLS
-- Overall status: ${{ needs.validation.outputs.excellent-count }} excellent, ${{ needs.validation.outputs.good-count }} good, ${{ needs.validation.outputs.needs-work-count }} needs work
-
-Performance testing completed for modified implementations only."
-          else
-            COMMIT_MESSAGE="chore: update implementation status from benchmark suite
+          # Configure git and commit changes if README was updated
+          if [[ "${{ needs.combine-results.outputs.readme-changed }}" == "true" ]]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            
+            # Copy benchmark reports to repo
+            mkdir -p benchmark_reports
+            find benchmark_artifacts/ -name "*.txt" -exec cp {} benchmark_reports/ \;
+            find benchmark_artifacts/ -name "*.json" -exec cp {} benchmark_reports/ \;
+            
+            git add benchmark_reports/ README.md
+            
+            git commit -m "chore: update implementation status from benchmark suite
 
 Benchmark results summary:
 - Total implementations: ${{ needs.validation.outputs.total-count }}
@@ -402,54 +288,28 @@ Benchmark results summary:
 - 🟡 Good: ${{ needs.validation.outputs.good-count }}  
 - 🔴 Needs work: ${{ needs.validation.outputs.needs-work-count }}
 
-Full performance testing completed with status updates."
+Performance testing completed with status updates."
+            
+            git push origin master
+            echo "✅ Changes committed and pushed"
           fi
           
-          git commit -m "$COMMIT_MESSAGE"
-          git push origin master
-          
-          echo "✅ Changes committed and pushed"
-          echo "commit_created=true" >> $GITHUB_OUTPUT
-
-      - name: Create release tag
-        id: tag
-        run: |
-          NEW_VERSION="${{ steps.version.outputs.new_version }}"
-          
-          # Create tag with release notes
-          TAG_MESSAGE="Release $NEW_VERSION - Benchmark Update
-
-## Implementation Status
-- 🟢 Excellent: ${{ needs.validation.outputs.excellent-count }} implementations
-- 🟡 Good: ${{ needs.validation.outputs.good-count }} implementations
-- 🔴 Needs work: ${{ needs.validation.outputs.needs-work-count }} implementations
-
-## Benchmark Summary
-- Total implementations: ${{ needs.validation.outputs.total-count }}
-- Benchmark suite completed successfully
-- README status table updated with latest performance data
-
-Generated automatically by the benchmark suite workflow."
-
-          git tag -a "$NEW_VERSION" -m "$TAG_MESSAGE"
+          # Create and push tag
+          git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION - Benchmark Update"
           git push origin "$NEW_VERSION"
-          
-          echo "✅ Release tag $NEW_VERSION created and pushed"
-          echo "tag_created=true" >> $GITHUB_OUTPUT
-          echo "tag_name=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Release tag $NEW_VERSION created"
 
       - name: Create GitHub Release
-        if: steps.tag.outputs.tag_created == 'true'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.tag.outputs.tag_name }}
-          release_name: "Chess Engine Implementations ${{ steps.tag.outputs.tag_name }}"
+          tag_name: ${{ steps.version.outputs.new_version }}
+          release_name: "Chess Engine Implementations ${{ steps.version.outputs.new_version }}"
           body: |
-            # Chess Engine Implementation Benchmark Release ${{ steps.tag.outputs.tag_name }}
+            # Chess Engine Implementation Benchmark Release ${{ steps.version.outputs.new_version }}
             
-            This release contains updated performance benchmarks and status information for all chess engine implementations.
+            This release contains updated performance benchmarks and status information for chess engine implementations.
             
             ## 📊 Implementation Status Overview
             
@@ -461,15 +321,10 @@ Generated automatically by the benchmark suite workflow."
             
             ## 🚀 What's Updated
             
-            - ✅ Complete performance benchmark suite executed
+            - ✅ Performance benchmark suite executed using convention-based approach
             - ✅ Implementation structure verification completed
             - ✅ README status table updated with latest results
-            - ✅ Docker build and test validation
-            - ✅ Static analysis and build timing measurements
-            
-            ## 📋 Benchmark Reports
-            
-            Detailed benchmark reports are available as workflow artifacts.
+            - ✅ Matrix-based parallel benchmarking for efficiency
             
             ---
             
@@ -480,42 +335,27 @@ Generated automatically by the benchmark suite workflow."
   summary:
     name: Benchmark Summary
     runs-on: ubuntu-latest
-    needs: [detect-changes, validation, benchmark, update-readme, release]
+    needs: [detect-changes, validation, benchmark, combine-results, release]
     if: always()
     
     steps:
       - name: Workflow summary
         run: |
-          echo "# 🏁 Benchmark Suite Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "# 🏁 Benchmark Suite Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          TEST_MODE="${{ needs.detect-changes.outputs.test-mode }}"
           HAS_CHANGES="${{ needs.detect-changes.outputs.has-changes }}"
+          CHANGED_IMPLEMENTATIONS="${{ needs.detect-changes.outputs.changed-implementations }}"
           
-          echo "## 🔍 Workflow Mode" >> $GITHUB_STEP_SUMMARY
           if [[ "$HAS_CHANGES" == "false" ]]; then
-            echo "- **Mode**: No changes detected" >> $GITHUB_STEP_SUMMARY
-            echo "- **Action**: Workflow skipped" >> $GITHUB_STEP_SUMMARY
-          elif [[ "$TEST_MODE" == "selective" ]]; then
-            echo "- **Mode**: Selective benchmarking" >> $GITHUB_STEP_SUMMARY
-            echo "- **Changed implementations**: ${{ needs.detect-changes.outputs.changed-implementations }}" >> $GITHUB_STEP_SUMMARY
+            echo "🚫 No implementation changes detected - workflow skipped" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- **Mode**: Full benchmark suite" >> $GITHUB_STEP_SUMMARY
-            echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [[ "$HAS_CHANGES" == "true" ]]; then
             echo "## 📊 Results" >> $GITHUB_STEP_SUMMARY
+            echo "- **Changed implementations**: $CHANGED_IMPLEMENTATIONS" >> $GITHUB_STEP_SUMMARY
             echo "- **Total implementations**: ${{ needs.validation.outputs.total-count }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🟢 **Excellent**: ${{ needs.validation.outputs.excellent-count }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🟡 **Good**: ${{ needs.validation.outputs.good-count }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🔴 **Needs work**: ${{ needs.validation.outputs.needs-work-count }}" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            
-            echo "## 🔄 Workflow Results" >> $GITHUB_STEP_SUMMARY
-            echo "- **Structure verification**: ✅ Completed" >> $GITHUB_STEP_SUMMARY
-            echo "- **Performance benchmarks**: $( [[ '${{ needs.benchmark.outputs.benchmark-success }}' == 'true' ]] && echo '✅ Completed' || echo '❌ Failed' )" >> $GITHUB_STEP_SUMMARY
-            echo "- **README updated**: $( [[ '${{ needs.update-readme.outputs.readme-changed }}' == 'true' ]] && echo '✅ Yes' || echo '⚠️ No changes' )" >> $GITHUB_STEP_SUMMARY
-            echo "- **Release created**: $( [[ '${{ needs.release.outputs.tag_created }}' == 'true' ]] && echo '✅ ${{ needs.release.outputs.tag_name }}' || echo '⚠️ Not created' )" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Matrix-based benchmarking completed successfully!" >> $GITHUB_STEP_SUMMARY
           fi
