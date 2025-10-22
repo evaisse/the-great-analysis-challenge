@@ -1,3 +1,7 @@
+Running Gleam static analysis...
+gleam format --check || true
+gleam check
+gleam build
 ⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
@@ -8,18 +12,21 @@ Testing gleam implementation
 Path: implementations/gleam
 ============================================================
 🧹 Clearing build cache...
+🔧 Running: make clean
 ⚠️  make clean returned non-zero exit code: make: gleam: No such file or directory
 make: *** [clean] Error 1
 
 ✅ Cache clearing completed
 🔍 Running static analysis...
-✅ Analysis completed in 0.03s
+🔧 Running: make analyze
+✅ Analysis completed in 0.04s
 🔨 Building implementation...
+🔧 Running: make build
 ❌ Build failed in 0.02s
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:11:43
+Generated: 2025-10-23 00:51:26
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -33,7 +40,7 @@ DETAILED RESULTS: GLEAM
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.03s
+  Analyze Seconds: 0.04s
   Build Seconds: 0.02s
 
 MEMORY USAGE:

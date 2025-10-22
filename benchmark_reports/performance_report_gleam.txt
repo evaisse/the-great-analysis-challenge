@@ -1,6 +1,6 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:11:43
+Generated: 2025-10-23 00:51:32
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -14,7 +14,7 @@ DETAILED RESULTS: GLEAM
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.03s
+  Analyze Seconds: 0.04s
   Build Seconds: 0.02s
 
 MEMORY USAGE:
