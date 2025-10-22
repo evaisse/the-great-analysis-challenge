@@ -85,20 +85,33 @@ Performance testing completed with status updates."""
         print(f"🔧 Running: {' '.join(cmd)}")
         subprocess.run(cmd, check=True)
         
-        cmd = ["git", "push", "origin", "master"]
-        print(f"🔧 Running: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True)
-        print("✅ Changes committed and pushed")
+        # Skip push in CI environment - artifacts are already captured
+        if os.environ.get('GITHUB_ACTIONS'):
+            print("⏭️  Skipping git push in CI environment (using artifacts)")
+        else:
+            cmd = ["git", "push", "origin", "master"]
+            print(f"🔧 Running: {' '.join(cmd)}")
+            subprocess.run(cmd, check=True)
+            print("✅ Changes committed and pushed")
     
-    # Create and push tag
+    # Create tag locally (GitHub Release action will create the remote tag)
     cmd = ["git", "tag", "-a", new_version, "-m", f"Release {new_version} - Benchmark Update"]
     print(f"🔧 Running: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
     
-    cmd = ["git", "push", "origin", new_version]
-    print(f"🔧 Running: {' '.join(cmd)}")
-    subprocess.run(cmd, check=True)
-    print(f"✅ Release tag {new_version} created")
+    # Skip tag push in CI environment - GitHub Release action handles this
+    if os.environ.get('GITHUB_ACTIONS'):
+        print("⏭️  Skipping tag push in CI environment (GitHub Release action will create remote tag)")
+        print(f"✅ Local release tag {new_version} created")
+    else:
+        cmd = ["git", "push", "origin", new_version]
+        print(f"🔧 Running: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True)
+        print(f"✅ Release tag {new_version} created and pushed")
+    
+    # Output the new version for GitHub Actions workflow
+    write_github_output("new_version", new_version)
+    print(f"📤 Output: new_version={new_version}")
     
     return True
 

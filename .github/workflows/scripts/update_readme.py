@@ -200,24 +200,16 @@ def update_readme() -> bool:
             emoji = status_emoji.get(status, '❓')
             
             timings = impl_data.get('timings', {})
+            analyze_time = format_time(timings.get('analyze_seconds', 0))
             build_time = format_time(timings.get('build_seconds', 0))
             test_time = format_time(timings.get('test_seconds', 0))
             
-            # For excellent status from verification, show ideal test results
-            if status == 'excellent' and verification_data:
-                test_score = "7/7"
-            else:
-                test_results = impl_data.get('test_results', {})
-                passed = len(test_results.get('passed', []))
-                failed = len(test_results.get('failed', []))
-                test_score = f"{passed}/{passed+failed}" if (passed + failed) > 0 else "0/0"
-            
-            table_rows.append(f"| {language.title()} | {emoji} | {build_time} | {test_time} | {test_score} |")
+            table_rows.append(f"| {language.title()} | {emoji} | {analyze_time} | {build_time} | {test_time} |")
         
         # Create table content
         table_header = """
-| Language | Status | Build Time | Test Time | Tests Passed |
-|----------|--------|------------|-----------|--------------|"""
+| Language | Status | Analysis Time | Build Time | Test Time |
+|----------|--------|---------------|------------|-----------|"""
         
         new_table = table_header + "\n" + "\n".join(table_rows)
         
