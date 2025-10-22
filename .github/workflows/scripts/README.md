@@ -2,9 +2,15 @@
 
 This directory contains a unified Python script (`workflow.py`) that replaces multiple bash and Python scripts with a single, argparse-based tool for chess engine benchmarking and CI/CD operations.
 
+A convenient entrypoint script (`/workflow`) is provided at the project root for easier command-line usage.
+
 ## Usage
 
 ```bash
+# From project root directory
+./workflow <command> [arguments]
+
+# Or directly from scripts directory  
 python3 workflow.py <command> [arguments]
 ```
 
@@ -14,32 +20,32 @@ python3 workflow.py <command> [arguments]
 
 ```bash
 # Detect changed implementations (useful for local testing)
-python3 workflow.py detect-changes "workflow_dispatch" --test-all "true"
+./workflow detect-changes "workflow_dispatch" --test-all "true"
 
 # Generate matrix for specific implementations
-python3 workflow.py generate-matrix "python rust go"
+./workflow generate-matrix "python rust go"
 
 # Get test configuration for an implementation
-python3 workflow.py get-test-config "python"
+./workflow get-test-config "python"
 
 # Run benchmark for a single implementation
-python3 workflow.py run-benchmark "python" "implementations/python" --timeout 300
+./workflow run-benchmark "python" "implementations/python" --timeout 300
 
 # Run structure verification
-python3 workflow.py verify-implementations
+./workflow verify-implementations
 ```
 
 ### CI/CD Operations
 
 ```bash
 # Combine benchmark results from artifacts
-python3 workflow.py combine-results
+./workflow combine-results
 
 # Update README status table
-python3 workflow.py update-readme
+./workflow update-readme
 
 # Create a release
-python3 workflow.py create-release \
+./workflow create-release \
   --version-type "patch" \
   --readme-changed "true" \
   --excellent-count 5 \
@@ -52,16 +58,16 @@ python3 workflow.py create-release \
 
 ```bash
 # Test basic chess engine commands
-python3 workflow.py test-basic-commands "python"
+./workflow test-basic-commands "python"
 
 # Test advanced features
-python3 workflow.py test-advanced-features "python" --supports-perft true --supports-ai true
+./workflow test-advanced-features "python" --supports-perft true --supports-ai true
 
 # Test demo mode
-python3 workflow.py test-demo-mode "python"
+./workflow test-demo-mode "python"
 
 # Cleanup Docker images and files
-python3 workflow.py cleanup-docker "python"
+./workflow cleanup-docker "python"
 ```
 
 ## Advantages of the Unified Script
@@ -115,16 +121,16 @@ Reads chess.meta files to determine test configuration.
 
 ```bash
 # Check what implementations would be tested
-python3 workflow.py detect-changes "push" --before-sha "HEAD~1"
+./workflow detect-changes "push" --before-sha "HEAD~1"
 
 # Generate matrix for changed implementations
-python3 workflow.py generate-matrix "$(python3 workflow.py detect-changes "push" --before-sha "HEAD~1" | jq -r .implementations)"
+./workflow generate-matrix "$(./workflow detect-changes "push" --before-sha "HEAD~1" | jq -r .implementations)"
 
 # Test a specific implementation locally
-python3 workflow.py run-benchmark "python" "implementations/python"
+./workflow run-benchmark "python" "implementations/python"
 
 # Check implementation configuration
-python3 workflow.py get-test-config "python"
+./workflow get-test-config "python"
 ```
 
 ### CI/CD Workflow
