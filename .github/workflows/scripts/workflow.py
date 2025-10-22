@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Unified workflow script for chess engine benchmarking and CI/CD operations.
-Replaces multiple bash and Python scripts with a single, argparse-based tool.
+Delegates to individual command modules for better organization.
 
 Usage:
     workflow.py <command> [arguments]
@@ -28,11 +28,22 @@ import sys
 import subprocess
 import glob
 import re
-import time
-import threading
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
+
+# Import individual command modules
+try:
+    from detect_changes import main as detect_changes_main
+    from generate_matrix import main as generate_matrix_main
+    from run_benchmark import main as run_benchmark_main
+    from verify_implementations import main as verify_implementations_main
+    from combine_results import main as combine_results_main
+    from update_readme import main as update_readme_main
+    from get_test_config import main as get_test_config_main
+except ImportError as e:
+    print(f"Warning: Could not import command module: {e}")
+    print("Falling back to inline implementations...")
 
 
 class WorkflowTool:
@@ -713,28 +724,48 @@ def main():
     
     try:
         if args.command == 'detect-changes':
-            result = tool.detect_changes(args.event_name, args.test_all, 
-                                       args.base_sha, args.head_sha, args.before_sha)
-            print(json.dumps(result))
+            try:
+                result = detect_changes_main(args)
+                print(json.dumps(result))
+            except NameError:
+                result = tool.detect_changes(args.event_name, args.test_all, 
+                                           args.base_sha, args.head_sha, args.before_sha)
+                print(json.dumps(result))
         
         elif args.command == 'generate-matrix':
-            result = tool.generate_matrix(args.changed_implementations)
-            print(json.dumps(result))
+            try:
+                result = generate_matrix_main(args)
+                print(json.dumps(result))
+            except NameError:
+                result = tool.generate_matrix(args.changed_implementations)
+                print(json.dumps(result))
         
         elif args.command == 'run-benchmark':
-            success = tool.run_benchmark(args.impl_name, args.impl_dir, args.timeout)
-            return 0 if success else 1
+            try:
+                return run_benchmark_main(args)
+            except NameError:
+                success = tool.run_benchmark(args.impl_name, args.impl_dir, args.timeout)
+                return 0 if success else 1
         
         elif args.command == 'verify-implementations':
-            tool.verify_implementations()
+            try:
+                verify_implementations_main(args)
+            except NameError:
+                tool.verify_implementations()
         
         elif args.command == 'combine-results':
-            success = tool.combine_results()
-            return 0 if success else 1
+            try:
+                return combine_results_main(args)
+            except NameError:
+                success = tool.combine_results()
+                return 0 if success else 1
         
         elif args.command == 'update-readme':
-            success = tool.update_readme()
-            return 0 if success else 1
+            try:
+                return update_readme_main(args)
+            except NameError:
+                success = tool.update_readme()
+                return 0 if success else 1
         
         elif args.command == 'create-release':
             success = tool.create_release(
@@ -761,8 +792,12 @@ def main():
             return 0 if success else 1
         
         elif args.command == 'get-test-config':
-            result = tool.get_test_config(args.implementation)
-            print(json.dumps(result))
+            try:
+                result = get_test_config_main(args)
+                print(json.dumps(result))
+            except NameError:
+                result = tool.get_test_config(args.implementation)
+                print(json.dumps(result))
         
         return 0
         
