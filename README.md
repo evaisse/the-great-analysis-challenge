@@ -53,7 +53,29 @@ cd implementations/<language> && make docker-test
 python3 test/verify_implementations.py
 ```
 
-*Build times measured on Apple Silicon M1, analysis times include linting/type checking where available.*
+*Last updated: 2025-10-22 - Build times measured on Apple Silicon M1, analysis times include linting/type checking where available.*
+
+## 🤖 Automated Benchmarking & Releases
+
+This project includes an automated GitHub Actions workflow that:
+
+- **📊 Weekly Status Updates**: Runs comprehensive benchmarks every Sunday and updates the status table above
+- **⚡ Immediate Testing**: Automatically tests implementations when changes are made
+- **🏷️ Smart Versioning**: Creates semantic version releases based on implementation health
+- **📦 Detailed Reports**: Generates performance reports and artifacts for each release
+
+### Automatic Updates
+The implementation status table is automatically updated by running:
+- Structure verification for all implementations
+- Performance benchmarks with timing measurements
+- Chess protocol compliance testing
+- Docker build and execution validation
+
+### Manual Trigger
+You can manually trigger a benchmark run and release from the [GitHub Actions tab](../../actions/workflows/benchmark-and-release.yml) with custom version bumping (patch/minor/major).
+
+### Latest Release
+Check the [latest release](../../releases/latest) for comprehensive benchmark reports and implementation status summaries.
 
 ## Available Languages
 
