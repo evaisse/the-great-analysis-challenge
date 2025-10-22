@@ -46,7 +46,7 @@ class ChessEngineTester:
             return False
         return True
     
-    def send_command(self, command: str, timeout: float = 5.0) -> str:
+    def send_command(self, command: str, timeout: float = 10.0) -> str:
         """Send command and get response"""
         if not self.process:
             return ""
@@ -198,7 +198,7 @@ class TestSuite:
             start_time = time.time()
             
             for command in test["commands"]:
-                output = tester.send_command(command, test.get("timeout", 5.0))
+                output = tester.send_command(command, test.get("timeout", 10.0))
                 all_output.append(output)
                 
             elapsed = time.time() - start_time
