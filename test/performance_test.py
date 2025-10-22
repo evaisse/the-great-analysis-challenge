@@ -156,16 +156,8 @@ class ImplementationTester:
             # Phase 1: Clear Docker cache
             self._clear_cache()
             
-            # Phase 2: Run analyze
-            self._run_analyze()
-            
-            # Phase 3: Build implementation
-            self._run_build()
-            
-            # Phase 4: Run chess client tests
-            self._run_chess_tests()
-            
-            # Phase 5: Docker tests
+            # Phase 2: Docker-based testing (replaces native build/test)
+            print("🐳 Running all tests via Docker (ensures consistent environment)")
             self._run_docker_tests()
             
             self.results["status"] = "completed"
@@ -386,55 +378,87 @@ class ImplementationTester:
             self.results["errors"].append(f"Chess test error: {str(e)}")
     
     def _run_docker_tests(self):
-        """Run Docker build and test"""
-        print("🐳 Running Docker tests...")
+        """Run all tests via Docker (build, analyze, test)"""
+        print("🐳 Running comprehensive Docker-based tests...")
         
         if not (self.impl_path / "Dockerfile").exists():
             print("⚠️  No Dockerfile found, skipping Docker tests")
+            self.results["errors"].append("No Dockerfile found")
             return
             
         image_name = f"chess-{self.language.lower()}"
         
-        # Build Docker image
-        print("  Building Docker image...")
+        # Phase 1: Build Docker image (includes dependency installation and compilation)
+        print("  🔨 Building Docker image (includes analysis and build)...")
         success, build_time, output = DockerManager.build_image(
             str(self.impl_path), 
             image_name
         )
         
+        self.results["timings"]["build_seconds"] = build_time
         self.results["docker"]["build_time"] = build_time
         self.results["docker"]["build_success"] = success
         
         if success:
             print(f"  ✅ Docker build completed in {build_time:.2f}s")
             
-            # Test Docker image
-            try:
-                test_start = time.time()
-                cmd = [
-                    "docker", "run", "--rm", "-i", image_name,
-                    "sh", "-c", "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | timeout 30s make test"
-                ]
-                print(f"  🔧 Running: {' '.join(cmd)}")
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.docker_timeout)
+            # Phase 2: Run analysis inside container  
+            print("  🔍 Running static analysis...")
+            analyze_success, analyze_time = self._run_docker_command(image_name, "make analyze")
+            self.results["timings"]["analyze_seconds"] = analyze_time
+            
+            # Phase 3: Run tests inside container
+            print("  ♟️  Running chess engine tests...")
+            test_success, test_time = self._run_docker_command(image_name, "make test")
+            self.results["timings"]["test_seconds"] = test_time
+            self.results["docker"]["test_time"] = test_time
+            self.results["docker"]["test_success"] = test_success
+            
+            # Overall success if all phases passed
+            overall_success = success and analyze_success and test_success
+            if overall_success:
+                print(f"  ✅ All Docker tests passed (build: {build_time:.1f}s, analyze: {analyze_time:.1f}s, test: {test_time:.1f}s)")
+                # Set traditional result fields for compatibility
+                self.results["test_results"]["passed"] = ["docker_build", "docker_analyze", "docker_test"]
+                self.results["test_results"]["failed"] = []
+            else:
+                failed_phases = []
+                if not success: failed_phases.append("build") 
+                if not analyze_success: failed_phases.append("analyze")
+                if not test_success: failed_phases.append("test")
+                print(f"  ❌ Docker tests failed in phases: {', '.join(failed_phases)}")
+                self.results["test_results"]["passed"] = []
+                self.results["test_results"]["failed"] = failed_phases
                 
-                docker_test_time = time.time() - test_start
-                self.results["docker"]["test_time"] = docker_test_time
-                self.results["docker"]["test_success"] = result.returncode == 0
-                
-                if result.returncode == 0:
-                    print(f"  ✅ Docker test completed in {docker_test_time:.2f}s")
-                else:
-                    print(f"  ❌ Docker test failed in {docker_test_time:.2f}s")
-                    self.results["errors"].append(f"Docker test failed: {result.stderr[:300]}")
-                    
-            except subprocess.TimeoutExpired:
-                self.results["errors"].append("Docker test timeout")
-            except Exception as e:
-                self.results["errors"].append(f"Docker test error: {str(e)}")
         else:
             print(f"  ❌ Docker build failed in {build_time:.2f}s")
             self.results["errors"].append(f"Docker build failed: {output[:500]}")
+            self.results["test_results"]["passed"] = []
+            self.results["test_results"]["failed"] = ["docker_build"]
+    
+    def _run_docker_command(self, image_name: str, command: str) -> Tuple[bool, float]:
+        """Run a command inside a Docker container and return (success, time)"""
+        try:
+            start_time = time.time()
+            cmd = ["docker", "run", "--rm", image_name, "sh", "-c", command]
+            print(f"    🔧 Running: {command}")
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.docker_timeout//2)
+            elapsed = time.time() - start_time
+            
+            success = result.returncode == 0
+            if not success:
+                self.results["errors"].append(f"{command} failed: {result.stderr[:200]}")
+            
+            return success, elapsed
+            
+        except subprocess.TimeoutExpired:
+            elapsed = time.time() - start_time
+            self.results["errors"].append(f"{command} timeout after {elapsed:.1f}s")
+            return False, elapsed
+        except Exception as e:
+            elapsed = time.time() - start_time
+            self.results["errors"].append(f"{command} error: {str(e)}")
+            return False, elapsed
 
 def generate_performance_report(results: List[Dict]) -> str:
     """Generate comprehensive performance report"""
@@ -509,7 +533,10 @@ def generate_performance_report(results: List[Dict]) -> str:
             if failed:
                 report.append("  Failed tests:")
                 for failure in failed:
-                    test_name = failure.get("test", "Unknown")
+                    if isinstance(failure, dict):
+                        test_name = failure.get("test", "Unknown")
+                    else:
+                        test_name = str(failure)
                     report.append(f"    ❌ {test_name}")
         
         # Docker results
@@ -554,24 +581,22 @@ Examples:
   python3 performance_test.py --timeout 3600
     Set 1 hour timeout for testing (useful for slow builds)
 
-Test Phases:
-  1. Cache Clearing   - Runs 'make clean' to clear build artifacts
-  2. Static Analysis  - Runs 'make analyze' with timing measurement
-  3. Build Phase      - Runs 'make build' with timing measurement  
-  4. Chess Testing    - Tests chess protocol compliance
-  5. Docker Testing   - Builds and tests Docker containers
+Test Phases (All Docker-based):
+  1. Cache Clearing   - Clears local build artifacts  
+  2. Docker Build     - Builds implementation container (includes dependencies and compilation)
+  3. Static Analysis  - Runs 'make analyze' inside container
+  4. Chess Testing    - Runs 'make test' inside container for protocol compliance
 
 Performance Metrics:
-  - Timing: Separate measurements for each phase
-  - Memory: Peak and average memory usage (requires psutil)
-  - Chess Tests: Protocol compliance and correctness
-  - Docker: Container build and execution times
+  - Timing: Docker build, analysis, and test phase measurements
+  - Memory: Peak and average memory usage (requires psutil)  
+  - Chess Tests: Protocol compliance and correctness via containers
+  - Container: Build and execution times for each implementation
 
 Requirements:
   - Python 3.7+
-  - psutil (optional, for memory monitoring)
-  - Docker (for container testing)
-  - Each implementation's build tools
+  - psutil (optional, for memory monitoring)  
+  - Docker (required for all testing)
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -601,6 +626,7 @@ Requirements:
         metavar="SECONDS",
         help="Overall timeout in seconds (default: 1800 = 30 minutes)"
     )
+    
     
     args = parser.parse_args()
     
