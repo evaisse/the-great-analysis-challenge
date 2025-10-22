@@ -74,31 +74,46 @@ python3 test/verify_implementations.py
 
 _Last updated: $(date +%Y-%m-%d) - Build times measured on Apple Silicon M1, analysis times include linting/type checking where available._
 
-## 🤖 Automated Benchmarking & Releases
+## 🤖 Automated CI/CD Workflows
 
-This project includes an automated GitHub Actions workflow that:
+### 📊 Benchmark Suite (`bench.yaml`)
+**Triggers**: Push to master, weekly schedule (Sunday 6AM UTC), manual dispatch
 
-- **📊 Weekly Status Updates**: Runs comprehensive benchmarks every Sunday and updates the status table above
-- **⚡ Immediate Testing**: Automatically tests implementations when changes are made
-- **🏷️ Smart Versioning**: Creates semantic version releases based on implementation health
-- **📦 Detailed Reports**: Generates performance reports and artifacts for each release
+**Process**:
+1. **Change Detection**: `./workflow detect-changes` - Analyzes git diff for modified implementations
+2. **Structure Validation**: `./workflow verify-implementations` - Validates files and metadata  
+3. **Parallel Benchmarking**: `./workflow run-benchmark <engine>` - Docker testing with 300s timeout
+4. **Results Aggregation**: `./workflow combine-results && ./workflow update-readme` - Updates status table
+5. **Release Management**: `./workflow create-release` - Semantic versioning based on implementation health
 
-### Automatic Updates
+### 🧪 Test Suite (`test.yaml`) 
+**Triggers**: Pull requests, manual dispatch
 
-The implementation status table is automatically updated by running:
+**Process**:
+1. **Change Detection**: Only tests modified implementations for efficiency
+2. **Structure Validation**: Ensures compliance with project standards
+3. **Build & Test Matrix**: Adaptive testing (full/demo mode) based on chess.meta configuration
+4. **Docker Isolation**: Each engine tested in clean environment
 
-- Structure verification for all implementations
-- Performance benchmarks with timing measurements  
-- Chess protocol compliance testing
-- Docker build and execution validation
+### 🔧 Unified Workflow Tool
+Central CLI orchestrating all operations:
 
-### Manual Trigger
+```bash
+# Development & Testing
+./workflow test-basic-commands <engine>      # Basic functionality
+./workflow test-advanced-features <engine>   # Full feature testing
+./workflow run-benchmark <engine>            # Performance benchmarking
 
-You can manually trigger a benchmark run and release from the [GitHub Actions tab](../../actions/workflows/benchmark-and-release.yml) with custom version bumping (patch/minor/major).
+# CI/CD Operations  
+./workflow detect-changes <event>            # Git diff analysis
+./workflow verify-implementations            # Structure validation
+./workflow update-readme                     # Automated documentation
+./workflow create-release --version-type <type>  # Release management
+```
 
-### Latest Release
-
-Check the [latest release](../../releases/latest) for comprehensive benchmark reports and implementation status summaries.
+### Manual Operations
+- **Trigger Benchmarks**: [GitHub Actions](../../actions/workflows/bench.yaml) tab with custom version bumping
+- **Latest Results**: Check [releases](../../releases/latest) for comprehensive reports
 
 ## 🌟 Language Implementations
 
