@@ -109,9 +109,9 @@ class DockerManager:
         start_time = time.time()
         
         try:
-            result = subprocess.run([
-                "docker", "build", "-t", tag, "."
-            ], cwd=dockerfile_path, capture_output=True, text=True, check=True)
+            cmd = ["docker", "build", "-t", tag, "."]
+            print(f"  🔧 Running: {' '.join(cmd)}")
+            result = subprocess.run(cmd, cwd=dockerfile_path, capture_output=True, text=True, check=True)
             
             build_time = time.time() - start_time
             return True, build_time, result.stdout
@@ -177,8 +177,10 @@ class ImplementationTester:
         # Clear local build artifacts using make clean
         if (self.impl_path / "Makefile").exists():
             try:
+                cmd = ["make", "clean"]
+                print(f"🔧 Running: {' '.join(cmd)}")
                 result = subprocess.run(
-                    ["make", "clean"], 
+                    cmd, 
                     cwd=self.impl_path, 
                     capture_output=True, 
                     text=True,
@@ -210,8 +212,10 @@ class ImplementationTester:
         
         try:
             if (self.impl_path / "Makefile").exists():
+                cmd = ["make", "analyze"]
+                print(f"🔧 Running: {' '.join(cmd)}")
                 result = subprocess.run(
-                    ["make", "analyze"], 
+                    cmd, 
                     cwd=self.impl_path, 
                     capture_output=True, 
                     text=True,
@@ -250,8 +254,10 @@ class ImplementationTester:
         
         try:
             if (self.impl_path / "Makefile").exists():
+                cmd = ["make", "build"]
+                print(f"🔧 Running: {' '.join(cmd)}")
                 result = subprocess.run(
-                    ["make", "build"], 
+                    cmd, 
                     cwd=self.impl_path, 
                     capture_output=True, 
                     text=True,
@@ -275,8 +281,10 @@ class ImplementationTester:
                 # Try direct build command from metadata
                 build_cmd = self.metadata.get("build", "")
                 if build_cmd:
+                    cmd = build_cmd.split()
+                    print(f"🔧 Running: {' '.join(cmd)}")
                     result = subprocess.run(
-                        build_cmd.split(), 
+                        cmd, 
                         cwd=self.impl_path, 
                         capture_output=True, 
                         text=True,
@@ -381,10 +389,12 @@ class ImplementationTester:
             # Test Docker image
             try:
                 test_start = time.time()
-                result = subprocess.run([
+                cmd = [
                     "docker", "run", "--rm", "-i", image_name,
                     "sh", "-c", "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | timeout 30s make test"
-                ], capture_output=True, text=True, timeout=60)
+                ]
+                print(f"  🔧 Running: {' '.join(cmd)}")
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
                 
                 docker_test_time = time.time() - test_start
                 self.results["docker"]["test_time"] = docker_test_time
