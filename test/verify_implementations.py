@@ -9,6 +9,7 @@ the required project structure and contains all necessary files.
 import os
 import json
 import sys
+import argparse
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
 
@@ -306,8 +307,60 @@ def print_summary_report(results: List[Dict]):
 
 def main():
     """Main verification function."""
-    if len(sys.argv) > 1:
-        base_dir = Path(sys.argv[1])
+    parser = argparse.ArgumentParser(
+        description="Chess Engine Implementation Structure Verification",
+        epilog="""
+Examples:
+  python3 verify_implementations.py
+    Verify all implementations in the project
+    
+  python3 verify_implementations.py /path/to/implementations
+    Verify implementations in custom directory
+
+Verification Checks:
+  Required Files:
+    - Dockerfile      Docker container definition
+    - Makefile        Build automation with required targets
+    - chess.meta      JSON metadata file  
+    - README.md       Implementation documentation
+
+  Dockerfile Requirements:
+    - FROM ubuntu:24.04 as base image
+    - DEBIAN_FRONTEND=noninteractive environment variable
+    - Proper WORKDIR and COPY instructions
+
+  Makefile Requirements:
+    - Required targets: all, build, test, analyze, clean, docker-build, docker-test, help
+    - .PHONY declarations for non-file targets
+
+  chess.meta Requirements:
+    - Valid JSON format
+    - Required fields: language, version, author, build, run, features, max_ai_depth
+    - Recommended fields: analyze, test, estimated_perft4_ms
+    - Expected features: perft, fen, ai, castling, en_passant, promotion
+
+Status Classifications:
+  🟢 Excellent - All files present, full compliance, no issues
+  🟡 Good      - Minor warnings or missing optional fields  
+  🔴 Needs Work - Missing required files or significant issues
+
+Exit Codes:
+  0 - All implementations passed verification
+  1 - One or more implementations need work
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    parser.add_argument(
+        "base_dir",
+        nargs="?",
+        help="Base directory containing implementations (default: project root)"
+    )
+    
+    args = parser.parse_args()
+    
+    if args.base_dir:
+        base_dir = Path(args.base_dir)
     else:
         base_dir = Path(__file__).parent.parent
     
