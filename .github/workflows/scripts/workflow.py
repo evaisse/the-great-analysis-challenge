@@ -64,24 +64,27 @@ class WorkflowTool:
         else:
             print(f"Would set GitHub output: {key}={value}")
     
-    def run_command(self, cmd: List[str], cwd: str = None, timeout: int = None, check: bool = True, show_output: bool = False, input: str = None) -> subprocess.CompletedProcess:
-        """Run a shell command with error handling and optional output logging."""
+    def run_command(self, cmd: List[str], cwd: str = None, timeout: int = None, check: bool = True, show_output: bool = False, input: str = None, stream_output: bool = False, output_file: str = None) -> subprocess.CompletedProcess:
+        """Run a shell command with error handling and flexible output handling."""
         cmd_str = ' '.join(cmd)
         print(f"🔧 Running: {cmd_str}")
         if cwd:
             print(f"   Working directory: {cwd}")
         
         try:
-            result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, 
-                                  timeout=timeout, check=check, input=input)
-            
-            if show_output and result.stdout.strip():
-                print(f"📤 Output:\n{result.stdout}")
-            if result.stderr.strip():
-                print(f"⚠️ Stderr:\n{result.stderr}")
+            if stream_output:
+                return self._run_command_streaming(cmd, cwd, timeout, check, output_file, input)
+            else:
+                result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, 
+                                      timeout=timeout, check=check, input=input)
                 
-            return result
-            
+                if show_output and result.stdout.strip():
+                    print(f"📤 Output:\n{result.stdout}")
+                if result.stderr.strip():
+                    print(f"⚠️ Stderr:\n{result.stderr}")
+                    
+                return result
+                
         except subprocess.CalledProcessError as e:
             if check:
                 print(f"❌ Command failed: {cmd_str}")
@@ -94,6 +97,89 @@ class WorkflowTool:
         except subprocess.TimeoutExpired as e:
             print(f"⏰ Command timed out: {cmd_str}")
             raise
+    
+    def _run_command_streaming(self, cmd: List[str], cwd: str = None, timeout: int = None, check: bool = True, output_file: str = None, input: str = None) -> subprocess.CompletedProcess:
+        """Run command with real-time output streaming and optional capture to file."""
+        import threading
+        import queue
+        import sys
+        
+        captured_stdout = []
+        captured_stderr = []
+        
+        # Open output file if specified
+        file_handle = None
+        if output_file:
+            file_handle = open(output_file, 'w')
+        
+        try:
+            process = subprocess.Popen(
+                cmd, 
+                cwd=cwd,
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.STDOUT,  # Merge stderr into stdout for simpler handling
+                text=True, 
+                bufsize=1, 
+                universal_newlines=True,
+                stdin=subprocess.PIPE if input else None
+            )
+            
+            # Send input if provided
+            if input:
+                process.stdin.write(input)
+                process.stdin.close()
+            
+            # Function to read output in a separate thread
+            def read_output(pipe, output_list):
+                try:
+                    for line in iter(pipe.readline, ''):
+                        # Print to terminal
+                        print(line, end='')
+                        sys.stdout.flush()
+                        
+                        # Write to file if specified
+                        if file_handle:
+                            file_handle.write(line)
+                            file_handle.flush()
+                        
+                        # Capture for return value
+                        output_list.append(line)
+                finally:
+                    pipe.close()
+            
+            # Start thread to read output
+            output_thread = threading.Thread(target=read_output, args=(process.stdout, captured_stdout))
+            output_thread.daemon = True
+            output_thread.start()
+            
+            # Wait for process with timeout
+            try:
+                returncode = process.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+                raise subprocess.TimeoutExpired(cmd, timeout)
+            
+            # Wait for output thread to finish
+            output_thread.join(timeout=5)
+            
+            # Create result object
+            result = subprocess.CompletedProcess(
+                cmd, 
+                returncode, 
+                ''.join(captured_stdout), 
+                ''  # stderr is merged into stdout
+            )
+            
+            if check and returncode != 0:
+                raise subprocess.CalledProcessError(returncode, cmd, 
+                                                  result.stdout, result.stderr)
+            
+            return result
+            
+        finally:
+            if file_handle:
+                file_handle.close()
     
     def detect_changes(self, event_name: str, test_all: str = "false", 
                       base_sha: str = "", head_sha: str = "", before_sha: str = "") -> Dict:
@@ -213,8 +299,14 @@ class WorkflowTool:
         ]
         
         try:
-            with open(f"benchmark_reports/benchmark_output_{impl_name}.txt", "w") as output_file:
-                result = subprocess.run(cmd, stdout=output_file, stderr=subprocess.STDOUT, timeout=timeout+60)
+            # Use streaming command that outputs to both terminal and file
+            result = self.run_command(
+                cmd,
+                timeout=timeout+60,
+                check=False,
+                stream_output=True,
+                output_file=f"benchmark_reports/benchmark_output_{impl_name}.txt"
+            )
             
             if result.returncode == 0:
                 print(f"✅ Benchmark completed for {impl_name}")
