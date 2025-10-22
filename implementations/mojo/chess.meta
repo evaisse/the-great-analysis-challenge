@@ -6,8 +6,8 @@
   "run": "mojo chess.mojo",
   "analyze": "mojo chess.mojo",
   "test": "mojo chess.mojo",
-  "features": ["ai", "fen", "castling", "en_passant", "promotion"],
+  "features": ["perft", "ai", "fen", "castling", "en_passant", "promotion"],
   "max_ai_depth": 5,
   "estimated_perft4_ms": 1000,
-  "notes": "Implementation has castling, en_passant, and promotion in lib/ but missing perft function"
+  "notes": "Full-featured Mojo chess implementation with perft, AI, FEN support, and all special moves (castling, en passant, promotion)"
 }
