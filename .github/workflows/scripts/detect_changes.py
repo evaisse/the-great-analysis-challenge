@@ -47,7 +47,6 @@ def main():
     
     # Determine if we should test all implementations
     if test_all == "true" or event_name in ["schedule", "workflow_dispatch"]:
-        print("Testing all implementations")
         changed_implementations = "all"
         has_changes = True
     else:
@@ -57,11 +56,9 @@ def main():
         if changed_implementations_list:
             changed_implementations = " ".join(changed_implementations_list)
             has_changes = True
-            print(f"Changed implementations: {changed_implementations}")
         else:
             changed_implementations = ""
             has_changes = False
-            print("No implementation changes detected")
     
     # Output results
     result = {
