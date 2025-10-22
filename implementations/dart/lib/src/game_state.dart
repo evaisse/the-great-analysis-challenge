@@ -1,6 +1,1 @@
-enum GameState {
-  inProgress,
-  checkmateWhiteWins,
-  checkmateBlackWins,
-  stalemate,
-}
+enum GameState { inProgress, checkmateWhiteWins, checkmateBlackWins, stalemate }

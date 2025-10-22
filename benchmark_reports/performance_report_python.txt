@@ -1,6 +1,6 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:11:48
+Generated: 2025-10-22 22:49:10
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -14,7 +14,7 @@ DETAILED RESULTS: PYTHON
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.21s
+  Analyze Seconds: 0.19s
   Build Seconds: 0.11s
   Test Seconds: 0.53s
 
@@ -34,7 +34,7 @@ CHESS ENGINE TESTS: 0 passed, 7 failed
     ❌ Pawn Promotion
 
 DOCKER TESTS:
-  Build: ✅ (0.42s)
+  Build: ✅ (0.54s)
   Test: ✅ (0.73s)
 
 ================================================================================

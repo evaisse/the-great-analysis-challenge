@@ -72,11 +72,13 @@ class Board {
 
     // Handle castling
     if (piece.type == PieceType.king && (from.col - to.col).abs() == 2) {
-      if (to.col == 6) { // Kingside
+      if (to.col == 6) {
+        // Kingside
         final rook = squares[from.row][7];
         squares[from.row][7] = null;
         squares[from.row][5] = rook;
-      } else { // Queenside
+      } else {
+        // Queenside
         final rook = squares[from.row][0];
         squares[from.row][0] = null;
         squares[from.row][3] = rook;
@@ -108,18 +110,26 @@ class Board {
     // Update castling rights
     if (piece.type == PieceType.king) {
       if (piece.color == PieceColor.white) {
-        _castlingRights = _castlingRights.replaceAll('K', '').replaceAll('Q', '');
+        _castlingRights =
+            _castlingRights.replaceAll('K', '').replaceAll('Q', '');
       } else {
-        _castlingRights = _castlingRights.replaceAll('k', '').replaceAll('q', '');
+        _castlingRights =
+            _castlingRights.replaceAll('k', '').replaceAll('q', '');
       }
     } else if (piece.type == PieceType.rook) {
       if (from.row == 7 && from.col == 0 && piece.color == PieceColor.white) {
         _castlingRights = _castlingRights.replaceAll('Q', '');
-      } else if (from.row == 7 && from.col == 7 && piece.color == PieceColor.white) {
+      } else if (from.row == 7 &&
+          from.col == 7 &&
+          piece.color == PieceColor.white) {
         _castlingRights = _castlingRights.replaceAll('K', '');
-      } else if (from.row == 0 && from.col == 0 && piece.color == PieceColor.black) {
+      } else if (from.row == 0 &&
+          from.col == 0 &&
+          piece.color == PieceColor.black) {
         _castlingRights = _castlingRights.replaceAll('q', '');
-      } else if (from.row == 0 && from.col == 7 && piece.color == PieceColor.black) {
+      } else if (from.row == 0 &&
+          from.col == 7 &&
+          piece.color == PieceColor.black) {
         _castlingRights = _castlingRights.replaceAll('k', '');
       }
     }
@@ -163,7 +173,9 @@ class Board {
     }
     buffer.write(' $turn $_castlingRights ');
     if (_enPassantTarget != null) {
-      buffer.write('${String.fromCharCode('a'.codeUnitAt(0) + _enPassantTarget!.col)}${8 - _enPassantTarget!.row}');
+      buffer.write(
+        '${String.fromCharCode('a'.codeUnitAt(0) + _enPassantTarget!.col)}${8 - _enPassantTarget!.row}',
+      );
     } else {
       buffer.write('-');
     }
@@ -184,11 +196,30 @@ class Board {
           } else if (piece.type == PieceType.knight) {
             _generateKnightMoves(i, j, playerColor, pseudoLegalMoves);
           } else if (piece.type == PieceType.bishop) {
-            _generateSlidingMoves(i, j, playerColor, pseudoLegalMoves, [[-1, -1], [-1, 1], [1, -1], [1, 1]]);
+            _generateSlidingMoves(i, j, playerColor, pseudoLegalMoves, [
+              [-1, -1],
+              [-1, 1],
+              [1, -1],
+              [1, 1],
+            ]);
           } else if (piece.type == PieceType.rook) {
-            _generateSlidingMoves(i, j, playerColor, pseudoLegalMoves, [[-1, 0], [1, 0], [0, -1], [0, 1]]);
+            _generateSlidingMoves(i, j, playerColor, pseudoLegalMoves, [
+              [-1, 0],
+              [1, 0],
+              [0, -1],
+              [0, 1],
+            ]);
           } else if (piece.type == PieceType.queen) {
-            _generateSlidingMoves(i, j, playerColor, pseudoLegalMoves, [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]);
+            _generateSlidingMoves(i, j, playerColor, pseudoLegalMoves, [
+              [-1, -1],
+              [-1, 1],
+              [1, -1],
+              [1, 1],
+              [-1, 0],
+              [1, 0],
+              [0, -1],
+              [0, 1],
+            ]);
           } else if (piece.type == PieceType.king) {
             _generateKingMoves(i, j, playerColor, pseudoLegalMoves);
           }
@@ -208,18 +239,33 @@ class Board {
     return legalMoves;
   }
 
-  void _generatePawnMoves(int row, int col, PieceColor color, List<Move> moves) {
+  void _generatePawnMoves(
+    int row,
+    int col,
+    PieceColor color,
+    List<Move> moves,
+  ) {
     final direction = color == PieceColor.white ? -1 : 1;
     final startRow = color == PieceColor.white ? 6 : 1;
     final promotionRow = color == PieceColor.white ? 0 : 7;
 
     // Single move
-    if (row + direction >= 0 && row + direction < 8 && squares[row + direction][col] == null) {
+    if (row + direction >= 0 &&
+        row + direction < 8 &&
+        squares[row + direction][col] == null) {
       if (row + direction == promotionRow) {
-        moves.add(Move(row, col, row + direction, col, promotion: PieceType.queen));
-        moves.add(Move(row, col, row + direction, col, promotion: PieceType.rook));
-        moves.add(Move(row, col, row + direction, col, promotion: PieceType.bishop));
-        moves.add(Move(row, col, row + direction, col, promotion: PieceType.knight));
+        moves.add(
+          Move(row, col, row + direction, col, promotion: PieceType.queen),
+        );
+        moves.add(
+          Move(row, col, row + direction, col, promotion: PieceType.rook),
+        );
+        moves.add(
+          Move(row, col, row + direction, col, promotion: PieceType.bishop),
+        );
+        moves.add(
+          Move(row, col, row + direction, col, promotion: PieceType.knight),
+        );
       } else {
         moves.add(Move(row, col, row + direction, col));
       }
@@ -237,10 +283,42 @@ class Board {
           final dest = squares[row + direction][col + dcol];
           if (dest != null && dest.color != color) {
             if (row + direction == promotionRow) {
-              moves.add(Move(row, col, row + direction, col + dcol, promotion: PieceType.queen));
-              moves.add(Move(row, col, row + direction, col + dcol, promotion: PieceType.rook));
-              moves.add(Move(row, col, row + direction, col + dcol, promotion: PieceType.bishop));
-              moves.add(Move(row, col, row + direction, col + dcol, promotion: PieceType.knight));
+              moves.add(
+                Move(
+                  row,
+                  col,
+                  row + direction,
+                  col + dcol,
+                  promotion: PieceType.queen,
+                ),
+              );
+              moves.add(
+                Move(
+                  row,
+                  col,
+                  row + direction,
+                  col + dcol,
+                  promotion: PieceType.rook,
+                ),
+              );
+              moves.add(
+                Move(
+                  row,
+                  col,
+                  row + direction,
+                  col + dcol,
+                  promotion: PieceType.bishop,
+                ),
+              );
+              moves.add(
+                Move(
+                  row,
+                  col,
+                  row + direction,
+                  col + dcol,
+                  promotion: PieceType.knight,
+                ),
+              );
             } else {
               moves.add(Move(row, col, row + direction, col + dcol));
             }
@@ -254,8 +332,22 @@ class Board {
     }
   }
 
-  void _generateKnightMoves(int row, int col, PieceColor color, List<Move> moves) {
-    final offsets = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+  void _generateKnightMoves(
+    int row,
+    int col,
+    PieceColor color,
+    List<Move> moves,
+  ) {
+    final offsets = [
+      [-2, -1],
+      [-2, 1],
+      [-1, -2],
+      [-1, 2],
+      [1, -2],
+      [1, 2],
+      [2, -1],
+      [2, 1],
+    ];
     for (final offset in offsets) {
       final newRow = row + offset[0];
       final newCol = col + offset[1];
@@ -268,7 +360,13 @@ class Board {
     }
   }
 
-  void _generateSlidingMoves(int row, int col, PieceColor color, List<Move> moves, List<List<int>> directions) {
+  void _generateSlidingMoves(
+    int row,
+    int col,
+    PieceColor color,
+    List<Move> moves,
+    List<List<int>> directions,
+  ) {
     for (final dir in directions) {
       for (int i = 1; i < 8; i++) {
         final newRow = row + i * dir[0];
@@ -290,8 +388,22 @@ class Board {
     }
   }
 
-  void _generateKingMoves(int row, int col, PieceColor color, List<Move> moves) {
-    final offsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+  void _generateKingMoves(
+    int row,
+    int col,
+    PieceColor color,
+    List<Move> moves,
+  ) {
+    final offsets = [
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, -1],
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
+    ];
     for (final offset in offsets) {
       final newRow = row + offset[0];
       final newCol = col + offset[1];
@@ -305,17 +417,27 @@ class Board {
 
     // Castling
     if (color == PieceColor.white) {
-      if (_castlingRights.contains('K') && squares[7][5] == null && squares[7][6] == null) {
+      if (_castlingRights.contains('K') &&
+          squares[7][5] == null &&
+          squares[7][6] == null) {
         moves.add(Move(7, 4, 7, 6));
       }
-      if (_castlingRights.contains('Q') && squares[7][1] == null && squares[7][2] == null && squares[7][3] == null) {
+      if (_castlingRights.contains('Q') &&
+          squares[7][1] == null &&
+          squares[7][2] == null &&
+          squares[7][3] == null) {
         moves.add(Move(7, 4, 7, 2));
       }
     } else {
-      if (_castlingRights.contains('k') && squares[0][5] == null && squares[0][6] == null) {
+      if (_castlingRights.contains('k') &&
+          squares[0][5] == null &&
+          squares[0][6] == null) {
         moves.add(Move(0, 4, 0, 6));
       }
-      if (_castlingRights.contains('q') && squares[0][1] == null && squares[0][2] == null && squares[0][3] == null) {
+      if (_castlingRights.contains('q') &&
+          squares[0][1] == null &&
+          squares[0][2] == null &&
+          squares[0][3] == null) {
         moves.add(Move(0, 4, 0, 2));
       }
     }
@@ -342,26 +464,41 @@ class Board {
     if (row + direction >= 0 && row + direction < 8) {
       if (col - 1 >= 0) {
         final piece = squares[row + direction][col - 1];
-        if (piece != null && piece.color == attackerColor && piece.type == PieceType.pawn) {
+        if (piece != null &&
+            piece.color == attackerColor &&
+            piece.type == PieceType.pawn) {
           return true;
         }
       }
       if (col + 1 < 8) {
         final piece = squares[row + direction][col + 1];
-        if (piece != null && piece.color == attackerColor && piece.type == PieceType.pawn) {
+        if (piece != null &&
+            piece.color == attackerColor &&
+            piece.type == PieceType.pawn) {
           return true;
         }
       }
     }
 
     // Check for knight attacks
-    final knightOffsets = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+    final knightOffsets = [
+      [-2, -1],
+      [-2, 1],
+      [-1, -2],
+      [-1, 2],
+      [1, -2],
+      [1, 2],
+      [2, -1],
+      [2, 1],
+    ];
     for (final offset in knightOffsets) {
       final newRow = row + offset[0];
       final newCol = col + offset[1];
       if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
         final piece = squares[newRow][newCol];
-        if (piece != null && piece.color == attackerColor && piece.type == PieceType.knight) {
+        if (piece != null &&
+            piece.color == attackerColor &&
+            piece.type == PieceType.knight) {
           return true;
         }
       }
@@ -369,9 +506,28 @@ class Board {
 
     // Check for sliding attacks (rooks, bishops, queens)
     final slidingDirections = {
-      PieceType.rook: [[-1, 0], [1, 0], [0, -1], [0, 1]],
-      PieceType.bishop: [[-1, -1], [-1, 1], [1, -1], [1, 1]],
-      PieceType.queen: [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]],
+      PieceType.rook: [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ],
+      PieceType.bishop: [
+        [-1, -1],
+        [-1, 1],
+        [1, -1],
+        [1, 1],
+      ],
+      PieceType.queen: [
+        [-1, -1],
+        [-1, 1],
+        [1, -1],
+        [1, 1],
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ],
     };
 
     for (final pieceType in slidingDirections.keys) {
@@ -382,7 +538,8 @@ class Board {
           if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
             final piece = squares[newRow][newCol];
             if (piece != null) {
-              if (piece.color == attackerColor && (piece.type == pieceType || piece.type == PieceType.queen)) {
+              if (piece.color == attackerColor &&
+                  (piece.type == pieceType || piece.type == PieceType.queen)) {
                 return true;
               }
               break;
@@ -395,13 +552,24 @@ class Board {
     }
 
     // Check for king attacks
-    final kingOffsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+    final kingOffsets = [
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, -1],
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
+    ];
     for (final offset in kingOffsets) {
       final newRow = row + offset[0];
       final newCol = col + offset[1];
       if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
         final piece = squares[newRow][newCol];
-        if (piece != null && piece.color == attackerColor && piece.type == PieceType.king) {
+        if (piece != null &&
+            piece.color == attackerColor &&
+            piece.type == PieceType.king) {
           return true;
         }
       }
@@ -416,13 +584,19 @@ class Board {
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
         final piece = squares[i][j];
-        if (piece != null && piece.type == PieceType.king && piece.color == kingColor) {
+        if (piece != null &&
+            piece.type == PieceType.king &&
+            piece.color == kingColor) {
           kingRow = i;
           kingCol = j;
           break;
         }
       }
     }
-    return isSquareAttacked(kingRow, kingCol, kingColor == PieceColor.white ? PieceColor.black : PieceColor.white);
+    return isSquareAttacked(
+      kingRow,
+      kingCol,
+      kingColor == PieceColor.white ? PieceColor.black : PieceColor.white,
+    );
   }
 }

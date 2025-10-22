@@ -28,10 +28,14 @@ class ChessEngine:
     def start(self):
         """Start the chess engine and begin accepting commands."""
         print(self.board.display())
+        sys.stdout.flush()
         
         while True:
             try:
-                print("\n> ", end="", flush=True)
+                # Don't print prompt in non-interactive mode
+                if sys.stdin.isatty():
+                    print("\n> ", end="", flush=True)
+                    
                 line = sys.stdin.readline()
                 if not line:
                     break
@@ -41,6 +45,7 @@ class ChessEngine:
                     continue
                     
                 self.process_command(command)
+                sys.stdout.flush()  # Ensure output is flushed
                 
             except KeyboardInterrupt:
                 print("\nGoodbye!")
@@ -157,7 +162,7 @@ class ChessEngine:
         self.ai = AI(self.board, self.move_generator)
         self.perft = Perft(self.board, self.move_generator)
         self.move_history = []
-        print('New game started')
+        print('OK: New game started')
         print(self.board.display())
     
     def handle_ai_move(self, depth: int):

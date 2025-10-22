@@ -36,11 +36,11 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
+   - Missing feature: perft
    - Missing feature: ai
    - Missing feature: en_passant
-   - Missing feature: perft
-   - Missing feature: castling
    - Missing feature: promotion
+   - Missing feature: castling
    - Missing feature: fen
 
 📝 Chess.meta info:
@@ -69,8 +69,8 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
    - Missing recommended field: test
+   - Missing recommended field: analyze
 
 📝 Chess.meta info:
    - Language: go
@@ -85,8 +85,8 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
    - Missing recommended field: test
+   - Missing recommended field: analyze
 
 📝 Chess.meta info:
    - Language: haskell
@@ -101,8 +101,8 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
    - Missing recommended field: test
+   - Missing recommended field: analyze
 
 📝 Chess.meta info:
    - Language: julia
@@ -117,8 +117,8 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
    - Missing recommended field: test
+   - Missing recommended field: analyze
 
 📝 Chess.meta info:
    - Language: kotlin
@@ -133,12 +133,12 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
    - Missing recommended field: test
-   - Missing feature: perft
-   - Missing feature: castling
+   - Missing recommended field: analyze
    - Missing feature: en_passant
    - Missing feature: promotion
+   - Missing feature: perft
+   - Missing feature: castling
 
 📝 Chess.meta info:
    - Extra feature: move_validation
@@ -156,10 +156,10 @@ Found 17 implementations
 ⚠️  Chess.meta warnings:
    - Missing recommended field: test
    - Missing feature: ai
-   - Missing feature: en_passant
    - Missing feature: perft
-   - Missing feature: castling
+   - Missing feature: en_passant
    - Missing feature: promotion
+   - Missing feature: castling
    - max_ai_depth should be between 1-10, got: 0
 
 📝 Chess.meta info:
@@ -219,8 +219,8 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
    - Missing recommended field: test
+   - Missing recommended field: analyze
 
 📝 Chess.meta info:
    - Language: rust
@@ -235,8 +235,8 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
    - Missing recommended field: test
+   - Missing recommended field: analyze
 
 📝 Chess.meta info:
    - Language: swift
@@ -251,8 +251,8 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
    - Missing recommended field: test
+   - Missing recommended field: analyze
 
 📝 Chess.meta info:
    - Language: typescript
@@ -267,8 +267,8 @@ Found 17 implementations
    - README.md
 
 ⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
    - Missing recommended field: test
+   - Missing recommended field: analyze
 
 📝 Chess.meta info:
    - Language: zig

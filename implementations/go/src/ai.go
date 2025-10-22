@@ -3,11 +3,11 @@ package main
 import "math"
 
 const (
-	MATE_VALUE     = 20000
-	DRAW_VALUE     = 0
-	MAX_DEPTH      = 5
-	INFINITY       = 999999
-	NEG_INFINITY   = -999999
+	MATE_VALUE   = 20000
+	DRAW_VALUE   = 0
+	MAX_DEPTH    = 5
+	INFINITY     = 999999
+	NEG_INFINITY = -999999
 )
 
 var pieceValues = map[PieceType]int{
@@ -96,24 +96,24 @@ func NewAI() *AI {
 
 func (ai *AI) FindBestMove(gs *GameState, depth int) Move {
 	ai.nodesEvaluated = 0
-	
+
 	if depth < 1 || depth > MAX_DEPTH {
 		depth = 3
 	}
-	
+
 	_, bestMove := ai.minimax(gs, depth, NEG_INFINITY, INFINITY, true)
 	return bestMove
 }
 
 func (ai *AI) minimax(gs *GameState, depth int, alpha, beta int, maximizingPlayer bool) (int, Move) {
 	ai.nodesEvaluated++
-	
+
 	if depth == 0 {
 		return ai.evaluate(gs), Move{}
 	}
-	
+
 	moves := gs.GenerateLegalMoves()
-	
+
 	// Check for terminal positions
 	if len(moves) == 0 {
 		if gs.IsInCheck(gs.ActiveColor) {
@@ -128,59 +128,59 @@ func (ai *AI) minimax(gs *GameState, depth int, alpha, beta int, maximizingPlaye
 			return DRAW_VALUE, Move{}
 		}
 	}
-	
+
 	var bestMove Move
-	
+
 	if maximizingPlayer {
 		maxEval := NEG_INFINITY
-		
+
 		for _, move := range moves {
 			// Make move
 			testState := gs.Clone()
 			testState.MakeMove(move)
-			
+
 			eval, _ := ai.minimax(testState, depth-1, alpha, beta, false)
-			
+
 			if eval > maxEval {
 				maxEval = eval
 				bestMove = move
 			}
-			
+
 			alpha = max(alpha, eval)
 			if beta <= alpha {
 				break // Alpha-beta pruning
 			}
 		}
-		
+
 		return maxEval, bestMove
 	} else {
 		minEval := INFINITY
-		
+
 		for _, move := range moves {
 			// Make move
 			testState := gs.Clone()
 			testState.MakeMove(move)
-			
+
 			eval, _ := ai.minimax(testState, depth-1, alpha, beta, true)
-			
+
 			if eval < minEval {
 				minEval = eval
 				bestMove = move
 			}
-			
+
 			beta = min(beta, eval)
 			if beta <= alpha {
 				break // Alpha-beta pruning
 			}
 		}
-		
+
 		return minEval, bestMove
 	}
 }
 
 func (ai *AI) evaluate(gs *GameState) int {
 	score := 0
-	
+
 	// Material and positional evaluation
 	for rank := 0; rank < 8; rank++ {
 		for file := 0; file < 8; file++ {
@@ -195,11 +195,11 @@ func (ai *AI) evaluate(gs *GameState) int {
 			}
 		}
 	}
-	
+
 	// Mobility bonus
 	whiteMoves := 0
 	blackMoves := 0
-	
+
 	// Count white moves
 	if gs.ActiveColor == White {
 		whiteMoves = len(gs.GenerateLegalMoves())
@@ -209,8 +209,8 @@ func (ai *AI) evaluate(gs *GameState) int {
 		tempState.ActiveColor = White
 		whiteMoves = len(tempState.GenerateLegalMoves())
 	}
-	
-	// Count black moves  
+
+	// Count black moves
 	if gs.ActiveColor == Black {
 		blackMoves = len(gs.GenerateLegalMoves())
 	} else {
@@ -219,10 +219,10 @@ func (ai *AI) evaluate(gs *GameState) int {
 		tempState.ActiveColor = Black
 		blackMoves = len(tempState.GenerateLegalMoves())
 	}
-	
+
 	// Mobility bonus (each legal move is worth a small amount)
 	score += (whiteMoves - blackMoves) * 3
-	
+
 	// Return score from current player's perspective
 	if gs.ActiveColor == White {
 		return score
@@ -233,16 +233,16 @@ func (ai *AI) evaluate(gs *GameState) int {
 
 func (ai *AI) evaluatePiece(piece Piece, square Square) int {
 	value := pieceValues[piece.Type]
-	
+
 	// Positional bonuses
 	rank := square.Rank
 	file := square.File
-	
+
 	// Flip the board for black pieces
 	if piece.Color == Black {
 		rank = 7 - rank
 	}
-	
+
 	switch piece.Type {
 	case Pawn:
 		value += pawnTable[rank][file]
@@ -252,40 +252,40 @@ func (ai *AI) evaluatePiece(piece Piece, square Square) int {
 		} else {
 			value += (7 - square.Rank) * 5
 		}
-		
+
 	case Knight:
 		value += knightTable[rank][file]
 		// Central control bonus
 		if (file >= 2 && file <= 5) && (rank >= 2 && rank <= 5) {
 			value += 10
 		}
-		
+
 	case Bishop:
 		value += bishopTable[rank][file]
 		// Central control bonus
 		if (file >= 2 && file <= 5) && (rank >= 2 && rank <= 5) {
 			value += 10
 		}
-		
+
 	case Rook:
 		value += rookTable[rank][file]
 		// Open file bonus (simplified)
 		if ai.isOpenFile(square.File, piece.Color) {
 			value += 15
 		}
-		
+
 	case Queen:
 		value += queenTable[rank][file]
 		// Central control bonus
 		if (file >= 2 && file <= 5) && (rank >= 2 && rank <= 5) {
 			value += 10
 		}
-		
+
 	case King:
 		value += kingMiddlegameTable[rank][file]
 		// Safety evaluation would go here in a more sophisticated engine
 	}
-	
+
 	return value
 }
 

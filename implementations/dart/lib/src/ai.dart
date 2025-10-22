@@ -19,7 +19,13 @@ class AI {
     for (final move in board.generateMoves()) {
       final newBoard = board.clone();
       newBoard.move(move.toString());
-      final value = _minimax(newBoard, depth - 1, double.negativeInfinity, double.infinity, false);
+      final value = _minimax(
+        newBoard,
+        depth - 1,
+        double.negativeInfinity,
+        double.infinity,
+        false,
+      );
       if (value > bestValue) {
         bestValue = value;
         bestMove = move;
@@ -28,7 +34,13 @@ class AI {
     return bestMove!;
   }
 
-  double _minimax(Board board, int depth, double alpha, double beta, bool maximizingPlayer) {
+  double _minimax(
+    Board board,
+    int depth,
+    double alpha,
+    double beta,
+    bool maximizingPlayer,
+  ) {
     if (depth == 0) {
       return evaluate(board);
     }

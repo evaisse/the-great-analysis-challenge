@@ -29,25 +29,25 @@ type Square struct {
 }
 
 type Move struct {
-	From      Square
-	To        Square
-	Piece     Piece
-	Captured  *Piece
-	IsCapture bool
-	IsCastle  bool
+	From        Square
+	To          Square
+	Piece       Piece
+	Captured    *Piece
+	IsCapture   bool
+	IsCastle    bool
 	IsEnPassant bool
 	IsPromotion bool
 	PromoteTo   PieceType
 }
 
 type GameState struct {
-	Board              [8][8]Piece
-	ActiveColor        Color
-	CastlingRights     [2][2]bool // [color][side] - true if castling is allowed
-	EnPassantTarget    *Square    // Target square for en passant capture
-	HalfmoveClock      int        // Moves since last capture or pawn move
-	FullmoveNumber     int        // Move number (increments after black's move)
-	MoveHistory        []Move
+	Board           [8][8]Piece
+	ActiveColor     Color
+	CastlingRights  [2][2]bool // [color][side] - true if castling is allowed
+	EnPassantTarget *Square    // Target square for en passant capture
+	HalfmoveClock   int        // Moves since last capture or pawn move
+	FullmoveNumber  int        // Move number (increments after black's move)
+	MoveHistory     []Move
 }
 
 const (
@@ -67,7 +67,7 @@ func (p Piece) Symbol() rune {
 	if p.Type == Empty {
 		return '.'
 	}
-	
+
 	var symbol rune
 	switch p.Type {
 	case Pawn:
@@ -83,11 +83,11 @@ func (p Piece) Symbol() rune {
 	case King:
 		symbol = 'K'
 	}
-	
+
 	if p.Color == Black {
 		symbol = rune(int(symbol) + 32) // Convert to lowercase
 	}
-	
+
 	return symbol
 }
 

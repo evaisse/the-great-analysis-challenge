@@ -123,10 +123,16 @@ class DockerManager:
 class ImplementationTester:
     """Test a single implementation with comprehensive performance metrics"""
     
-    def __init__(self, impl_path: str, metadata: Dict):
+    def __init__(self, impl_path: str, metadata: Dict, timeout: int = 60):
         self.impl_path = Path(impl_path)
         self.metadata = metadata
         self.language = metadata.get("language", "unknown")
+        self.timeout = timeout
+        # Calculate reasonable timeouts for each phase based on main timeout
+        self.clean_timeout = max(5, min(30, timeout // 4))
+        self.analyze_timeout = max(10, min(timeout // 2, timeout - 10))
+        self.build_timeout = max(10, min(timeout // 2, timeout - 10))
+        self.docker_timeout = max(10, min(60, timeout // 2))
         self.results = {
             "language": self.language,
             "path": str(self.impl_path),
@@ -184,7 +190,7 @@ class ImplementationTester:
                     cwd=self.impl_path, 
                     capture_output=True, 
                     text=True,
-                    timeout=30
+                    timeout=self.clean_timeout
                 )
                 
                 if result.returncode == 0:
@@ -219,7 +225,7 @@ class ImplementationTester:
                     cwd=self.impl_path, 
                     capture_output=True, 
                     text=True,
-                    timeout=300  # 5 minute timeout
+                    timeout=self.analyze_timeout
                 )
                 
                 analysis_time = time.time() - start_time
@@ -237,7 +243,7 @@ class ImplementationTester:
                 
         except subprocess.TimeoutExpired:
             monitor.stop_monitoring()
-            self.results["errors"].append("Analysis timeout (5 minutes)")
+            self.results["errors"].append(f"Analysis timeout ({self.analyze_timeout}s)")
         except Exception as e:
             monitor.stop_monitoring()
             self.results["errors"].append(f"Analysis error: {str(e)}")
@@ -261,7 +267,7 @@ class ImplementationTester:
                     cwd=self.impl_path, 
                     capture_output=True, 
                     text=True,
-                    timeout=600  # 10 minute timeout
+                    timeout=self.build_timeout
                 )
                 
                 build_time = time.time() - start_time
@@ -288,7 +294,7 @@ class ImplementationTester:
                         cwd=self.impl_path, 
                         capture_output=True, 
                         text=True,
-                        timeout=600
+                        timeout=self.build_timeout
                     )
                     
                     build_time = time.time() - start_time
@@ -310,7 +316,7 @@ class ImplementationTester:
                     
         except subprocess.TimeoutExpired:
             monitor.stop_monitoring()
-            self.results["errors"].append("Build timeout (10 minutes)")
+            self.results["errors"].append(f"Build timeout ({self.build_timeout}s)")
             raise Exception("Build timeout")
         except Exception as e:
             monitor.stop_monitoring()
@@ -394,7 +400,7 @@ class ImplementationTester:
                     "sh", "-c", "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | timeout 30s make test"
                 ]
                 print(f"  🔧 Running: {' '.join(cmd)}")
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.docker_timeout)
                 
                 docker_test_time = time.time() - test_start
                 self.results["docker"]["test_time"] = docker_test_time
@@ -610,7 +616,7 @@ Requirements:
     start_time = time.time()
     
     for impl_path, metadata in implementations:
-        tester = ImplementationTester(impl_path, metadata)
+        tester = ImplementationTester(impl_path, metadata, args.timeout)
         result = tester.run_full_test()
         all_results.append(result)
         
