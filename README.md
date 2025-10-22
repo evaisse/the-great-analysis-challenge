@@ -18,26 +18,26 @@ All 17 implementations have **EXCELLENT** status with complete feature parity:
 
 | Language | Status | Analysis Time | Build Time | Test Time |
 |----------|--------|---------------|------------|-----------|
-| Crystal | 🟢 | ~0.0s | ~0.0s | ~0s |
-| Dart | 🟢 | ~1s | ~0.6s | ~0s |
-| Elm | 🟢 | ~0.7s | ~0.8s | ~0s |
-| Gleam | 🟢 | ~0.0s | ~0.0s | ~0s |
-| Go | 🟢 | ~0.3s | ~0.2s | ~0s |
-| Haskell | 🟢 | ~0.0s | ~0.0s | ~0s |
-| Julia | 🟢 | ~0.0s | ~0.0s | ~0s |
-| Kotlin | 🟢 | ~0.3s | ~0.1s | ~0s |
-| Mojo | 🟢 | ~0.0s | ~0.0s | ~0s |
-| Nim | 🟢 | ~0.0s | ~0.0s | ~0s |
-| Python | 🟢 | ~0.2s | ~0.1s | ~0.6s |
-| Rescript | 🟢 | ~0.1s | ~3s | ~0s |
-| Ruby | 🟢 | ~2s | ~0.4s | ~2s |
-| Rust | 🟢 | ~0.9s | ~0.6s | ~0.5s |
-| Swift | 🟢 | ~1s | ~0.4s | ~0s |
-| Typescript | 🟢 | ~0s | ~0s | ~0s |
-| Zig | 🟢 | ~0.0s | ~0.0s | ~0s |
+| Crystal | 🟢 | 38ms | 18ms | 0ms |
+| Dart | 🟢 | 1055ms | 639ms | 0ms |
+| Elm | 🟢 | 722ms | 847ms | 0ms |
+| Gleam | 🟢 | 36ms | 22ms | 0ms |
+| Go | 🟢 | 280ms | 153ms | 0ms |
+| Haskell | 🟢 | 42ms | 15ms | 0ms |
+| Julia | 🟢 | 33ms | 25ms | 0ms |
+| Kotlin | 🟢 | 258ms | 128ms | 0ms |
+| Mojo | 🟢 | 33ms | 33ms | 0ms |
+| Nim | 🟢 | 33ms | 29ms | 0ms |
+| Python | 🟢 | 209ms | 103ms | 597ms |
+| Rescript | 🟢 | 141ms | 3443ms | 0ms |
+| Ruby | 🟢 | 1661ms | 354ms | 1850ms |
+| Rust | 🟢 | 899ms | 567ms | 518ms |
+| Swift | 🟢 | 1087ms | 398ms | 0ms |
+| Typescript | 🟢 | 0ms | 0ms | 0ms |
+| Zig | 🟢 | 29ms | 18ms | 0ms |
 <!-- status-table-end -->
 
-_All implementations tested via Docker for consistency. Times measured on Apple Silicon M1._
+_All implementations tested via Docker for consistency. Times in milliseconds, measured on Apple Silicon M1._
 
 ## 🚀 Quick Start
 
