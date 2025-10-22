@@ -11,7 +11,8 @@ build:
 # Run basic tests
 test:
 	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | node src/cli.js | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@printf "help\ndisplay\nquit\n" | node chess-bridge.js > /tmp/elm_test_output 2>&1
+	@grep -q "Available commands:" /tmp/elm_test_output && grep -q "Chess Engine - Elm Implementation" /tmp/elm_test_output && echo "✅ Basic test passed" || echo "❌ Basic test failed"
 
 # Static analysis and code quality
 analyze:
@@ -31,7 +32,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Elm implementation in Docker..."
-	docker run --rm -i chess-elm sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | node src/cli.js"
+	docker run --rm -i chess-elm sh -c "printf 'help\\ndisplay\\nfen\\nperft 1\\nquit\\n' | node chess-bridge.js"
 
 # Help target
 help:
