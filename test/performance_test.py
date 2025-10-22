@@ -104,25 +104,6 @@ class DockerManager:
     """Manage Docker operations for testing"""
     
     @staticmethod
-    def clear_build_cache(image_name: str = None):
-        """Clear Docker build cache"""
-        try:
-            if image_name:
-                # Remove specific image
-                subprocess.run([
-                    "docker", "rmi", "-f", image_name
-                ], capture_output=True, check=False)
-                
-            # Prune build cache
-            subprocess.run([
-                "docker", "builder", "prune", "-f"
-            ], capture_output=True, check=True)
-            
-            return True
-        except subprocess.CalledProcessError:
-            return False
-    
-    @staticmethod
     def build_image(dockerfile_path: str, tag: str) -> Tuple[bool, float, str]:
         """Build Docker image and return success, time, and output"""
         start_time = time.time()
@@ -193,20 +174,30 @@ class ImplementationTester:
         """Clear build cache"""
         print("🧹 Clearing build cache...")
         
-        # Clear local build artifacts
+        # Clear local build artifacts using make clean
         if (self.impl_path / "Makefile").exists():
-            result = subprocess.run(
-                ["make", "clean"], 
-                cwd=self.impl_path, 
-                capture_output=True, 
-                text=True
-            )
-            
-        # Clear Docker cache
-        image_name = f"chess-{self.language.lower()}"
-        DockerManager.clear_build_cache(image_name)
+            try:
+                result = subprocess.run(
+                    ["make", "clean"], 
+                    cwd=self.impl_path, 
+                    capture_output=True, 
+                    text=True,
+                    timeout=30
+                )
+                
+                if result.returncode == 0:
+                    print("✅ Local cache cleared with make clean")
+                else:
+                    print(f"⚠️  make clean returned non-zero exit code: {result.stderr[:200]}")
+                    
+            except subprocess.TimeoutExpired:
+                print("⚠️  make clean timeout")
+            except Exception as e:
+                print(f"⚠️  make clean error: {str(e)}")
+        else:
+            print("⚠️  No Makefile found, skipping cache clearing")
         
-        print("✅ Cache cleared")
+        print("✅ Cache clearing completed")
     
     def _run_analyze(self):
         """Run static analysis with timing"""
@@ -506,11 +497,70 @@ def generate_performance_report(results: List[Dict]) -> str:
 
 def main():
     """Main performance testing function"""
-    parser = argparse.ArgumentParser(description="Run comprehensive performance tests on chess implementations")
-    parser.add_argument("--impl", help="Test specific implementation directory")
-    parser.add_argument("--output", help="Output report file")
-    parser.add_argument("--json", help="Output JSON results file")
-    parser.add_argument("--timeout", type=int, default=1800, help="Overall timeout in seconds (default: 30 minutes)")
+    parser = argparse.ArgumentParser(
+        description="Chess Engine Performance Testing Suite",
+        epilog="""
+Examples:
+  python3 performance_test.py
+    Test all implementations in implementations/ directory
+    
+  python3 performance_test.py --impl implementations/rust
+    Test only the Rust implementation
+    
+  python3 performance_test.py --output report.txt --json data.json
+    Save detailed text report and JSON data to files
+    
+  python3 performance_test.py --timeout 3600
+    Set 1 hour timeout for testing (useful for slow builds)
+
+Test Phases:
+  1. Cache Clearing   - Runs 'make clean' to clear build artifacts
+  2. Static Analysis  - Runs 'make analyze' with timing measurement
+  3. Build Phase      - Runs 'make build' with timing measurement  
+  4. Chess Testing    - Tests chess protocol compliance
+  5. Docker Testing   - Builds and tests Docker containers
+
+Performance Metrics:
+  - Timing: Separate measurements for each phase
+  - Memory: Peak and average memory usage (requires psutil)
+  - Chess Tests: Protocol compliance and correctness
+  - Docker: Container build and execution times
+
+Requirements:
+  - Python 3.7+
+  - psutil (optional, for memory monitoring)
+  - Docker (for container testing)
+  - Each implementation's build tools
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    parser.add_argument(
+        "--impl", 
+        metavar="PATH",
+        help="Test specific implementation directory (e.g., implementations/rust)"
+    )
+    
+    parser.add_argument(
+        "--output", 
+        metavar="FILE",
+        help="Save detailed text report to file"
+    )
+    
+    parser.add_argument(
+        "--json", 
+        metavar="FILE",
+        help="Save machine-readable JSON results to file"
+    )
+    
+    parser.add_argument(
+        "--timeout", 
+        type=int, 
+        default=1800, 
+        metavar="SECONDS",
+        help="Overall timeout in seconds (default: 1800 = 30 minutes)"
+    )
+    
     args = parser.parse_args()
     
     print("🚀 Chess Engine Performance Testing Suite")

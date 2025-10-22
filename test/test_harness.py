@@ -322,12 +322,76 @@ def generate_report(results: Dict[str, Dict]) -> str:
     return "\n".join(report)
 
 def main():
-    parser = argparse.ArgumentParser(description="Test chess engine implementations")
-    parser.add_argument("--dir", default="implementations", help="Directory containing implementations")
-    parser.add_argument("--impl", help="Test specific implementation")
-    parser.add_argument("--test", help="Run specific test")
-    parser.add_argument("--performance", action="store_true", help="Run performance tests")
-    parser.add_argument("--output", help="Output report file")
+    parser = argparse.ArgumentParser(
+        description="Chess Engine Protocol Compliance Testing",
+        epilog="""
+Examples:
+  python3 test_harness.py
+    Test all implementations in implementations/ directory
+    
+  python3 test_harness.py --impl implementations/python
+    Test only the Python implementation
+    
+  python3 test_harness.py --test "Basic Movement"
+    Run only the Basic Movement test on all implementations
+    
+  python3 test_harness.py --performance --output report.txt
+    Run performance tests and save report to file
+
+Test Cases:
+  1. Basic Movement      - Standard piece moves (e2e4, e7e5, etc.)
+  2. Castling           - King and rook castling moves  
+  3. En Passant         - Pawn en passant capture
+  4. Checkmate Detection - Fool's mate recognition
+  5. AI Move Generation - AI depth 3 move calculation
+  6. Invalid Move Handling - Error handling for illegal moves
+  7. Pawn Promotion     - Promotion to queen
+  8. Perft Accuracy     - Move generation validation (optional)
+
+Performance Tests:
+  - Move generation speed (average time per move)
+  - AI thinking time at depths 1, 3, and 5
+  - Memory usage during gameplay
+
+Requirements:
+  - Each implementation must have chess.meta file
+  - Build command specified in chess.meta (if needed)
+  - Run command specified in chess.meta
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    parser.add_argument(
+        "--dir", 
+        default="implementations", 
+        metavar="DIR",
+        help="Directory containing implementations (default: implementations)"
+    )
+    
+    parser.add_argument(
+        "--impl", 
+        metavar="PATH",
+        help="Test specific implementation directory"
+    )
+    
+    parser.add_argument(
+        "--test", 
+        metavar="NAME",
+        help="Run specific test case (e.g., 'Basic Movement', 'Castling')"
+    )
+    
+    parser.add_argument(
+        "--performance", 
+        action="store_true", 
+        help="Run additional performance benchmarks"
+    )
+    
+    parser.add_argument(
+        "--output", 
+        metavar="FILE",
+        help="Save report to file"
+    )
+    
     args = parser.parse_args()
     
     # Find implementations

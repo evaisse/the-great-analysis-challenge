@@ -8,7 +8,7 @@ This directory contains comprehensive performance testing tools for chess engine
 The main performance testing script that provides detailed analysis of implementation performance.
 
 **Features:**
-- 🧹 **Cache Clearing**: Clears Docker build cache and local build artifacts
+- 🧹 **Cache Clearing**: Clears local build artifacts using `make clean`
 - ⏱️ **Timing Measurement**: Measures analyze, build, and test phases separately
 - 💾 **Memory Monitoring**: Tracks memory consumption during all phases
 - ♟️ **Chess Testing**: Uses existing test harness for consistent chess protocol testing
@@ -75,8 +75,7 @@ Path: /path/to/implementations/python
 
 ### 1. Cache Clearing
 - Runs `make clean` to remove local build artifacts
-- Removes Docker images with `docker rmi`
-- Prunes Docker build cache with `docker builder prune`
+- Ensures clean build environment for accurate timing measurements
 
 ### 2. Static Analysis (`make analyze`)
 - Runs language-specific linters and type checkers
