@@ -44,6 +44,63 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Detect changed implementations
+      id: changed_implementations
+      run: |
+        echo "=== Detecting Changed Implementations ==="
+        
+        # For scheduled runs or manual triggers, test all implementations
+        if [[ "${{ github.event_name }}" == "schedule" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "Full test requested (scheduled or manual trigger)"
+          echo "changed_impls=all" >> $GITHUB_OUTPUT
+          echo "test_mode=full" >> $GITHUB_OUTPUT
+          echo "impl_count=17" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # For push events, detect which implementations changed
+        if [[ "${{ github.event_name }}" == "push" ]]; then
+          # Get the previous commit to compare against
+          PREV_COMMIT="${{ github.event.before }}"
+          
+          # If this is the first commit, compare against HEAD~1
+          if [[ "$PREV_COMMIT" == "0000000000000000000000000000000000000000" ]]; then
+            PREV_COMMIT="HEAD~1"
+          fi
+          
+          echo "Comparing against: $PREV_COMMIT"
+          
+          # Get changed files in implementations directory
+          CHANGED_FILES=$(git diff --name-only $PREV_COMMIT HEAD -- implementations/ || echo "")
+          
+          if [[ -z "$CHANGED_FILES" ]]; then
+            echo "No implementation changes detected"
+            echo "changed_impls=none" >> $GITHUB_OUTPUT
+            echo "test_mode=none" >> $GITHUB_OUTPUT
+            echo "impl_count=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          
+          # Extract unique implementation directories
+          CHANGED_IMPLEMENTATIONS=$(echo "$CHANGED_FILES" | grep -E "^implementations/[^/]+/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
+          
+          if [[ -z "$CHANGED_IMPLEMENTATIONS" ]]; then
+            echo "No specific implementations changed"
+            echo "changed_impls=none" >> $GITHUB_OUTPUT
+            echo "test_mode=none" >> $GITHUB_OUTPUT
+            echo "impl_count=0" >> $GITHUB_OUTPUT
+          else
+            echo "Changed implementations: $CHANGED_IMPLEMENTATIONS"
+            IMPL_COUNT=$(echo "$CHANGED_IMPLEMENTATIONS" | wc -w)
+            echo "changed_impls=$CHANGED_IMPLEMENTATIONS" >> $GITHUB_OUTPUT
+            echo "test_mode=selective" >> $GITHUB_OUTPUT
+            echo "impl_count=$IMPL_COUNT" >> $GITHUB_OUTPUT
+          fi
+        fi
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -97,8 +154,17 @@ jobs:
         docker --version || echo "Docker not found"
         echo "=== End Verification ==="
     
+    - name: Skip workflow for no changes
+      if: steps.changed_implementations.outputs.test_mode == 'none'
+      run: |
+        echo "🚫 No implementation changes detected"
+        echo "ℹ️ Workflow will skip benchmark testing and README updates"
+        echo "ℹ️ To run full benchmarks, trigger the workflow manually or wait for the weekly scheduled run"
+        echo "✅ Workflow completed successfully (no action needed)"
+    
     - name: Run structure verification
       id: verify
+      if: steps.changed_implementations.outputs.test_mode != 'none'
       run: |
         echo "=== Running Implementation Structure Verification ==="
         python3 test/verify_implementations.py > verification_results.txt 2>&1
@@ -124,18 +190,74 @@ jobs:
     
     - name: Run performance benchmark suite
       id: benchmark
+      if: steps.changed_implementations.outputs.test_mode != 'none'
       run: |
-        echo "=== Running Comprehensive Performance Benchmark Suite ==="
+        echo "=== Running Performance Benchmark Suite ==="
+        
+        TEST_MODE="${{ steps.changed_implementations.outputs.test_mode }}"
+        CHANGED_IMPLS="${{ steps.changed_implementations.outputs.changed_impls }}"
+        IMPL_COUNT="${{ steps.changed_implementations.outputs.impl_count }}"
+        
+        echo "Test mode: $TEST_MODE"
+        echo "Implementation count: $IMPL_COUNT"
         
         # Create reports directory
         mkdir -p benchmark_reports
         
-        # Run performance tests with extended timeout
-        python3 test/performance_test.py \
-          --timeout ${{ env.BENCHMARK_TIMEOUT }} \
-          --output benchmark_reports/performance_report.txt \
-          --json benchmark_reports/performance_data.json \
-          > benchmark_reports/benchmark_output.txt 2>&1
+        if [[ "$TEST_MODE" == "full" ]]; then
+          echo "Running full benchmark suite on all implementations"
+          python3 test/performance_test.py \
+            --timeout ${{ env.BENCHMARK_TIMEOUT }} \
+            --output benchmark_reports/performance_report.txt \
+            --json benchmark_reports/performance_data.json \
+            > benchmark_reports/benchmark_output.txt 2>&1
+        elif [[ "$TEST_MODE" == "selective" ]]; then
+          echo "Running selective benchmark on changed implementations: $CHANGED_IMPLS"
+          
+          # Test each changed implementation individually
+          for impl in $CHANGED_IMPLS; do
+            echo "Testing implementation: $impl"
+            
+            if [[ -d "implementations/$impl" ]]; then
+              python3 test/performance_test.py \
+                --impl "implementations/$impl" \
+                --timeout 900 \
+                --output "benchmark_reports/performance_report_$impl.txt" \
+                --json "benchmark_reports/performance_data_$impl.json" \
+                >> benchmark_reports/benchmark_output.txt 2>&1
+            else
+              echo "⚠️ Implementation directory not found: implementations/$impl"
+            fi
+          done
+          
+          # Combine individual JSON reports into one
+          python3 -c "
+import json
+import glob
+from pathlib import Path
+
+all_results = []
+for json_file in glob.glob('benchmark_reports/performance_data_*.json'):
+    try:
+        with open(json_file, 'r') as f:
+            data = json.load(f)
+            if isinstance(data, list):
+                all_results.extend(data)
+            else:
+                all_results.append(data)
+    except Exception as e:
+        print(f'Error reading {json_file}: {e}')
+
+# Save combined results
+with open('benchmark_reports/performance_data.json', 'w') as f:
+    json.dump(all_results, f, indent=2)
+
+print(f'Combined {len(all_results)} implementation results')
+" >> benchmark_reports/benchmark_output.txt 2>&1
+          
+          # Combine text reports
+          cat benchmark_reports/performance_report_*.txt > benchmark_reports/performance_report.txt 2>/dev/null || echo "No text reports to combine"
+        fi
         
         BENCHMARK_EXIT_CODE=$?
         echo "benchmark_exit_code=$BENCHMARK_EXIT_CODE" >> $GITHUB_OUTPUT
@@ -169,8 +291,16 @@ with open('benchmark_reports/performance_data.json', 'r') as f:
     
     - name: Generate updated README status table
       id: update_readme
+      if: steps.changed_implementations.outputs.test_mode != 'none'
       run: |
         echo "=== Generating Updated README Status Table ==="
+        
+        TEST_MODE="${{ steps.changed_implementations.outputs.test_mode }}"
+        
+        if [[ "$TEST_MODE" == "selective" ]]; then
+          echo "ℹ️ Selective testing mode - README will only be updated if significant changes are detected"
+          echo "ℹ️ For full README update, run the workflow manually or wait for the weekly scheduled run"
+        fi
         
         # Create a Python script to update the README
         cat > update_readme_status.py << 'EOF'
@@ -410,8 +540,25 @@ EOF
         # Add updated README
         git add README.md
         
-        # Create commit
-        COMMIT_MESSAGE="chore: update implementation status from benchmark suite
+        # Create commit message based on test mode
+        TEST_MODE="${{ steps.changed_implementations.outputs.test_mode }}"
+        CHANGED_IMPLS="${{ steps.changed_implementations.outputs.changed_impls }}"
+        IMPL_COUNT="${{ steps.changed_implementations.outputs.impl_count }}"
+        
+        if [[ "$TEST_MODE" == "selective" ]]; then
+          COMMIT_MESSAGE="chore: update status for changed implementations ($CHANGED_IMPLS)
+
+Selective Benchmark Results:
+- Changed implementations: $CHANGED_IMPLS
+- Implementations tested: $IMPL_COUNT
+- Overall status: ${{ steps.verify.outputs.excellent_count }} excellent, ${{ steps.verify.outputs.good_count }} good, ${{ steps.verify.outputs.needs_work_count }} needs work
+
+Performance testing completed for modified implementations only.
+Updated README.md status table with latest benchmark data.
+
+Auto-generated by selective benchmark workflow."
+        else
+          COMMIT_MESSAGE="chore: update implementation status from benchmark suite
 
 Benchmark Results Summary:
 - Total implementations tested: ${{ steps.verify.outputs.total_count }}
@@ -423,6 +570,7 @@ Performance testing completed with status updates.
 Updated README.md status table with latest benchmark data.
 
 Auto-generated by benchmark-and-release workflow."
+        fi
         
         git commit -m "$COMMIT_MESSAGE"
         
@@ -542,20 +690,42 @@ Generated automatically by the benchmark suite workflow."
       run: |
         echo "# 🏁 Benchmark Suite & Release Workflow Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## 📊 Implementation Status" >> $GITHUB_STEP_SUMMARY
-        echo "- **Total implementations**: ${{ steps.verify.outputs.total_count }}" >> $GITHUB_STEP_SUMMARY
-        echo "- 🟢 **Excellent**: ${{ steps.verify.outputs.excellent_count }}" >> $GITHUB_STEP_SUMMARY
-        echo "- 🟡 **Good**: ${{ steps.verify.outputs.good_count }}" >> $GITHUB_STEP_SUMMARY
-        echo "- 🔴 **Needs work**: ${{ steps.verify.outputs.needs_work_count }}" >> $GITHUB_STEP_SUMMARY
+        
+        TEST_MODE="${{ steps.changed_implementations.outputs.test_mode }}"
+        CHANGED_IMPLS="${{ steps.changed_implementations.outputs.changed_impls }}"
+        IMPL_COUNT="${{ steps.changed_implementations.outputs.impl_count }}"
+        
+        echo "## 🔍 Workflow Mode" >> $GITHUB_STEP_SUMMARY
+        if [[ "$TEST_MODE" == "none" ]]; then
+          echo "- **Mode**: No changes detected" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: Workflow skipped (no implementation changes)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Note**: For full testing, run manually or wait for weekly schedule" >> $GITHUB_STEP_SUMMARY
+        elif [[ "$TEST_MODE" == "selective" ]]; then
+          echo "- **Mode**: Selective testing" >> $GITHUB_STEP_SUMMARY
+          echo "- **Changed implementations**: $CHANGED_IMPLS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Implementations tested**: $IMPL_COUNT" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- **Mode**: Full benchmark suite" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+        fi
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        echo "## 🔄 Workflow Results" >> $GITHUB_STEP_SUMMARY
-        echo "- **Structure verification**: ✅ Completed" >> $GITHUB_STEP_SUMMARY
-        echo "- **Performance benchmarks**: $( [[ '${{ steps.benchmark.outputs.benchmark_exit_code }}' == '0' ]] && echo '✅ Completed' || echo '❌ Failed' )" >> $GITHUB_STEP_SUMMARY
-        echo "- **README updated**: $( [[ '${{ steps.update_readme.outputs.readme_changed }}' == 'true' ]] && echo '✅ Yes' || echo '⚠️ No changes' )" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit created**: $( [[ '${{ steps.commit.outputs.commit_created }}' == 'true' ]] && echo '✅ Yes' || echo '⚠️ No changes to commit' )" >> $GITHUB_STEP_SUMMARY
-        echo "- **Release tag**: $( [[ '${{ steps.tag.outputs.tag_created }}' == 'true' ]] && echo '✅ ${{ steps.tag.outputs.tag_name }}' || echo '⚠️ Not created' )" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+        if [[ "$TEST_MODE" != "none" ]]; then
+          echo "## 📊 Implementation Status" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total implementations**: ${{ steps.verify.outputs.total_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟢 **Excellent**: ${{ steps.verify.outputs.excellent_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟡 **Good**: ${{ steps.verify.outputs.good_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔴 **Needs work**: ${{ steps.verify.outputs.needs_work_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 🔄 Workflow Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Structure verification**: ✅ Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Performance benchmarks**: $( [[ '${{ steps.benchmark.outputs.benchmark_exit_code }}' == '0' ]] && echo '✅ Completed' || echo '❌ Failed' )" >> $GITHUB_STEP_SUMMARY
+          echo "- **README updated**: $( [[ '${{ steps.update_readme.outputs.readme_changed }}' == 'true' ]] && echo '✅ Yes' || echo '⚠️ No changes' )" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit created**: $( [[ '${{ steps.commit.outputs.commit_created }}' == 'true' ]] && echo '✅ Yes' || echo '⚠️ No changes to commit' )" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release tag**: $( [[ '${{ steps.tag.outputs.tag_created }}' == 'true' ]] && echo '✅ ${{ steps.tag.outputs.tag_name }}' || echo '⚠️ Not created' )" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
         
         if [[ '${{ steps.tag.outputs.tag_created }}' == 'true' ]]; then
           echo "## 🎉 Release Information" >> $GITHUB_STEP_SUMMARY
