@@ -1,0 +1,15 @@
+# Crystal
+/docs/
+/lib/
+/bin/
+/.shards/
+*.dwarf
+
+# Dependencies
+shard.lock
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
