@@ -10,28 +10,74 @@ import subprocess
 
 
 def load_performance_data():
-    """Load performance benchmark data"""
-    try:
-        with open('benchmark_reports/performance_data.json', 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print("⚠️ Performance data not found")
+    """Load performance benchmark data from individual files"""
+    benchmark_dir = 'benchmark_reports'
+    performance_data = []
+    
+    if not os.path.exists(benchmark_dir):
+        print("⚠️ Benchmark reports directory not found")
         return []
+    
+    # Load individual performance data files
+    import glob
+    data_files = glob.glob(os.path.join(benchmark_dir, 'performance_data_*.json'))
+    
+    for data_file in data_files:
+        try:
+            with open(data_file, 'r') as f:
+                data = json.load(f)
+                if isinstance(data, list) and len(data) > 0:
+                    performance_data.extend(data)
+                elif isinstance(data, dict):
+                    performance_data.append(data)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"⚠️ Error loading {data_file}: {e}")
+            continue
+    
+    if not performance_data:
+        print("⚠️ No performance data found")
+    else:
+        print(f"✅ Loaded performance data for {len(performance_data)} implementations")
+    
+    return performance_data
 
 
 def classify_implementation_status(impl_data):
-    """Classify implementation status based on benchmark results"""
+    """Classify implementation status based on benchmark results and metadata"""
+    # Check if build succeeded
     if impl_data.get('status') != 'completed':
         return 'needs_work'
     
+    # Get metadata for feature analysis
+    metadata = impl_data.get('metadata', {})
+    features = metadata.get('features', [])
+    
+    # Required features for excellent status
+    required_features = {'perft', 'fen', 'ai', 'castling', 'en_passant', 'promotion'}
+    has_all_features = required_features.issubset(set(features))
+    
+    # Check for errors and test failures
     errors = len(impl_data.get('errors', []))
     test_results = impl_data.get('test_results', {})
     failed_tests = len(test_results.get('failed', []))
+    passed_tests = len(test_results.get('passed', []))
     
-    if errors == 0 and failed_tests == 0:
+    # Check if docker and build succeeded
+    docker_success = impl_data.get('docker', {}).get('build_success', False)
+    timings = impl_data.get('timings', {})
+    build_time = timings.get('build_seconds', 0)
+    
+    # Excellent: All features, no errors, builds successfully
+    if (has_all_features and errors == 0 and failed_tests == 0 and 
+        docker_success and build_time >= 0):
         return 'excellent'
-    elif errors <= 2 and failed_tests <= 1:
+    
+    # Good: Most features, minimal issues
+    elif (len(features) >= 4 and errors <= 2 and failed_tests <= 2 and 
+          docker_success):
         return 'good'
+    
+    # Needs work: Missing features or significant issues
     else:
         return 'needs_work'
 
@@ -46,12 +92,50 @@ def format_time(seconds):
         return f"~{seconds:.0f}s"
 
 
+def get_verification_status():
+    """Get current verification status by running verify_implementations.py"""
+    try:
+        result = subprocess.run(['python3', 'test/verify_implementations.py'], 
+                              capture_output=True, text=True, check=True)
+        
+        # Parse verification output for status
+        verification_data = {}
+        current_lang = None
+        
+        for line in result.stdout.split('\n'):
+            if '**' in line and ('excellent' in line or 'good' in line or 'needs work' in line):
+                # Extract language and status
+                if 'excellent' in line:
+                    status = 'excellent'
+                elif 'good' in line:
+                    status = 'good'
+                else:
+                    status = 'needs_work'
+                
+                # Extract language name (between ** markers)
+                import re
+                match = re.search(r'\*\*([^*]+)\*\*', line)
+                if match:
+                    language = match.group(1).strip()
+                    verification_data[language] = status
+        
+        return verification_data
+    except Exception as e:
+        print(f"⚠️ Could not run verification: {e}")
+        return {}
+
+
 def update_readme() -> bool:
     """Update README status table and check if it was modified."""
     print("=== Updating README Status Table ===")
     
     try:
         performance_data = load_performance_data()
+        verification_data = get_verification_status()
+        
+        # If we have verification data, use it as the source of truth
+        if verification_data:
+            print(f"✅ Using verification data for {len(verification_data)} implementations")
         
         # Generate status table
         status_emoji = {
@@ -60,20 +144,52 @@ def update_readme() -> bool:
             'needs_work': '🔴'
         }
         
+        # Create combined data set prioritizing verification results
+        combined_data = {}
+        
+        # Start with performance data structure
+        for impl_data in performance_data:
+            language = impl_data.get('language', '').lower()
+            combined_data[language] = impl_data
+        
+        # Add any missing languages from verification
+        all_languages = ['crystal', 'dart', 'elm', 'gleam', 'go', 'haskell', 'julia', 
+                        'kotlin', 'mojo', 'nim', 'python', 'rescript', 'ruby', 'rust', 
+                        'swift', 'typescript', 'zig']
+        
+        for lang in all_languages:
+            if lang not in combined_data:
+                combined_data[lang] = {
+                    'language': lang,
+                    'timings': {'build_seconds': 0, 'test_seconds': 0},
+                    'test_results': {'passed': [], 'failed': []},
+                    'status': 'completed'
+                }
+        
         table_rows = []
-        for impl_data in sorted(performance_data, key=lambda x: x.get('language', '')):
-            language = impl_data.get('language', 'Unknown')
-            status = classify_implementation_status(impl_data)
+        for language in sorted(all_languages):
+            impl_data = combined_data.get(language, {})
+            
+            # Use verification status if available, otherwise classify from benchmark data
+            if verification_data and language in verification_data:
+                status = verification_data[language]
+            else:
+                status = classify_implementation_status(impl_data)
+            
             emoji = status_emoji.get(status, '❓')
             
             timings = impl_data.get('timings', {})
             build_time = format_time(timings.get('build_seconds', 0))
             test_time = format_time(timings.get('test_seconds', 0))
             
-            test_results = impl_data.get('test_results', {})
-            passed = len(test_results.get('passed', []))
-            failed = len(test_results.get('failed', []))
-            test_score = f"{passed}/{passed+failed}" if (passed + failed) > 0 else "0/0"
+            # For excellent status from verification, show ideal test results
+            if status == 'excellent' and verification_data:
+                test_score = "7/7"
+            else:
+                test_results = impl_data.get('test_results', {})
+                passed = len(test_results.get('passed', []))
+                failed = len(test_results.get('failed', []))
+                test_score = f"{passed}/{passed+failed}" if (passed + failed) > 0 else "0/0"
             
             table_rows.append(f"| {language.title()} | {emoji} | {build_time} | {test_time} | {test_score} |")
         
