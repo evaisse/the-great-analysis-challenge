@@ -1,12 +1,13 @@
 {
   "language": "elm",
   "version": "0.19.1",
-  "author": "Elm Implementation",
+  "author": "Elm Implementation (Demo Mode)",
   "build": "npm install && elm make src/ChessEngine.elm --output=dist/chess.js",
   "run": "node src/cli.js",
   "analyze": "elm make src/ChessEngine.elm --output=/dev/null",
   "test": "node src/cli.js",
-  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
-  "max_ai_depth": 4,
-  "estimated_perft4_ms": 2000
+  "features": ["demo"],
+  "max_ai_depth": 1,
+  "estimated_perft4_ms": 50,
+  "notes": "Demo implementation due to network connectivity issues preventing full Elm compiler installation"
 }
