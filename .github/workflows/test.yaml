@@ -36,42 +36,19 @@ jobs:
       - name: Detect changed implementations
         id: changes
         run: |
-          echo "=== Detecting Changed Implementations ==="
-          
-          # Use shared change detection script
-          TEST_ALL_FLAG="${{ github.event.inputs.test_all }}"
-          
-          RESULT=$(python3 .github/workflows/scripts/detect_changes.py \
+          ./workflow detect-changes \
             "${{ github.event_name }}" \
-            "$TEST_ALL_FLAG" \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.sha }}" \
-            "${{ github.event.before }}")
-          
-          echo "Detection result: $RESULT"
-          
-          IMPLEMENTATIONS=$(echo "$RESULT" | python3 -c "import sys, json; print(json.load(sys.stdin)['implementations'])")
-          HAS_CHANGES=$(echo "$RESULT" | python3 -c "import sys, json; print(json.load(sys.stdin)['has_changes'])")
-          
-          echo "implementations=$IMPLEMENTATIONS" >> $GITHUB_OUTPUT
-          echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+            --test-all "${{ github.event.inputs.test_all }}" \
+            --base-sha "${{ github.event.pull_request.base.sha }}" \
+            --head-sha "${{ github.sha }}" \
+            --before-sha "${{ github.event.before }}"
 
       - name: Generate dynamic matrix
         id: generate-matrix
         if: steps.changes.outputs.has-changes == 'true'
         run: |
-          CHANGED_IMPLEMENTATIONS="${{ steps.changes.outputs.implementations }}"
-          
-          if [[ "${{ steps.changes.outputs.has-changes }}" == "false" ]]; then
-            echo "No implementation changes detected, skipping matrix generation"
-            echo 'matrix={"include":[]}' >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          # Generate matrix using external Python script
-          MATRIX_JSON=$(python3 .github/workflows/scripts/generate_matrix.py "$CHANGED_IMPLEMENTATIONS")
-          echo "Generated matrix: $MATRIX_JSON"
-          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          ./workflow generate-matrix \
+            "${{ steps.changes.outputs.implementations }}"
 
   validation:
     name: Validate Implementation Structure
@@ -118,7 +95,7 @@ jobs:
 
       - name: Get test configuration
         id: config
-        run: .github/workflows/scripts/parse_test_config.sh ${{ matrix.engine }}
+        run: ./workflow get-test-config ${{ matrix.engine }}
 
       - name: Build Docker image
         run: |
@@ -127,19 +104,19 @@ jobs:
           docker build -t chess-${{ matrix.engine }}-test .
 
       - name: Test basic commands
-        run: .github/workflows/scripts/test_basic_commands.sh ${{ matrix.engine }}
+        run: ./workflow test-basic-commands ${{ matrix.engine }}
 
       - name: Test advanced features
         if: steps.config.outputs.test_mode == 'full'
-        run: .github/workflows/scripts/test_advanced_features.sh ${{ matrix.engine }} ${{ steps.config.outputs.supports_perft }} ${{ steps.config.outputs.supports_ai }}
+        run: ./workflow test-advanced-features ${{ matrix.engine }} --supports-perft ${{ steps.config.outputs.supports_perft }} --supports-ai ${{ steps.config.outputs.supports_ai }}
 
       - name: Test demo mode
         if: steps.config.outputs.test_mode == 'demo'
-        run: .github/workflows/scripts/test_demo_mode.sh ${{ matrix.engine }}
+        run: ./workflow test-demo-mode ${{ matrix.engine }}
 
       - name: Cleanup
         if: always()
-        run: .github/workflows/scripts/cleanup_docker.sh ${{ matrix.engine }}
+        run: ./workflow cleanup-docker ${{ matrix.engine }}
 
   summary:
     name: Test Summary
