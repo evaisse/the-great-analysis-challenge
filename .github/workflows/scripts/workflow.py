@@ -208,8 +208,12 @@ class WorkflowTool:
             with open(f"benchmark_reports/benchmark_output_{impl_name}.txt", "w") as output_file:
                 result = subprocess.run(cmd, stdout=output_file, stderr=subprocess.STDOUT, timeout=timeout+60)
             
-            print(f"✅ Benchmark completed for {impl_name}")
-            return result.returncode == 0
+            if result.returncode == 0:
+                print(f"✅ Benchmark completed for {impl_name}")
+                return True
+            else:
+                print(f"❌ Benchmark failed for {impl_name} (exit code: {result.returncode})")
+                return False
             
         except subprocess.TimeoutExpired:
             print(f"⏰ Benchmark timed out for {impl_name}")
