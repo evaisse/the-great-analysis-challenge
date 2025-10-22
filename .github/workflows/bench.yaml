@@ -127,7 +127,7 @@ jobs:
         run: .github/workflows/scripts/run_benchmark.sh ${{ matrix.engine }} ${{ matrix.directory }}
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: benchmark-${{ matrix.engine }}-${{ github.sha }}
           path: benchmark_reports/
@@ -152,7 +152,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Download all benchmark artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: benchmark_artifacts/
 
@@ -176,7 +176,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download benchmark artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: benchmark_artifacts/
 
@@ -185,12 +185,10 @@ jobs:
         run: .github/workflows/scripts/create_release.sh "${{ github.event.inputs.version_type }}" "${{ needs.combine-results.outputs.readme-changed }}" "${{ needs.validation.outputs.excellent-count }}" "${{ needs.validation.outputs.good-count }}" "${{ needs.validation.outputs.needs-work-count }}" "${{ needs.validation.outputs.total-count }}"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.new_version }}
-          release_name: "Chess Engine Implementations ${{ steps.version.outputs.new_version }}"
+          name: "Chess Engine Implementations ${{ steps.version.outputs.new_version }}"
           body: |
             # Chess Engine Implementation Benchmark Release ${{ steps.version.outputs.new_version }}
             
