@@ -27,7 +27,7 @@ def discover_implementations() -> List[Tuple[str, str]]:
     return sorted(implementations)
 
 
-def run_benchmark(impl_name: str, timeout: int = 300) -> bool:
+def run_benchmark(impl_name: str, timeout: int = 60) -> bool:
     """Run benchmark for a specific implementation."""
     print(f"🏁 Running benchmark for {impl_name}...")
     
@@ -76,7 +76,7 @@ def run_benchmark(impl_name: str, timeout: int = 300) -> bool:
         return False
 
 
-def run_all_benchmarks(timeout: int = 300) -> int:
+def run_all_benchmarks(timeout: int = 60) -> int:
     """Run benchmarks on all implementations."""
     implementations = discover_implementations()
     
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='Run benchmark for implementation')
     parser.add_argument('impl_name', nargs='?', help='Implementation name')
-    parser.add_argument('--timeout', type=int, default=300, help='Timeout in seconds')
+    parser.add_argument('--timeout', type=int, default=60, help='Timeout in seconds')
     parser.add_argument('--all', action='store_true', help='Run benchmarks on all implementations')
     
     args = parser.parse_args()
