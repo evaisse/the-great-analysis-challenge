@@ -21,9 +21,11 @@ module Chess
     
     def start
       puts @board.display
+      flush_output
       
       loop do
         print "\n> "
+        flush_output
         input = gets&.strip
         break if input.nil? || input.empty?
         
@@ -32,6 +34,10 @@ module Chess
     end
     
     private
+    
+    def flush_output
+      $stdout.flush
+    end
     
     def process_command(command)
       parts = command.split
@@ -58,23 +64,28 @@ module Chess
         handle_help
       when 'quit', 'exit'
         puts 'Goodbye!'
+        flush_output
         exit
       else
         puts 'ERROR: Invalid command. Type "help" for available commands.'
+        flush_output
       end
     rescue StandardError => e
       puts "ERROR: #{e.message}"
+      flush_output
     end
     
     def handle_move(move_str)
       unless move_str
         puts 'ERROR: Invalid move format'
+        flush_output
         return
       end
       
       move = Move.from_algebraic(move_str)
       unless move
         puts 'ERROR: Invalid move format'
+        flush_output
         return
       end
       
@@ -90,6 +101,7 @@ module Chess
       
       unless legal_move
         puts 'ERROR: Illegal move'
+        flush_output
         return
       end
       
@@ -99,6 +111,7 @@ module Chess
       
       puts "OK: #{move_str}"
       puts @board.display
+      flush_output
       
       # Check for game end
       check_game_end
@@ -107,6 +120,7 @@ module Chess
     def handle_undo
       if @move_history.empty?
         puts 'ERROR: No moves to undo'
+        flush_output
         return
       end
       
@@ -115,6 +129,7 @@ module Chess
       
       puts 'OK: Move undone'
       puts @board.display
+      flush_output
     end
     
     def handle_new_game
@@ -127,17 +142,20 @@ module Chess
       
       puts 'OK: New game started'
       puts @board.display
+      flush_output
     end
     
     def handle_ai_move(depth)
       unless depth.between?(1, 5)
         puts 'ERROR: AI depth must be 1-5'
+        flush_output
         return
       end
       
       result = @ai.find_best_move(depth)
       unless result
         puts 'ERROR: No legal moves available'
+        flush_output
         return
       end
       
@@ -147,6 +165,7 @@ module Chess
       
       puts "AI: #{move.to_algebraic} (depth=#{result[:depth]}, eval=#{result[:score]}, time=#{result[:time_ms]}ms)"
       puts @board.display
+      flush_output
       
       check_game_end
     end
@@ -154,6 +173,7 @@ module Chess
     def handle_fen(fen_string)
       unless fen_string
         puts 'ERROR: Invalid FEN string'
+        flush_output
         return
       end
       
@@ -161,30 +181,36 @@ module Chess
         @move_history.clear
         puts 'OK: Position loaded from FEN'
         puts @board.display
+        flush_output
       else
         puts 'ERROR: Invalid FEN string'
+        flush_output
       end
     end
     
     def handle_export
       fen = @fen_parser.export
       puts "FEN: #{fen}"
+      flush_output
     end
     
     def handle_eval
       # Simple evaluation display
       material_balance = calculate_material_balance
       puts "Evaluation: #{material_balance} (from White's perspective)"
+      flush_output
     end
     
     def handle_perft(depth)
       unless depth.between?(1, 6)
         puts 'ERROR: Perft depth must be 1-6'
+        flush_output
         return
       end
       
       result = @perft.calculate(depth)
       puts "Perft #{depth}: #{result[:nodes]} nodes in #{result[:time_ms]}ms"
+      flush_output
     end
     
     def handle_help
@@ -201,6 +227,7 @@ module Chess
         help                       - Display this help message
         quit                       - Exit the program
       HELP
+      flush_output
     end
     
     def check_game_end
@@ -209,8 +236,10 @@ module Chess
       if @move_generator.in_checkmate?(current_color)
         winner = current_color == :white ? 'Black' : 'White'
         puts "CHECKMATE: #{winner} wins"
+        flush_output
       elsif @move_generator.in_stalemate?(current_color)
         puts 'STALEMATE: Draw'
+        flush_output
       end
     end
     

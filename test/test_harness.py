@@ -39,7 +39,7 @@ class ChessEngineTester:
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=0,
-                cwd=os.path.dirname(self.path)
+                cwd=self.path
             )
         except Exception as e:
             self.results["errors"].append(f"Failed to start: {e}")
