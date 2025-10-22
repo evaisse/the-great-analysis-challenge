@@ -246,6 +246,7 @@ class ImplementationTester:
         monitor.start_monitoring()
         
         start_time = time.time()
+        build_success = False
         
         try:
             if (self.impl_path / "Makefile").exists():
@@ -265,9 +266,11 @@ class ImplementationTester:
                 
                 if result.returncode == 0:
                     print(f"✅ Build completed in {build_time:.2f}s")
+                    build_success = True
                 else:
                     print(f"❌ Build failed in {build_time:.2f}s")
                     self.results["errors"].append(f"Build failed: {result.stderr[:500]}")
+                    raise Exception(f"Build failed with exit code {result.returncode}")
             else:
                 # Try direct build command from metadata
                 build_cmd = self.metadata.get("build", "")
@@ -288,18 +291,24 @@ class ImplementationTester:
                     
                     if result.returncode == 0:
                         print(f"✅ Build completed in {build_time:.2f}s")
+                        build_success = True
                     else:
                         print(f"❌ Build failed in {build_time:.2f}s")
                         self.results["errors"].append(f"Build failed: {result.stderr[:500]}")
+                        raise Exception(f"Build failed with exit code {result.returncode}")
                 else:
                     print("⚠️  No build command found")
+                    raise Exception("No build command found")
                     
         except subprocess.TimeoutExpired:
             monitor.stop_monitoring()
             self.results["errors"].append("Build timeout (10 minutes)")
+            raise Exception("Build timeout")
         except Exception as e:
             monitor.stop_monitoring()
-            self.results["errors"].append(f"Build error: {str(e)}")
+            if "Build failed" not in str(e) and "Build timeout" not in str(e) and "No build command" not in str(e):
+                self.results["errors"].append(f"Build error: {str(e)}")
+            raise
     
     def _run_chess_tests(self):
         """Run chess client tests using existing test harness"""
