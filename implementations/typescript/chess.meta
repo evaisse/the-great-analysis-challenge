@@ -5,6 +5,7 @@
   "build": "npm install && npm run build",
   "run": "node dist/chess.js",
   "analyze": "npm install && npm run lint && npx tsc --noEmit && npx prettier --check src/*.ts",
+  "test": "npm install && npm test",
   "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
   "max_ai_depth": 5,
   "estimated_perft4_ms": 800
