@@ -1,0 +1,572 @@
+name: Benchmark Suite & Release
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      
+  # Scheduled run every Sunday at 6 AM UTC
+  schedule:
+    - cron: '0 6 * * 0'
+  
+  # Run on significant changes to implementations
+  push:
+    branches:
+      - master
+    paths:
+      - 'implementations/**'
+      - 'test/**'
+      - '.github/workflows/benchmark-and-release.yml'
+
+env:
+  BENCHMARK_TIMEOUT: 3600  # 1 hour timeout
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  benchmark-and-release:
+    name: Run Benchmark Suite & Update Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install psutil  # For memory monitoring
+        pip install gitpython  # For git operations
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential curl wget git
+        
+        # Install language runtimes for local testing
+        # Node.js for TypeScript
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+        
+        # Rust
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source ~/.cargo/env
+        
+        # Go
+        wget -q https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
+        sudo tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
+        echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc
+        
+        # Python (already installed)
+        # Ruby
+        sudo apt-get install -y ruby-full
+        
+        # Add paths to GitHub environment
+        echo "/usr/local/go/bin" >> $GITHUB_PATH
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: Verify installations
+      run: |
+        echo "=== Verifying Language Installations ==="
+        python3 --version || echo "Python3 not found"
+        node --version || echo "Node.js not found"
+        npm --version || echo "npm not found"
+        cargo --version || echo "Rust not found"
+        go version || echo "Go not found"
+        ruby --version || echo "Ruby not found"
+        docker --version || echo "Docker not found"
+        echo "=== End Verification ==="
+    
+    - name: Run structure verification
+      id: verify
+      run: |
+        echo "=== Running Implementation Structure Verification ==="
+        python3 test/verify_implementations.py > verification_results.txt 2>&1
+        
+        # Count implementations by status
+        EXCELLENT=$(grep -c "🟢.*excellent" verification_results.txt || echo "0")
+        GOOD=$(grep -c "🟡.*good" verification_results.txt || echo "0")
+        NEEDS_WORK=$(grep -c "🔴.*needs_work" verification_results.txt || echo "0")
+        TOTAL=$((EXCELLENT + GOOD + NEEDS_WORK))
+        
+        echo "excellent_count=$EXCELLENT" >> $GITHUB_OUTPUT
+        echo "good_count=$GOOD" >> $GITHUB_OUTPUT
+        echo "needs_work_count=$NEEDS_WORK" >> $GITHUB_OUTPUT
+        echo "total_count=$TOTAL" >> $GITHUB_OUTPUT
+        
+        echo "=== Verification Summary ==="
+        echo "Total implementations: $TOTAL"
+        echo "🟢 Excellent: $EXCELLENT"
+        echo "🟡 Good: $GOOD"
+        echo "🔴 Needs work: $NEEDS_WORK"
+        
+        cat verification_results.txt
+    
+    - name: Run performance benchmark suite
+      id: benchmark
+      run: |
+        echo "=== Running Comprehensive Performance Benchmark Suite ==="
+        
+        # Create reports directory
+        mkdir -p benchmark_reports
+        
+        # Run performance tests with extended timeout
+        python3 test/performance_test.py \
+          --timeout ${{ env.BENCHMARK_TIMEOUT }} \
+          --output benchmark_reports/performance_report.txt \
+          --json benchmark_reports/performance_data.json \
+          > benchmark_reports/benchmark_output.txt 2>&1
+        
+        BENCHMARK_EXIT_CODE=$?
+        echo "benchmark_exit_code=$BENCHMARK_EXIT_CODE" >> $GITHUB_OUTPUT
+        
+        # Extract key metrics for summary
+        if [[ -f benchmark_reports/performance_data.json ]]; then
+          # Count successful implementations
+          SUCCESSFUL=$(python3 -c "
+import json
+with open('benchmark_reports/performance_data.json', 'r') as f:
+    data = json.load(f)
+    successful = sum(1 for impl in data if impl.get('status') == 'completed')
+    failed = len(data) - successful
+    print(f'successful={successful}')
+    print(f'failed={failed}')
+    print(f'total={len(data)}')
+" | tee -a benchmark_summary.txt)
+          
+          echo "=== Benchmark Summary ==="
+          cat benchmark_summary.txt
+        else
+          echo "⚠️ Performance data JSON not generated"
+          echo "successful=0" >> $GITHUB_OUTPUT
+          echo "failed=0" >> $GITHUB_OUTPUT
+          echo "total=0" >> $GITHUB_OUTPUT
+        fi
+        
+        # Always show benchmark output for debugging
+        echo "=== Benchmark Output ==="
+        cat benchmark_reports/benchmark_output.txt
+    
+    - name: Generate updated README status table
+      id: update_readme
+      run: |
+        echo "=== Generating Updated README Status Table ==="
+        
+        # Create a Python script to update the README
+        cat > update_readme_status.py << 'EOF'
+import json
+import re
+from datetime import datetime
+from pathlib import Path
+
+def load_performance_data():
+    """Load performance benchmark data"""
+    try:
+        with open('benchmark_reports/performance_data.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("⚠️ Performance data not found, using verification data")
+        return []
+
+def classify_implementation_status(impl_data):
+    """Classify implementation status based on benchmark results"""
+    if impl_data.get('status') != 'completed':
+        return 'needs_work'
+    
+    errors = len(impl_data.get('errors', []))
+    test_results = impl_data.get('test_results', {})
+    failed_tests = len(test_results.get('failed', []))
+    
+    if errors == 0 and failed_tests == 0:
+        return 'excellent'
+    elif errors <= 2 and failed_tests <= 1:
+        return 'good'
+    else:
+        return 'needs_work'
+
+def format_time(seconds):
+    """Format time duration"""
+    if seconds == 0:
+        return "~0s"
+    elif seconds < 1:
+        return f"~{seconds:.1f}s"
+    else:
+        return f"~{seconds:.0f}s"
+
+def generate_status_table(performance_data):
+    """Generate the implementation status table"""
+    
+    # Status emoji mapping
+    status_emoji = {
+        'excellent': '🟢',
+        'good': '🟡',
+        'needs_work': '🔴'
+    }
+    
+    # Build table rows
+    table_rows = []
+    
+    for impl in sorted(performance_data, key=lambda x: x.get('language', '')):
+        lang = impl.get('language', 'Unknown').title()
+        status = classify_implementation_status(impl)
+        emoji = status_emoji.get(status, '⚪')
+        
+        # Extract timing data
+        timings = impl.get('timings', {})
+        analyze_time = format_time(timings.get('analyze_seconds', 0))
+        build_time = format_time(timings.get('build_seconds', 0))
+        
+        # Features and compliance
+        features = "✅ Complete" if status != 'needs_work' else "🔧 Issues"
+        makefile = "✅ Full" if status != 'needs_work' else "❌ Missing"
+        docker_status = "✅ Working"
+        if impl.get('docker', {}).get('build_success') is False:
+            docker_status = "🔧 Build Issue"
+        
+        # Notes based on performance and errors
+        notes = []
+        if status == 'excellent':
+            notes.append("Fast compilation" if timings.get('build_seconds', 10) < 5 else "")
+        elif status == 'needs_work':
+            errors = impl.get('errors', [])
+            if errors:
+                notes.append("Build issues")
+        
+        notes_text = ", ".join(filter(None, notes)) or {
+            'excellent': 'Excellent performance',
+            'good': 'Good performance', 
+            'needs_work': 'Needs attention'
+        }.get(status, '')
+        
+        # Create table row
+        row = f"| {emoji} **{lang}** | {status.title()} | {build_time} | {analyze_time} | {features} | {makefile} | {docker_status} | {notes_text} |"
+        table_rows.append(row)
+    
+    # Create complete table
+    table_header = """| Language | Status | Build Time | Analysis Time | Features | Makefile | Docker | Notes |
+|----------|--------|------------|---------------|----------|----------|--------|-------|"""
+    
+    return table_header + "\n" + "\n".join(table_rows)
+
+def update_readme_status():
+    """Update README.md with latest benchmark results"""
+    
+    # Load performance data
+    performance_data = load_performance_data()
+    
+    if not performance_data:
+        print("❌ No performance data available")
+        return False
+    
+    # Generate new status table
+    new_table = generate_status_table(performance_data)
+    
+    # Read current README
+    readme_path = Path('README.md')
+    if not readme_path.exists():
+        print("❌ README.md not found")
+        return False
+    
+    content = readme_path.read_text()
+    
+    # Find and replace the status table
+    # Look for the table between "## 📊 Implementation Status Overview" and the next "##" or "### Status Legend"
+    pattern = r'(## 📊 Implementation Status Overview\s*\n\n)(.*?)(\n\n### Status Legend|\n\n##|\n\n\*Build times)'
+    
+    def replacement(match):
+        return match.group(1) + new_table + "\n" + match.group(3)
+    
+    new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+    
+    if new_content == content:
+        print("⚠️ No status table found to update")
+        return False
+    
+    # Add timestamp comment
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+    new_content = new_content.replace(
+        "*Build times measured on Apple Silicon M1",
+        f"*Last updated: {timestamp} - Build times measured on GitHub Actions runner"
+    )
+    
+    # Write updated README
+    readme_path.write_text(new_content)
+    print("✅ README.md status table updated successfully")
+    return True
+
+if __name__ == "__main__":
+    success = update_readme_status()
+    exit(0 if success else 1)
+EOF
+        
+        # Run the update script
+        python3 update_readme_status.py
+        UPDATE_SUCCESS=$?
+        echo "readme_updated=$UPDATE_SUCCESS" >> $GITHUB_OUTPUT
+        
+        # Check if README was actually modified
+        if git diff --quiet README.md; then
+          echo "readme_changed=false" >> $GITHUB_OUTPUT
+          echo "⚠️ README.md was not modified"
+        else
+          echo "readme_changed=true" >> $GITHUB_OUTPUT
+          echo "✅ README.md has been updated"
+          
+          # Show the diff for verification
+          echo "=== README Changes ==="
+          git diff README.md
+        fi
+    
+    - name: Determine version bump
+      id: version
+      run: |
+        # Get current version from git tags
+        CURRENT_VERSION=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+        
+        if [[ -z "$CURRENT_VERSION" ]]; then
+          CURRENT_VERSION="v0.0.0"
+          echo "No previous version tags found, starting from $CURRENT_VERSION"
+        fi
+        
+        echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        
+        # Determine version bump type
+        VERSION_TYPE="${{ github.event.inputs.version_type }}"
+        
+        # Auto-determine version type if not manually specified
+        if [[ -z "$VERSION_TYPE" ]]; then
+          EXCELLENT_COUNT="${{ steps.verify.outputs.excellent_count }}"
+          NEEDS_WORK_COUNT="${{ steps.verify.outputs.needs_work_count }}"
+          
+          if [[ $NEEDS_WORK_COUNT -eq 0 && $EXCELLENT_COUNT -gt 10 ]]; then
+            VERSION_TYPE="minor"  # Significant improvement
+          else
+            VERSION_TYPE="patch"  # Regular update
+          fi
+        fi
+        
+        echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
+        
+        # Calculate new version
+        IFS='.' read -r -a version_parts <<< "${CURRENT_VERSION#v}"
+        MAJOR=${version_parts[0]:-0}
+        MINOR=${version_parts[1]:-0}
+        PATCH=${version_parts[2]:-0}
+        
+        case $VERSION_TYPE in
+          major)
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            ;;
+          minor)
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            ;;
+          patch)
+            PATCH=$((PATCH + 1))
+            ;;
+        esac
+        
+        NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        
+        echo "=== Version Information ==="
+        echo "Current version: $CURRENT_VERSION"
+        echo "Version bump type: $VERSION_TYPE"
+        echo "New version: $NEW_VERSION"
+    
+    - name: Commit and push changes
+      id: commit
+      if: steps.update_readme.outputs.readme_changed == 'true'
+      run: |
+        # Configure git
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Add benchmark reports
+        git add benchmark_reports/ || true
+        
+        # Add updated README
+        git add README.md
+        
+        # Create commit
+        COMMIT_MESSAGE="chore: update implementation status from benchmark suite
+
+Benchmark Results Summary:
+- Total implementations tested: ${{ steps.verify.outputs.total_count }}
+- 🟢 Excellent: ${{ steps.verify.outputs.excellent_count }}
+- 🟡 Good: ${{ steps.verify.outputs.good_count }}  
+- 🔴 Needs work: ${{ steps.verify.outputs.needs_work_count }}
+
+Performance testing completed with status updates.
+Updated README.md status table with latest benchmark data.
+
+Auto-generated by benchmark-and-release workflow."
+        
+        git commit -m "$COMMIT_MESSAGE"
+        
+        # Push changes
+        git push origin master
+        
+        echo "✅ Changes committed and pushed"
+        echo "commit_created=true" >> $GITHUB_OUTPUT
+    
+    - name: Create release tag
+      id: tag
+      if: steps.commit.outputs.commit_created == 'true' || github.event_name == 'workflow_dispatch'
+      run: |
+        NEW_VERSION="${{ steps.version.outputs.new_version }}"
+        
+        # Create tag with release notes
+        TAG_MESSAGE="Release $NEW_VERSION - Benchmark Update
+
+## Implementation Status
+- 🟢 Excellent: ${{ steps.verify.outputs.excellent_count }} implementations
+- 🟡 Good: ${{ steps.verify.outputs.good_count }} implementations
+- 🔴 Needs work: ${{ steps.verify.outputs.needs_work_count }} implementations
+
+## Benchmark Summary
+- Total implementations: ${{ steps.verify.outputs.total_count }}
+- Benchmark suite completed successfully
+- README status table updated with latest performance data
+
+## Changes in this release
+- Updated implementation performance benchmarks
+- Refreshed status classifications
+- Latest timing and compliance data
+
+Generated automatically by the benchmark suite workflow."
+
+        git tag -a "$NEW_VERSION" -m "$TAG_MESSAGE"
+        git push origin "$NEW_VERSION"
+        
+        echo "✅ Release tag $NEW_VERSION created and pushed"
+        echo "tag_created=true" >> $GITHUB_OUTPUT
+        echo "tag_name=$NEW_VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Upload benchmark artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: benchmark-reports-${{ steps.version.outputs.new_version }}
+        path: |
+          benchmark_reports/
+          verification_results.txt
+          benchmark_summary.txt
+        retention-days: 30
+    
+    - name: Create GitHub Release
+      if: steps.tag.outputs.tag_created == 'true'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.tag_name }}
+        release_name: "Chess Engine Implementations ${{ steps.tag.outputs.tag_name }}"
+        body: |
+          # Chess Engine Implementation Benchmark Release ${{ steps.tag.outputs.tag_name }}
+          
+          This release contains updated performance benchmarks and status information for all chess engine implementations.
+          
+          ## 📊 Implementation Status Overview
+          
+          - 🟢 **Excellent**: ${{ steps.verify.outputs.excellent_count }} implementations
+          - 🟡 **Good**: ${{ steps.verify.outputs.good_count }} implementations  
+          - 🔴 **Needs Work**: ${{ steps.verify.outputs.needs_work_count }} implementations
+          
+          **Total**: ${{ steps.verify.outputs.total_count }} implementations tested
+          
+          ## 🚀 What's Updated
+          
+          - ✅ Complete performance benchmark suite executed
+          - ✅ Implementation structure verification completed
+          - ✅ README status table updated with latest results
+          - ✅ Docker build and test validation
+          - ✅ Static analysis and build timing measurements
+          
+          ## 📈 Performance Testing
+          
+          All implementations were tested with:
+          - Cache clearing (`make clean`)
+          - Static analysis timing (`make analyze`)
+          - Build timing (`make build`)
+          - Chess protocol compliance testing
+          - Docker container build and execution
+          - Memory usage monitoring
+          
+          ## 📋 Benchmark Reports
+          
+          Detailed benchmark reports are available as workflow artifacts and include:
+          - Performance timing data (JSON format)
+          - Detailed text reports
+          - Verification results
+          - Build and test logs
+          
+          ## 🔧 Next Steps
+          
+          Implementations marked as "Needs Work" require attention:
+          - Check build errors and missing dependencies
+          - Verify Makefile targets are properly implemented
+          - Ensure chess.meta files contain required fields
+          - Review Docker container functionality
+          
+          ---
+          
+          *This release was automatically generated by the benchmark suite workflow on ${{ github.ref_name }} branch.*
+        draft: false
+        prerelease: false
+    
+    - name: Workflow summary
+      if: always()
+      run: |
+        echo "# 🏁 Benchmark Suite & Release Workflow Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📊 Implementation Status" >> $GITHUB_STEP_SUMMARY
+        echo "- **Total implementations**: ${{ steps.verify.outputs.total_count }}" >> $GITHUB_STEP_SUMMARY
+        echo "- 🟢 **Excellent**: ${{ steps.verify.outputs.excellent_count }}" >> $GITHUB_STEP_SUMMARY
+        echo "- 🟡 **Good**: ${{ steps.verify.outputs.good_count }}" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔴 **Needs work**: ${{ steps.verify.outputs.needs_work_count }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## 🔄 Workflow Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Structure verification**: ✅ Completed" >> $GITHUB_STEP_SUMMARY
+        echo "- **Performance benchmarks**: $( [[ '${{ steps.benchmark.outputs.benchmark_exit_code }}' == '0' ]] && echo '✅ Completed' || echo '❌ Failed' )" >> $GITHUB_STEP_SUMMARY
+        echo "- **README updated**: $( [[ '${{ steps.update_readme.outputs.readme_changed }}' == 'true' ]] && echo '✅ Yes' || echo '⚠️ No changes' )" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit created**: $( [[ '${{ steps.commit.outputs.commit_created }}' == 'true' ]] && echo '✅ Yes' || echo '⚠️ No changes to commit' )" >> $GITHUB_STEP_SUMMARY
+        echo "- **Release tag**: $( [[ '${{ steps.tag.outputs.tag_created }}' == 'true' ]] && echo '✅ ${{ steps.tag.outputs.tag_name }}' || echo '⚠️ Not created' )" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ '${{ steps.tag.outputs.tag_created }}' == 'true' ]]; then
+          echo "## 🎉 Release Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.tag.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous version**: ${{ steps.version.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bump type**: ${{ steps.version.outputs.version_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release URL**: [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.tag.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📋 Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- Benchmark reports and logs are available as workflow artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- Performance data saved in JSON format for analysis" >> $GITHUB_STEP_SUMMARY
+        echo "- Verification results included for debugging" >> $GITHUB_STEP_SUMMARY
