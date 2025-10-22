@@ -5,7 +5,7 @@
 set -e
 
 echo "=== Running Implementation Structure Verification ==="
-python3 test/verify_implementations.py > verification_results.txt 2>&1
+python3 test/verify_implementations.py > verification_results.txt 2>&1 || true
 
 # Count implementations by status
 EXCELLENT=$(grep -c "🟢.*excellent" verification_results.txt || echo "0")
