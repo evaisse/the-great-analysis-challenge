@@ -193,6 +193,7 @@ Follow these steps to add a new language implementation:
        docker build -t chess-$(shell basename $(PWD)) .
 
    docker-test: docker-build
+       # Replace <run_command> with your language's executable, e.g. 'python main.py', './chess', etc.
        docker run --rm -i chess-$(shell basename $(PWD)) sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | <run_command>"
    ```
 
