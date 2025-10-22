@@ -424,8 +424,9 @@ Requirements:
         
         # Build if necessary
         if "build" in metadata:
-            print(f"Building: {metadata['build']}")
-            subprocess.run(metadata["build"].split(), cwd=impl_path, check=True)
+            cmd = metadata["build"].split()
+            print(f"🔧 Running: {' '.join(cmd)}")
+            subprocess.run(cmd, cwd=impl_path, check=True)
         
         # Start engine
         if not tester.start():
