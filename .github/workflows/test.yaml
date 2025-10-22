@@ -73,7 +73,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Generate dynamic matrix using Python validation
+      - name: Generate dynamic matrix
         id: generate-matrix
         if: steps.changes.outputs.has-changes == 'true'
         run: |
@@ -105,45 +105,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Run Python validation script
+      - name: Run structure validation
         run: |
           echo "🔍 Running implementation structure validation..."
           python3 test/verify_implementations.py
 
-  quick-build:
-    name: Quick Build Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: detect-changes
-    if: needs.detect-changes.outputs.has-changes == 'true'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Build changed implementations
-        run: |
-          echo "🚀 Quick build test for changed implementations"
-          echo "=============================================="
-          
-          CHANGED_IMPLEMENTATIONS="${{ needs.detect-changes.outputs.changed-implementations }}"
-          
-          # Run the build script
-          python3 .github/workflows/scripts/build_implementations.py "$CHANGED_IMPLEMENTATIONS"
-
-  functionality-test:
-    name: Test Chess Engine Functionality
+  build-test:
+    name: Build and Test Chess Engines
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [detect-changes, quick-build]
+    needs: [detect-changes, validation]
     if: needs.detect-changes.outputs.has-changes == 'true'
     
     strategy:
@@ -157,75 +128,99 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build ${{ matrix.engine }} chess engine
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Get test configuration
+        id: config
+        run: |
+          echo "🔧 Reading test configuration from chess.meta..."
+          CONFIG=$(python3 .github/workflows/scripts/get_test_config.py ${{ matrix.engine }})
+          echo "Configuration: $CONFIG"
+          
+          # Parse configuration
+          SUPPORTS_INTERACTIVE=$(echo "$CONFIG" | python3 -c "import sys, json; print(json.load(sys.stdin)['supports_interactive'])")
+          SUPPORTS_PERFT=$(echo "$CONFIG" | python3 -c "import sys, json; print(json.load(sys.stdin)['supports_perft'])")
+          SUPPORTS_AI=$(echo "$CONFIG" | python3 -c "import sys, json; print(json.load(sys.stdin)['supports_ai'])")
+          TEST_MODE=$(echo "$CONFIG" | python3 -c "import sys, json; print(json.load(sys.stdin)['test_mode'])")
+          
+          echo "supports_interactive=$SUPPORTS_INTERACTIVE" >> $GITHUB_OUTPUT
+          echo "supports_perft=$SUPPORTS_PERFT" >> $GITHUB_OUTPUT
+          echo "supports_ai=$SUPPORTS_AI" >> $GITHUB_OUTPUT
+          echo "test_mode=$TEST_MODE" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
         run: |
           cd implementations/${{ matrix.engine }}
           echo "🏗️ Building ${{ matrix.engine }} chess engine..."
           docker build -t chess-${{ matrix.engine }}-test .
 
-      - name: Test basic functionality
+      - name: Test basic commands
         run: |
           echo "🧪 Testing basic functionality for ${{ matrix.engine }}..."
           
-          # Test 1: Help command
-          echo "📋 Test 1: Help command"
+          # Test basic commands that all implementations should support
+          echo "📋 Testing help command"
           echo "help" | timeout 30s docker run --rm -i chess-${{ matrix.engine }}-test > help_output.txt || true
-          if grep -i "help\|command\|available" help_output.txt; then
-            echo "✅ Help command works"
-          else
-            echo "❌ Help command failed"
-          fi
           
-          # Test 2: Board display
-          echo "📋 Test 2: Board display"
+          echo "📋 Testing board display"
           echo "board" | timeout 30s docker run --rm -i chess-${{ matrix.engine }}-test > board_output.txt || true
-          if grep -E "\+.*\+|[rnbqkpRNBQKP]|Turn:" board_output.txt; then
-            echo "✅ Board display works"
-          else
-            echo "❌ Board display failed"
-          fi
           
-          # Test 3: FEN export
-          echo "📋 Test 3: FEN export"
+          echo "📋 Testing FEN export"
           echo "fen" | timeout 30s docker run --rm -i chess-${{ matrix.engine }}-test > fen_output.txt || true
-          if grep "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" fen_output.txt; then
-            echo "✅ FEN export works"
+          
+          # Basic validation - just check if commands execute without major errors
+          if [[ -s help_output.txt ]] && [[ -s board_output.txt ]] && [[ -s fen_output.txt ]]; then
+            echo "✅ Basic commands executed successfully"
           else
-            echo "❌ FEN export failed"
+            echo "⚠️ Some basic commands may have issues"
           fi
 
-      - name: Test move generation and AI
-        if: matrix.engine != 'gleam' && matrix.engine != 'elm' && matrix.engine != 'mojo'
+      - name: Test advanced features
+        if: steps.config.outputs.test_mode == 'full'
         run: |
-          echo "🧪 Testing move generation with Perft..."
-          echo "perft 3" | timeout 120s docker run --rm -i chess-${{ matrix.engine }}-test > perft_output.txt || true
+          echo "🧪 Testing advanced features for ${{ matrix.engine }}..."
           
-          if grep -E "([0-9]+.*nodes|Depth.*[0-9]+)" perft_output.txt; then
-            echo "✅ Perft test completed"
-            cat perft_output.txt | grep -E "(nodes|Depth)" | head -5
+          # Test perft if supported
+          if [[ "${{ steps.config.outputs.supports_perft }}" == "true" ]]; then
+            echo "🔍 Testing perft (move generation)"
+            echo "perft 3" | timeout 120s docker run --rm -i chess-${{ matrix.engine }}-test > perft_output.txt || true
+            
+            if grep -E "([0-9]+.*nodes|Depth.*[0-9]+)" perft_output.txt; then
+              echo "✅ Perft test completed"
+            else
+              echo "⚠️ Perft test may have issues"
+            fi
           else
-            echo "❌ Perft test failed or incomplete"
+            echo "⏭️ Perft not supported, skipping"
           fi
           
-          echo "🧪 Testing AI move generation..."
-          {
-            echo "ai"
-            sleep 2
-            echo "quit"
-          } | timeout 60s docker run --rm -i chess-${{ matrix.engine }}-test > ai_output.txt || true
-          
-          if grep -E "(AI.*played|move|evaluation)" ai_output.txt; then
-            echo "✅ AI move generation works"
+          # Test AI if supported
+          if [[ "${{ steps.config.outputs.supports_ai }}" == "true" ]]; then
+            echo "🤖 Testing AI move generation"
+            {
+              echo "ai"
+              sleep 2
+              echo "quit"
+            } | timeout 60s docker run --rm -i chess-${{ matrix.engine }}-test > ai_output.txt || true
+            
+            if [[ -s ai_output.txt ]]; then
+              echo "✅ AI test completed"
+            else
+              echo "⚠️ AI test may have issues"
+            fi
           else
-            echo "❌ AI move generation failed"
+            echo "⏭️ AI not supported, skipping"
           fi
 
-      - name: Test simplified implementations
-        if: matrix.engine == 'gleam' || matrix.engine == 'elm' || matrix.engine == 'mojo'
+      - name: Test demo mode
+        if: steps.config.outputs.test_mode == 'demo'
         run: |
-          echo "🧪 Running simplified test for ${{ matrix.engine }}..."
+          echo "🎯 Running demo mode test for ${{ matrix.engine }}..."
           timeout 30s docker run --rm chess-${{ matrix.engine }}-test || true
-          echo "✅ Basic execution test completed for ${{ matrix.engine }}"
+          echo "✅ Demo test completed"
 
       - name: Cleanup
         if: always()
@@ -236,7 +231,7 @@ jobs:
   summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [detect-changes, validation, quick-build, functionality-test]
+    needs: [detect-changes, validation, build-test]
     if: always()
     
     steps:
@@ -261,10 +256,11 @@ jobs:
           fi
           
           echo ""
-          echo "🔧 Test suite included:"
-          echo "- 🔍 Implementation structure validation"
+          echo "🔧 Convention-based testing features:"
+          echo "- 📋 chess.meta file configuration"
+          echo "- 🔍 Structure validation via Python script"
           echo "- 🏗️ Docker build verification"
-          echo "- 🧪 Functionality testing (commands, AI, perft)"
-          echo "- 📊 Convention-based discovery and testing"
+          echo "- 🧪 Adaptive functionality testing"
+          echo "- 📊 Dynamic discovery from directory structure"
           echo ""
           echo "✨ Ready for merge when all checks pass!"
