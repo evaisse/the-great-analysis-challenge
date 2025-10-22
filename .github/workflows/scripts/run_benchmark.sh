@@ -20,7 +20,7 @@ mkdir -p benchmark_reports
 # Run performance test for this specific implementation
 python3 test/performance_test.py \
     --impl "$IMPL_DIR" \
-    --timeout 900 \
+    --timeout 300 \
     --output "benchmark_reports/performance_report_$IMPL_NAME.txt" \
     --json "benchmark_reports/performance_data_$IMPL_NAME.json" \
     > "benchmark_reports/benchmark_output_$IMPL_NAME.txt" 2>&1 || true
