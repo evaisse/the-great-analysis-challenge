@@ -9,9 +9,25 @@ import re
 import subprocess
 
 
+def find_project_root():
+    """Find the project root directory."""
+    current_dir = os.getcwd()
+    while current_dir != '/':
+        if (os.path.exists(os.path.join(current_dir, ".git")) and 
+            os.path.exists(os.path.join(current_dir, "implementations")) and
+            os.path.exists(os.path.join(current_dir, "test"))):
+            return current_dir
+        current_dir = os.path.dirname(current_dir)
+    return None
+
+
 def load_performance_data():
     """Load performance benchmark data from individual files"""
-    benchmark_dir = 'benchmark_reports'
+    project_root = find_project_root()
+    if project_root:
+        benchmark_dir = os.path.join(project_root, 'benchmark_reports')
+    else:
+        benchmark_dir = 'benchmark_reports'
     performance_data = []
     
     if not os.path.exists(benchmark_dir):
@@ -95,6 +111,11 @@ def format_time(seconds):
 def get_verification_status():
     """Get current verification status by running verify_implementations.py"""
     try:
+        # Find the project root to run verification from correct directory
+        project_root = find_project_root()
+        if project_root:
+            os.chdir(project_root)
+        
         result = subprocess.run(['python3', 'test/verify_implementations.py'], 
                               capture_output=True, text=True, check=True)
         
@@ -200,11 +221,37 @@ def update_readme() -> bool:
         
         new_table = table_header + "\n" + "\n".join(table_rows)
         
-        # Update README.md
-        readme_path = "README.md"
+        # Update README.md - ensure we're working with the project root README
+        readme_path = os.path.join(os.getcwd(), "README.md")
+        
+        # If we're running from a subdirectory, find the project root
+        if not os.path.exists(readme_path):
+            # Look for the root directory by finding .git or workflow files
+            current_dir = os.getcwd()
+            while current_dir != '/':
+                potential_readme = os.path.join(current_dir, "README.md")
+                if (os.path.exists(potential_readme) and 
+                    (os.path.exists(os.path.join(current_dir, ".git")) or 
+                     os.path.exists(os.path.join(current_dir, "implementations")))):
+                    readme_path = potential_readme
+                    break
+                current_dir = os.path.dirname(current_dir)
+        
+        print(f"📄 Using README path: {readme_path}")
         if os.path.exists(readme_path):
             with open(readme_path, 'r') as f:
                 content = f.read()
+            
+            # Validate this is the correct README by checking for our project markers
+            if "The Great Analysis Challenge" not in content:
+                print("⚠️ Warning: README doesn't contain expected project title")
+                print("⚠️ This might be the wrong README file")
+                return False
+            
+            if "<!-- status-table-start -->" not in content:
+                print("⚠️ Warning: README doesn't contain status table markers")
+                print("⚠️ Skipping update to avoid overwriting wrong content")
+                return False
             
             # Find and replace the status table
             pattern = r'(<!-- status-table-start -->).*?(<!-- status-table-end -->)'
@@ -212,10 +259,18 @@ def update_readme() -> bool:
             
             new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
             
+            # Additional safety check
+            if new_content == content:
+                print("⚠️ No changes detected in README content")
+                return False
+            
             with open(readme_path, 'w') as f:
                 f.write(new_content)
             
             print("✅ README status table updated")
+        else:
+            print(f"❌ README.md not found at {readme_path}")
+            return False
         
         # Check if README was modified
         cmd = ["git", "diff", "--quiet", "README.md"]
