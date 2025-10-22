@@ -100,26 +100,18 @@ class WorkflowTool:
     
     def _run_command_streaming(self, cmd: List[str], cwd: str = None, timeout: int = None, check: bool = True, output_file: str = None, input: str = None) -> subprocess.CompletedProcess:
         """Run command with real-time output streaming and optional capture to file."""
-        import threading
-        import queue
         import sys
         
-        captured_stdout = []
-        captured_stderr = []
-        
-        # Open output file if specified
-        file_handle = None
-        if output_file:
-            file_handle = open(output_file, 'w')
+        captured_output = []
         
         try:
             process = subprocess.Popen(
                 cmd, 
                 cwd=cwd,
                 stdout=subprocess.PIPE, 
-                stderr=subprocess.STDOUT,  # Merge stderr into stdout for simpler handling
+                stderr=subprocess.STDOUT,  # Merge stderr into stdout
                 text=True, 
-                bufsize=1, 
+                bufsize=0,  # Unbuffered for immediate output
                 universal_newlines=True,
                 stdin=subprocess.PIPE if input else None
             )
@@ -129,28 +121,36 @@ class WorkflowTool:
                 process.stdin.write(input)
                 process.stdin.close()
             
-            # Function to read output in a separate thread
-            def read_output(pipe, output_list):
-                try:
-                    for line in iter(pipe.readline, ''):
-                        # Print to terminal
-                        print(line, end='')
-                        sys.stdout.flush()
-                        
-                        # Write to file if specified
-                        if file_handle:
-                            file_handle.write(line)
-                            file_handle.flush()
-                        
-                        # Capture for return value
-                        output_list.append(line)
-                finally:
-                    pipe.close()
+            # Open output file if specified
+            file_handle = None
+            if output_file:
+                file_handle = open(output_file, 'w', buffering=1)  # Line buffered
             
-            # Start thread to read output
-            output_thread = threading.Thread(target=read_output, args=(process.stdout, captured_stdout))
-            output_thread.daemon = True
-            output_thread.start()
+            try:
+                # Read output line by line in real-time
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        # Check if process is still running
+                        if process.poll() is not None:
+                            break
+                        continue
+                    
+                    # Print to terminal immediately
+                    print(line, end='')
+                    sys.stdout.flush()
+                    
+                    # Write to file if specified
+                    if file_handle:
+                        file_handle.write(line)
+                        file_handle.flush()
+                    
+                    # Capture for return value
+                    captured_output.append(line)
+                
+            finally:
+                if file_handle:
+                    file_handle.close()
             
             # Wait for process with timeout
             try:
@@ -160,14 +160,11 @@ class WorkflowTool:
                 process.wait()
                 raise subprocess.TimeoutExpired(cmd, timeout)
             
-            # Wait for output thread to finish
-            output_thread.join(timeout=5)
-            
             # Create result object
             result = subprocess.CompletedProcess(
                 cmd, 
                 returncode, 
-                ''.join(captured_stdout), 
+                ''.join(captured_output), 
                 ''  # stderr is merged into stdout
             )
             
@@ -177,9 +174,15 @@ class WorkflowTool:
             
             return result
             
-        finally:
-            if file_handle:
-                file_handle.close()
+        except Exception as e:
+            # Make sure process is terminated
+            if 'process' in locals():
+                try:
+                    process.kill()
+                    process.wait()
+                except:
+                    pass
+            raise
     
     def detect_changes(self, event_name: str, test_all: str = "false", 
                       base_sha: str = "", head_sha: str = "", before_sha: str = "") -> Dict:
