@@ -1,4 +1,4 @@
 build/
 .gradle/
 *.jar
-.idea/
+.idea/.bugit/

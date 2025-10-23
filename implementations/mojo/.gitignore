@@ -23,4 +23,4 @@ wheels/
 MANIFEST
 
 # Compiled mojo files
-*.mojopkg
+*.mojopkg.bugit/
