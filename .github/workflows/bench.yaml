@@ -174,7 +174,7 @@ jobs:
           fi
           ./workflow create-release \
             --version-type "$VERSION_TYPE" \
-            --readme-changed "${{ needs.combine-results.outputs.readme-changed }}" \
+            --readme-changed "false" \
             --excellent-count "${{ needs.validation.outputs.excellent-count }}" \
             --good-count "${{ needs.validation.outputs.good-count }}" \
             --needs-work-count "${{ needs.validation.outputs.needs-work-count }}" \
