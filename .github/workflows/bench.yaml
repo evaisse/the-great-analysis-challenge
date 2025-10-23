@@ -172,6 +172,10 @@ jobs:
       - name: Determine version and commit changes
         id: version
         run: |
+          # Configure git identity
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
           VERSION_TYPE="${{ github.event.inputs.version_type }}"
           if [ -z "$VERSION_TYPE" ]; then
             VERSION_TYPE="patch"
