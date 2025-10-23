@@ -26,11 +26,12 @@ bugit:
 	@echo "Injecting bug for static analysis testing..."
 	@mkdir -p .bugit
 	@if [ ! -f .bugit/BUGGED ]; then \
-		cp board.go .bugit/board.go.backup 2>/dev/null || cp main.go .bugit/main.go.backup; \
-		if [ -f board.go ]; then \
-			sed -i '1a var unusedDebugVariable = "This should be detected by go vet"' board.go; \
-		else \
-			sed -i '/^package main/a var unusedDebugVariable = "This should be detected by go vet"' main.go; \
+		if [ -f src/board.go ]; then \
+			cp src/board.go .bugit/board.go.backup; \
+			sed -i '/^package main/a var unusedDebugVariable = "This should be detected by go vet"' src/board.go; \
+		elif [ -f chess.go ]; then \
+			cp chess.go .bugit/chess.go.backup; \
+			sed -i '/^package main/a var unusedDebugVariable = "This should be detected by go vet"' chess.go; \
 		fi; \
 		touch .bugit/BUGGED; \
 		echo "✅ Bug injected"; \
@@ -43,9 +44,9 @@ fix:
 	@echo "Fixing injected bug..."
 	@if [ -f .bugit/BUGGED ]; then \
 		if [ -f .bugit/board.go.backup ]; then \
-			cp .bugit/board.go.backup board.go; \
-		elif [ -f .bugit/main.go.backup ]; then \
-			cp .bugit/main.go.backup main.go; \
+			cp .bugit/board.go.backup src/board.go; \
+		elif [ -f .bugit/chess.go.backup ]; then \
+			cp .bugit/chess.go.backup chess.go; \
 		fi; \
 		rm -f .bugit/BUGGED; \
 		echo "✅ Bug fixed, original file restored"; \
