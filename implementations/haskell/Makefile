@@ -30,10 +30,10 @@ bugit:
 	@echo "Injecting bug for static analysis testing..."
 	@mkdir -p .bugit
 	@if [ ! -f .bugit/BUGGED ]; then \
-		cp app/Main.hs .bugit/Main.hs.backup; \
-		sed -i '2a unusedDebugVariable :: String\nunusedDebugVariable = \"This should be detected by hlint\"' app/Main.hs; \
+		cp src/Main.hs .bugit/Main.hs.backup; \
+		sed -i '2a unusedDebugVariable :: String\nunusedDebugVariable = "This should be detected by hlint"' src/Main.hs; \
 		touch .bugit/BUGGED; \
-		echo "✅ Bug injected in app/Main.hs"; \
+		echo "✅ Bug injected in src/Main.hs"; \
 	else \
 		echo "⚠️  Bug already injected. Run 'make fix' first."; \
 	fi
@@ -42,7 +42,7 @@ bugit:
 fix:
 	@echo "Fixing injected bug..."
 	@if [ -f .bugit/BUGGED ]; then \
-		cp .bugit/Main.hs.backup app/Main.hs; \
+		cp .bugit/Main.hs.backup src/Main.hs; \
 		rm -f .bugit/BUGGED; \
 		echo "✅ Bug fixed, original file restored"; \
 	else \

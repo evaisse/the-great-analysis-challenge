@@ -32,10 +32,10 @@ bugit:
 	@echo "Injecting bug for static analysis testing..."
 	@mkdir -p .bugit
 	@if [ ! -f .bugit/BUGGED ]; then \
-		cp lib/board.dart .bugit/board.dart.backup; \
-		sed -i '2a final String _unusedDebugVariable = \"This should be detected by dart analyze\";' lib/board.dart; \
+		cp lib/chess_engine.dart .bugit/chess_engine.dart.backup; \
+		sed -i '2a final String _unusedDebugVariable = "This should be detected by dart analyze";' lib/chess_engine.dart; \
 		touch .bugit/BUGGED; \
-		echo "✅ Bug injected in lib/board.dart"; \
+		echo "✅ Bug injected in lib/chess_engine.dart"; \
 	else \
 		echo "⚠️  Bug already injected. Run 'make fix' first."; \
 	fi
@@ -44,7 +44,7 @@ bugit:
 fix:
 	@echo "Fixing injected bug..."
 	@if [ -f .bugit/BUGGED ]; then \
-		cp .bugit/board.dart.backup lib/board.dart; \
+		cp .bugit/chess_engine.dart.backup lib/chess_engine.dart; \
 		rm -f .bugit/BUGGED; \
 		echo "✅ Bug fixed, original file restored"; \
 	else \

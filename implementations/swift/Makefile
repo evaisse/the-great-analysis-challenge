@@ -30,10 +30,10 @@ bugit:
 	@echo "Injecting bug for static analysis testing..."
 	@mkdir -p .bugit
 	@if [ ! -f .bugit/BUGGED ]; then \
-		cp Sources/Chess/Board.swift .bugit/Board.swift.backup; \
-		sed -i '2a private let unusedDebugVariable = \"This should be detected\"' Sources/Chess/Board.swift; \
+		cp src/main.swift .bugit/main.swift.backup; \
+		sed -i '2a let unusedDebugVariable = "This should be detected by swiftlint"' src/main.swift; \
 		touch .bugit/BUGGED; \
-		echo "✅ Bug injected in Sources/Chess/Board.swift"; \
+		echo "✅ Bug injected in src/main.swift"; \
 	else \
 		echo "⚠️  Bug already injected. Run 'make fix' first."; \
 	fi
@@ -42,7 +42,7 @@ bugit:
 fix:
 	@echo "Fixing injected bug..."
 	@if [ -f .bugit/BUGGED ]; then \
-		cp .bugit/Board.swift.backup Sources/Chess/Board.swift; \
+		cp .bugit/main.swift.backup src/main.swift; \
 		rm -f .bugit/BUGGED; \
 		echo "✅ Bug fixed, original file restored"; \
 	else \

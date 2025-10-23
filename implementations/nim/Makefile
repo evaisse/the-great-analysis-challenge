@@ -29,10 +29,10 @@ bugit:
 	@echo "Injecting bug for static analysis testing..."
 	@mkdir -p .bugit
 	@if [ ! -f .bugit/BUGGED ]; then \
-		cp src/board.nim .bugit/board.nim.backup; \
-		sed -i '2a const unusedDebugVariable = \"This should be detected\"' src/board.nim; \
+		cp chess.nim .bugit/chess.nim.backup; \
+		sed -i '2a const unusedDebugVariable = "This should be detected"' chess.nim; \
 		touch .bugit/BUGGED; \
-		echo "✅ Bug injected in src/board.nim"; \
+		echo "✅ Bug injected in chess.nim"; \
 	else \
 		echo "⚠️  Bug already injected. Run 'make fix' first."; \
 	fi
@@ -41,7 +41,7 @@ bugit:
 fix:
 	@echo "Fixing injected bug..."
 	@if [ -f .bugit/BUGGED ]; then \
-		cp .bugit/board.nim.backup src/board.nim; \
+		cp .bugit/chess.nim.backup chess.nim; \
 		rm -f .bugit/BUGGED; \
 		echo "✅ Bug fixed, original file restored"; \
 	else \

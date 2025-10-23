@@ -30,10 +30,10 @@ bugit:
 	@echo "Injecting bug for static analysis testing..."
 	@mkdir -p .bugit
 	@if [ ! -f .bugit/BUGGED ]; then \
-		cp src/chess.gleam .bugit/chess.gleam.backup; \
-		sed -i '2a const unused_debug_variable = \"This should be detected\"' src/chess.gleam; \
+		cp src/board.gleam .bugit/board.gleam.backup; \
+		sed -i '2a const unused_debug_variable = "This should be detected"' src/board.gleam; \
 		touch .bugit/BUGGED; \
-		echo "✅ Bug injected in src/chess.gleam"; \
+		echo "✅ Bug injected in src/board.gleam"; \
 	else \
 		echo "⚠️  Bug already injected. Run 'make fix' first."; \
 	fi
@@ -42,7 +42,7 @@ bugit:
 fix:
 	@echo "Fixing injected bug..."
 	@if [ -f .bugit/BUGGED ]; then \
-		cp .bugit/chess.gleam.backup src/chess.gleam; \
+		cp .bugit/board.gleam.backup src/board.gleam; \
 		rm -f .bugit/BUGGED; \
 		echo "✅ Bug fixed, original file restored"; \
 	else \

@@ -29,10 +29,10 @@ bugit:
 	@echo "Injecting bug for static analysis testing..."
 	@mkdir -p .bugit
 	@if [ ! -f .bugit/BUGGED ]; then \
-		cp src/main/kotlin/Chess.kt .bugit/Chess.kt.backup; \
-		sed -i '2a private val unusedDebugVariable = \"This should be detected by ktlint\"' src/main/kotlin/Chess.kt; \
+		cp src/main/kotlin/Board.kt .bugit/Board.kt.backup; \
+		sed -i '2a private val unusedDebugVariable = "This should be detected by ktlint"' src/main/kotlin/Board.kt; \
 		touch .bugit/BUGGED; \
-		echo "✅ Bug injected in src/main/kotlin/Chess.kt"; \
+		echo "✅ Bug injected in src/main/kotlin/Board.kt"; \
 	else \
 		echo "⚠️  Bug already injected. Run 'make fix' first."; \
 	fi
@@ -41,7 +41,7 @@ bugit:
 fix:
 	@echo "Fixing injected bug..."
 	@if [ -f .bugit/BUGGED ]; then \
-		cp .bugit/Chess.kt.backup src/main/kotlin/Chess.kt; \
+		cp .bugit/Board.kt.backup src/main/kotlin/Board.kt; \
 		rm -f .bugit/BUGGED; \
 		echo "✅ Bug fixed, original file restored"; \
 	else \

@@ -29,10 +29,10 @@ bugit:
 	@echo "Injecting bug for static analysis testing..."
 	@mkdir -p .bugit
 	@if [ ! -f .bugit/BUGGED ]; then \
-		cp src/Board.jl .bugit/Board.jl.backup; \
-		sed -i '2a const UNUSED_DEBUG_VARIABLE = \"This should be detected\"' src/Board.jl; \
+		cp src/board.jl .bugit/board.jl.backup; \
+		sed -i '2a const UNUSED_DEBUG_VARIABLE = "This should be detected"' src/board.jl; \
 		touch .bugit/BUGGED; \
-		echo "✅ Bug injected in src/Board.jl"; \
+		echo "✅ Bug injected in src/board.jl"; \
 	else \
 		echo "⚠️  Bug already injected. Run 'make fix' first."; \
 	fi
@@ -41,7 +41,7 @@ bugit:
 fix:
 	@echo "Fixing injected bug..."
 	@if [ -f .bugit/BUGGED ]; then \
-		cp .bugit/Board.jl.backup src/Board.jl; \
+		cp .bugit/board.jl.backup src/board.jl; \
 		rm -f .bugit/BUGGED; \
 		echo "✅ Bug fixed, original file restored"; \
 	else \
