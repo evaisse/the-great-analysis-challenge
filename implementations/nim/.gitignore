@@ -26,4 +26,5 @@ docs/
 
 # Nim cache
 nimcache/
-nimblecache/.bugit/
+nimblecache/
+.bugit/

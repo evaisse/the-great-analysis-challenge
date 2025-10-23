@@ -5,4 +5,5 @@ node_modules/
 .bsb.lock
 package-lock.json
 npm-debug.log*
-.DS_Store.bugit/
+.DS_Store
+.bugit/
