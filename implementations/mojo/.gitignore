@@ -24,3 +24,4 @@ MANIFEST
 
 # Compiled mojo files
 *.mojopkg
+.bugit/

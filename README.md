@@ -50,6 +50,27 @@ cd implementations/<language> && make docker-test
 
 # Verify all implementations
 python3 test/verify_implementations.py
+
+# Test static analysis error detection
+make bugit-all                   # Inject bugs in all implementations
+make analyze-with-bug-all        # Run analysis and generate report
+make fix-all                     # Clean up injected bugs
+```
+
+## 🔍 Error Analysis Performance Testing
+
+Test how static analysis tools detect errors across different languages:
+
+- **`make bugit`** - Inject a bug designed for static analysis detection
+- **`make fix`** - Restore the original code
+- **`make analyze-with-bug`** - Run static analysis with the bug and capture results
+- **`make analyze-with-bug-all`** - Compare all languages' static analysis capabilities
+
+📖 **[Complete Error Analysis Guide](./ERROR_ANALYSIS_GUIDE.md)** - Detailed documentation and examples
+
+🎬 **[Run Interactive Demo](./demo-error-analysis.sh)** - See the feature in action:
+```bash
+./demo-error-analysis.sh
 ```
 
 ## CI/CD
@@ -73,5 +94,6 @@ Each implementation follows identical specifications defined in [CHESS_ENGINE_SP
 
 - **Standardized Commands**: Identical interface across all languages
 - **Docker Support**: Containerized testing and deployment
-- **Makefile Targets**: `build`, `test`, `analyze`, `docker-test`
+- **Makefile Targets**: `build`, `test`, `analyze`, `docker-test`, `bugit`, `fix`, `analyze-with-bug`
 - **Metadata**: Structured information in `chess.meta` files
+- **Error Analysis**: Bug injection system for testing static analyzers

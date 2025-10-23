@@ -27,3 +27,4 @@ docs/
 # Nim cache
 nimcache/
 nimblecache/
+.bugit/
