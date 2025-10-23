@@ -16,4 +16,7 @@
 vendor/
 
 # Go workspace file
-go.work.bugit/
+go.work
+
+# Bug injection artifacts
+.bugit/
