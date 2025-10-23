@@ -46,15 +46,17 @@ def create_release(version_type: str = "patch", readme_changed: str = "false",
     
     new_version = f"v{major}.{minor}.{patch}"
     
-    # Configure git and commit changes if README was updated
+    # Configure git identity (required for both commits and tags)
+    cmd1 = ["git", "config", "--local", "user.email", "action@github.com"]
+    print(f"🔧 Running: {' '.join(cmd1)}")
+    subprocess.run(cmd1, check=True)
+    
+    cmd2 = ["git", "config", "--local", "user.name", "GitHub Action"]
+    print(f"🔧 Running: {' '.join(cmd2)}")
+    subprocess.run(cmd2, check=True)
+    
+    # Commit changes if README was updated
     if readme_changed == "true":
-        cmd1 = ["git", "config", "--local", "user.email", "action@github.com"]
-        print(f"🔧 Running: {' '.join(cmd1)}")
-        subprocess.run(cmd1, check=True)
-        
-        cmd2 = ["git", "config", "--local", "user.name", "GitHub Action"]
-        print(f"🔧 Running: {' '.join(cmd2)}")
-        subprocess.run(cmd2, check=True)
         
         # Copy benchmark reports to repo
         os.makedirs("benchmark_reports", exist_ok=True)
