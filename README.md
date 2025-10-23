@@ -68,6 +68,11 @@ Test how static analysis tools detect errors across different languages:
 
 📖 **[Complete Error Analysis Guide](./ERROR_ANALYSIS_GUIDE.md)** - Detailed documentation and examples
 
+🎬 **[Run Interactive Demo](./demo-error-analysis.sh)** - See the feature in action:
+```bash
+./demo-error-analysis.sh
+```
+
 ## CI/CD
 
 - **🔄 Continuous Testing**: All implementations tested via Docker on every commit
