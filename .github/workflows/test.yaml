@@ -102,6 +102,12 @@ jobs:
           cd implementations/${{ matrix.engine }}
           echo "🏗️ Building ${{ matrix.engine }} chess engine..."
           docker build -t chess-${{ matrix.engine }}-test .
+      
+      - name: Verify analyze target
+        run: ./workflow verify-make-target ${{ matrix.engine }} analyze
+
+      - name: Verify test target
+        run: ./workflow verify-make-target ${{ matrix.engine }} test
 
       - name: Test basic commands
         run: ./workflow test-basic-commands ${{ matrix.engine }}

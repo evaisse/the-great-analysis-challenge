@@ -29,7 +29,7 @@ class Perft {
             const state = this.board.getState();
             const from = this.board.squareToAlgebraic(move.from);
             const to = this.board.squareToAlgebraic(move.to);
-            const moveStr = from + to + (move.promotion || '');
+            const moveStr = from + to + (move.promotion || "");
             this.board.makeMove(move);
             const count = this.perft(depth - 1);
             this.board.setState(state);

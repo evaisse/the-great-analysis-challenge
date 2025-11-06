@@ -17,19 +17,19 @@ class AI {
             return { move: null, eval: 0, nodes: 0, time: 0 };
         }
         let bestMove = moves[0];
-        let bestEval = color === 'white' ? -Infinity : Infinity;
+        let bestEval = color === "white" ? -Infinity : Infinity;
         const alpha = -Infinity;
         const beta = Infinity;
         for (const move of moves) {
             const state = this.board.getState();
             this.board.makeMove(move);
-            const evaluation = this.minimax(depth - 1, alpha, beta, color === 'black');
+            const evaluation = this.minimax(depth - 1, alpha, beta, color === "black");
             this.board.setState(state);
-            if (color === 'white' && evaluation > bestEval) {
+            if (color === "white" && evaluation > bestEval) {
                 bestEval = evaluation;
                 bestMove = move;
             }
-            else if (color === 'black' && evaluation < bestEval) {
+            else if (color === "black" && evaluation < bestEval) {
                 bestEval = evaluation;
                 bestMove = move;
             }
@@ -39,7 +39,7 @@ class AI {
             move: bestMove,
             eval: bestEval,
             nodes: this.nodesEvaluated,
-            time: endTime - startTime
+            time: endTime - startTime,
         };
     }
     minimax(depth, alpha, beta, maximizing) {
@@ -94,7 +94,7 @@ class AI {
                 const value = types_1.PIECE_VALUES[piece.type];
                 const positionBonus = this.getPositionBonus(square, piece.type, piece.color);
                 const totalValue = value + positionBonus;
-                score += piece.color === 'white' ? totalValue : -totalValue;
+                score += piece.color === "white" ? totalValue : -totalValue;
             }
         }
         return score;
@@ -107,14 +107,14 @@ class AI {
         if (centerSquares.includes(square)) {
             bonus += 10;
         }
-        if (pieceType === 'P') {
-            const advancement = color === 'white' ? rank : 7 - rank;
+        if (pieceType === "P") {
+            const advancement = color === "white" ? rank : 7 - rank;
             bonus += advancement * 5;
         }
-        if (pieceType === 'K') {
+        if (pieceType === "K") {
             const isEndgame = this.isEndgame();
             if (!isEndgame) {
-                const kingSafetyRow = color === 'white' ? 0 : 7;
+                const kingSafetyRow = color === "white" ? 0 : 7;
                 if (rank === kingSafetyRow && (file <= 2 || file >= 5)) {
                     bonus += 20;
                 }
@@ -131,9 +131,9 @@ class AI {
         for (let square = 0; square < 64; square++) {
             const piece = this.board.getPiece(square);
             if (piece) {
-                if (piece.type !== 'K' && piece.type !== 'P') {
+                if (piece.type !== "K" && piece.type !== "P") {
                     pieceCount++;
-                    if (piece.type === 'Q') {
+                    if (piece.type === "Q") {
                         queenCount++;
                     }
                 }
