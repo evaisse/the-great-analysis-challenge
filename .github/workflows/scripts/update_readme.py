@@ -81,11 +81,11 @@ def classify_implementation_status(impl_data):
     # Check if docker and build succeeded
     docker_success = impl_data.get('docker', {}).get('build_success', False)
     timings = impl_data.get('timings', {})
-    build_time = timings.get('build_seconds', 0)
+    build_time = timings.get('build_seconds')
     
     # Excellent: All features, no errors, builds successfully
     if (has_all_features and errors == 0 and failed_tests == 0 and 
-        docker_success and build_time >= 0):
+        docker_success and build_time is not None and build_time >= 0):
         return 'excellent'
     
     # Good: Most features, minimal issues
