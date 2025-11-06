@@ -1,0 +1,5 @@
+.git
+.gitignore
+*.o
+*.so
+luac.out
