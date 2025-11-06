@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haskell Source Code - The Great Analysis Challenge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🏆 The Great Analysis Challenge</h1>
+        <p class="subtitle">Multi-Language Chess Engine Comparison</p>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="https://github.com/evaisse/the-great-analysis-challenge">GitHub</a>
+        </nav>
+    </header>
+    <main>
+<h2>📁 Haskell Implementation</h2>
+<div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
+<div class="file-tree">
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
+<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and Haskell
+RUN apt-get update &amp;&amp; apt-get install -y \
+    curl \
+    build-essential \
+    libffi-dev \
+    libgmp-dev \
+    zlib1g-dev \
+    libtinfo-dev \
+    ghc \
+    cabal-install \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy project files
+COPY chess.cabal ./
+COPY src/ src/
+
+# Install dependencies and build
+RUN cabal update &amp;&amp; cabal build
+
+# Run the chess engine
+CMD ["cabal", "run", "chess"]</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
+<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+
+# Default target - build the chess engine
+all: build
+
+# Build target - compile Haskell with Cabal
+build:
+	cabal update
+	cabal build
+
+# Run basic tests
+test:
+	cabal test || true
+	@echo "Running basic functionality test..."
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | cabal run chess | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" &amp;&amp; echo "✅ Basic test passed" || echo "❌ Basic test failed"
+
+# Static analysis and code quality
+analyze:
+	@echo "Running Haskell static analysis..."
+	hlint src/ || true
+	cabal check || true
+
+# Clean build artifacts
+clean:
+	cabal clean
+
+# Docker targets
+docker-build:
+	docker build -t chess-haskell .
+
+docker-test: docker-build
+	@echo "Testing Haskell implementation in Docker..."
+	docker run --rm -i chess-haskell sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | cabal run chess"
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  make         - Build the chess engine"
+	@echo "  make test    - Run tests"
+	@echo "  make analyze - Run static analysis"
+	@echo "  make clean   - Clean build artifacts"
+	@echo "  make docker-build - Build Docker image"
+	@echo "  make docker-test  - Test in Docker"</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
+<pre id="README_md" class="file-content" style="display:none;"><code># Haskell Chess Engine
+
+A functional programming implementation of a chess engine showcasing Haskell's strengths:
+
+- **Pure functions** for game logic
+- **Immutable state** with functional updates  
+- **Strong typing** with algebraic data types
+- **Pattern matching** for move validation
+- **Monadic I/O** for command interface
+
+## Features
+
+- Complete chess rules implementation (castling, en passant, promotion)
+- Minimax AI with alpha-beta pruning (depths 1-5)
+- FEN import/export support
+- Performance testing (perft)
+- Command-line interface
+
+## Building
+
+```bash
+cabal build
+```
+
+## Running
+
+```bash
+cabal run chess
+```
+
+## Commands
+
+- `move e2e4` - Make a move
+- `ai 3` - AI makes a move at depth 3
+- `fen &lt;string&gt;` - Load FEN position
+- `export` - Export current position as FEN
+- `eval` - Show position evaluation
+- `perft 4` - Performance test at depth 4
+- `help` - Show all commands
+- `quit` - Exit
+
+## Docker
+
+```bash
+docker build -t chess-haskell .
+docker run -it chess-haskell
+```
+
+## Architecture
+
+The implementation follows functional programming principles:
+
+- **Types.hs** - Core data types (Board, Piece, Move, GameState)
+- **Board.hs** - Game state management and move validation
+- **FEN.hs** - FEN string parsing and serialization
+- **MoveGenerator.hs** - Move generation and basic evaluation
+- **AI.hs** - Minimax search with alpha-beta pruning
+- **Perft.hs** - Performance testing utilities
+- **Main.hs** - Command-line interface
+
+The design emphasizes immutability - game states are never modified in place, but new states are created through pure functions. This makes the code easier to reason about and test.</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess')">📄 chess</button>
+<pre id="chess" class="file-content" style="display:none;"><code>#!/bin/bash
+exec ./dist-newstyle/build/x86_64-linux/ghc-9.12.2/chess-1.0.0.0/x/chess/build/chess/chess "$@"</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_cabal')">📄 chess.cabal</button>
+<pre id="chess_cabal" class="file-content" style="display:none;"><code>cabal-version: 2.0
+name: chess
+version: 1.0.0.0
+author: Haskell Implementation
+maintainer: example@example.com
+build-type: Simple
+
+executable chess
+  main-is: Main.hs
+  hs-source-dirs: src
+  other-modules:
+    Types,
+    Board,
+    FEN,
+    MoveGenerator,
+    AI,
+    Perft
+  default-language: Haskell2010
+  ghc-options: -Wall -O2
+  build-depends:
+    base &gt;= 4.7 &amp;&amp; &lt; 5,
+    containers,
+    array,
+    time</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
+<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+  "language": "haskell",
+  "version": "9.0",
+  "author": "Haskell Implementation",
+  "build": "cabal build",
+  "run": "./chess",
+  "analyze": "hlint . &amp;&amp; cabal check",
+  "test": "cabal test",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 1000
+}</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_AI_hs')">📄 src/AI.hs</button>
+<pre id="src_AI_hs" class="file-content" style="display:none;"><code>module AI where
+
+import Types
+import Board
+import qualified MoveGenerator as MG
+import Data.List (maximumBy, minimumBy)
+import Data.Maybe (fromMaybe)
+
+-- AI move selection with minimax and alpha-beta pruning
+findBestMoveAI :: GameState -&gt; Int -&gt; (Move, Int, Int)  -- (move, evaluation, nodes)
+findBestMoveAI gs depth =
+  case MG.generateAllLegalMoves gs of
+    [] -&gt; error "No legal moves available"
+    moves -&gt;
+      let isMaximizing = currentPlayer gs == White
+          (bestMove, bestEval, nodes) = alphaBetaRoot moves gs depth isMaximizing (-100000) 100000 0
+      in (bestMove, bestEval, nodes)
+
+-- Alpha-beta search from root
+alphaBetaRoot :: [Move] -&gt; GameState -&gt; Int -&gt; Bool -&gt; Int -&gt; Int -&gt; Int -&gt; (Move, Int, Int)
+alphaBetaRoot [] _ _ _ _ _ nodes = error "No moves to evaluate"
+alphaBetaRoot (firstMove:otherMoves) gs depth isMaximizing alpha beta nodes =
+  let newState = makeMove gs firstMove
+      (eval, nodeCount) = alphaBeta newState (depth - 1) (not isMaximizing) alpha beta
+      totalNodes = nodes + nodeCount + 1
+  in searchBest firstMove eval totalNodes otherMoves gs depth isMaximizing alpha beta
+
+searchBest :: Move -&gt; Int -&gt; Int -&gt; [Move] -&gt; GameState -&gt; Int -&gt; Bool -&gt; Int -&gt; Int -&gt; (Move, Int, Int)
+searchBest bestMove bestEval totalNodes [] _ _ _ _ _ = (bestMove, bestEval, totalNodes)
+searchBest bestMove bestEval totalNodes (move:otherMoves) gs depth isMaximizing alpha beta =
+  let newState = makeMove gs move
+      (eval, nodeCount) = alphaBeta newState (depth - 1) (not isMaximizing) alpha beta
+      newTotalNodes = totalNodes + nodeCount + 1
+      (newBest, newBestEval, newAlpha, newBeta) = 
+        if isMaximizing
+        then if eval &gt; bestEval
+             then (move, eval, max alpha eval, beta)
+             else (bestMove, bestEval, alpha, beta)
+        else if eval &lt; bestEval
+             then (move, eval, alpha, min beta eval)
+             else (bestMove, bestEval, alpha, beta)
+  in if newBeta &lt;= newAlpha
+     then (newBest, newBestEval, newTotalNodes)  -- Prune
+     else searchBest newBest newBestEval newTotalNodes otherMoves gs depth isMaximizing newAlpha newBeta
+
+-- Main minimax with alpha-beta pruning
+alphaBeta :: GameState -&gt; Int -&gt; Bool -&gt; Int -&gt; Int -&gt; (Int, Int)  -- (evaluation, nodes)
+alphaBeta gs depth isMaximizing alpha beta
+  | depth == 0 || isGameOver gs = (evaluatePositionAI gs, 1)
+  | isMaximizing = maximizeAlphaBeta (MG.generateAllLegalMoves gs) gs depth alpha beta (-100000) 1
+  | otherwise = minimizeAlphaBeta (MG.generateAllLegalMoves gs) gs depth alpha beta 100000 1
+
+maximizeAlphaBeta :: [Move] -&gt; GameState -&gt; Int -&gt; Int -&gt; Int -&gt; Int -&gt; Int -&gt; (Int, Int)
+maximizeAlphaBeta [] _ _ _ _ maxEval nodes = (maxEval, nodes)
+maximizeAlphaBeta (move:otherMoves) gs depth alpha beta maxEval nodes =
+  let newState = makeMove gs move
+      (eval, childNodes) = alphaBeta newState (depth - 1) False alpha beta
+      newMaxEval = max maxEval eval
+      newAlpha = max alpha eval
+      newNodes = nodes + childNodes
+  in if beta &lt;= newAlpha
+     then (newMaxEval, newNodes)  -- Beta cutoff
+     else maximizeAlphaBeta otherMoves gs depth newAlpha beta newMaxEval newNodes
+
+minimizeAlphaBeta :: [Move] -&gt; GameState -&gt; Int -&gt; Int -&gt; Int -&gt; Int -&gt; Int -&gt; (Int, Int)
+minimizeAlphaBeta [] _ _ _ _ minEval nodes = (minEval, nodes)
+minimizeAlphaBeta (move:otherMoves) gs depth alpha beta minEval nodes =
+  let newState = makeMove gs move
+      (eval, childNodes) = alphaBeta newState (depth - 1) True alpha beta
+      newMinEval = min minEval eval
+      newBeta = min beta eval
+      newNodes = nodes + childNodes
+  in if newBeta &lt;= alpha
+     then (newMinEval, newNodes)  -- Alpha cutoff
+     else minimizeAlphaBeta otherMoves gs depth alpha newBeta newMinEval newNodes
+
+-- Enhanced position evaluation (using MoveGenerator functions)
+evaluatePositionAI :: GameState -&gt; Int
+evaluatePositionAI gs
+  | isCheckmate gs = if currentPlayer gs == White then -100000 else 100000
+  | isStalemate gs = 0
+  | otherwise = 
+      MG.materialBalance gs + 
+      MG.positionalBonus gs +
+      kingSafetyBonus gs +
+      mobilityBonus gs
+
+kingSafetyBonus :: GameState -&gt; Int
+kingSafetyBonus gs =
+  let whiteKingSafety = case findKing gs White of
+        Just kingPos -&gt; if isSquareExposed gs kingPos then -20 else 0
+        Nothing -&gt; 0
+      blackKingSafety = case findKing gs Black of
+        Just kingPos -&gt; if isSquareExposed gs kingPos then 20 else 0
+        Nothing -&gt; 0
+  in whiteKingSafety + blackKingSafety
+
+mobilityBonus :: GameState -&gt; Int
+mobilityBonus gs =
+  let whiteMobility = length (MG.generateAllLegalMoves gs)
+      blackMobility = length (MG.generateAllLegalMoves (makeMove gs (Move (Square 0 0) (Square 0 0) Nothing)))  -- Simplified
+  in if currentPlayer gs == White 
+     then whiteMobility - blackMobility
+     else blackMobility - whiteMobility
+
+isSquareExposed :: GameState -&gt; Square -&gt; Bool
+isSquareExposed gs square =
+  let adjacentSquares = [Square (col + dc) (row + dr) | 
+        Square col row &lt;- [square],
+        (dc, dr) &lt;- [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)],
+        col + dc &gt;= 0 &amp;&amp; col + dc &lt;= 7 &amp;&amp; row + dr &gt;= 0 &amp;&amp; row + dr &lt;= 7]
+      hasProtection = any (\sq -&gt; case getPiece gs sq of
+        Just (Piece color _) -&gt; color == (case getPiece gs square of
+          Just (Piece c _) -&gt; c
+          Nothing -&gt; White)  -- Default
+        Nothing -&gt; False) adjacentSquares
+  in not hasProtection
+
+isGameOver :: GameState -&gt; Bool
+isGameOver gs = isCheckmate gs || isStalemate gs
+
+-- Move ordering for better alpha-beta performance
+orderMoves :: GameState -&gt; [Move] -&gt; [Move]
+orderMoves gs moves = 
+  let scoredMoves = [(move, scoreMoveForOrdering gs move) | move &lt;- moves]
+      sortedMoves = sortByScore scoredMoves
+  in map fst sortedMoves
+
+scoreMoveForOrdering :: GameState -&gt; Move -&gt; Int
+scoreMoveForOrdering gs move@(Move from to _) =
+  let captureScore = case getPiece gs to of
+        Just (Piece _ capturedType) -&gt; MG.pieceValue (Piece White capturedType)
+        Nothing -&gt; 0
+      promotionScore = case promotion move of
+        Just Queen -&gt; 900
+        Just Rook -&gt; 500
+        Just Bishop -&gt; 330
+        Just Knight -&gt; 320
+        Nothing -&gt; 0
+      checkScore = if wouldGiveCheck gs move then 50 else 0
+  in captureScore + promotionScore + checkScore
+
+pieceTypeValue :: PieceType -&gt; Int
+pieceTypeValue ptype = MG.pieceValue (Piece White ptype)
+
+wouldGiveCheck :: GameState -&gt; Move -&gt; Bool
+wouldGiveCheck gs move =
+  let newState = makeMove gs move
+  in isInCheck newState (opponentColor (currentPlayer gs))
+
+sortByScore :: [(Move, Int)] -&gt; [(Move, Int)]
+sortByScore [] = []
+sortByScore (x:xs) = 
+  let smaller = sortByScore [a | a &lt;- xs, snd a &lt;= snd x]
+      larger = sortByScore [a | a &lt;- xs, snd a &gt; snd x]
+  in larger ++ [x] ++ smaller</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_Board_hs')">📄 src/Board.hs</button>
+<pre id="src_Board_hs" class="file-content" style="display:none;"><code>module Board where
+
+import Types
+import Data.Array
+import Data.Maybe (isJust, isNothing, fromJust)
+
+-- Board display
+displayBoard :: GameState -&gt; String
+displayBoard gs = unlines $ 
+  ["  a b c d e f g h"] ++
+  [show (8-r) ++ " " ++ [displaySquare (board gs ! (c,7-r)) | c &lt;- [0..7]] ++ " " ++ show (8-r) | r &lt;- [0..7]] ++
+  ["  a b c d e f g h"] ++
+  [""] ++
+  [show (currentPlayer gs) ++ " to move"]
+
+displaySquare :: Maybe Piece -&gt; Char
+displaySquare Nothing = '.'
+displaySquare (Just piece) = pieceChar piece
+
+-- Move validation
+isValidMove :: GameState -&gt; Move -&gt; Bool
+isValidMove gs move = 
+  isLegalMove gs move &amp;&amp; not (wouldBeInCheck gs move)
+
+isLegalMove :: GameState -&gt; Move -&gt; Bool
+isLegalMove gs (Move from to promotion) = 
+  case getPiece gs from of
+    Nothing -&gt; False
+    Just piece -&gt; 
+      pieceColor piece == currentPlayer gs &amp;&amp;
+      isValidPieceMove gs piece from to &amp;&amp;
+      (isNothing promotion || pieceType piece == Pawn)
+
+getPiece :: GameState -&gt; Square -&gt; Maybe Piece
+getPiece gs (Square col row) 
+  | col &gt;= 0 &amp;&amp; col &lt;= 7 &amp;&amp; row &gt;= 0 &amp;&amp; row &lt;= 7 = board gs ! (col, row)
+  | otherwise = Nothing
+
+pieceColor :: Piece -&gt; Color
+pieceColor (Piece color _) = color
+
+pieceType :: Piece -&gt; PieceType
+pieceType (Piece _ ptype) = ptype
+
+isValidPieceMove :: GameState -&gt; Piece -&gt; Square -&gt; Square -&gt; Bool
+isValidPieceMove gs piece from to =
+  case pieceType piece of
+    Pawn -&gt; isValidPawnMove gs piece from to
+    Knight -&gt; isValidKnightMove from to
+    Bishop -&gt; isValidBishopMove gs from to
+    Rook -&gt; isValidRookMove gs from to
+    Queen -&gt; isValidQueenMove gs from to
+    King -&gt; isValidKingMove gs piece from to
+
+isValidPawnMove :: GameState -&gt; Piece -&gt; Square -&gt; Square -&gt; Bool
+isValidPawnMove gs piece (Square fromCol fromRow) (Square toCol toRow) =
+  let direction = if pieceColor piece == White then 1 else -1
+      startRow = if pieceColor piece == White then 1 else 6
+      oneStep = toRow == fromRow + direction
+      twoStep = fromRow == startRow &amp;&amp; toRow == fromRow + 2 * direction
+      straight = fromCol == toCol
+      diagonal = abs (fromCol - toCol) == 1
+      capture = isJust (getPiece gs (Square toCol toRow)) || 
+                enPassantTarget gs == Just (Square toCol toRow)
+  in (oneStep &amp;&amp; straight &amp;&amp; isNothing (getPiece gs (Square toCol toRow))) ||
+     (twoStep &amp;&amp; straight &amp;&amp; isNothing (getPiece gs (Square toCol toRow))) ||
+     (oneStep &amp;&amp; diagonal &amp;&amp; capture)
+
+isValidKnightMove :: Square -&gt; Square -&gt; Bool
+isValidKnightMove (Square fromCol fromRow) (Square toCol toRow) =
+  let deltaCol = abs (fromCol - toCol)
+      deltaRow = abs (fromRow - toRow)
+  in (deltaCol == 2 &amp;&amp; deltaRow == 1) || (deltaCol == 1 &amp;&amp; deltaRow == 2)
+
+isValidBishopMove :: GameState -&gt; Square -&gt; Square -&gt; Bool
+isValidBishopMove gs from to = 
+  isDiagonal from to &amp;&amp; isPathClear gs from to
+
+isValidRookMove :: GameState -&gt; Square -&gt; Square -&gt; Bool
+isValidRookMove gs from to = 
+  isStraight from to &amp;&amp; isPathClear gs from to
+
+isValidQueenMove :: GameState -&gt; Square -&gt; Square -&gt; Bool
+isValidQueenMove gs from to = 
+  (isDiagonal from to || isStraight from to) &amp;&amp; isPathClear gs from to
+
+isValidKingMove :: GameState -&gt; Piece -&gt; Square -&gt; Square -&gt; Bool
+isValidKingMove gs piece from to =
+  let distance = maxDistance from to
+  in distance == 1 || isValidCastle gs piece from to
+
+isDiagonal :: Square -&gt; Square -&gt; Bool
+isDiagonal (Square fromCol fromRow) (Square toCol toRow) =
+  abs (fromCol - toCol) == abs (fromRow - toRow) &amp;&amp; fromCol /= toCol
+
+isStraight :: Square -&gt; Square -&gt; Bool
+isStraight (Square fromCol fromRow) (Square toCol toRow) =
+  fromCol == toCol || fromRow == toRow
+
+maxDistance :: Square -&gt; Square -&gt; Int
+maxDistance (Square fromCol fromRow) (Square toCol toRow) =
+  max (abs (fromCol - toCol)) (abs (fromRow - toRow))
+
+isPathClear :: GameState -&gt; Square -&gt; Square -&gt; Bool
+isPathClear gs from to = all (isNothing . getPiece gs) (pathSquares from to)
+
+pathSquares :: Square -&gt; Square -&gt; [Square]
+pathSquares (Square fromCol fromRow) (Square toCol toRow) =
+  let deltaCol = signum (toCol - fromCol)
+      deltaRow = signum (toRow - fromRow)
+      steps = max (abs (toCol - fromCol)) (abs (toRow - fromRow)) - 1
+  in [Square (fromCol + i * deltaCol) (fromRow + i * deltaRow) | i &lt;- [1..steps]]
+
+isValidCastle :: GameState -&gt; Piece -&gt; Square -&gt; Square -&gt; Bool
+isValidCastle gs piece (Square fromCol fromRow) (Square toCol toRow) =
+  pieceType piece == King &amp;&amp;
+  fromRow == toRow &amp;&amp;
+  abs (fromCol - toCol) == 2 &amp;&amp;
+  canCastle gs (pieceColor piece) (toCol &gt; fromCol) &amp;&amp;
+  isPathClear gs (Square fromCol fromRow) (Square toCol toRow) &amp;&amp;
+  not (isInCheck gs (currentPlayer gs)) &amp;&amp;
+  not (wouldPassThroughCheck gs (Square fromCol fromRow) (Square toCol toRow))
+
+canCastle :: GameState -&gt; Color -&gt; Bool -&gt; Bool
+canCastle gs color kingside =
+  let (whiteKS, blackKS) = canCastleKS gs
+      (whiteQS, blackQS) = canCastleQS gs
+  in case (color, kingside) of
+       (White, True) -&gt; whiteKS
+       (White, False) -&gt; whiteQS
+       (Black, True) -&gt; blackKS
+       (Black, False) -&gt; blackQS
+
+wouldPassThroughCheck :: GameState -&gt; Square -&gt; Square -&gt; Bool
+wouldPassThroughCheck gs from@(Square fromCol fromRow) to@(Square toCol toRow) =
+  let deltaCol = signum (toCol - fromCol)
+      intermediateSquare = Square (fromCol + deltaCol) fromRow
+      testMove = Move from intermediateSquare Nothing
+  in wouldBeInCheck gs testMove
+
+-- Check detection
+isInCheck :: GameState -&gt; Color -&gt; Bool
+isInCheck gs color =
+  case findKing gs color of
+    Nothing -&gt; False
+    Just kingSquare -&gt; isSquareAttacked gs (opponentColor color) kingSquare
+
+findKing :: GameState -&gt; Color -&gt; Maybe Square
+findKing gs color = 
+  case [Square col row | col &lt;- [0..7], row &lt;- [0..7], 
+        getPiece gs (Square col row) == Just (Piece color King)] of
+    [square] -&gt; Just square
+    _ -&gt; Nothing
+
+isSquareAttacked :: GameState -&gt; Color -&gt; Square -&gt; Bool
+isSquareAttacked gs attackerColor square =
+  any (\attackerSquare -&gt; 
+    case getPiece gs attackerSquare of
+      Just piece | pieceColor piece == attackerColor -&gt;
+        isValidPieceMove gs piece attackerSquare square
+      _ -&gt; False
+  ) allSquares
+  where allSquares = [Square col row | col &lt;- [0..7], row &lt;- [0..7]]
+
+wouldBeInCheck :: GameState -&gt; Move -&gt; Bool
+wouldBeInCheck gs move =
+  isInCheck (makeMove gs move) (currentPlayer gs)
+
+-- Make/undo moves
+makeMove :: GameState -&gt; Move -&gt; GameState
+makeMove gs (Move from to promotion) =
+  let newBoard = updateBoard (board gs) from to promotion
+      newPlayer = opponentColor (currentPlayer gs)
+      newCastling = updateCastlingRights gs from to
+      newEnPassant = calculateEnPassant gs from to
+      newHalfMove = updateHalfMoveClock gs from to
+      newFullMove = if currentPlayer gs == Black 
+                   then fullMoveNumber gs + 1 
+                   else fullMoveNumber gs
+  in GameState newBoard newPlayer (fst newCastling) (snd newCastling) 
+                newEnPassant newHalfMove newFullMove
+
+updateBoard :: Board -&gt; Square -&gt; Square -&gt; Maybe PieceType -&gt; Board
+updateBoard board from@(Square fromCol fromRow) to@(Square toCol toRow) promotion =
+  let piece = board ! (fromCol, fromRow)
+      promotedPiece = case (piece, promotion) of
+        (Just (Piece color Pawn), Just newType) -&gt; Just (Piece color newType)
+        _ -&gt; piece
+      clearedFrom = board // [((fromCol, fromRow), Nothing)]
+  in clearedFrom // [((toCol, toRow), promotedPiece)]
+
+updateCastlingRights :: GameState -&gt; Square -&gt; Square -&gt; ((Bool, Bool), (Bool, Bool))
+updateCastlingRights gs from to =
+  let (whiteKS, blackKS) = canCastleKS gs
+      (whiteQS, blackQS) = canCastleQS gs
+      -- Lose castling rights if king or rook moves
+      newWhiteKS = whiteKS &amp;&amp; from /= Square 4 0 &amp;&amp; from /= Square 7 0 &amp;&amp; to /= Square 7 0
+      newWhiteQS = whiteQS &amp;&amp; from /= Square 4 0 &amp;&amp; from /= Square 0 0 &amp;&amp; to /= Square 0 0
+      newBlackKS = blackKS &amp;&amp; from /= Square 4 7 &amp;&amp; from /= Square 7 7 &amp;&amp; to /= Square 7 7
+      newBlackQS = blackQS &amp;&amp; from /= Square 4 7 &amp;&amp; from /= Square 0 7 &amp;&amp; to /= Square 0 7
+  in ((newWhiteKS, newBlackKS), (newWhiteQS, newBlackQS))
+
+calculateEnPassant :: GameState -&gt; Square -&gt; Square -&gt; Maybe Square
+calculateEnPassant gs (Square fromCol fromRow) (Square toCol toRow) =
+  case getPiece gs (Square fromCol fromRow) of
+    Just (Piece _ Pawn) | abs (toRow - fromRow) == 2 -&gt;
+      Just (Square toCol ((fromRow + toRow) `div` 2))
+    _ -&gt; Nothing
+
+updateHalfMoveClock :: GameState -&gt; Square -&gt; Square -&gt; Int
+updateHalfMoveClock gs from to =
+  case getPiece gs from of
+    Just (Piece _ Pawn) -&gt; 0
+    _ -&gt; if isJust (getPiece gs to) then 0 else halfMoveClock gs + 1
+
+-- Game end detection
+isCheckmate :: GameState -&gt; Bool
+isCheckmate gs = isInCheck gs (currentPlayer gs) &amp;&amp; null (generateLegalMoves gs)
+
+isStalemate :: GameState -&gt; Bool
+isStalemate gs = not (isInCheck gs (currentPlayer gs)) &amp;&amp; null (generateLegalMoves gs)
+
+generateLegalMoves :: GameState -&gt; [Move]
+generateLegalMoves gs = filter (isValidMove gs) (generatePseudoLegalMoves gs)
+
+generatePseudoLegalMoves :: GameState -&gt; [Move]
+generatePseudoLegalMoves gs =
+  [Move from to promotion 
+  | col &lt;- [0..7], row &lt;- [0..7]
+  , let from = Square col row
+  , Just piece &lt;- [getPiece gs from]
+  , pieceColor piece == currentPlayer gs
+  , to &lt;- generatePieceMoves gs piece from
+  , promotion &lt;- generatePromotions piece to
+  ]
+
+generatePieceMoves :: GameState -&gt; Piece -&gt; Square -&gt; [Square]
+generatePieceMoves gs piece from@(Square col row) =
+  case pieceType piece of
+    Pawn -&gt; generatePawnMoves gs piece from
+    Knight -&gt; [Square (col + dc) (row + dr) | (dc, dr) &lt;- knightDeltas, 
+               isInBounds (col + dc) (row + dr), canMoveTo gs (Square (col + dc) (row + dr))]
+    Bishop -&gt; generateSlidingMoves gs from bishopDirections
+    Rook -&gt; generateSlidingMoves gs from rookDirections  
+    Queen -&gt; generateSlidingMoves gs from queenDirections
+    King -&gt; generateKingMoves gs piece from
+
+generatePawnMoves :: GameState -&gt; Piece -&gt; Square -&gt; [Square]
+generatePawnMoves gs piece from@(Square col row) =
+  let color = pieceColor piece
+      direction = if color == White then 1 else -1
+      oneStep = Square col (row + direction)
+      twoStep = Square col (row + 2 * direction)
+      leftCapture = Square (col - 1) (row + direction)
+      rightCapture = Square (col + 1) (row + direction)
+      moves = [oneStep | isInBounds col (row + direction), isNothing (getPiece gs oneStep)] ++
+              [twoStep | row == (if color == White then 1 else 6), 
+                        isInBounds col (row + 2 * direction), isNothing (getPiece gs twoStep)] ++
+              [leftCapture | isInBounds (col - 1) (row + direction), canCapture gs leftCapture] ++
+              [rightCapture | isInBounds (col + 1) (row + direction), canCapture gs rightCapture]
+  in moves
+
+generateSlidingMoves :: GameState -&gt; Square -&gt; [(Int, Int)] -&gt; [Square]
+generateSlidingMoves gs from directions =
+  [to | direction &lt;- directions, to &lt;- generateRayMoves gs from direction]
+
+generateRayMoves :: GameState -&gt; Square -&gt; (Int, Int) -&gt; [Square]
+generateRayMoves gs (Square col row) (dc, dr) =
+  takeWhile (canMoveTo gs) $ 
+  map (\i -&gt; Square (col + i * dc) (row + i * dr)) [1..7]
+
+generateKingMoves :: GameState -&gt; Piece -&gt; Square -&gt; [Square]
+generateKingMoves gs piece from@(Square col row) =
+  let normalMoves = [Square (col + dc) (row + dr) | (dc, dr) &lt;- kingDirections,
+                     isInBounds (col + dc) (row + dr), canMoveTo gs (Square (col + dc) (row + dr))]
+      castleMoves = [Square (col + 2) row | canCastle gs (pieceColor piece) True] ++
+                   [Square (col - 2) row | canCastle gs (pieceColor piece) False]
+  in normalMoves ++ castleMoves
+
+generatePromotions :: Piece -&gt; Square -&gt; [Maybe PieceType]
+generatePromotions (Piece color Pawn) (Square _ row) 
+  | (color == White &amp;&amp; row == 7) || (color == Black &amp;&amp; row == 0) = 
+    [Just Queen, Just Rook, Just Bishop, Just Knight]
+generatePromotions _ _ = [Nothing]
+
+canMoveTo :: GameState -&gt; Square -&gt; Bool
+canMoveTo gs square =
+  isInBounds (squareCol square) (squareRow square) &amp;&amp;
+  case getPiece gs square of
+    Nothing -&gt; True
+    Just piece -&gt; pieceColor piece /= currentPlayer gs
+
+canCapture :: GameState -&gt; Square -&gt; Bool
+canCapture gs square =
+  case getPiece gs square of
+    Just piece -&gt; pieceColor piece /= currentPlayer gs
+    Nothing -&gt; enPassantTarget gs == Just square
+
+isInBounds :: Int -&gt; Int -&gt; Bool
+isInBounds col row = col &gt;= 0 &amp;&amp; col &lt;= 7 &amp;&amp; row &gt;= 0 &amp;&amp; row &lt;= 7
+
+squareCol :: Square -&gt; Int
+squareCol (Square col _) = col
+
+squareRow :: Square -&gt; Int
+squareRow (Square _ row) = row
+
+-- Direction vectors
+knightDeltas :: [(Int, Int)]
+knightDeltas = [(2,1), (2,-1), (-2,1), (-2,-1), (1,2), (1,-2), (-1,2), (-1,-2)]
+
+bishopDirections :: [(Int, Int)]
+bishopDirections = [(1,1), (1,-1), (-1,1), (-1,-1)]
+
+rookDirections :: [(Int, Int)]
+rookDirections = [(0,1), (0,-1), (1,0), (-1,0)]
+
+queenDirections :: [(Int, Int)]
+queenDirections = bishopDirections ++ rookDirections
+
+kingDirections :: [(Int, Int)]
+kingDirections = queenDirections</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_FEN_hs')">📄 src/FEN.hs</button>
+<pre id="src_FEN_hs" class="file-content" style="display:none;"><code>module FEN where
+
+import Types
+import Data.Array
+import Data.Maybe (fromMaybe)
+import Data.Char (isDigit, digitToInt)
+import Data.List (intercalate)
+
+-- Parse FEN string into GameState
+parseFEN :: String -&gt; Maybe GameState
+parseFEN fen = 
+  case words fen of
+    [pieces, turn, castling, enPassant, halfMove, fullMove] -&gt; do
+      board &lt;- parsePieces pieces
+      player &lt;- parsePlayer turn
+      (ks, qs) &lt;- parseCastling castling
+      ep &lt;- parseEnPassant enPassant
+      hm &lt;- parseHalfMove halfMove
+      fm &lt;- parseFullMove fullMove
+      return GameState
+        { board = board
+        , currentPlayer = player
+        , canCastleKS = ks
+        , canCastleQS = qs
+        , enPassantTarget = ep
+        , halfMoveClock = hm
+        , fullMoveNumber = fm
+        }
+    _ -&gt; Nothing
+
+parsePieces :: String -&gt; Maybe Board
+parsePieces pieces = do
+  rows &lt;- parseRows (splitBy '/' pieces)
+  if length rows == 8
+    then Just $ array ((0,0), (7,7)) $ concat 
+           [zip [(col, 7-row) | col &lt;- [0..7]] (rows !! row) | row &lt;- [0..7]]
+    else Nothing
+
+parseRows :: [String] -&gt; Maybe [[Maybe Piece]]
+parseRows = mapM parseRow
+
+parseRow :: String -&gt; Maybe [Maybe Piece]
+parseRow [] = Just []
+parseRow (c:cs)
+  | isDigit c = do
+      rest &lt;- parseRow cs
+      let emptySquares = replicate (digitToInt c) Nothing
+      return (emptySquares ++ rest)
+  | otherwise = do
+      piece &lt;- charToPiece c
+      rest &lt;- parseRow cs
+      return (Just piece : rest)
+
+parsePlayer :: String -&gt; Maybe Color
+parsePlayer "w" = Just White
+parsePlayer "b" = Just Black
+parsePlayer _ = Nothing
+
+parseCastling :: String -&gt; Maybe ((Bool, Bool), (Bool, Bool))
+parseCastling "-" = Just ((False, False), (False, False))
+parseCastling castling = 
+  let whiteKS = 'K' `elem` castling
+      whiteQS = 'Q' `elem` castling  
+      blackKS = 'k' `elem` castling
+      blackQS = 'q' `elem` castling
+  in Just ((whiteKS, blackKS), (whiteQS, blackQS))
+
+parseEnPassant :: String -&gt; Maybe (Maybe Square)
+parseEnPassant "-" = Just Nothing
+parseEnPassant s = case squareFromString s of
+  Just square -&gt; Just (Just square)
+  Nothing -&gt; Nothing
+
+parseHalfMove :: String -&gt; Maybe Int
+parseHalfMove s = case reads s of
+  [(n, "")] -&gt; Just n
+  _ -&gt; Nothing
+
+parseFullMove :: String -&gt; Maybe Int
+parseFullMove s = case reads s of
+  [(n, "")] -&gt; Just n
+  _ -&gt; Nothing
+
+-- Export GameState to FEN string
+exportFEN :: GameState -&gt; String
+exportFEN gs = unwords
+  [ exportPieces (board gs)
+  , exportPlayer (currentPlayer gs)
+  , exportCastling (canCastleKS gs) (canCastleQS gs)
+  , exportEnPassant (enPassantTarget gs)
+  , show (halfMoveClock gs)
+  , show (fullMoveNumber gs)
+  ]
+
+exportPieces :: Board -&gt; String
+exportPieces board = 
+  intercalate "/" $ map exportRow [7,6..0]
+  where 
+    exportRow row = compressRow [board ! (col, row) | col &lt;- [0..7]]
+
+exportRow :: [Maybe Piece] -&gt; String  
+exportRow = compressRow
+
+compressRow :: [Maybe Piece] -&gt; String
+compressRow [] = ""
+compressRow pieces = 
+  let (empties, rest) = span (== Nothing) pieces
+      emptyCount = length empties
+  in (if emptyCount &gt; 0 then show emptyCount else "") ++
+     case rest of
+       [] -&gt; ""
+       (Just piece : rest') -&gt; pieceChar piece : compressRow rest'
+       (Nothing : _) -&gt; error "This should not happen"
+
+exportPlayer :: Color -&gt; String
+exportPlayer White = "w"
+exportPlayer Black = "b"
+
+exportCastling :: (Bool, Bool) -&gt; (Bool, Bool) -&gt; String
+exportCastling (whiteKS, blackKS) (whiteQS, blackQS) =
+  let rights = (if whiteKS then "K" else "") ++
+               (if whiteQS then "Q" else "") ++
+               (if blackKS then "k" else "") ++
+               (if blackQS then "q" else "")
+  in if null rights then "-" else rights
+
+exportEnPassant :: Maybe Square -&gt; String
+exportEnPassant Nothing = "-"
+exportEnPassant (Just square) = show square
+
+-- Utility functions
+splitBy :: Eq a =&gt; a -&gt; [a] -&gt; [[a]]
+splitBy _ [] = []
+splitBy delimiter str = 
+  let (before, remainder) = span (/= delimiter) str
+  in before : case remainder of
+    [] -&gt; []
+    (_:after) -&gt; splitBy delimiter after
+
+-- Standard starting position FEN
+startingFEN :: String
+startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_Main_hs')">📄 src/Main.hs</button>
+<pre id="src_Main_hs" class="file-content" style="display:none;"><code>module Main where
+
+import Types
+import Board
+import FEN
+import qualified MoveGenerator as MG
+import AI
+import Perft
+import System.IO (stdout, hFlush)
+import Data.Maybe (fromMaybe, isJust, fromJust)
+import Control.Monad (when)
+import qualified Control.Exception
+import Data.Time (getCurrentTime, diffUTCTime)
+
+-- Main game state
+data ChessEngine = ChessEngine
+  { gameState :: GameState
+  , moveHistory :: [GameState]
+  }
+
+main :: IO ()
+main = do
+  let engine = ChessEngine initialGameState []
+  putStrLn $ displayBoard (gameState engine)
+  gameLoop engine
+
+gameLoop :: ChessEngine -&gt; IO ()
+gameLoop engine = do
+  putStr ""
+  hFlush stdout
+  result &lt;- Control.Exception.try getLine :: IO (Either Control.Exception.IOException String)
+  case result of
+    Left _ -&gt; return ()  -- EOF or any IO exception
+    Right line -&gt; do
+      let command = words line
+      newEngine &lt;- processCommand engine command
+      case newEngine of
+        Nothing -&gt; return ()  -- Quit
+        Just engine' -&gt; do
+          when (isJust newEngine) $ do
+            let gs = gameState engine'
+            when (isCheckmate gs || isStalemate gs) $ do
+              if isCheckmate gs
+                then putStrLn $ "CHECKMATE: " ++ show (opponentColor (currentPlayer gs)) ++ " wins"
+                else putStrLn "STALEMATE: Draw"
+          gameLoop engine'
+
+processCommand :: ChessEngine -&gt; [String] -&gt; IO (Maybe ChessEngine)
+processCommand engine [] = return (Just engine)
+
+processCommand engine ["quit"] = return Nothing
+
+processCommand engine ["help"] = do
+  putStrLn "Available commands:"
+  putStrLn "  move &lt;from&gt;&lt;to&gt;[promotion] - Make a move (e.g., move e2e4, move e7e8Q)"
+  putStrLn "  undo                       - Undo the last move"
+  putStrLn "  new                        - Start a new game"
+  putStrLn "  ai &lt;depth&gt;                 - AI makes a move (depth 1-5)"
+  putStrLn "  fen &lt;string&gt;               - Load position from FEN"
+  putStrLn "  export                     - Export current position as FEN"
+  putStrLn "  eval                       - Display position evaluation"
+  putStrLn "  perft &lt;depth&gt;              - Performance test (move count)"
+  putStrLn "  help                       - Display available commands"
+  putStrLn "  quit                       - Exit the program"
+  return (Just engine)
+
+processCommand engine ["new"] = do
+  let newEngine = ChessEngine initialGameState []
+  putStrLn $ displayBoard (gameState newEngine)
+  return (Just newEngine)
+
+processCommand engine ["move", moveStr] = do
+  case MG.parseMove moveStr of
+    Nothing -&gt; do
+      putStrLn "ERROR: Invalid move format"
+      return (Just engine)
+    Just move -&gt; do
+      let gs = gameState engine
+      if isValidMove gs move
+        then do
+          let newState = makeMove gs move
+          let newEngine = ChessEngine newState (gs : moveHistory engine)
+          putStrLn $ "OK: " ++ moveStr
+          putStrLn $ displayBoard newState
+          return (Just newEngine)
+        else do
+          let errorMsg = case getPiece gs (fromSquare move) of
+                Nothing -&gt; "No piece at source square"
+                Just piece -&gt; 
+                  if pieceColor piece /= currentPlayer gs
+                    then "Wrong color piece"
+                    else if wouldBeInCheck gs move
+                      then "King would be in check"
+                      else "Illegal move"
+          putStrLn $ "ERROR: " ++ errorMsg
+          return (Just engine)
+
+processCommand engine ["undo"] = do
+  case moveHistory engine of
+    [] -&gt; do
+      putStrLn "ERROR: No moves to undo"
+      return (Just engine)
+    (prevState:restHistory) -&gt; do
+      let newEngine = ChessEngine prevState restHistory
+      putStrLn $ displayBoard prevState
+      return (Just newEngine)
+
+processCommand engine ["ai", depthStr] = do
+  case reads depthStr of
+    [(depth, "")] | depth &gt;= 1 &amp;&amp; depth &lt;= 5 -&gt; do
+      let gs = gameState engine
+      if null (MG.generateAllLegalMoves gs)
+        then do
+          putStrLn "ERROR: No legal moves available"
+          return (Just engine)
+        else do
+          startTime &lt;- getCurrentTime
+          let (bestMove, evaluation, nodes) = findBestMoveAI gs depth
+          endTime &lt;- getCurrentTime
+          let timeTaken = round $ 1000 * realToFrac (diffUTCTime endTime startTime)
+          let newState = makeMove gs bestMove
+          let newEngine = ChessEngine newState (gs : moveHistory engine)
+          putStrLn $ "AI: " ++ MG.formatMove bestMove ++ 
+                    " (depth=" ++ show depth ++ 
+                    ", eval=" ++ show evaluation ++ 
+                    ", time=" ++ show timeTaken ++ "ms)"
+          putStrLn $ displayBoard newState
+          return (Just newEngine)
+    _ -&gt; do
+      putStrLn "ERROR: AI depth must be 1-5"
+      return (Just engine)
+
+processCommand engine ["fen", fenStr] = do
+  case parseFEN fenStr of
+    Nothing -&gt; do
+      putStrLn "ERROR: Invalid FEN string"
+      return (Just engine)
+    Just newState -&gt; do
+      let newEngine = ChessEngine newState []
+      putStrLn $ displayBoard newState
+      return (Just newEngine)
+
+processCommand engine ["export"] = do
+  let fenStr = exportFEN (gameState engine)
+  putStrLn $ "FEN: " ++ fenStr
+  return (Just engine)
+
+processCommand engine ["eval"] = do
+  let gs = gameState engine
+  let evaluation = MG.evaluatePosition gs
+  putStrLn $ "Evaluation: " ++ show evaluation ++ " (positive = White advantage)"
+  return (Just engine)
+
+processCommand engine ["perft", depthStr] = do
+  case reads depthStr of
+    [(depth, "")] | depth &gt;= 1 &amp;&amp; depth &lt;= 6 -&gt; do
+      let gs = gameState engine
+      startTime &lt;- getCurrentTime
+      let result = perft gs depth
+      endTime &lt;- getCurrentTime
+      let timeTaken = round $ 1000 * realToFrac (diffUTCTime endTime startTime)
+      putStrLn $ show result
+      return (Just engine)
+    _ -&gt; do
+      putStrLn "ERROR: Perft depth must be 1-6"
+      return (Just engine)
+
+processCommand engine command = do
+  putStrLn "ERROR: Invalid command"
+  return (Just engine)
+
+-- Helper to check if move gives check
+wouldGiveCheck :: GameState -&gt; Move -&gt; Bool
+wouldGiveCheck gs move =
+  let newState = makeMove gs move
+  in isInCheck newState (opponentColor (currentPlayer gs))</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_MoveGenerator_hs')">📄 src/MoveGenerator.hs</button>
+<pre id="src_MoveGenerator_hs" class="file-content" style="display:none;"><code>module MoveGenerator where
+
+import Types
+import Board
+import Data.List (find)
+import Data.Maybe (mapMaybe)
+
+-- Parse move from string (e.g., "e2e4", "e7e8Q")
+parseMove :: String -&gt; Maybe Move
+parseMove moveStr =
+  case moveStr of
+    [fc, fr, tc, tr] -&gt; do
+      from &lt;- squareFromString [fc, fr]
+      to &lt;- squareFromString [tc, tr]
+      return $ Move from to Nothing
+    [fc, fr, tc, tr, p] -&gt; do
+      from &lt;- squareFromString [fc, fr]
+      to &lt;- squareFromString [tc, tr]
+      promotion &lt;- parsePromotion p
+      return $ Move from to (Just promotion)
+    _ -&gt; Nothing
+
+parsePromotion :: Char -&gt; Maybe PieceType
+parsePromotion 'Q' = Just Queen
+parsePromotion 'R' = Just Rook
+parsePromotion 'B' = Just Bishop
+parsePromotion 'N' = Just Knight
+parsePromotion 'q' = Just Queen
+parsePromotion 'r' = Just Rook
+parsePromotion 'b' = Just Bishop
+parsePromotion 'n' = Just Knight
+parsePromotion _ = Nothing
+
+-- Format move as string
+formatMove :: Move -&gt; String
+formatMove (Move from to Nothing) = show from ++ show to
+formatMove (Move from to (Just promotion)) = show from ++ show to ++ [promotionChar promotion]
+
+promotionChar :: PieceType -&gt; Char
+promotionChar Queen = 'Q'
+promotionChar Rook = 'R'
+promotionChar Bishop = 'B'
+promotionChar Knight = 'N'
+promotionChar _ = 'Q'  -- Default to Queen
+
+-- Generate all legal moves for current player
+generateAllLegalMoves :: GameState -&gt; [Move]
+generateAllLegalMoves = generateLegalMoves
+
+-- Find the best move using minimax (simplified version for move generation)
+findBestMove :: GameState -&gt; Int -&gt; Move
+findBestMove gs depth =
+  case generateAllLegalMoves gs of
+    [] -&gt; error "No legal moves available"
+    moves -&gt; 
+      let evaluatedMoves = [(move, evaluateMove gs move depth) | move &lt;- moves]
+          bestMove = if currentPlayer gs == White
+                    then maximumBy (\(_, a) (_, b) -&gt; compare a b) evaluatedMoves
+                    else minimumBy (\(_, a) (_, b) -&gt; compare a b) evaluatedMoves
+      in fst bestMove
+
+-- Simple move evaluation (placeholder for full AI)
+evaluateMove :: GameState -&gt; Move -&gt; Int -&gt; Int
+evaluateMove gs move depth =
+  let newState = makeMove gs move
+  in if depth &lt;= 0
+     then evaluatePosition newState
+     else evaluatePosition newState  -- Simplified - full minimax in AI module
+
+-- Basic position evaluation
+evaluatePosition :: GameState -&gt; Int
+evaluatePosition gs =
+  if isCheckmate gs
+    then if currentPlayer gs == White then -100000 else 100000
+  else if isStalemate gs
+    then 0
+  else materialBalance gs + positionalBonus gs
+
+materialBalance :: GameState -&gt; Int
+materialBalance gs = sum [pieceValue piece | 
+  col &lt;- [0..7], row &lt;- [0..7],
+  Just piece &lt;- [getPiece gs (Square col row)]]
+
+pieceValue :: Piece -&gt; Int
+pieceValue (Piece color ptype) =
+  let value = case ptype of
+        Pawn -&gt; 100
+        Knight -&gt; 320
+        Bishop -&gt; 330
+        Rook -&gt; 500
+        Queen -&gt; 900
+        King -&gt; 20000
+  in if color == White then value else -value
+
+positionalBonus :: GameState -&gt; Int
+positionalBonus gs = centerControlBonus gs + pawnAdvancementBonus gs
+
+centerControlBonus :: GameState -&gt; Int
+centerControlBonus gs =
+  let centerSquares = [Square 3 3, Square 3 4, Square 4 3, Square 4 4]
+      bonus square = case getPiece gs square of
+        Just (Piece White _) -&gt; 10
+        Just (Piece Black _) -&gt; -10
+        Nothing -&gt; 0
+  in sum (map bonus centerSquares)
+
+pawnAdvancementBonus :: GameState -&gt; Int
+pawnAdvancementBonus gs = sum [pawnBonus col row piece |
+  col &lt;- [0..7], row &lt;- [0..7],
+  Just piece@(Piece _ Pawn) &lt;- [getPiece gs (Square col row)]]
+  where
+    pawnBonus col row (Piece White Pawn) = row * 5
+    pawnBonus col row (Piece Black Pawn) = (7 - row) * 5
+    pawnBonus _ _ _ = 0
+
+-- Utility functions for comparison
+maximumBy :: (a -&gt; a -&gt; Ordering) -&gt; [a] -&gt; a
+maximumBy _ [] = error "maximumBy: empty list"
+maximumBy cmp (x:xs) = foldl (\acc y -&gt; if cmp acc y == LT then y else acc) x xs
+
+minimumBy :: (a -&gt; a -&gt; Ordering) -&gt; [a] -&gt; a
+minimumBy _ [] = error "minimumBy: empty list"
+minimumBy cmp (x:xs) = foldl (\acc y -&gt; if cmp acc y == GT then y else acc) x xs</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_Perft_hs')">📄 src/Perft.hs</button>
+<pre id="src_Perft_hs" class="file-content" style="display:none;"><code>module Perft where
+
+import Types
+import Board
+import MoveGenerator
+
+-- Performance test - count leaf nodes at given depth
+perft :: GameState -&gt; Int -&gt; Int
+perft gs 0 = 1
+perft gs depth = sum [perft (makeMove gs move) (depth - 1) | move &lt;- generateAllLegalMoves gs]
+
+-- Divide perft - shows move breakdown at root
+perftDivide :: GameState -&gt; Int -&gt; [(String, Int)]
+perftDivide gs depth = 
+  [(formatMove move, perft (makeMove gs move) (depth - 1)) | move &lt;- generateAllLegalMoves gs]
+
+-- Perft with debugging information
+perftDebug :: GameState -&gt; Int -&gt; IO Int
+perftDebug gs depth = do
+  let moves = generateAllLegalMoves gs
+  putStrLn $ "Depth " ++ show depth ++ ", moves: " ++ show (length moves)
+  if depth == 0
+    then return 1
+    else do
+      results &lt;- mapM (\move -&gt; do
+        let newState = makeMove gs move
+        result &lt;- perftDebug newState (depth - 1)
+        putStrLn $ formatMove move ++ ": " ++ show result
+        return result) moves
+      return (sum results)
+
+-- Bulk perft testing with known results
+runPerftTests :: GameState -&gt; IO ()
+runPerftTests gs = do
+  putStrLn "Running perft tests from starting position:"
+  mapM_ runTest [(1, 20), (2, 400), (3, 8902), (4, 197281)]
+  where
+    runTest (depth, expected) = do
+      let result = perft gs depth
+      let status = if result == expected then "PASS" else "FAIL"
+      putStrLn $ "Perft(" ++ show depth ++ "): " ++ show result ++ 
+                " (expected " ++ show expected ++ ") " ++ status
+
+-- Perft from specific positions
+testPositions :: [(String, String, [(Int, Int)])]
+testPositions = 
+  [ ("Starting position", 
+     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+     [(1, 20), (2, 400), (3, 8902), (4, 197281), (5, 4865609)])
+  , ("Kiwipete position",
+     "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
+     [(1, 6), (2, 264), (3, 9467), (4, 422333)])
+  , ("Position 3",
+     "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+     [(1, 14), (2, 191), (3, 2812), (4, 43238)])
+  , ("Position 4", 
+     "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
+     [(1, 26), (2, 568), (3, 13744), (4, 314346)])
+  , ("Position 5",
+     "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
+     [(1, 44), (2, 1486), (3, 62379)])
+  , ("Position 6",
+     "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+     [(1, 46), (2, 2079), (3, 89890)])
+  ]</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_Types_hs')">📄 src/Types.hs</button>
+<pre id="src_Types_hs" class="file-content" style="display:none;"><code>module Types where
+
+import Data.Array
+
+-- Basic types
+data Color = White | Black deriving (Eq, Show)
+data PieceType = Pawn | Knight | Bishop | Rook | Queen | King deriving (Eq, Show)
+data Piece = Piece Color PieceType deriving (Eq, Show)
+
+-- Squares and coordinates
+data Square = Square Int Int deriving (Eq, Ord)
+type Board = Array (Int, Int) (Maybe Piece)
+
+-- Moves
+data Move = Move
+  { fromSquare :: Square
+  , toSquare :: Square
+  , promotion :: Maybe PieceType
+  } deriving (Eq, Show)
+
+-- Game state
+data GameState = GameState
+  { board :: Board
+  , currentPlayer :: Color
+  , canCastleKS :: (Bool, Bool)  -- (White, Black) kingside
+  , canCastleQS :: (Bool, Bool)  -- (White, Black) queenside
+  , enPassantTarget :: Maybe Square
+  , halfMoveClock :: Int
+  , fullMoveNumber :: Int
+  } deriving (Show)
+
+-- Helper functions
+instance Show Square where
+  show (Square col row) = [toEnum (col + fromEnum 'a'), toEnum (row + fromEnum '1')]
+
+squareFromString :: String -&gt; Maybe Square
+squareFromString [c, r]
+  | c &gt;= 'a' &amp;&amp; c &lt;= 'h' &amp;&amp; r &gt;= '1' &amp;&amp; r &lt;= '8' =
+    Just $ Square (fromEnum c - fromEnum 'a') (fromEnum r - fromEnum '1')
+squareFromString _ = Nothing
+
+opponentColor :: Color -&gt; Color
+opponentColor White = Black
+opponentColor Black = White
+
+pieceChar :: Piece -&gt; Char
+pieceChar (Piece White Pawn) = 'P'
+pieceChar (Piece White Knight) = 'N'
+pieceChar (Piece White Bishop) = 'B'
+pieceChar (Piece White Rook) = 'R'
+pieceChar (Piece White Queen) = 'Q'
+pieceChar (Piece White King) = 'K'
+pieceChar (Piece Black Pawn) = 'p'
+pieceChar (Piece Black Knight) = 'n'
+pieceChar (Piece Black Bishop) = 'b'
+pieceChar (Piece Black Rook) = 'r'
+pieceChar (Piece Black Queen) = 'q'
+pieceChar (Piece Black King) = 'k'
+
+charToPiece :: Char -&gt; Maybe Piece
+charToPiece 'P' = Just $ Piece White Pawn
+charToPiece 'N' = Just $ Piece White Knight
+charToPiece 'B' = Just $ Piece White Bishop
+charToPiece 'R' = Just $ Piece White Rook
+charToPiece 'Q' = Just $ Piece White Queen
+charToPiece 'K' = Just $ Piece White King
+charToPiece 'p' = Just $ Piece Black Pawn
+charToPiece 'n' = Just $ Piece Black Knight
+charToPiece 'b' = Just $ Piece Black Bishop
+charToPiece 'r' = Just $ Piece Black Rook
+charToPiece 'q' = Just $ Piece Black Queen
+charToPiece 'k' = Just $ Piece Black King
+charToPiece _ = Nothing
+
+emptyBoard :: Board
+emptyBoard = array ((0,0), (7,7)) [((i,j), Nothing) | i &lt;- [0..7], j &lt;- [0..7]]
+
+initialGameState :: GameState
+initialGameState = GameState
+  { board = initialBoard
+  , currentPlayer = White
+  , canCastleKS = (True, True)
+  , canCastleQS = (True, True)
+  , enPassantTarget = Nothing
+  , halfMoveClock = 0
+  , fullMoveNumber = 1
+  }
+
+initialBoard :: Board
+initialBoard = array ((0,0), (7,7)) $ concat
+  [ -- Black pieces
+    [((i, 7), Just (Piece Black piece)) | (i, piece) &lt;- 
+      [(0,Rook), (1,Knight), (2,Bishop), (3,Queen), (4,King), (5,Bishop), (6,Knight), (7,Rook)]]
+  , [((i, 6), Just (Piece Black Pawn)) | i &lt;- [0..7]]
+  -- Empty squares
+  , [((i, j), Nothing) | i &lt;- [0..7], j &lt;- [2..5]]
+  -- White pieces  
+  , [((i, 1), Just (Piece White Pawn)) | i &lt;- [0..7]]
+  , [((i, 0), Just (Piece White piece)) | (i, piece) &lt;- 
+      [(0,Rook), (1,Knight), (2,Bishop), (3,Queen), (4,King), (5,Bishop), (6,Knight), (7,Rook)]]
+  ]</code></pre>
+</div>
+</div>
+
+<script>
+function toggleFile(id) {
+    var content = document.getElementById(id);
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+    } else {
+        content.style.display = 'none';
+    }
+}
+</script>
+
+    </main>
+    <footer>
+        <p>Generated from benchmark data. All implementations tested via Docker for consistency.</p>
+        <p><a href="https://github.com/evaisse/the-great-analysis-challenge">View on GitHub</a></p>
+    </footer>
+</body>
+</html>

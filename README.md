@@ -2,6 +2,8 @@
 
 A comprehensive project implementing identical chess engines across **different programming languages** to compare their approaches, performance, and unique paradigms.
 
+🌐 **[View Interactive Website](https://evaisse.github.io/the-great-analysis-challenge/)** - Complete comparison table and source code explorer
+
 All implementations have complete feature parity:
 
 - ✅ **perft** - Performance testing with recursive move generation
