@@ -62,7 +62,14 @@ namespace Chess
             char toFile = (char)('a' + ToCol);
             int fromRank = 8 - FromRow;
             int toRank = 8 - ToRow;
-            string promo = Promotion.HasValue ? Promotion.Value.ToString()[0].ToString() : "";
+            string promo = Promotion.HasValue ? Promotion.Value switch
+            {
+                PieceType.Queen => "Q",
+                PieceType.Rook => "R",
+                PieceType.Bishop => "B",
+                PieceType.Knight => "N",
+                _ => ""
+            } : "";
             return $"{fromFile}{fromRank}{toFile}{toRank}{promo}";
         }
     }

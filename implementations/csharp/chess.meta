@@ -1,6 +1,6 @@
 {
   "language": "csharp",
-  "version": "8.0",
+  "version": "12.0",
   "author": "C# Implementation",
   "build": "dotnet build -c Release",
   "run": "dotnet run --no-build -c Release",

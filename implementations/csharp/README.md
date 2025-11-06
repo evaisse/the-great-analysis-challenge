@@ -148,11 +148,10 @@ make clean
 
 This implementation showcases C# strengths:
 
-- **Modern C# 12** - Pattern matching, expression-bodied members
-- **Nullable reference types** - Compile-time null safety
-- **Properties** - Clean encapsulation
-- **LINQ** - Functional programming for collections
-- **Records and tuples** - Efficient data structures
+- **Modern C# with .NET 8.0** - Nullable reference types, pattern matching, expression-bodied members
+- **Object-Oriented Design** - Clean separation of concerns with dedicated classes
+- **Properties** - Clean encapsulation with getters and setters
+- **Tuples** - Efficient return of multiple values
 - **Performance** - Compiled code with JIT optimization
 
 ## Project Structure
