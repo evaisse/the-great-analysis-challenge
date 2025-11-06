@@ -528,7 +528,7 @@ public class Board {
         if (enPassantCol == -1) {
             fen.append('-');
         } else {
-            int row = whiteTurn ? 5 : 2;
+            int row = whiteTurn ? 2 : 5;
             fen.append((char)('a' + enPassantCol)).append(8 - row);
         }
 

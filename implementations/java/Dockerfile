@@ -7,6 +7,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
+    ca-certificates \
+    ca-certificates-java \
     openjdk-17-jdk \
     maven \
     && rm -rf /var/lib/apt/lists/*
@@ -15,19 +17,21 @@ RUN apt-get update && apt-get install -y \
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="$JAVA_HOME/bin:$PATH"
 
+# Update CA certificates for Java
+RUN update-ca-certificates && \
+    update-ca-certificates -f
+
 WORKDIR /app
 
-# Copy Maven configuration first for better caching
-COPY pom.xml ./
-
-# Download dependencies
-RUN mvn dependency:go-offline || true
-
-# Copy source code
+# Copy all files
 COPY . .
 
-# Build the application
-RUN mvn clean package
+# Build the application using javac directly
+RUN cd src/main/java && \
+    javac -d /app/target/classes *.java && \
+    cd /app && \
+    mkdir -p target && \
+    jar cvfe target/chess-1.0.0.jar Chess -C target/classes .
 
 # Run the chess engine
 CMD ["java", "-jar", "target/chess-1.0.0.jar"]
