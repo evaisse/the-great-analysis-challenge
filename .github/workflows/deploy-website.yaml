@@ -3,7 +3,7 @@ name: Deploy Website to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
   schedule:
     # Run weekly on Sunday at midnight UTC (after benchmark workflow)
