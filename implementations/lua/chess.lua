@@ -823,7 +823,7 @@ local function main()
             else
                 print("ERROR: No moves to undo")
             end
-        elseif cmd == "display" or cmd == "show" then
+        elseif cmd == "display" or cmd == "show" or cmd == "board" then
             display_board()
         elseif cmd == "export" then
             print("FEN: " .. export_fen())
@@ -867,7 +867,7 @@ local function main()
             print("  new              - Start a new game")
             print("  move <from><to>  - Make a move (e.g., 'move e2e4')")
             print("  undo             - Undo last move")
-            print("  display          - Show the board")
+            print("  board            - Show the board (also: display, show)")
             print("  export           - Export position as FEN")
             print("  fen <string>     - Load position from FEN")
             print("  ai <depth>       - AI makes a move (depth 1-5)")

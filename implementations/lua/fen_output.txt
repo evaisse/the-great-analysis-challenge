@@ -1,0 +1,2 @@
+> ERROR: FEN command requires argument
+> 
