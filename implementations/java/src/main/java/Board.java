@@ -207,7 +207,7 @@ public class Board {
         }
 
         enPassantCol = move.getPreviousEnPassantCol();
-        castlingRights = move.getPreviousCastlingRights();
+        System.arraycopy(move.getPreviousCastlingRights(), 0, castlingRights, 0, 4);
 
         return true;
     }
