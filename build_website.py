@@ -301,7 +301,8 @@ def generate_comparison_table(all_data: List[Dict[str, Any]]) -> str:
     html += '<th>Build Time (ms)</th>\n'
     html += '<th>Test Time (ms)</th>\n'
     html += '<th>Analyze Time (ms)</th>\n'
-    html += '<th>Popularity</th>\n'
+    html += '<th>TIOBE Rank</th>\n'
+    html += '<th>GitHub Repos</th>\n'
     html += '<th>Features</th>\n'
     html += '<th>Source</th>\n'
     html += '</tr>\n</thead>\n<tbody>\n'
@@ -324,6 +325,23 @@ def generate_comparison_table(all_data: List[Dict[str, Any]]) -> str:
         features = metadata.get('features', [])
         feature_icons = ''.join(['✅' if f in features else '❌' for f in ['perft', 'fen', 'ai']])
         
+        # Parse TIOBE rank for sorting (N/A = 999 for sorting to bottom)
+        tiobe_rank_str = lang_meta["tiobe_rank"]
+        tiobe_rank_num = 999 if tiobe_rank_str == 'N/A' else int(tiobe_rank_str)
+        
+        # Parse GitHub repos for sorting
+        github_str = lang_meta["github_stars"]
+        # Extract numeric value: "10M+ repos" -> 10000000, "60K+ repos" -> 60000
+        github_num = 0
+        if github_str != 'N/A':
+            try:
+                if 'M+' in github_str:
+                    github_num = int(float(github_str.split('M+')[0]) * 1000000)
+                elif 'K+' in github_str:
+                    github_num = int(float(github_str.split('K+')[0]) * 1000)
+            except:
+                github_num = 0
+        
         html += '<tr>\n'
         html += f'<td><a href="{lang_meta["website"]}" target="_blank" rel="noopener">{lang_meta["emoji"]} <strong>{lang.capitalize()}</strong></a></td>\n'
         html += f'<td>{version}</td>\n'
@@ -332,7 +350,8 @@ def generate_comparison_table(all_data: List[Dict[str, Any]]) -> str:
         html += f'<td data-order="{build_time}">{build_time}</td>\n'
         html += f'<td data-order="{test_time}">{test_time}</td>\n'
         html += f'<td data-order="{analyze_time}">{analyze_time}</td>\n'
-        html += f'<td title="TIOBE Rank: {lang_meta["tiobe_rank"]}, GitHub: {lang_meta["github_stars"]}">📊 {lang_meta["tiobe_rank"]} / {lang_meta["github_stars"]}</td>\n'
+        html += f'<td data-order="{tiobe_rank_num}">{tiobe_rank_str}</td>\n'
+        html += f'<td data-order="{github_num}">{github_str}</td>\n'
         html += f'<td>{feature_icons}</td>\n'
         html += f'<td><a href="source_{lang}.html">View Source</a></td>\n'
         html += '</tr>\n'
