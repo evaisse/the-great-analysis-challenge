@@ -20,6 +20,10 @@ const PIECE_VALUES = {
 	p: -100, n: -320, b: -330, r: -500, q: -900, k: -20000
 }
 
+# Constants for AI evaluation
+const POSITIVE_INFINITY = 999999
+const NEGATIVE_INFINITY = -999999
+
 # Chess Board class
 class Board
 	prop board\any
@@ -108,9 +112,13 @@ class Board
 			const moveStr = indicesToAlgebraic(move.from.row, move.from.col) + indicesToAlgebraic(move.to.row, move.to.col)
 			const result = makeMoveWithoutLegalityCheck(moveStr, move)
 			if result.success
-				if !isInCheck!
-					legalMoves.push(move)
+				# Check if move leaves king in check
+				const inCheck = isInCheck!
+				# Always undo the move after checking
 				undoMove!
+				# Only add to legal moves if king is not in check
+				if !inCheck
+					legalMoves.push(move)
 		
 		return legalMoves
 
@@ -566,7 +574,7 @@ class AI
 		const moves = board.generateMoves!
 
 		if maximizing
-			let maxEval = -999999
+			let maxEval = NEGATIVE_INFINITY
 			for move in moves
 				const moveStr = board.indicesToAlgebraic(move.from.row, move.from.col) + board.indicesToAlgebraic(move.to.row, move.to.col)
 				const result = board.makeMove(moveStr)
@@ -578,7 +586,7 @@ class AI
 					break if beta <= alpha
 			return maxEval
 		else
-			let minEval = 999999
+			let minEval = POSITIVE_INFINITY
 			for move in moves
 				const moveStr = board.indicesToAlgebraic(move.from.row, move.from.col) + board.indicesToAlgebraic(move.to.row, move.to.col)
 				const result = board.makeMove(moveStr)
@@ -594,7 +602,7 @@ class AI
 	def findBestMove depth\number
 		const moves = board.generateMoves!
 		let bestMove = null
-		let bestEval = board.turn === 'white' ? -999999 : 999999
+		let bestEval = board.turn === 'white' ? NEGATIVE_INFINITY : POSITIVE_INFINITY
 
 		const startTime = Date.now!
 
@@ -602,7 +610,7 @@ class AI
 			const moveStr = board.indicesToAlgebraic(move.from.row, move.from.col) + board.indicesToAlgebraic(move.to.row, move.to.col)
 			const result = board.makeMove(moveStr)
 			if result.success
-				const evaluation = minimax(depth - 1, -999999, 999999, board.turn === 'black')
+				const evaluation = minimax(depth - 1, NEGATIVE_INFINITY, POSITIVE_INFINITY, board.turn === 'black')
 				board.undoMove!
 
 				if board.turn === 'white'
