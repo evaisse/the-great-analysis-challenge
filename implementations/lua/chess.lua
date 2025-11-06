@@ -182,7 +182,8 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
     -- Handle en passant capture
     if en_passant_target and to_rank == en_passant_target[1] and to_file == en_passant_target[2] then
         if piece == "P" or piece == "p" then
-            local capture_rank = white_to_move and to_rank - 1 or to_rank + 1
+            -- Determine capture rank based on piece color (not turn, since turn hasn't switched yet)
+            local capture_rank = (piece == "P") and to_rank - 1 or to_rank + 1
             move_record.en_passant_captured = board[capture_rank][to_file]
             board[capture_rank][to_file] = "."
         end
@@ -253,10 +254,10 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
         halfmove_clock = halfmove_clock + 1
     end
     
-    -- Update turn (switch before checking fullmove)
+    -- Switch turn
     white_to_move = not white_to_move
     
-    -- Increment fullmove after Black's turn
+    -- Increment fullmove counter after Black's turn (when it becomes White's turn)
     if white_to_move then
         fullmove_number = fullmove_number + 1
     end
