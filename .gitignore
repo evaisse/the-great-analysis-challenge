@@ -1,4 +1,4 @@
 .aider*
 *.log
 *.tmp
-__pycache__
+__pycache___codeql_detected_source_root
