@@ -1,0 +1,12 @@
+{
+  "language": "lua",
+  "version": "5.4",
+  "author": "Lua Implementation",
+  "build": "lua5.4 -e \"assert(loadfile('chess.lua'))\"",
+  "run": "lua5.4 chess.lua",
+  "analyze": "lua5.4 -l chess.lua",
+  "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | lua5.4 chess.lua",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 1000
+}
