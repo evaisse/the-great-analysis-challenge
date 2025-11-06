@@ -1,0 +1,26 @@
+# Compiled binaries
+chess
+*.exe
+*.out
+
+# Object files
+*.o
+*.obj
+
+# Core dumps
+core
+core.*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+build/
+dist/
+
+# macOS
+.DS_Store
