@@ -449,9 +449,18 @@ class WorkflowTool:
                 return 'needs_work'
         
         def format_time(seconds):
-            """Format time duration"""
-            if seconds == 0:
-                return "~0s"
+            """Format time duration
+            
+            Args:
+                seconds: Time in seconds, or None if data is not available
+                
+            Returns:
+                Formatted time string or "-" if data is missing
+            """
+            if seconds is None:
+                return "-"
+            elif seconds == 0:
+                return "<1s"
             elif seconds < 1:
                 return f"~{seconds:.1f}s"
             else:
@@ -474,8 +483,9 @@ class WorkflowTool:
                 emoji = status_emoji.get(status, '❓')
                 
                 timings = impl_data.get('timings', {})
-                build_time = format_time(timings.get('build_seconds', 0))
-                test_time = format_time(timings.get('test_seconds', 0))
+                # Use None as default instead of 0 to distinguish missing data from zero time
+                build_time = format_time(timings.get('build_seconds'))
+                test_time = format_time(timings.get('test_seconds'))
                 
                 test_results = impl_data.get('test_results', {})
                 passed = len(test_results.get('passed', []))
