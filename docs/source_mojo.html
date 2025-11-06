@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mojo Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Mojo Implementation</h2>
+<h2>🔥 <a href="https://www.modular.com/mojo" target="_blank" rel="noopener">Mojo</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -94,7 +96,7 @@ CMD ["./run_chess.sh"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test help
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test help
 
 # Default target - build the chess engine (demo implementation)
 all: build
@@ -144,7 +146,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Chess Engine - Mojo Implementation
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Chess Engine - Mojo Implementation
 
 This is a chess engine implementation in [Mojo](https://www.modular.com/mojo), showcasing the language's performance-oriented features while maintaining Python-like syntax.
 
@@ -276,7 +278,7 @@ When Mojo becomes more widely available:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-python">{
   "language": "mojo",
   "version": "0.6.0",
   "author": "Mojo Implementation",
@@ -292,7 +294,7 @@ When Mojo becomes more widely available:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_mojo')">📄 chess.mojo</button>
-<pre id="chess_mojo" class="file-content" style="display:none;"><code>#!/usr/bin/env mojo
+<pre id="chess_mojo" class="file-content" style="display:none;"><code class="language-python">#!/usr/bin/env mojo
 """
 Chess Engine Implementation in Mojo
 Follows the Chess Engine Specification v1.0
@@ -570,7 +572,7 @@ fn main():
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_ai_mojo')">📄 lib/ai.mojo</button>
-<pre id="lib_ai_mojo" class="file-content" style="display:none;"><code>"""
+<pre id="lib_ai_mojo" class="file-content" style="display:none;"><code class="language-python">"""
 AI engine for the chess game using minimax with alpha-beta pruning.
 """
 from .types import Move, Color, PieceType
@@ -727,7 +729,7 @@ struct AI:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_board_mojo')">📄 lib/board.mojo</button>
-<pre id="lib_board_mojo" class="file-content" style="display:none;"><code>"""
+<pre id="lib_board_mojo" class="file-content" style="display:none;"><code class="language-python">"""
 Chess board representation and manipulation.
 """
 from .types import Piece, PieceType, Color, Move, CastlingRights, Position
@@ -959,7 +961,7 @@ struct Board:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_move_generator_mojo')">📄 lib/move_generator.mojo</button>
-<pre id="lib_move_generator_mojo" class="file-content" style="display:none;"><code>"""
+<pre id="lib_move_generator_mojo" class="file-content" style="display:none;"><code class="language-python">"""
 Move generation for the chess engine.
 """
 from .types import Move, Color, PieceType
@@ -1092,7 +1094,7 @@ struct MoveGenerator:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_types_mojo')">📄 lib/types.mojo</button>
-<pre id="lib_types_mojo" class="file-content" style="display:none;"><code>"""
+<pre id="lib_types_mojo" class="file-content" style="display:none;"><code class="language-python">"""
 Simplified types for the chess engine.
 """
 
@@ -1293,6 +1295,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

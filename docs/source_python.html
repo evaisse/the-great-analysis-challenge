@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Python Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Python Implementation</h2>
+<h2>🐍 <a href="https://www.python.org/" target="_blank" rel="noopener">Python</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code># Use Ubuntu base image
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile"># Use Ubuntu base image
 FROM ubuntu:24.04
 
 # Set environment variables
@@ -100,7 +102,7 @@ CMD ["python3", "chess.py"]
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -151,7 +153,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Python Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Python Chess Engine
 
 A complete chess engine implementation in Python following the Chess Engine Specification v1.0.
 
@@ -272,7 +274,7 @@ This implementation fully complies with the Chess Engine Specification v1.0:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('analyze_py')">📄 analyze.py</button>
-<pre id="analyze_py" class="file-content" style="display:none;"><code>#!/usr/bin/env python3
+<pre id="analyze_py" class="file-content" style="display:none;"><code class="language-python">#!/usr/bin/env python3
 """
 Simple static analysis for Python chess engine.
 """
@@ -329,7 +331,7 @@ if __name__ == "__main__":
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-python">{
   "language": "python",
   "version": "3.11",
   "author": "Python Implementation",
@@ -344,7 +346,7 @@ if __name__ == "__main__":
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_py')">📄 chess.py</button>
-<pre id="chess_py" class="file-content" style="display:none;"><code>#!/usr/bin/env python3
+<pre id="chess_py" class="file-content" style="display:none;"><code class="language-python">#!/usr/bin/env python3
 """
 Chess Engine Implementation in Python
 Follows the Chess Engine Specification v1.0
@@ -615,13 +617,13 @@ if __name__ == '__main__':
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib___init___py')">📄 lib/__init__.py</button>
-<pre id="lib___init___py" class="file-content" style="display:none;"><code>"""
+<pre id="lib___init___py" class="file-content" style="display:none;"><code class="language-python">"""
 Chess engine library.
 """</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_ai_py')">📄 lib/ai.py</button>
-<pre id="lib_ai_py" class="file-content" style="display:none;"><code>"""
+<pre id="lib_ai_py" class="file-content" style="display:none;"><code class="language-python">"""
 AI engine using minimax with alpha-beta pruning.
 """
 
@@ -904,7 +906,7 @@ class AI:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_board_py')">📄 lib/board.py</button>
-<pre id="lib_board_py" class="file-content" style="display:none;"><code>"""
+<pre id="lib_board_py" class="file-content" style="display:none;"><code class="language-python">"""
 Chess board representation and manipulation.
 """
 
@@ -1293,7 +1295,7 @@ class Board:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_fen_parser_py')">📄 lib/fen_parser.py</button>
-<pre id="lib_fen_parser_py" class="file-content" style="display:none;"><code>"""
+<pre id="lib_fen_parser_py" class="file-content" style="display:none;"><code class="language-python">"""
 FEN (Forsyth-Edwards Notation) parser and serializer.
 """
 
@@ -1503,7 +1505,7 @@ class FenParser:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_move_generator_py')">📄 lib/move_generator.py</button>
-<pre id="lib_move_generator_py" class="file-content" style="display:none;"><code>"""
+<pre id="lib_move_generator_py" class="file-content" style="display:none;"><code class="language-python">"""
 Move generation for chess pieces.
 """
 
@@ -1757,7 +1759,7 @@ class MoveGenerator:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_perft_py')">📄 lib/perft.py</button>
-<pre id="lib_perft_py" class="file-content" style="display:none;"><code>"""
+<pre id="lib_perft_py" class="file-content" style="display:none;"><code class="language-python">"""
 Performance testing (perft) for move generation validation.
 """
 
@@ -1812,7 +1814,7 @@ class Perft:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_types_py')">📄 lib/types.py</button>
-<pre id="lib_types_py" class="file-content" style="display:none;"><code>"""
+<pre id="lib_types_py" class="file-content" style="display:none;"><code class="language-python">"""
 Type definitions for the chess engine.
 """
 
@@ -1977,7 +1979,7 @@ class GameState:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('mypy_ini')">📄 mypy.ini</button>
-<pre id="mypy_ini" class="file-content" style="display:none;"><code>[mypy]
+<pre id="mypy_ini" class="file-content" style="display:none;"><code class="language-python">[mypy]
 python_version = 3.11
 warn_return_any = True
 warn_unused_configs = True
@@ -1998,7 +2000,7 @@ ignore_missing_imports = True</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('pylintrc')">📄 pylintrc</button>
-<pre id="pylintrc" class="file-content" style="display:none;"><code>[pylint]
+<pre id="pylintrc" class="file-content" style="display:none;"><code class="language-python">[pylint]
 disable = missing-module-docstring,missing-class-docstring,missing-function-docstring,too-few-public-methods,too-many-instance-attributes,too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 
 [pylint.FORMAT]
@@ -2012,7 +2014,7 @@ max-statements = 60</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('pyproject_toml')">📄 pyproject.toml</button>
-<pre id="pyproject_toml" class="file-content" style="display:none;"><code>[tool.black]
+<pre id="pyproject_toml" class="file-content" style="display:none;"><code class="language-toml">[tool.black]
 line-length = 100
 target-version = ['py311']
 include = '\.pyi?$'
@@ -2031,7 +2033,7 @@ extend-exclude = '''
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('requirements_txt')">📄 requirements.txt</button>
-<pre id="requirements_txt" class="file-content" style="display:none;"><code># Static analysis tools
+<pre id="requirements_txt" class="file-content" style="display:none;"><code class="language-python"># Static analysis tools
 mypy==1.6.1
 pylint==3.0.2
 flake8==6.1.0
@@ -2043,7 +2045,7 @@ types-dataclasses==0.6.6</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('test_engine_py')">📄 test_engine.py</button>
-<pre id="test_engine_py" class="file-content" style="display:none;"><code>#!/usr/bin/env python3
+<pre id="test_engine_py" class="file-content" style="display:none;"><code class="language-python">#!/usr/bin/env python3
 """
 Test script to demonstrate Python chess engine functionality.
 """
@@ -2168,6 +2170,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

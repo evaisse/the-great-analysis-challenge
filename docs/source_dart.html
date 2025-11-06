@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dart Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Dart Implementation</h2>
+<h2>🎯 <a href="https://dart.dev/" target="_blank" rel="noopener">Dart</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -60,7 +62,7 @@ ENTRYPOINT ["./bin/chess_engine"]
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -108,7 +110,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Dart Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Dart Chess Engine
 
 A chess engine implementation in Dart following the project specifications.
 
@@ -174,7 +176,7 @@ make docker-test
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('bin_main_dart')">📄 bin/main.dart</button>
-<pre id="bin_main_dart" class="file-content" style="display:none;"><code>import 'dart:io';
+<pre id="bin_main_dart" class="file-content" style="display:none;"><code class="language-dart">import 'dart:io';
 import 'package:chess_engine/chess_engine.dart';
 
 void main() {
@@ -286,7 +288,7 @@ void _checkGameState(Game game) {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-dart">{
   "language": "dart",
   "version": "3.0",
   "author": "Dart Implementation",
@@ -301,7 +303,7 @@ void _checkGameState(Game game) {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_chess_engine_dart')">📄 lib/chess_engine.dart</button>
-<pre id="lib_chess_engine_dart" class="file-content" style="display:none;"><code>export 'src/board.dart';
+<pre id="lib_chess_engine_dart" class="file-content" style="display:none;"><code class="language-dart">export 'src/board.dart';
 export 'src/game.dart';
 export 'src/move.dart';
 export 'src/piece.dart';
@@ -311,7 +313,7 @@ export 'src/game_state.dart';
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_src_ai_dart')">📄 lib/src/ai.dart</button>
-<pre id="lib_src_ai_dart" class="file-content" style="display:none;"><code>import 'dart:math';
+<pre id="lib_src_ai_dart" class="file-content" style="display:none;"><code class="language-dart">import 'dart:math';
 
 import 'package:chess_engine/chess_engine.dart';
 
@@ -415,7 +417,7 @@ class AI {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_src_board_dart')">📄 lib/src/board.dart</button>
-<pre id="lib_src_board_dart" class="file-content" style="display:none;"><code>import 'package:chess_engine/chess_engine.dart';
+<pre id="lib_src_board_dart" class="file-content" style="display:none;"><code class="language-dart">import 'package:chess_engine/chess_engine.dart';
 
 class Board {
   late List&lt;List&lt;Piece?&gt;&gt; squares;
@@ -1021,7 +1023,7 @@ class Board {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_src_game_dart')">📄 lib/src/game.dart</button>
-<pre id="lib_src_game_dart" class="file-content" style="display:none;"><code>import 'package:collection/collection.dart';
+<pre id="lib_src_game_dart" class="file-content" style="display:none;"><code class="language-dart">import 'package:collection/collection.dart';
 import 'package:chess_engine/chess_engine.dart';
 
 class Game {
@@ -1090,12 +1092,12 @@ class Game {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_src_game_state_dart')">📄 lib/src/game_state.dart</button>
-<pre id="lib_src_game_state_dart" class="file-content" style="display:none;"><code>enum GameState { inProgress, checkmateWhiteWins, checkmateBlackWins, stalemate }
+<pre id="lib_src_game_state_dart" class="file-content" style="display:none;"><code class="language-dart">enum GameState { inProgress, checkmateWhiteWins, checkmateBlackWins, stalemate }
 </code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_src_move_dart')">📄 lib/src/move.dart</button>
-<pre id="lib_src_move_dart" class="file-content" style="display:none;"><code>import 'package:chess_engine/chess_engine.dart';
+<pre id="lib_src_move_dart" class="file-content" style="display:none;"><code class="language-dart">import 'package:chess_engine/chess_engine.dart';
 
 class Move {
   final int fromRow;
@@ -1134,7 +1136,7 @@ class Move {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_src_piece_dart')">📄 lib/src/piece.dart</button>
-<pre id="lib_src_piece_dart" class="file-content" style="display:none;"><code>enum PieceType { king, queen, rook, bishop, knight, pawn }
+<pre id="lib_src_piece_dart" class="file-content" style="display:none;"><code class="language-dart">enum PieceType { king, queen, rook, bishop, knight, pawn }
 
 enum PieceColor { white, black }
 
@@ -1196,7 +1198,7 @@ class Piece {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('pubspec_lock')">📄 pubspec.lock</button>
-<pre id="pubspec_lock" class="file-content" style="display:none;"><code># Generated by pub
+<pre id="pubspec_lock" class="file-content" style="display:none;"><code class="language-dart"># Generated by pub
 # See https://dart.dev/tools/pub/glossary#lockfile
 packages:
   collection:
@@ -1213,7 +1215,7 @@ sdks:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('pubspec_yaml')">📄 pubspec.yaml</button>
-<pre id="pubspec_yaml" class="file-content" style="display:none;"><code>name: chess_engine
+<pre id="pubspec_yaml" class="file-content" style="display:none;"><code class="language-yaml">name: chess_engine
 description: A command-line chess engine.
 version: 1.0.0
 environment:
@@ -1229,6 +1231,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

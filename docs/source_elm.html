@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elm Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Elm Implementation</h2>
+<h2>🌳 <a href="https://elm-lang.org/" target="_blank" rel="noopener">Elm</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -92,7 +94,7 @@ CMD ["node", "src/cli.js"]
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test help
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test help
 
 # Default target - build the chess engine
 all: build
@@ -140,7 +142,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Elm Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Elm Chess Engine
 
 A chess engine implementation in Elm following the project specifications.
 
@@ -209,7 +211,7 @@ The Elm implementation uses a functional approach with:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess-bridge_js')">📄 chess-bridge.js</button>
-<pre id="chess-bridge_js" class="file-content" style="display:none;"><code>#!/usr/bin/env node
+<pre id="chess-bridge_js" class="file-content" style="display:none;"><code class="language-elm">#!/usr/bin/env node
 
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -299,7 +301,7 @@ async function ensureElmBuilt() {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-elm">{
   "language": "elm",
   "version": "0.19.1", 
   "author": "Elm Implementation with Node.js Bridge",
@@ -315,7 +317,7 @@ async function ensureElmBuilt() {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('elm_json')">📄 elm.json</button>
-<pre id="elm_json" class="file-content" style="display:none;"><code>{
+<pre id="elm_json" class="file-content" style="display:none;"><code class="language-json">{
     "type": "application",
     "source-directories": [
         "src"
@@ -343,7 +345,7 @@ async function ensureElmBuilt() {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('package_json')">📄 package.json</button>
-<pre id="package_json" class="file-content" style="display:none;"><code>{
+<pre id="package_json" class="file-content" style="display:none;"><code class="language-json">{
   "name": "chess-engine-elm",
   "version": "1.0.0",
   "description": "Chess engine implementation in Elm with Node.js CLI",
@@ -361,7 +363,7 @@ async function ensureElmBuilt() {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_AI_elm')">📄 src/AI.elm</button>
-<pre id="src_AI_elm" class="file-content" style="display:none;"><code>module AI exposing (..)
+<pre id="src_AI_elm" class="file-content" style="display:none;"><code class="language-elm">module AI exposing (..)
 
 import Types exposing (..)
 import MoveGenerator exposing (..)
@@ -466,7 +468,7 @@ findBestMove state depth =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_Board_elm')">📄 src/Board.elm</button>
-<pre id="src_Board_elm" class="file-content" style="display:none;"><code>module Board exposing (..)
+<pre id="src_Board_elm" class="file-content" style="display:none;"><code class="language-elm">module Board exposing (..)
 
 import Types exposing (..)
 import Utils exposing (..)
@@ -729,7 +731,7 @@ findKing state color =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_ChessEngine_elm')">📄 src/ChessEngine.elm</button>
-<pre id="src_ChessEngine_elm" class="file-content" style="display:none;"><code>port module ChessEngine exposing (main)
+<pre id="src_ChessEngine_elm" class="file-content" style="display:none;"><code class="language-elm">port module ChessEngine exposing (main)
 
 import Json.Decode as Decode
 import Platform
@@ -1215,7 +1217,7 @@ getAiMoves model =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_Evaluation_elm')">📄 src/Evaluation.elm</button>
-<pre id="src_Evaluation_elm" class="file-content" style="display:none;"><code>module Evaluation exposing (..)
+<pre id="src_Evaluation_elm" class="file-content" style="display:none;"><code class="language-elm">module Evaluation exposing (..)
 
 import Types exposing (..)
 import Utils exposing (..)
@@ -1309,7 +1311,7 @@ evaluateGameState state =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_MoveGenerator_elm')">📄 src/MoveGenerator.elm</button>
-<pre id="src_MoveGenerator_elm" class="file-content" style="display:none;"><code>module MoveGenerator exposing (..)
+<pre id="src_MoveGenerator_elm" class="file-content" style="display:none;"><code class="language-elm">module MoveGenerator exposing (..)
 
 import Types exposing (..)
 import Utils exposing (..)
@@ -1855,7 +1857,7 @@ generateLegalMoves state =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_Types_elm')">📄 src/Types.elm</button>
-<pre id="src_Types_elm" class="file-content" style="display:none;"><code>module Types exposing (..)
+<pre id="src_Types_elm" class="file-content" style="display:none;"><code class="language-elm">module Types exposing (..)
 
 type PieceType
     = King
@@ -1925,7 +1927,7 @@ type alias SearchResult =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_Utils_elm')">📄 src/Utils.elm</button>
-<pre id="src_Utils_elm" class="file-content" style="display:none;"><code>module Utils exposing (..)
+<pre id="src_Utils_elm" class="file-content" style="display:none;"><code class="language-elm">module Utils exposing (..)
 
 import Types exposing (..)
 
@@ -2051,7 +2053,7 @@ setAt index value list =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_chess_js')">📄 src/chess.js</button>
-<pre id="src_chess_js" class="file-content" style="display:none;"><code>(function(scope){
+<pre id="src_chess_js" class="file-content" style="display:none;"><code class="language-elm">(function(scope){
 'use strict';
 
 function F(arity, fun, wrapper) {
@@ -5782,7 +5784,7 @@ _Platform_export({'ChessEngine':{'init':$author$project$ChessEngine$main(
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_cli_js')">📄 src/cli.js</button>
-<pre id="src_cli_js" class="file-content" style="display:none;"><code>const readline = require('readline');
+<pre id="src_cli_js" class="file-content" style="display:none;"><code class="language-elm">const readline = require('readline');
 const { Elm } = require('./chess.js');
 
 // Initialize Elm app
@@ -5828,6 +5830,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }
