@@ -1,0 +1,2183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Source Code - The Great Analysis Challenge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🏆 The Great Analysis Challenge</h1>
+        <p class="subtitle">Multi-Language Chess Engine Comparison</p>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="https://github.com/evaisse/the-great-analysis-challenge">GitHub</a>
+        </nav>
+    </header>
+    <main>
+<h2>📁 Python Implementation</h2>
+<div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
+<div class="file-tree">
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
+<pre id="Dockerfile" class="file-content" style="display:none;"><code># Use Ubuntu base image
+FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and Python
+RUN apt-get update &amp;&amp; apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    build-essential \
+    pkg-config \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt ./
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+
+# Copy source code
+COPY . .
+
+# Create a non-root user
+RUN addgroup --system python &amp;&amp; \
+    adduser --no-create-home --shell /bin/false --disabled-password --system --ingroup python chess
+
+# Change ownership of the app directory
+RUN chown -R chess:python /app
+
+# Switch to non-root user
+USER chess
+
+# Make chess.py executable
+RUN chmod +x chess.py
+
+# Create analyze script for comprehensive static analysis
+RUN echo '#!/bin/bash\n\
+echo "🔍 Running Python static analysis..."\n\
+echo "=" | head -c 50; echo\n\
+\n\
+echo "📝 Type checking with mypy..."\n\
+python3 -m mypy . || true\n\
+echo\n\
+\n\
+echo "🎯 Code quality with pylint..."\n\
+python3 -m pylint . --disable=C0114,C0115,C0116 || true\n\
+echo\n\
+\n\
+echo "📏 Style checking with flake8..."\n\
+python3 -m flake8 . --max-line-length=100 --ignore=E203,W503 || true\n\
+echo\n\
+\n\
+echo "🖤 Code formatting with black..."\n\
+python3 -m black --check --diff . || true\n\
+echo\n\
+\n\
+echo "🔒 Security analysis with bandit..."\n\
+python3 -m bandit -r . -f txt || true\n\
+echo\n\
+\n\
+echo "✅ Analysis complete!"' &gt; /app/analyze &amp;&amp; \
+    chmod +x /app/analyze
+
+# Default command to run the chess engine
+CMD ["python3", "chess.py"]
+
+# Alternative commands for different use cases:
+# To run static analysis: docker run --rm chess-python ./analyze
+# To run mypy only: docker run --rm chess-python python3 -m mypy .
+# To run pylint only: docker run --rm chess-python python3 -m pylint .
+# Interactive mode: docker run -it chess-python</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
+<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+
+# Default target - build the chess engine
+all: build
+
+# Build target - compile Python bytecode for faster execution
+build:
+	python3 -m py_compile chess.py
+	python3 -m py_compile lib/*.py
+
+# Run basic tests
+test:
+	python3 test_engine.py
+	@echo "Running basic functionality test..."
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | python3 chess.py | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" &amp;&amp; echo "✅ Basic test passed" || echo "❌ Basic test failed"
+
+# Static analysis and code quality
+analyze:
+	@echo "Running Python static analysis..."
+	python3 -m pylint chess.py lib/*.py --disable=C0114,C0115,C0116 || true
+	python3 -m mypy chess.py lib/*.py || true
+	python3 -m flake8 chess.py lib/*.py --max-line-length=100 --ignore=E203,W503 || true
+	python3 -m black --check --diff chess.py lib/*.py || true
+	python3 -m bandit -r . -f txt || true
+
+# Clean build artifacts
+clean:
+	find . -name "*.pyc" -delete
+	find . -name "__pycache__" -type d -exec rm -rf {} + 2&gt;/dev/null || true
+	find . -name "*.pyo" -delete
+
+# Docker targets
+docker-build:
+	docker build -t chess-python .
+
+docker-test: docker-build
+	@echo "Testing Python implementation in Docker..."
+	docker run --rm -i chess-python sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | python3 chess.py"
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  make         - Build the chess engine"
+	@echo "  make test    - Run tests"
+	@echo "  make analyze - Run static analysis"
+	@echo "  make clean   - Clean build artifacts"
+	@echo "  make docker-build - Build Docker image"
+	@echo "  make docker-test  - Test in Docker"</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
+<pre id="README_md" class="file-content" style="display:none;"><code># Python Chess Engine
+
+A complete chess engine implementation in Python following the Chess Engine Specification v1.0.
+
+## Features
+
+- ✅ **Complete Chess Rules**: All standard chess moves including castling, en passant, and promotion
+- ✅ **AI with Minimax**: Alpha-beta pruning with configurable depth (1-5)
+- ✅ **FEN Support**: Import/export positions using standard FEN notation
+- ✅ **Move Validation**: Ensures all moves are legal according to chess rules
+- ✅ **Game State Management**: Undo moves, detect checkmate/stalemate
+- ✅ **Performance Testing**: Perft function for move generation validation
+- ✅ **Static Analysis**: Comprehensive code quality tools
+
+## Quick Start
+
+```bash
+# Run the chess engine
+python3 chess.py
+
+# Run with Docker
+docker build -t chess-python .
+docker run -it chess-python
+
+# Run static analysis
+python3 analyze.py
+```
+
+## Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `move &lt;from&gt;&lt;to&gt;[promotion]` | Make a move | `move e2e4`, `move e7e8Q` |
+| `undo` | Undo the last move | `undo` |
+| `new` | Start a new game | `new` |
+| `ai &lt;depth&gt;` | AI makes a move | `ai 3` |
+| `fen &lt;string&gt;` | Load position from FEN | `fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1` |
+| `export` | Export current position as FEN | `export` |
+| `eval` | Display position evaluation | `eval` |
+| `perft &lt;depth&gt;` | Performance test | `perft 4` |
+| `help` | Display available commands | `help` |
+| `quit` | Exit the program | `quit` |
+
+## Performance Benchmarks
+
+From starting position:
+- **Perft(1)**: 20 nodes
+- **Perft(2)**: 400 nodes  
+- **Perft(3)**: 8,902 nodes
+- **AI depth 3**: ~200ms response time
+
+## Static Analysis Tools
+
+The implementation includes comprehensive static analysis:
+
+- **mypy**: Type checking for better code safety
+- **pylint**: Code quality and style analysis
+- **flake8**: Style guide enforcement (PEP 8)
+- **black**: Automatic code formatting
+- **bandit**: Security vulnerability scanning
+
+## Architecture
+
+```
+chess.py              # Main entry point and command interface
+lib/
+├── types.py          # Type definitions and data classes
+├── board.py          # Board representation and game state
+├── move_generator.py # Legal move generation for all pieces
+├── fen_parser.py     # FEN import/export functionality
+├── ai.py             # Minimax AI with alpha-beta pruning
+└── perft.py          # Performance testing for validation
+```
+
+## Testing
+
+```bash
+# Test basic functionality
+python3 test_engine.py
+
+# Test specific features
+python3 chess.py &lt;&lt;EOF
+new
+move e2e4
+move e7e5
+ai 3
+export
+quit
+EOF
+```
+
+## Docker Usage
+
+```bash
+# Build image
+docker build -t chess-python .
+
+# Run chess engine
+docker run -it chess-python
+
+# Run static analysis
+docker run --rm chess-python ./analyze
+
+# Run specific analysis tool
+docker run --rm chess-python python3 -m mypy .
+```
+
+## Compliance
+
+This implementation fully complies with the Chess Engine Specification v1.0:
+
+- ✅ All required commands implemented
+- ✅ Standard chess rules including special moves
+- ✅ FEN import/export support
+- ✅ AI with minimax and alpha-beta pruning  
+- ✅ Perft validation (correct node counts)
+- ✅ Proper error handling and game state management
+- ✅ ASCII board display with coordinate labels</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('analyze_py')">📄 analyze.py</button>
+<pre id="analyze_py" class="file-content" style="display:none;"><code>#!/usr/bin/env python3
+"""
+Simple static analysis for Python chess engine.
+"""
+
+import subprocess
+import sys
+import os
+
+def run_analysis():
+    """Run static analysis tools."""
+    print("🔍 Running Python static analysis...")
+    print("=" * 50)
+    
+    tools = [
+        ("mypy", ["python3", "-m", "mypy", ".", "--ignore-missing-imports", "--no-strict-optional"]),
+        ("flake8", ["python3", "-m", "flake8", ".", "--max-line-length=100", "--ignore=E203,W503,W293,F541"]),
+        ("black", ["python3", "-m", "black", "--check", "--diff", "."]),
+        ("bandit", ["python3", "-m", "bandit", "-r", ".", "-f", "txt"])
+    ]
+    
+    all_passed = True
+    
+    for name, cmd in tools:
+        print(f"\n📝 Running {name}...")
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                print(f"✅ {name}: PASSED")
+                if result.stdout.strip():
+                    print(result.stdout[:500])
+            else:
+                print(f"❌ {name}: ISSUES FOUND")
+                if result.stdout.strip():
+                    print(result.stdout[:1000])
+                if result.stderr.strip():
+                    print("STDERR:", result.stderr[:500])
+                all_passed = False
+        except subprocess.TimeoutExpired:
+            print(f"⏰ {name}: TIMEOUT")
+            all_passed = False
+        except FileNotFoundError:
+            print(f"❓ {name}: Tool not installed")
+        except Exception as e:
+            print(f"❌ {name}: ERROR - {e}")
+            all_passed = False
+    
+    print(f"\n{'✅ All checks passed!' if all_passed else '❌ Some issues found'}")
+    print("📊 Analysis complete!")
+    
+    return 0 if all_passed else 1
+
+if __name__ == "__main__":
+    sys.exit(run_analysis())</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
+<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+  "language": "python",
+  "version": "3.11",
+  "author": "Python Implementation",
+  "build": "python3 -m py_compile chess.py",
+  "run": "python3 chess.py",
+  "analyze": "python3 analyze.py",
+  "test": "python3 -m pytest test_chess.py || python3 -m unittest discover -s . -p 'test*.py'",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 1000
+}</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_py')">📄 chess.py</button>
+<pre id="chess_py" class="file-content" style="display:none;"><code>#!/usr/bin/env python3
+"""
+Chess Engine Implementation in Python
+Follows the Chess Engine Specification v1.0
+"""
+
+import sys
+from typing import Optional
+from lib.board import Board
+from lib.move_generator import MoveGenerator
+from lib.fen_parser import FenParser
+from lib.ai import AI
+from lib.perft import Perft
+from lib.types import Move
+
+
+class ChessEngine:
+    """Main chess engine class that handles user commands and game flow."""
+    
+    def __init__(self):
+        self.board = Board()
+        self.move_generator = MoveGenerator(self.board)
+        self.fen_parser = FenParser(self.board)
+        self.ai = AI(self.board, self.move_generator)
+        self.perft = Perft(self.board, self.move_generator)
+        self.move_history = []
+    
+    def start(self):
+        """Start the chess engine and begin accepting commands."""
+        print(self.board.display())
+        sys.stdout.flush()
+        
+        while True:
+            try:
+                # Don't print prompt in non-interactive mode
+                if sys.stdin.isatty():
+                    print("\n&gt; ", end="", flush=True)
+                    
+                line = sys.stdin.readline()
+                if not line:
+                    break
+                
+                command = line.strip()
+                if not command:
+                    continue
+                    
+                self.process_command(command)
+                sys.stdout.flush()  # Ensure output is flushed
+                
+            except KeyboardInterrupt:
+                print("\nGoodbye!")
+                break
+            except EOFError:
+                break
+    
+    def process_command(self, command: str):
+        """Process a user command."""
+        try:
+            parts = command.split()
+            if not parts:
+                return
+                
+            cmd = parts[0].lower()
+            
+            if cmd == 'move':
+                self.handle_move(parts[1] if len(parts) &gt; 1 else None)
+            elif cmd == 'undo':
+                self.handle_undo()
+            elif cmd == 'new':
+                self.handle_new_game()
+            elif cmd == 'ai':
+                depth = int(parts[1]) if len(parts) &gt; 1 else 3
+                self.handle_ai_move(depth)
+            elif cmd == 'fen':
+                fen = ' '.join(parts[1:]) if len(parts) &gt; 1 else None
+                self.handle_fen(fen)
+            elif cmd == 'export':
+                self.handle_export()
+            elif cmd == 'eval':
+                self.handle_eval()
+            elif cmd == 'perft':
+                depth = int(parts[1]) if len(parts) &gt; 1 else 4
+                self.handle_perft(depth)
+            elif cmd == 'help':
+                self.handle_help()
+            elif cmd in ('quit', 'exit'):
+                print('Goodbye!')
+                sys.exit(0)
+            else:
+                print('ERROR: Invalid command. Type "help" for available commands.')
+                
+        except (ValueError, IndexError):
+            print('ERROR: Invalid command format')
+        except Exception as e:
+            print(f'ERROR: {e}')
+    
+    def handle_move(self, move_str: Optional[str]):
+        """Handle move command."""
+        if not move_str:
+            print('ERROR: Invalid move format')
+            return
+        
+        try:
+            move = Move.from_algebraic(move_str)
+            if not move:
+                print('ERROR: Invalid move format')
+                return
+            
+            # Check if move is legal
+            legal_moves = self.move_generator.generate_legal_moves()
+            legal_move = None
+            
+            for legal in legal_moves:
+                if (legal.from_row == move.from_row and
+                    legal.from_col == move.from_col and
+                    legal.to_row == move.to_row and
+                    legal.to_col == move.to_col and
+                    legal.promotion == move.promotion):
+                    legal_move = legal
+                    break
+            
+            if not legal_move:
+                print('ERROR: Illegal move')
+                return
+            
+            # Make the move
+            self.move_history.append(legal_move)
+            self.board.make_move(legal_move)
+            
+            print(f'OK: {move_str}')
+            
+            # Check for game end
+            game_status = self.board.get_game_status()
+            if game_status == 'checkmate':
+                winner = 'Black' if self.board.to_move == 'white' else 'White'
+                print(f'CHECKMATE: {winner} wins')
+            elif game_status == 'stalemate':
+                print('STALEMATE: Draw')
+            
+            # Display board
+            print(self.board.display())
+            
+        except Exception as e:
+            print(f'ERROR: {e}')
+    
+    def handle_undo(self):
+        """Handle undo command."""
+        if not self.move_history:
+            print('ERROR: No moves to undo')
+            return
+        
+        last_move = self.move_history.pop()
+        self.board.undo_move(last_move)
+        print('OK: undo')
+        print(self.board.display())
+    
+    def handle_new_game(self):
+        """Handle new game command."""
+        self.board = Board()
+        self.move_generator = MoveGenerator(self.board)
+        self.fen_parser = FenParser(self.board)
+        self.ai = AI(self.board, self.move_generator)
+        self.perft = Perft(self.board, self.move_generator)
+        self.move_history = []
+        print('OK: New game started')
+        print(self.board.display())
+    
+    def handle_ai_move(self, depth: int):
+        """Handle AI move command."""
+        if not (1 &lt;= depth &lt;= 5):
+            print('ERROR: AI depth must be 1-5')
+            return
+        
+        import time
+        start_time = time.time()
+        
+        best_move, eval_score = self.ai.get_best_move(depth)
+        
+        end_time = time.time()
+        elapsed_ms = int((end_time - start_time) * 1000)
+        
+        if not best_move:
+            print('ERROR: No legal moves available')
+            return
+        
+        # Make the AI move
+        self.move_history.append(best_move)
+        self.board.make_move(best_move)
+        
+        move_str = best_move.to_algebraic()
+        print(f'AI: {move_str} (depth={depth}, eval={eval_score}, time={elapsed_ms}ms)')
+        
+        # Check for game end
+        game_status = self.board.get_game_status()
+        if game_status == 'checkmate':
+            winner = 'Black' if self.board.to_move == 'white' else 'White'
+            print(f'CHECKMATE: {winner} wins')
+        elif game_status == 'stalemate':
+            print('STALEMATE: Draw')
+        
+        print(self.board.display())
+    
+    def handle_fen(self, fen: Optional[str]):
+        """Handle FEN command."""
+        if not fen:
+            print('ERROR: No FEN string provided')
+            return
+        
+        try:
+            self.fen_parser.parse(fen)
+            self.move_history = []  # Clear move history when loading new position
+            print(f'OK: Loaded position from FEN')
+            print(self.board.display())
+        except Exception as e:
+            print(f'ERROR: Invalid FEN string: {e}')
+    
+    def handle_export(self):
+        """Handle export command."""
+        fen = self.fen_parser.export()
+        print(f'FEN: {fen}')
+    
+    def handle_eval(self):
+        """Handle eval command."""
+        evaluation = self.ai.evaluate_position()
+        print(f'Evaluation: {evaluation}')
+    
+    def handle_perft(self, depth: int):
+        """Handle perft command."""
+        if depth &lt; 1 or depth &gt; 6:
+            print('ERROR: Perft depth must be 1-6')
+            return
+        
+        import time
+        start_time = time.time()
+        
+        node_count = self.perft.perft(depth)
+        
+        end_time = time.time()
+        elapsed_ms = int((end_time - start_time) * 1000)
+        
+        print(f'Perft({depth}): {node_count} nodes in {elapsed_ms}ms')
+    
+    def handle_help(self):
+        """Handle help command."""
+        help_text = """
+Available commands:
+  move &lt;from&gt;&lt;to&gt;[promotion] - Make a move (e.g., move e2e4, move e7e8Q)
+  undo                       - Undo the last move
+  new                        - Start a new game
+  ai &lt;depth&gt;                 - AI makes a move (depth 1-5)
+  fen &lt;string&gt;               - Load position from FEN
+  export                     - Export current position as FEN
+  eval                       - Display position evaluation
+  perft &lt;depth&gt;              - Performance test (move count)
+  help                       - Display this help
+  quit                       - Exit the program
+        """
+        print(help_text.strip())
+
+
+def main():
+    """Main entry point."""
+    engine = ChessEngine()
+    engine.start()
+
+
+if __name__ == '__main__':
+    main()</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib___init___py')">📄 lib/__init__.py</button>
+<pre id="lib___init___py" class="file-content" style="display:none;"><code>"""
+Chess engine library.
+"""</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_ai_py')">📄 lib/ai.py</button>
+<pre id="lib_ai_py" class="file-content" style="display:none;"><code>"""
+AI engine using minimax with alpha-beta pruning.
+"""
+
+from typing import Tuple, Optional, List
+from lib.types import Move, Piece, PieceType, Color
+from lib.board import Board
+from lib.move_generator import MoveGenerator
+
+
+class AI:
+    """Chess AI using minimax with alpha-beta pruning."""
+    
+    # Piece values for evaluation
+    PIECE_VALUES = {
+        PieceType.PAWN: 100,
+        PieceType.KNIGHT: 320,
+        PieceType.BISHOP: 330,
+        PieceType.ROOK: 500,
+        PieceType.QUEEN: 900,
+        PieceType.KING: 20000
+    }
+    
+    # Position bonus tables
+    PAWN_TABLE = [
+        [0,  0,  0,  0,  0,  0,  0,  0],
+        [50, 50, 50, 50, 50, 50, 50, 50],
+        [10, 10, 20, 30, 30, 20, 10, 10],
+        [5,  5, 10, 25, 25, 10,  5,  5],
+        [0,  0,  0, 20, 20,  0,  0,  0],
+        [5, -5,-10,  0,  0,-10, -5,  5],
+        [5, 10, 10,-20,-20, 10, 10,  5],
+        [0,  0,  0,  0,  0,  0,  0,  0]
+    ]
+    
+    KNIGHT_TABLE = [
+        [-50,-40,-30,-30,-30,-30,-40,-50],
+        [-40,-20,  0,  0,  0,  0,-20,-40],
+        [-30,  0, 10, 15, 15, 10,  0,-30],
+        [-30,  5, 15, 20, 20, 15,  5,-30],
+        [-30,  0, 15, 20, 20, 15,  0,-30],
+        [-30,  5, 10, 15, 15, 10,  5,-30],
+        [-40,-20,  0,  5,  5,  0,-20,-40],
+        [-50,-40,-30,-30,-30,-30,-40,-50]
+    ]
+    
+    BISHOP_TABLE = [
+        [-20,-10,-10,-10,-10,-10,-10,-20],
+        [-10,  0,  0,  0,  0,  0,  0,-10],
+        [-10,  0,  5, 10, 10,  5,  0,-10],
+        [-10,  5,  5, 10, 10,  5,  5,-10],
+        [-10,  0, 10, 10, 10, 10,  0,-10],
+        [-10, 10, 10, 10, 10, 10, 10,-10],
+        [-10,  5,  0,  0,  0,  0,  5,-10],
+        [-20,-10,-10,-10,-10,-10,-10,-20]
+    ]
+    
+    ROOK_TABLE = [
+        [0,  0,  0,  0,  0,  0,  0,  0],
+        [5, 10, 10, 10, 10, 10, 10,  5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [0,  0,  0,  5,  5,  0,  0,  0]
+    ]
+    
+    QUEEN_TABLE = [
+        [-20,-10,-10, -5, -5,-10,-10,-20],
+        [-10,  0,  0,  0,  0,  0,  0,-10],
+        [-10,  0,  5,  5,  5,  5,  0,-10],
+        [-5,  0,  5,  5,  5,  5,  0, -5],
+        [0,  0,  5,  5,  5,  5,  0, -5],
+        [-10,  5,  5,  5,  5,  5,  0,-10],
+        [-10,  0,  5,  0,  0,  0,  0,-10],
+        [-20,-10,-10, -5, -5,-10,-10,-20]
+    ]
+    
+    KING_TABLE = [
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-20,-30,-30,-40,-40,-30,-30,-20],
+        [-10,-20,-20,-20,-20,-20,-20,-10],
+        [20, 20,  0,  0,  0,  0, 20, 20],
+        [20, 30, 10,  0,  0, 10, 30, 20]
+    ]
+    
+    def __init__(self, board: Board, move_generator: MoveGenerator):
+        self.board = board
+        self.move_generator = move_generator
+    
+    def get_best_move(self, depth: int) -&gt; Tuple[Optional[Move], int]:
+        """Get the best move using minimax with alpha-beta pruning."""
+        legal_moves = self.move_generator.generate_legal_moves()
+        
+        if not legal_moves:
+            return None, 0
+        
+        # Order moves for better pruning
+        ordered_moves = self._order_moves(legal_moves)
+        
+        # We're always maximizing from our perspective
+        maximizing_player = self.board.to_move == Color.WHITE
+        best_score = float('-inf') if maximizing_player else float('inf')
+        best_move = None
+        
+        alpha = float('-inf')
+        beta = float('inf')
+        
+        for move in ordered_moves:
+            self.board.make_move(move)
+            
+            # After our move, it's the opponent's turn
+            score = self._minimax(depth - 1, alpha, beta, not maximizing_player)
+            
+            self.board.undo_move(move)
+            
+            if maximizing_player:
+                if score &gt; best_score:
+                    best_score = score
+                    best_move = move
+                alpha = max(alpha, score)
+            else:
+                if score &lt; best_score:
+                    best_score = score
+                    best_move = move
+                beta = min(beta, score)
+            
+            # Alpha-beta pruning
+            if beta &lt;= alpha:
+                break
+        
+        return best_move, best_score
+    
+    def _minimax(self, depth: int, alpha: float, beta: float, maximizing: bool) -&gt; int:
+        """Minimax algorithm with alpha-beta pruning."""
+        if depth == 0:
+            return self.evaluate_position()
+        
+        # Check for game end
+        legal_moves = self.move_generator.generate_legal_moves()
+        
+        if not legal_moves:
+            if self.board.is_in_check(self.board.to_move):
+                # Checkmate
+                return -100000 if maximizing else 100000
+            else:
+                # Stalemate
+                return 0
+        
+        if maximizing:
+            max_eval = float('-inf')
+            for move in self._order_moves(legal_moves):
+                self.board.make_move(move)
+                eval_score = self._minimax(depth - 1, alpha, beta, False)
+                self.board.undo_move(move)
+                
+                max_eval = max(max_eval, eval_score)
+                alpha = max(alpha, eval_score)
+                
+                if beta &lt;= alpha:
+                    break  # Beta cutoff
+            
+            return max_eval
+        else:
+            min_eval = float('inf')
+            for move in self._order_moves(legal_moves):
+                self.board.make_move(move)
+                eval_score = self._minimax(depth - 1, alpha, beta, True)
+                self.board.undo_move(move)
+                
+                min_eval = min(min_eval, eval_score)
+                beta = min(beta, eval_score)
+                
+                if beta &lt;= alpha:
+                    break  # Alpha cutoff
+            
+            return min_eval
+    
+    def _order_moves(self, moves: List[Move]) -&gt; List[Move]:
+        """Order moves for better alpha-beta pruning."""
+        def move_score(move):
+            score = 0
+            
+            # Prioritize captures
+            target_piece = self.board.get_piece(move.to_row, move.to_col)
+            if target_piece:
+                score += self.PIECE_VALUES[target_piece.type]
+            
+            # Prioritize promotions
+            if move.promotion:
+                score += self.PIECE_VALUES[move.promotion]
+            
+            # Prioritize center moves
+            center_bonus = 0
+            if 3 &lt;= move.to_row &lt;= 4 and 3 &lt;= move.to_col &lt;= 4:
+                center_bonus = 10
+            score += center_bonus
+            
+            return score
+        
+        return sorted(moves, key=move_score, reverse=True)
+    
+    def evaluate_position(self) -&gt; int:
+        """Evaluate the current position."""
+        score = 0
+        
+        for row in range(8):
+            for col in range(8):
+                piece = self.board.get_piece(row, col)
+                if piece:
+                    piece_value = self._evaluate_piece(piece, row, col)
+                    
+                    if piece.color == Color.WHITE:
+                        score += piece_value
+                    else:
+                        score -= piece_value
+        
+        # Add positional bonuses
+        score += self._evaluate_position_factors()
+        
+        return score
+    
+    def _evaluate_piece(self, piece: Piece, row: int, col: int) -&gt; int:
+        """Evaluate a single piece including positional bonus."""
+        value = self.PIECE_VALUES[piece.type]
+        
+        # Position tables are for white, flip for black
+        eval_row = row if piece.color == Color.WHITE else 7 - row
+        
+        if piece.type == PieceType.PAWN:
+            value += self.PAWN_TABLE[eval_row][col]
+        elif piece.type == PieceType.KNIGHT:
+            value += self.KNIGHT_TABLE[eval_row][col]
+        elif piece.type == PieceType.BISHOP:
+            value += self.BISHOP_TABLE[eval_row][col]
+        elif piece.type == PieceType.ROOK:
+            value += self.ROOK_TABLE[eval_row][col]
+        elif piece.type == PieceType.QUEEN:
+            value += self.QUEEN_TABLE[eval_row][col]
+        elif piece.type == PieceType.KING:
+            value += self.KING_TABLE[eval_row][col]
+        
+        return value
+    
+    def _evaluate_position_factors(self) -&gt; int:
+        """Evaluate additional positional factors."""
+        score = 0
+        
+        # King safety penalty if exposed
+        for color in [Color.WHITE, Color.BLACK]:
+            king_pos = self.board.find_king(color)
+            if king_pos:
+                king_row, king_col = king_pos
+                
+                # Count attackers around king
+                attacker_count = 0
+                opponent_color = Color.BLACK if color == Color.WHITE else Color.WHITE
+                
+                for dr in [-1, 0, 1]:
+                    for dc in [-1, 0, 1]:
+                        if dr == 0 and dc == 0:
+                            continue
+                        
+                        check_row, check_col = king_row + dr, king_col + dc
+                        if self.board.is_valid_square(check_row, check_col):
+                            if self.board.is_square_attacked(check_row, check_col, opponent_color):
+                                attacker_count += 1
+                
+                king_safety_penalty = attacker_count * 20
+                
+                if color == Color.WHITE:
+                    score -= king_safety_penalty
+                else:
+                    score += king_safety_penalty
+        
+        return score</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_board_py')">📄 lib/board.py</button>
+<pre id="lib_board_py" class="file-content" style="display:none;"><code>"""
+Chess board representation and manipulation.
+"""
+
+from typing import Optional, List, Tuple
+from lib.types import Piece, PieceType, Color, Move, CastlingRights, GameState
+
+
+class Board:
+    """Represents a chess board with pieces and game state."""
+    
+    def __init__(self):
+        """Initialize board to starting position."""
+        self.board = [[None for _ in range(8)] for _ in range(8)]
+        self.to_move = Color.WHITE
+        self.castling_rights = CastlingRights()
+        self.en_passant_target: Optional[Tuple[int, int]] = None
+        self.halfmove_clock = 0
+        self.fullmove_number = 1
+        self.game_history: List[GameState] = []
+        
+        self.setup_starting_position()
+    
+    def setup_starting_position(self):
+        """Set up the standard chess starting position."""
+        # White pieces
+        self.board[0][0] = Piece(PieceType.ROOK, Color.WHITE)
+        self.board[0][1] = Piece(PieceType.KNIGHT, Color.WHITE)
+        self.board[0][2] = Piece(PieceType.BISHOP, Color.WHITE)
+        self.board[0][3] = Piece(PieceType.QUEEN, Color.WHITE)
+        self.board[0][4] = Piece(PieceType.KING, Color.WHITE)
+        self.board[0][5] = Piece(PieceType.BISHOP, Color.WHITE)
+        self.board[0][6] = Piece(PieceType.KNIGHT, Color.WHITE)
+        self.board[0][7] = Piece(PieceType.ROOK, Color.WHITE)
+        
+        for col in range(8):
+            self.board[1][col] = Piece(PieceType.PAWN, Color.WHITE)
+        
+        # Black pieces
+        self.board[7][0] = Piece(PieceType.ROOK, Color.BLACK)
+        self.board[7][1] = Piece(PieceType.KNIGHT, Color.BLACK)
+        self.board[7][2] = Piece(PieceType.BISHOP, Color.BLACK)
+        self.board[7][3] = Piece(PieceType.QUEEN, Color.BLACK)
+        self.board[7][4] = Piece(PieceType.KING, Color.BLACK)
+        self.board[7][5] = Piece(PieceType.BISHOP, Color.BLACK)
+        self.board[7][6] = Piece(PieceType.KNIGHT, Color.BLACK)
+        self.board[7][7] = Piece(PieceType.ROOK, Color.BLACK)
+        
+        for col in range(8):
+            self.board[6][col] = Piece(PieceType.PAWN, Color.BLACK)
+    
+    def get_piece(self, row: int, col: int) -&gt; Optional[Piece]:
+        """Get piece at given position."""
+        if 0 &lt;= row &lt;= 7 and 0 &lt;= col &lt;= 7:
+            return self.board[row][col]
+        return None
+    
+    def set_piece(self, row: int, col: int, piece: Optional[Piece]):
+        """Set piece at given position."""
+        if 0 &lt;= row &lt;= 7 and 0 &lt;= col &lt;= 7:
+            self.board[row][col] = piece
+    
+    def is_valid_square(self, row: int, col: int) -&gt; bool:
+        """Check if square coordinates are valid."""
+        return 0 &lt;= row &lt;= 7 and 0 &lt;= col &lt;= 7
+    
+    def is_empty(self, row: int, col: int) -&gt; bool:
+        """Check if square is empty."""
+        return self.get_piece(row, col) is None
+    
+    def find_king(self, color: Color) -&gt; Optional[Tuple[int, int]]:
+        """Find the king of the given color."""
+        for row in range(8):
+            for col in range(8):
+                piece = self.get_piece(row, col)
+                if piece and piece.type == PieceType.KING and piece.color == color:
+                    return (row, col)
+        return None
+    
+    def is_square_attacked(self, row: int, col: int, by_color: Color) -&gt; bool:
+        """Check if a square is attacked by pieces of the given color."""
+        # Check pawn attacks
+        pawn_direction = 1 if by_color == Color.WHITE else -1
+        pawn_start_row = row - pawn_direction
+        
+        for pawn_col in [col - 1, col + 1]:
+            if self.is_valid_square(pawn_start_row, pawn_col):
+                piece = self.get_piece(pawn_start_row, pawn_col)
+                if (piece and piece.type == PieceType.PAWN and 
+                    piece.color == by_color):
+                    return True
+        
+        # Check knight attacks
+        knight_moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
+                       (1, -2), (1, 2), (2, -1), (2, 1)]
+        for dr, dc in knight_moves:
+            new_row, new_col = row + dr, col + dc
+            if self.is_valid_square(new_row, new_col):
+                piece = self.get_piece(new_row, new_col)
+                if (piece and piece.type == PieceType.KNIGHT and 
+                    piece.color == by_color):
+                    return True
+        
+        # Check bishop/queen diagonal attacks
+        diagonal_directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+        for dr, dc in diagonal_directions:
+            for i in range(1, 8):
+                new_row, new_col = row + i * dr, col + i * dc
+                if not self.is_valid_square(new_row, new_col):
+                    break
+                piece = self.get_piece(new_row, new_col)
+                if piece:
+                    if (piece.color == by_color and 
+                        piece.type in [PieceType.BISHOP, PieceType.QUEEN]):
+                        return True
+                    break
+        
+        # Check rook/queen straight attacks
+        straight_directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        for dr, dc in straight_directions:
+            for i in range(1, 8):
+                new_row, new_col = row + i * dr, col + i * dc
+                if not self.is_valid_square(new_row, new_col):
+                    break
+                piece = self.get_piece(new_row, new_col)
+                if piece:
+                    if (piece.color == by_color and 
+                        piece.type in [PieceType.ROOK, PieceType.QUEEN]):
+                        return True
+                    break
+        
+        # Check king attacks
+        king_moves = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
+                     (0, 1), (1, -1), (1, 0), (1, 1)]
+        for dr, dc in king_moves:
+            new_row, new_col = row + dr, col + dc
+            if self.is_valid_square(new_row, new_col):
+                piece = self.get_piece(new_row, new_col)
+                if (piece and piece.type == PieceType.KING and 
+                    piece.color == by_color):
+                    return True
+        
+        return False
+    
+    def is_in_check(self, color: Color) -&gt; bool:
+        """Check if the king of the given color is in check."""
+        king_pos = self.find_king(color)
+        if not king_pos:
+            return False
+        
+        opponent_color = Color.BLACK if color == Color.WHITE else Color.WHITE
+        return self.is_square_attacked(king_pos[0], king_pos[1], opponent_color)
+    
+    def make_move(self, move: Move):
+        """Make a move on the board."""
+        # Save current game state for undo
+        game_state = GameState(
+            castling_rights=self.castling_rights.copy(),
+            en_passant_target=self.en_passant_target,
+            halfmove_clock=self.halfmove_clock,
+            fullmove_number=self.fullmove_number,
+            captured_piece=move.captured_piece
+        )
+        self.game_history.append(game_state)
+        
+        # Get the piece being moved
+        piece = self.get_piece(move.from_row, move.from_col)
+        target_piece = self.get_piece(move.to_row, move.to_col)
+        
+        # Update captured piece in move
+        move.captured_piece = target_piece
+        
+        # Handle special moves
+        if move.is_castling:
+            self._handle_castling(move)
+        elif move.is_en_passant:
+            self._handle_en_passant(move)
+        else:
+            # Normal move
+            self.set_piece(move.to_row, move.to_col, piece)
+            self.set_piece(move.from_row, move.from_col, None)
+            
+            # Handle promotion
+            if move.promotion and piece and piece.type == PieceType.PAWN:
+                self.set_piece(move.to_row, move.to_col, 
+                             Piece(move.promotion, piece.color))
+        
+        # Update castling rights
+        self._update_castling_rights(move, piece)
+        
+        # Update en passant target
+        self._update_en_passant_target(move, piece)
+        
+        # Update clocks
+        if target_piece or (piece and piece.type == PieceType.PAWN):
+            self.halfmove_clock = 0
+        else:
+            self.halfmove_clock += 1
+        
+        if self.to_move == Color.BLACK:
+            self.fullmove_number += 1
+        
+        # Switch turns
+        self.to_move = Color.BLACK if self.to_move == Color.WHITE else Color.WHITE
+    
+    def undo_move(self, move: Move):
+        """Undo a move on the board."""
+        if not self.game_history:
+            return
+        
+        # Restore game state
+        game_state = self.game_history.pop()
+        self.castling_rights = game_state.castling_rights
+        self.en_passant_target = game_state.en_passant_target
+        self.halfmove_clock = game_state.halfmove_clock
+        self.fullmove_number = game_state.fullmove_number
+        
+        # Switch turns back
+        self.to_move = Color.BLACK if self.to_move == Color.WHITE else Color.WHITE
+        
+        # Get the piece that was moved
+        moved_piece = self.get_piece(move.to_row, move.to_col)
+        
+        # Handle special undos
+        if move.is_castling:
+            self._undo_castling(move)
+        elif move.is_en_passant:
+            self._undo_en_passant(move)
+        else:
+            # Normal undo
+            # Handle promotion undo
+            if move.promotion and moved_piece:
+                original_piece = Piece(PieceType.PAWN, moved_piece.color)
+                self.set_piece(move.from_row, move.from_col, original_piece)
+            else:
+                self.set_piece(move.from_row, move.from_col, moved_piece)
+            
+            # Restore captured piece
+            self.set_piece(move.to_row, move.to_col, move.captured_piece)
+    
+    def _handle_castling(self, move: Move):
+        """Handle castling move."""
+        king = self.get_piece(move.from_row, move.from_col)
+        
+        # Move king
+        self.set_piece(move.to_row, move.to_col, king)
+        self.set_piece(move.from_row, move.from_col, None)
+        
+        # Move rook
+        if move.to_col == 6:  # Kingside
+            rook = self.get_piece(move.from_row, 7)
+            self.set_piece(move.from_row, 5, rook)
+            self.set_piece(move.from_row, 7, None)
+        else:  # Queenside
+            rook = self.get_piece(move.from_row, 0)
+            self.set_piece(move.from_row, 3, rook)
+            self.set_piece(move.from_row, 0, None)
+    
+    def _handle_en_passant(self, move: Move):
+        """Handle en passant capture."""
+        pawn = self.get_piece(move.from_row, move.from_col)
+        
+        # Move pawn
+        self.set_piece(move.to_row, move.to_col, pawn)
+        self.set_piece(move.from_row, move.from_col, None)
+        
+        # Remove captured pawn
+        captured_row = move.from_row
+        self.set_piece(captured_row, move.to_col, None)
+    
+    def _undo_castling(self, move: Move):
+        """Undo castling move."""
+        king = self.get_piece(move.to_row, move.to_col)
+        
+        # Move king back
+        self.set_piece(move.from_row, move.from_col, king)
+        self.set_piece(move.to_row, move.to_col, None)
+        
+        # Move rook back
+        if move.to_col == 6:  # Kingside
+            rook = self.get_piece(move.from_row, 5)
+            self.set_piece(move.from_row, 7, rook)
+            self.set_piece(move.from_row, 5, None)
+        else:  # Queenside
+            rook = self.get_piece(move.from_row, 3)
+            self.set_piece(move.from_row, 0, rook)
+            self.set_piece(move.from_row, 3, None)
+    
+    def _undo_en_passant(self, move: Move):
+        """Undo en passant capture."""
+        pawn = self.get_piece(move.to_row, move.to_col)
+        
+        # Move pawn back
+        self.set_piece(move.from_row, move.from_col, pawn)
+        self.set_piece(move.to_row, move.to_col, None)
+        
+        # Restore captured pawn
+        captured_pawn_color = Color.BLACK if pawn and pawn.color == Color.WHITE else Color.WHITE
+        captured_pawn = Piece(PieceType.PAWN, captured_pawn_color)
+        captured_row = move.from_row
+        self.set_piece(captured_row, move.to_col, captured_pawn)
+    
+    def _update_castling_rights(self, move: Move, piece: Optional[Piece]):
+        """Update castling rights after a move."""
+        if not piece:
+            return
+        
+        # King moves
+        if piece.type == PieceType.KING:
+            if piece.color == Color.WHITE:
+                self.castling_rights.white_kingside = False
+                self.castling_rights.white_queenside = False
+            else:
+                self.castling_rights.black_kingside = False
+                self.castling_rights.black_queenside = False
+        
+        # Rook moves
+        elif piece.type == PieceType.ROOK:
+            if piece.color == Color.WHITE:
+                if move.from_row == 0 and move.from_col == 0:
+                    self.castling_rights.white_queenside = False
+                elif move.from_row == 0 and move.from_col == 7:
+                    self.castling_rights.white_kingside = False
+            else:
+                if move.from_row == 7 and move.from_col == 0:
+                    self.castling_rights.black_queenside = False
+                elif move.from_row == 7 and move.from_col == 7:
+                    self.castling_rights.black_kingside = False
+        
+        # Rook captured
+        if move.to_row == 0 and move.to_col == 0:
+            self.castling_rights.white_queenside = False
+        elif move.to_row == 0 and move.to_col == 7:
+            self.castling_rights.white_kingside = False
+        elif move.to_row == 7 and move.to_col == 0:
+            self.castling_rights.black_queenside = False
+        elif move.to_row == 7 and move.to_col == 7:
+            self.castling_rights.black_kingside = False
+    
+    def _update_en_passant_target(self, move: Move, piece: Optional[Piece]):
+        """Update en passant target square."""
+        self.en_passant_target = None
+        
+        if (piece and piece.type == PieceType.PAWN and 
+            abs(move.to_row - move.from_row) == 2):
+            # Pawn moved two squares, set en passant target
+            target_row = (move.from_row + move.to_row) // 2
+            self.en_passant_target = (target_row, move.to_col)
+    
+    def get_game_status(self) -&gt; str:
+        """Get current game status."""
+        from lib.move_generator import MoveGenerator
+        move_gen = MoveGenerator(self)
+        legal_moves = move_gen.generate_legal_moves()
+        
+        if not legal_moves:
+            if self.is_in_check(self.to_move):
+                return 'checkmate'
+            else:
+                return 'stalemate'
+        
+        return 'ongoing'
+    
+    def display(self) -&gt; str:
+        """Return ASCII representation of the board."""
+        result = []
+        result.append("  a b c d e f g h")
+        
+        for row in range(7, -1, -1):
+            line = f"{row + 1} "
+            for col in range(8):
+                piece = self.get_piece(row, col)
+                if piece:
+                    line += str(piece) + " "
+                else:
+                    line += ". "
+            line += f"{row + 1}"
+            result.append(line)
+        
+        result.append("  a b c d e f g h")
+        result.append("")
+        
+        color_str = "White" if self.to_move == Color.WHITE else "Black"
+        result.append(f"{color_str} to move")
+        
+        return "\n".join(result)</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_fen_parser_py')">📄 lib/fen_parser.py</button>
+<pre id="lib_fen_parser_py" class="file-content" style="display:none;"><code>"""
+FEN (Forsyth-Edwards Notation) parser and serializer.
+"""
+
+from typing import Optional
+from lib.types import Piece, PieceType, Color, CastlingRights
+from lib.board import Board
+
+
+class FenParser:
+    """Parses and generates FEN strings."""
+    
+    def __init__(self, board: Board):
+        self.board = board
+    
+    def parse(self, fen: str):
+        """Parse a FEN string and update the board."""
+        parts = fen.strip().split()
+        
+        if len(parts) != 6:
+            raise ValueError("Invalid FEN: must have 6 parts")
+        
+        pieces_str, turn_str, castling_str, en_passant_str, halfmove_str, fullmove_str = parts
+        
+        # Parse board position
+        self._parse_pieces(pieces_str)
+        
+        # Parse turn
+        self._parse_turn(turn_str)
+        
+        # Parse castling rights
+        self._parse_castling(castling_str)
+        
+        # Parse en passant
+        self._parse_en_passant(en_passant_str)
+        
+        # Parse move clocks
+        self._parse_clocks(halfmove_str, fullmove_str)
+    
+    def _parse_pieces(self, pieces_str: str):
+        """Parse piece placement from FEN."""
+        # Clear the board
+        for row in range(8):
+            for col in range(8):
+                self.board.set_piece(row, col, None)
+        
+        ranks = pieces_str.split('/')
+        if len(ranks) != 8:
+            raise ValueError("Invalid FEN: board must have 8 ranks")
+        
+        for rank_idx, rank in enumerate(ranks):
+            row = 7 - rank_idx  # FEN starts from rank 8
+            col = 0
+            
+            for char in rank:
+                if char.isdigit():
+                    # Empty squares
+                    col += int(char)
+                else:
+                    # Piece
+                    piece = self._char_to_piece(char)
+                    if not piece:
+                        raise ValueError(f"Invalid piece character: {char}")
+                    
+                    if col &gt;= 8:
+                        raise ValueError("Invalid FEN: too many pieces in rank")
+                    
+                    self.board.set_piece(row, col, piece)
+                    col += 1
+            
+            if col != 8:
+                raise ValueError("Invalid FEN: incorrect number of squares in rank")
+    
+    def _parse_turn(self, turn_str: str):
+        """Parse active color from FEN."""
+        if turn_str == 'w':
+            self.board.to_move = Color.WHITE
+        elif turn_str == 'b':
+            self.board.to_move = Color.BLACK
+        else:
+            raise ValueError(f"Invalid turn indicator: {turn_str}")
+    
+    def _parse_castling(self, castling_str: str):
+        """Parse castling availability from FEN."""
+        self.board.castling_rights = CastlingRights(False, False, False, False)
+        
+        if castling_str != '-':
+            for char in castling_str:
+                if char == 'K':
+                    self.board.castling_rights.white_kingside = True
+                elif char == 'Q':
+                    self.board.castling_rights.white_queenside = True
+                elif char == 'k':
+                    self.board.castling_rights.black_kingside = True
+                elif char == 'q':
+                    self.board.castling_rights.black_queenside = True
+                else:
+                    raise ValueError(f"Invalid castling character: {char}")
+    
+    def _parse_en_passant(self, en_passant_str: str):
+        """Parse en passant target from FEN."""
+        if en_passant_str == '-':
+            self.board.en_passant_target = None
+        else:
+            if len(en_passant_str) != 2:
+                raise ValueError(f"Invalid en passant square: {en_passant_str}")
+            
+            file_char, rank_char = en_passant_str
+            col = ord(file_char.lower()) - ord('a')
+            row = int(rank_char) - 1
+            
+            if not (0 &lt;= col &lt;= 7 and 0 &lt;= row &lt;= 7):
+                raise ValueError(f"Invalid en passant square: {en_passant_str}")
+            
+            self.board.en_passant_target = (row, col)
+    
+    def _parse_clocks(self, halfmove_str: str, fullmove_str: str):
+        """Parse move clocks from FEN."""
+        try:
+            self.board.halfmove_clock = int(halfmove_str)
+            self.board.fullmove_number = int(fullmove_str)
+        except ValueError:
+            raise ValueError("Invalid move clock values")
+        
+        if self.board.halfmove_clock &lt; 0 or self.board.fullmove_number &lt; 1:
+            raise ValueError("Invalid move clock values")
+    
+    def _char_to_piece(self, char: str) -&gt; Optional[Piece]:
+        """Convert FEN character to Piece object."""
+        piece_map = {
+            'P': (PieceType.PAWN, Color.WHITE),
+            'N': (PieceType.KNIGHT, Color.WHITE),
+            'B': (PieceType.BISHOP, Color.WHITE),
+            'R': (PieceType.ROOK, Color.WHITE),
+            'Q': (PieceType.QUEEN, Color.WHITE),
+            'K': (PieceType.KING, Color.WHITE),
+            'p': (PieceType.PAWN, Color.BLACK),
+            'n': (PieceType.KNIGHT, Color.BLACK),
+            'b': (PieceType.BISHOP, Color.BLACK),
+            'r': (PieceType.ROOK, Color.BLACK),
+            'q': (PieceType.QUEEN, Color.BLACK),
+            'k': (PieceType.KING, Color.BLACK),
+        }
+        
+        if char in piece_map:
+            piece_type, color = piece_map[char]
+            return Piece(piece_type, color)
+        
+        return None
+    
+    def export(self) -&gt; str:
+        """Generate FEN string from current board position."""
+        # Generate piece placement
+        pieces_str = self._generate_pieces_string()
+        
+        # Generate turn
+        turn_str = 'w' if self.board.to_move == Color.WHITE else 'b'
+        
+        # Generate castling
+        castling_str = self.board.castling_rights.to_fen()
+        
+        # Generate en passant
+        en_passant_str = self._generate_en_passant_string()
+        
+        # Generate clocks
+        halfmove_str = str(self.board.halfmove_clock)
+        fullmove_str = str(self.board.fullmove_number)
+        
+        return f"{pieces_str} {turn_str} {castling_str} {en_passant_str} {halfmove_str} {fullmove_str}"
+    
+    def _generate_pieces_string(self) -&gt; str:
+        """Generate piece placement string for FEN."""
+        ranks = []
+        
+        for rank_idx in range(8):
+            row = 7 - rank_idx  # FEN starts from rank 8
+            rank_str = ""
+            empty_count = 0
+            
+            for col in range(8):
+                piece = self.board.get_piece(row, col)
+                
+                if piece:
+                    if empty_count &gt; 0:
+                        rank_str += str(empty_count)
+                        empty_count = 0
+                    rank_str += str(piece)
+                else:
+                    empty_count += 1
+            
+            if empty_count &gt; 0:
+                rank_str += str(empty_count)
+            
+            ranks.append(rank_str)
+        
+        return '/'.join(ranks)
+    
+    def _generate_en_passant_string(self) -&gt; str:
+        """Generate en passant string for FEN."""
+        if not self.board.en_passant_target:
+            return '-'
+        
+        row, col = self.board.en_passant_target
+        file_char = chr(ord('a') + col)
+        rank_char = str(row + 1)
+        
+        return file_char + rank_char</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_move_generator_py')">📄 lib/move_generator.py</button>
+<pre id="lib_move_generator_py" class="file-content" style="display:none;"><code>"""
+Move generation for chess pieces.
+"""
+
+from typing import List, Optional
+from lib.types import Move, Piece, PieceType, Color
+from lib.board import Board
+
+
+class MoveGenerator:
+    """Generates legal moves for chess pieces."""
+    
+    def __init__(self, board: Board):
+        self.board = board
+    
+    def generate_legal_moves(self) -&gt; List[Move]:
+        """Generate all legal moves for the current player."""
+        pseudo_legal_moves = self.generate_pseudo_legal_moves()
+        legal_moves = []
+        
+        for move in pseudo_legal_moves:
+            if self.is_legal_move(move):
+                legal_moves.append(move)
+        
+        return legal_moves
+    
+    def generate_pseudo_legal_moves(self) -&gt; List[Move]:
+        """Generate all pseudo-legal moves (not checking for check)."""
+        moves = []
+        
+        for row in range(8):
+            for col in range(8):
+                piece = self.board.get_piece(row, col)
+                if piece and piece.color == self.board.to_move:
+                    piece_moves = self.generate_piece_moves(row, col, piece)
+                    moves.extend(piece_moves)
+        
+        return moves
+    
+    def generate_piece_moves(self, row: int, col: int, piece: Piece) -&gt; List[Move]:
+        """Generate moves for a specific piece."""
+        if piece.type == PieceType.PAWN:
+            return self.generate_pawn_moves(row, col, piece)
+        elif piece.type == PieceType.KNIGHT:
+            return self.generate_knight_moves(row, col, piece)
+        elif piece.type == PieceType.BISHOP:
+            return self.generate_bishop_moves(row, col, piece)
+        elif piece.type == PieceType.ROOK:
+            return self.generate_rook_moves(row, col, piece)
+        elif piece.type == PieceType.QUEEN:
+            return self.generate_queen_moves(row, col, piece)
+        elif piece.type == PieceType.KING:
+            return self.generate_king_moves(row, col, piece)
+        
+        return []
+    
+    def generate_pawn_moves(self, row: int, col: int, piece: Piece) -&gt; List[Move]:
+        """Generate pawn moves."""
+        moves = []
+        direction = 1 if piece.color == Color.WHITE else -1
+        start_row = 1 if piece.color == Color.WHITE else 6
+        promotion_row = 7 if piece.color == Color.WHITE else 0
+        
+        # Forward moves
+        new_row = row + direction
+        if self.board.is_valid_square(new_row, col) and self.board.is_empty(new_row, col):
+            if new_row == promotion_row:
+                # Promotion
+                for promo_type in [PieceType.QUEEN, PieceType.ROOK, 
+                                 PieceType.BISHOP, PieceType.KNIGHT]:
+                    moves.append(Move(row, col, new_row, col, promo_type))
+            else:
+                moves.append(Move(row, col, new_row, col))
+            
+            # Two square move from starting position
+            if row == start_row:
+                new_row = row + 2 * direction
+                if self.board.is_valid_square(new_row, col) and self.board.is_empty(new_row, col):
+                    move = Move(row, col, new_row, col)
+                    moves.append(move)
+        
+        # Captures
+        for dc in [-1, 1]:
+            new_col = col + dc
+            new_row = row + direction
+            
+            if self.board.is_valid_square(new_row, new_col):
+                target_piece = self.board.get_piece(new_row, new_col)
+                
+                # Regular capture
+                if target_piece and target_piece.color != piece.color:
+                    if new_row == promotion_row:
+                        # Promotion capture
+                        for promo_type in [PieceType.QUEEN, PieceType.ROOK,
+                                         PieceType.BISHOP, PieceType.KNIGHT]:
+                            moves.append(Move(row, col, new_row, new_col, promo_type))
+                    else:
+                        moves.append(Move(row, col, new_row, new_col))
+                
+                # En passant capture
+                elif (self.board.en_passant_target and 
+                      self.board.en_passant_target == (new_row, new_col)):
+                    move = Move(row, col, new_row, new_col)
+                    move.is_en_passant = True
+                    moves.append(move)
+        
+        return moves
+    
+    def generate_knight_moves(self, row: int, col: int, piece: Piece) -&gt; List[Move]:
+        """Generate knight moves."""
+        moves = []
+        knight_moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
+                       (1, -2), (1, 2), (2, -1), (2, 1)]
+        
+        for dr, dc in knight_moves:
+            new_row, new_col = row + dr, col + dc
+            
+            if self.board.is_valid_square(new_row, new_col):
+                target_piece = self.board.get_piece(new_row, new_col)
+                
+                if not target_piece or target_piece.color != piece.color:
+                    moves.append(Move(row, col, new_row, new_col))
+        
+        return moves
+    
+    def generate_bishop_moves(self, row: int, col: int, piece: Piece) -&gt; List[Move]:
+        """Generate bishop moves."""
+        return self.generate_sliding_moves(row, col, piece,
+                                         [(-1, -1), (-1, 1), (1, -1), (1, 1)])
+    
+    def generate_rook_moves(self, row: int, col: int, piece: Piece) -&gt; List[Move]:
+        """Generate rook moves."""
+        return self.generate_sliding_moves(row, col, piece,
+                                         [(-1, 0), (1, 0), (0, -1), (0, 1)])
+    
+    def generate_queen_moves(self, row: int, col: int, piece: Piece) -&gt; List[Move]:
+        """Generate queen moves."""
+        return self.generate_sliding_moves(row, col, piece,
+                                         [(-1, -1), (-1, 0), (-1, 1), (0, -1),
+                                          (0, 1), (1, -1), (1, 0), (1, 1)])
+    
+    def generate_sliding_moves(self, row: int, col: int, piece: Piece,
+                             directions: List[tuple]) -&gt; List[Move]:
+        """Generate moves for sliding pieces (bishop, rook, queen)."""
+        moves = []
+        
+        for dr, dc in directions:
+            for i in range(1, 8):
+                new_row, new_col = row + i * dr, col + i * dc
+                
+                if not self.board.is_valid_square(new_row, new_col):
+                    break
+                
+                target_piece = self.board.get_piece(new_row, new_col)
+                
+                if not target_piece:
+                    moves.append(Move(row, col, new_row, new_col))
+                elif target_piece.color != piece.color:
+                    moves.append(Move(row, col, new_row, new_col))
+                    break
+                else:
+                    break
+        
+        return moves
+    
+    def generate_king_moves(self, row: int, col: int, piece: Piece) -&gt; List[Move]:
+        """Generate king moves including castling."""
+        moves = []
+        
+        # Regular king moves
+        king_directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
+                          (0, 1), (1, -1), (1, 0), (1, 1)]
+        
+        for dr, dc in king_directions:
+            new_row, new_col = row + dr, col + dc
+            
+            if self.board.is_valid_square(new_row, new_col):
+                target_piece = self.board.get_piece(new_row, new_col)
+                
+                if not target_piece or target_piece.color != piece.color:
+                    moves.append(Move(row, col, new_row, new_col))
+        
+        # Castling moves
+        if not self.board.is_in_check(piece.color):
+            moves.extend(self.generate_castling_moves(row, col, piece))
+        
+        return moves
+    
+    def generate_castling_moves(self, row: int, col: int, piece: Piece) -&gt; List[Move]:
+        """Generate castling moves."""
+        moves = []
+        
+        if piece.color == Color.WHITE and row == 0 and col == 4:
+            # White castling
+            if (self.board.castling_rights.white_kingside and
+                self.board.is_empty(0, 5) and self.board.is_empty(0, 6) and
+                not self.board.is_square_attacked(0, 5, Color.BLACK) and
+                not self.board.is_square_attacked(0, 6, Color.BLACK)):
+                move = Move(0, 4, 0, 6)
+                move.is_castling = True
+                moves.append(move)
+            
+            if (self.board.castling_rights.white_queenside and
+                self.board.is_empty(0, 1) and self.board.is_empty(0, 2) and 
+                self.board.is_empty(0, 3) and
+                not self.board.is_square_attacked(0, 2, Color.BLACK) and
+                not self.board.is_square_attacked(0, 3, Color.BLACK)):
+                move = Move(0, 4, 0, 2)
+                move.is_castling = True
+                moves.append(move)
+        
+        elif piece.color == Color.BLACK and row == 7 and col == 4:
+            # Black castling
+            if (self.board.castling_rights.black_kingside and
+                self.board.is_empty(7, 5) and self.board.is_empty(7, 6) and
+                not self.board.is_square_attacked(7, 5, Color.WHITE) and
+                not self.board.is_square_attacked(7, 6, Color.WHITE)):
+                move = Move(7, 4, 7, 6)
+                move.is_castling = True
+                moves.append(move)
+            
+            if (self.board.castling_rights.black_queenside and
+                self.board.is_empty(7, 1) and self.board.is_empty(7, 2) and 
+                self.board.is_empty(7, 3) and
+                not self.board.is_square_attacked(7, 2, Color.WHITE) and
+                not self.board.is_square_attacked(7, 3, Color.WHITE)):
+                move = Move(7, 4, 7, 2)
+                move.is_castling = True
+                moves.append(move)
+        
+        return moves
+    
+    def is_legal_move(self, move: Move) -&gt; bool:
+        """Check if a move is legal (doesn't leave king in check)."""
+        # Make the move temporarily
+        self.board.make_move(move)
+        
+        # Switch back the turn to check the correct king
+        original_turn = self.board.to_move
+        self.board.to_move = Color.BLACK if original_turn == Color.WHITE else Color.WHITE
+        
+        # Check if the king is in check after the move
+        in_check = self.board.is_in_check(self.board.to_move)
+        
+        # Restore the turn
+        self.board.to_move = original_turn
+        
+        # Undo the move
+        self.board.undo_move(move)
+        
+        return not in_check</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_perft_py')">📄 lib/perft.py</button>
+<pre id="lib_perft_py" class="file-content" style="display:none;"><code>"""
+Performance testing (perft) for move generation validation.
+"""
+
+from lib.board import Board
+from lib.move_generator import MoveGenerator
+
+
+class Perft:
+    """Performance test for move generation."""
+    
+    def __init__(self, board: Board, move_generator: MoveGenerator):
+        self.board = board
+        self.move_generator = move_generator
+    
+    def perft(self, depth: int) -&gt; int:
+        """Count all possible positions after depth moves."""
+        if depth == 0:
+            return 1
+        
+        legal_moves = self.move_generator.generate_legal_moves()
+        node_count = 0
+        
+        for move in legal_moves:
+            self.board.make_move(move)
+            node_count += self.perft(depth - 1)
+            self.board.undo_move(move)
+        
+        return node_count
+    
+    def perft_divide(self, depth: int) -&gt; dict:
+        """Perft with division - shows move counts for each first move."""
+        if depth &lt;= 0:
+            return {}
+        
+        legal_moves = self.move_generator.generate_legal_moves()
+        results = {}
+        
+        for move in legal_moves:
+            self.board.make_move(move)
+            
+            if depth == 1:
+                count = 1
+            else:
+                count = self.perft(depth - 1)
+            
+            self.board.undo_move(move)
+            
+            move_str = move.to_algebraic()
+            results[move_str] = count
+        
+        return results</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_types_py')">📄 lib/types.py</button>
+<pre id="lib_types_py" class="file-content" style="display:none;"><code>"""
+Type definitions for the chess engine.
+"""
+
+from typing import Optional, List, Tuple
+from dataclasses import dataclass
+from enum import Enum
+
+
+class PieceType(Enum):
+    """Chess piece types."""
+    PAWN = 'P'
+    KNIGHT = 'N'
+    BISHOP = 'B'
+    ROOK = 'R'
+    QUEEN = 'Q'
+    KING = 'K'
+
+
+class Color(Enum):
+    """Chess piece colors."""
+    WHITE = 'white'
+    BLACK = 'black'
+
+
+@dataclass
+class Piece:
+    """Represents a chess piece."""
+    type: PieceType
+    color: Color
+    
+    def __str__(self) -&gt; str:
+        """Return the piece symbol."""
+        symbol = self.type.value
+        return symbol if self.color == Color.WHITE else symbol.lower()
+    
+    def is_white(self) -&gt; bool:
+        """Check if piece is white."""
+        return self.color == Color.WHITE
+    
+    def is_black(self) -&gt; bool:
+        """Check if piece is black."""
+        return self.color == Color.BLACK
+
+
+@dataclass
+class Move:
+    """Represents a chess move."""
+    from_row: int
+    from_col: int
+    to_row: int
+    to_col: int
+    promotion: Optional[PieceType] = None
+    captured_piece: Optional[Piece] = None
+    is_castling: bool = False
+    is_en_passant: bool = False
+    en_passant_target: Optional[Tuple[int, int]] = None
+    
+    @classmethod
+    def from_algebraic(cls, move_str: str) -&gt; Optional['Move']:
+        """Parse algebraic notation into a Move object."""
+        if not move_str or len(move_str) &lt; 4:
+            return None
+        
+        try:
+            # Parse from square
+            from_file = move_str[0].lower()
+            from_rank = move_str[1]
+            from_col = ord(from_file) - ord('a')
+            from_row = int(from_rank) - 1
+            
+            # Parse to square
+            to_file = move_str[2].lower()
+            to_rank = move_str[3]
+            to_col = ord(to_file) - ord('a')
+            to_row = int(to_rank) - 1
+            
+            # Check bounds
+            if not (0 &lt;= from_row &lt;= 7 and 0 &lt;= from_col &lt;= 7 and
+                    0 &lt;= to_row &lt;= 7 and 0 &lt;= to_col &lt;= 7):
+                return None
+            
+            # Parse promotion
+            promotion = None
+            if len(move_str) &gt; 4:
+                promo_char = move_str[4].upper()
+                if promo_char in 'QRBN':
+                    promotion = PieceType(promo_char)
+            
+            return cls(from_row, from_col, to_row, to_col, promotion)
+            
+        except (ValueError, IndexError):
+            return None
+    
+    def to_algebraic(self) -&gt; str:
+        """Convert move to algebraic notation."""
+        from_file = chr(ord('a') + self.from_col)
+        from_rank = str(self.from_row + 1)
+        to_file = chr(ord('a') + self.to_col)
+        to_rank = str(self.to_row + 1)
+        
+        result = from_file + from_rank + to_file + to_rank
+        
+        if self.promotion:
+            result += self.promotion.value
+        
+        return result
+    
+    def __eq__(self, other) -&gt; bool:
+        """Check move equality."""
+        if not isinstance(other, Move):
+            return False
+        return (self.from_row == other.from_row and
+                self.from_col == other.from_col and
+                self.to_row == other.to_row and
+                self.to_col == other.to_col and
+                self.promotion == other.promotion)
+    
+    def __hash__(self) -&gt; int:
+        """Hash for move comparison."""
+        return hash((self.from_row, self.from_col, self.to_row, self.to_col, self.promotion))
+
+
+@dataclass
+class CastlingRights:
+    """Tracks castling availability."""
+    white_kingside: bool = True
+    white_queenside: bool = True
+    black_kingside: bool = True
+    black_queenside: bool = True
+    
+    def copy(self) -&gt; 'CastlingRights':
+        """Create a copy of castling rights."""
+        return CastlingRights(
+            self.white_kingside,
+            self.white_queenside,
+            self.black_kingside,
+            self.black_queenside
+        )
+    
+    def to_fen(self) -&gt; str:
+        """Convert to FEN castling string."""
+        result = ""
+        if self.white_kingside:
+            result += "K"
+        if self.white_queenside:
+            result += "Q"
+        if self.black_kingside:
+            result += "k"
+        if self.black_queenside:
+            result += "q"
+        return result if result else "-"
+
+
+@dataclass
+class GameState:
+    """Represents complete game state for undo functionality."""
+    castling_rights: CastlingRights
+    en_passant_target: Optional[Tuple[int, int]]
+    halfmove_clock: int
+    fullmove_number: int
+    captured_piece: Optional[Piece] = None</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('mypy_ini')">📄 mypy.ini</button>
+<pre id="mypy_ini" class="file-content" style="display:none;"><code>[mypy]
+python_version = 3.11
+warn_return_any = True
+warn_unused_configs = True
+warn_redundant_casts = True
+warn_unused_ignores = True
+warn_no_return = True
+warn_unreachable = True
+strict_optional = True
+disallow_untyped_defs = True
+disallow_incomplete_defs = True
+check_untyped_defs = True
+disallow_untyped_decorators = True
+no_implicit_optional = True
+warn_incomplete_stub = True
+
+[mypy-lib.*]
+ignore_missing_imports = True</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('pylintrc')">📄 pylintrc</button>
+<pre id="pylintrc" class="file-content" style="display:none;"><code>[pylint]
+disable = missing-module-docstring,missing-class-docstring,missing-function-docstring,too-few-public-methods,too-many-instance-attributes,too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+
+[pylint.FORMAT]
+max-line-length = 100
+
+[pylint.DESIGN]
+max-args = 8
+max-locals = 20
+max-branches = 15
+max-statements = 60</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('pyproject_toml')">📄 pyproject.toml</button>
+<pre id="pyproject_toml" class="file-content" style="display:none;"><code>[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('requirements_txt')">📄 requirements.txt</button>
+<pre id="requirements_txt" class="file-content" style="display:none;"><code># Static analysis tools
+mypy==1.6.1
+pylint==3.0.2
+flake8==6.1.0
+black==23.9.1
+bandit==1.7.5
+
+# Type stub packages for better type checking
+types-dataclasses==0.6.6</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('test_engine_py')">📄 test_engine.py</button>
+<pre id="test_engine_py" class="file-content" style="display:none;"><code>#!/usr/bin/env python3
+"""
+Test script to demonstrate Python chess engine functionality.
+"""
+
+import subprocess
+import sys
+
+def test_basic_functionality():
+    """Test basic chess engine functionality."""
+    print("🧪 Testing Python Chess Engine")
+    print("=" * 50)
+    
+    # Test commands
+    test_commands = [
+        "new",
+        "help", 
+        "move e2e4",
+        "move e7e5",
+        "move g1f3",
+        "move b8c6", 
+        "export",
+        "undo",
+        "export",
+        "perft 3",
+        "ai 2",
+        "new",
+        "fen r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
+        "move e1g1",
+        "export",
+        "quit"
+    ]
+    
+    input_str = "\n".join(test_commands) + "\n"
+    
+    try:
+        result = subprocess.run(
+            ["python3", "chess.py"],
+            input=input_str,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            print("✅ Chess engine ran successfully!")
+            print("\n📊 Sample output:")
+            # Show last few lines of output
+            lines = result.stdout.strip().split('\n')
+            for line in lines[-10:]:
+                if line.strip():
+                    print(f"  {line}")
+        else:
+            print("❌ Chess engine failed to run")
+            print("STDERR:", result.stderr[:500])
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print("⏰ Test timed out")
+        return False
+    except Exception as e:
+        print(f"❌ Test error: {e}")
+        return False
+    
+    return True
+
+def test_perft_accuracy():
+    """Test perft accuracy for move generation validation."""
+    print("\n🎯 Testing Perft Accuracy")
+    print("-" * 30)
+    
+    # Known perft values from starting position
+    expected_perft = {
+        1: 20,
+        2: 400, 
+        3: 8902
+    }
+    
+    for depth, expected in expected_perft.items():
+        try:
+            result = subprocess.run(
+                ["python3", "chess.py"],
+                input=f"new\nperft {depth}\nquit\n",
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode == 0:
+                # Parse perft result
+                for line in result.stdout.split('\n'):
+                    if f"Perft({depth}):" in line:
+                        parts = line.split()
+                        actual = int(parts[1])
+                        if actual == expected:
+                            print(f"✅ Perft({depth}): {actual} nodes (correct)")
+                        else:
+                            print(f"❌ Perft({depth}): {actual} nodes (expected {expected})")
+                        break
+                else:
+                    print(f"❌ Perft({depth}): No result found")
+            else:
+                print(f"❌ Perft({depth}): Engine failed")
+                
+        except Exception as e:
+            print(f"❌ Perft({depth}): Error - {e}")
+
+def main():
+    """Run all tests."""
+    success = test_basic_functionality()
+    test_perft_accuracy()
+    
+    print(f"\n{'✅ All tests completed successfully!' if success else '❌ Some tests failed'}")
+    return 0 if success else 1
+
+if __name__ == "__main__":
+    sys.exit(main())</code></pre>
+</div>
+</div>
+
+<script>
+function toggleFile(id) {
+    var content = document.getElementById(id);
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+    } else {
+        content.style.display = 'none';
+    }
+}
+</script>
+
+    </main>
+    <footer>
+        <p>Generated from benchmark data. All implementations tested via Docker for consistency.</p>
+        <p><a href="https://github.com/evaisse/the-great-analysis-challenge">View on GitHub</a></p>
+    </footer>
+</body>
+</html>
