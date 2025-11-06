@@ -17,25 +17,26 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy project files needed for dependency install and make targets
 COPY package*.json ./
 COPY tsconfig.json ./
+COPY Makefile ./
 
 # Install dependencies
 RUN npm install
 
 # Copy source code
 COPY src/ ./src/
+COPY test/ ./test/
 
 # Build the TypeScript project
 RUN npm run build
 
-# Create a non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S chess -u 1001
+# Create a non-root user for running the engine
+RUN useradd -ms /bin/bash chess
 
-# Change ownership of the app directory
-RUN chown -R chess:nodejs /app
+# Change ownership of the app directory to the non-root user
+RUN chown -R chess:chess /app
 
 # Switch to non-root user
 USER chess

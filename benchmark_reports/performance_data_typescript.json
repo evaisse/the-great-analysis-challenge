@@ -1,0 +1,47 @@
+[
+  {
+    "language": "typescript",
+    "path": "implementations/typescript",
+    "metadata": {
+      "language": "typescript",
+      "version": "5.0",
+      "author": "TypeScript Implementation",
+      "build": "npm install && npm run build",
+      "run": "node dist/chess.js",
+      "analyze": "npm install && npm run lint && npx tsc --noEmit && npx prettier --check src/*.ts",
+      "test": "npm install && npm test",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800
+    },
+    "timings": {
+      "build_seconds": 0.4478421211242676,
+      "analyze_seconds": 1.9185657501220703,
+      "test_seconds": 0.9453387260437012
+    },
+    "memory": {},
+    "docker": {
+      "build_time": 0.4478421211242676,
+      "build_success": true,
+      "test_time": 0.9453387260437012,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  }
+]

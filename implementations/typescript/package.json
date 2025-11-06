@@ -7,7 +7,7 @@
     "start": "node dist/chess.js",
     "dev": "tsc && node dist/chess.js",
     "chess": "npm run build && npm start",
-    "test": "echo \"No tests defined yet\" && exit 0",
+    "test": "npm run build && node test/basic.test.js",
     "lint": "echo \"No linter configured yet\" && exit 0"
   },
   "keywords": [],

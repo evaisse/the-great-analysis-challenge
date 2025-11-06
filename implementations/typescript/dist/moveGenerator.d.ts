@@ -1,5 +1,5 @@
-import { Board } from './board';
-import { Move, Piece, Color, Square } from './types';
+import { Board } from "./board";
+import { Move, Piece, Color, Square } from "./types";
 export declare class MoveGenerator {
     private board;
     constructor(board: Board);

@@ -1,4 +1,4 @@
-import { Board } from './board';
+import { Board } from "./board";
 export declare class FenParser {
     private board;
     constructor(board: Board);

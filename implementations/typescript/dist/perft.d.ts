@@ -1,5 +1,5 @@
-import { Board } from './board';
-import { MoveGenerator } from './moveGenerator';
+import { Board } from "./board";
+import { MoveGenerator } from "./moveGenerator";
 export declare class Perft {
     private board;
     private moveGenerator;

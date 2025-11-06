@@ -1,67 +1,3 @@
-Running Dart static analysis...
-dart analyze || true
-Analyzing dart...
-
-  error - bin/main.dart:80:52 - Unterminated string literal. - unterminated_string_literal
-  error - bin/main.dart:81:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:81:15 - Too many positional arguments: 1 expected, but 19 found. Try removing the extra arguments. - extra_positional_arguments
-  error - bin/main.dart:81:15 - Undefined name 'move'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:81:21 - Undefined name 'from'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:81:25 - A comparison expression can't be an operand of another comparison expression. Try putting parentheses around one of the comparisons. - equality_cannot_be_equality_operand
-  error - bin/main.dart:81:27 - The name 'to' isn't a type, so it can't be used as a type argument. Try correcting the name to an existing type, or defining a type named 'to'. - non_type_as_type_argument
-  error - bin/main.dart:81:31 - Undefined name 'promotion'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:82:1 - Expected to find ','. - expected_token
-  error - bin/main.dart:82:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:82:15 - Undefined name 'undo'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:83:1 - Expected to find ','. - expected_token
-  error - bin/main.dart:83:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:84:1 - Expected an identifier. - missing_identifier
-  error - bin/main.dart:84:1 - Expected to find '('. - expected_token
-  error - bin/main.dart:84:1 - Expected to find ','. - expected_token
-  error - bin/main.dart:84:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:84:18 - The operator '<' isn't defined for the type 'AI'. Try defining the operator '<'. - undefined_operator
-  error - bin/main.dart:84:19 - Undefined name 'depth'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:84:24 - A comparison expression can't be an operand of another comparison expression. Try putting parentheses around one of the comparisons. - equality_cannot_be_equality_operand
-  error - bin/main.dart:85:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:85:15 - Undefined name 'fen'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:85:20 - Undefined name 'string'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:85:26 - A comparison expression can't be an operand of another comparison expression. Try putting parentheses around one of the comparisons. - equality_cannot_be_equality_operand
-  error - bin/main.dart:86:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:86:15 - Undefined name 'export'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:87:1 - Expected to find ','. - expected_token
-  error - bin/main.dart:87:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:87:15 - Undefined name 'eval'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:88:1 - Expected to find ','. - expected_token
-  error - bin/main.dart:88:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:88:15 - Undefined name 'perft'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:88:22 - Undefined name 'depth'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:88:27 - A comparison expression can't be an operand of another comparison expression. Try putting parentheses around one of the comparisons. - equality_cannot_be_equality_operand
-  error - bin/main.dart:89:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:89:15 - Undefined name 'help'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:90:1 - Expected to find ','. - expected_token
-  error - bin/main.dart:90:15 - Expected to find ','. - expected_token
-  error - bin/main.dart:90:15 - Undefined name 'quit'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:90:19 - Expected to find ','. - expected_token
-  error - bin/main.dart:90:35 - Unterminated string literal. - unterminated_string_literal
-  error - bin/main.dart:91:7 - 'case' can't be used as an identifier because it's a keyword. Try renaming this to be an identifier that isn't a keyword. - expected_identifier_but_got_keyword
-  error - bin/main.dart:91:7 - Expected to find ','. - expected_token
-  error - bin/main.dart:91:7 - Undefined name 'case'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
-  error - bin/main.dart:91:12 - Expected an identifier. - missing_identifier
-  error - bin/main.dart:91:12 - Expected to find ','. - expected_token
-  error - bin/main.dart:91:18 - The named parameter '' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name ''. - undefined_named_parameter
-  error - bin/main.dart:92:16 - Expected to find ')'. - expected_token
-  error - lib/src/board.dart:11:3 - Non-nullable instance field '_castlingRights' must be initialized. Try adding an initializer expression, or add a field initializer in this constructor, or mark it 'late'. - not_initialized_non_nullable_instance_field
-  error - lib/src/board.dart:17:3 - Non-nullable instance field '_castlingRights' must be initialized. Try adding an initializer expression, or add a field initializer in this constructor, or mark it 'late'. - not_initialized_non_nullable_instance_field
-  error - lib/src/game.dart:66:1 - Expected to find '}'. - expected_token
-
-51 issues found.
-dart format --set-exit-if-changed . || true
-Formatted 6 files (0 changed) in 0.19 seconds.
-dart pub get
-Resolving dependencies...
-Downloading packages...
-Got dependencies!
-dart compile exe bin/main.dart -o bin/chess_engine
 ⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
@@ -73,60 +9,48 @@ Path: implementations/dart
 ============================================================
 🧹 Clearing build cache...
 🔧 Running: make clean
-⚠️  make clean returned non-zero exit code: Could not find a command named "clean".
-
-Usage: dart <command|dart-file> [arguments]
-
-Global options:
--v, --verbose               Show additional command output.
-    --version               Print the 
+✅ Local cache cleared with make clean
 ✅ Cache clearing completed
-🔍 Running static analysis...
-🔧 Running: make analyze
-✅ Analysis completed in 1.05s
-🔨 Building implementation...
-🔧 Running: make build
-❌ Build failed in 0.64s
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (includes analysis and build)...
+  🔧 Running: docker build -t chess-dart .
+  ✅ Docker build completed in 0.41s
+  🔍 Running static analysis...
+    🔧 Running: make analyze
+  ♟️  Running chess engine tests...
+    🔧 Running: make test
+  ✅ All Docker tests passed (build: 0.4s, analyze: 1.0s, test: 2.5s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-23 00:23:15
+Generated: 2025-11-06 19:42:59
 ================================================================================
 
 PERFORMANCE SUMMARY
 --------------------------------------------------------------------------------
 Language     Status     Analyze  Build    Test     Memory     Tests   
 --------------------------------------------------------------------------------
-dart         failed         1.1s     0.6s     0.0s        0MB 0/0     
+dart         completed      1.0s     0.4s     2.5s        0MB 3/3     
 
 ============================================================
 DETAILED RESULTS: DART
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 1.05s
-  Build Seconds: 0.64s
+  Build Seconds: 0.41s
+  Analyze Seconds: 0.98s
+  Test Seconds: 2.49s
 
-MEMORY USAGE:
-  Analyze: Peak 0.0MB, Avg 0.0MB
-  Build: Peak 0.0MB, Avg 0.0MB
+CHESS ENGINE TESTS: 3 passed, 0 failed
 
-ERRORS:
-  ❌ Build failed: bin/main.dart:80:33: Error: String starting with ' must end with '.
-      case 'help':        print('Available commands:
-                                ^^^^^^^^^^^^^^^^^^^^
-bin/main.dart:90:19: Error: String starting with ' must end with '.
-'            'quit');        break;
-                  ^^^^^^^^^^^^^^^^^
-bin/main.dart:80:32: Error: Can't find ')' to match '('.
-      case 'help':        print('Available commands:
-                               ^
-bin/main.dart:81:15: Error: Expected ',' be
-  ❌ Test failed: Build failed with exit code 2
+DOCKER TESTS:
+  Build: ✅ (0.41s)
+  Test: ✅ (2.49s)
 
 ================================================================================
 
 📄 Text report saved to benchmark_reports/performance_report_dart.txt
 📄 JSON results saved to benchmark_reports/performance_data_dart.json
 
-❌ 1 implementation(s) failed testing
+✅ All 1 implementation(s) completed successfully

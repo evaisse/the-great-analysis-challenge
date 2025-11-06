@@ -9,7 +9,9 @@ class Game {
   }
 
   void init() {
-    history = [Board.fromFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')];
+    history = [
+      Board.fromFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+    ];
   }
 
   Board get board => history.last;
@@ -58,8 +60,11 @@ class Game {
 
     final playerColor = board.turn == 'w' ? PieceColor.white : PieceColor.black;
     if (board.isKingInCheck(playerColor)) {
-      return playerColor == PieceColor.white ? GameState.checkmateBlackWins : GameState.checkmateWhiteWins;
+      return playerColor == PieceColor.white
+          ? GameState.checkmateBlackWins
+          : GameState.checkmateWhiteWins;
     } else {
       return GameState.stalemate;
     }
   }
+}

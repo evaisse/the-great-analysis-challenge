@@ -77,17 +77,19 @@ void main() {
         }
         game.perft(depth);
         break;
-      case 'help':        print('Available commands:
-'            'move <from><to>[promotion]
-'            'undo
-'            'new
-'            'ai <depth>
-'            'fen <string>
-'            'export
-'            'eval
-'            'perft <depth>
-'            'help
-'            'quit');        break;
+      case 'help':
+        print('''Available commands:
+move <from><to>[promotion]
+undo
+new
+ai <depth>
+fen <string>
+export
+eval
+perft <depth>
+help
+quit''');
+        break;
       case 'quit':
         exit(0);
       default:

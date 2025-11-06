@@ -1,4 +1,4 @@
-import { Piece, Color, Square, Move, CastlingRights, GameState } from './types';
+import { Piece, Color, Square, Move, CastlingRights, GameState } from "./types";
 export declare class Board {
     private state;
     constructor();

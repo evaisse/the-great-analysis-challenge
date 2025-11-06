@@ -1,6 +1,6 @@
-import { Board } from './board';
-import { MoveGenerator } from './moveGenerator';
-import { Move } from './types';
+import { Board } from "./board";
+import { MoveGenerator } from "./moveGenerator";
+import { Move } from "./types";
 export declare class AI {
     private board;
     private moveGenerator;

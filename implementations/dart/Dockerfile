@@ -9,11 +9,13 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     apt-transport-https \
+    ca-certificates \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Dart
-RUN wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/dart.gpg \
-    && echo 'deb [signed-by=/usr/share/keyrings/dart.gpg arch=amd64] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main' | tee /etc/apt/sources.list.d/dart_stable.list \
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/dart.gpg \
+    && echo 'deb [signed-by=/usr/share/keyrings/dart.gpg] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main' | tee /etc/apt/sources.list.d/dart_stable.list \
     && apt-get update \
     && apt-get install -y dart \
     && rm -rf /var/lib/apt/lists/*
@@ -32,4 +34,4 @@ COPY . .
 RUN dart compile exe bin/main.dart -o bin/chess_engine
 
 # Set the entrypoint for the container.
-ENTRYPOINT ["./bin/chess_engine"]
+CMD ["./bin/chess_engine"]

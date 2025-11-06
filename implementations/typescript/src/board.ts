@@ -1,4 +1,13 @@
-import { Piece, Color, Square, Move, CastlingRights, GameState, FILES, RANKS } from './types';
+import {
+  Piece,
+  Color,
+  Square,
+  Move,
+  CastlingRights,
+  GameState,
+  FILES,
+  RANKS,
+} from "./types";
 
 export class Board {
   private state: GameState;
@@ -9,32 +18,32 @@ export class Board {
 
   private createInitialState(): GameState {
     const board: (Piece | null)[] = new Array(64).fill(null);
-    
+
     const pieces: [Square, Piece][] = [
-      [0, { type: 'R', color: 'white' }],
-      [1, { type: 'N', color: 'white' }],
-      [2, { type: 'B', color: 'white' }],
-      [3, { type: 'Q', color: 'white' }],
-      [4, { type: 'K', color: 'white' }],
-      [5, { type: 'B', color: 'white' }],
-      [6, { type: 'N', color: 'white' }],
-      [7, { type: 'R', color: 'white' }],
-      
-      [56, { type: 'R', color: 'black' }],
-      [57, { type: 'N', color: 'black' }],
-      [58, { type: 'B', color: 'black' }],
-      [59, { type: 'Q', color: 'black' }],
-      [60, { type: 'K', color: 'black' }],
-      [61, { type: 'B', color: 'black' }],
-      [62, { type: 'N', color: 'black' }],
-      [63, { type: 'R', color: 'black' }],
+      [0, { type: "R", color: "white" }],
+      [1, { type: "N", color: "white" }],
+      [2, { type: "B", color: "white" }],
+      [3, { type: "Q", color: "white" }],
+      [4, { type: "K", color: "white" }],
+      [5, { type: "B", color: "white" }],
+      [6, { type: "N", color: "white" }],
+      [7, { type: "R", color: "white" }],
+
+      [56, { type: "R", color: "black" }],
+      [57, { type: "N", color: "black" }],
+      [58, { type: "B", color: "black" }],
+      [59, { type: "Q", color: "black" }],
+      [60, { type: "K", color: "black" }],
+      [61, { type: "B", color: "black" }],
+      [62, { type: "N", color: "black" }],
+      [63, { type: "R", color: "black" }],
     ];
 
     for (let i = 8; i < 16; i++) {
-      pieces.push([i, { type: 'P', color: 'white' }]);
+      pieces.push([i, { type: "P", color: "white" }]);
     }
     for (let i = 48; i < 56; i++) {
-      pieces.push([i, { type: 'P', color: 'black' }]);
+      pieces.push([i, { type: "P", color: "black" }]);
     }
 
     for (const [square, piece] of pieces) {
@@ -43,7 +52,7 @@ export class Board {
 
     return {
       board,
-      turn: 'white',
+      turn: "white",
       castlingRights: {
         whiteKingside: true,
         whiteQueenside: true,
@@ -53,7 +62,7 @@ export class Board {
       enPassantTarget: null,
       halfmoveClock: 0,
       fullmoveNumber: 1,
-      moveHistory: []
+      moveHistory: [],
     };
   }
 
@@ -124,8 +133,8 @@ export class Board {
     this.setPiece(move.from, null);
 
     if (move.castling) {
-      const rank = piece.color === 'white' ? 0 : 7;
-      if (move.castling === 'K' || move.castling === 'k') {
+      const rank = piece.color === "white" ? 0 : 7;
+      if (move.castling === "K" || move.castling === "k") {
         const rookFrom = rank * 8 + 7;
         const rookTo = rank * 8 + 5;
         const rook = this.getPiece(rookFrom);
@@ -145,7 +154,7 @@ export class Board {
     }
 
     if (move.enPassant) {
-      const capturedPawnSquare = move.to + (piece.color === 'white' ? -8 : 8);
+      const capturedPawnSquare = move.to + (piece.color === "white" ? -8 : 8);
       this.setPiece(capturedPawnSquare, null);
     }
 
@@ -154,16 +163,16 @@ export class Board {
     }
 
     const rights = this.getCastlingRights();
-    if (piece.type === 'K') {
-      if (piece.color === 'white') {
+    if (piece.type === "K") {
+      if (piece.color === "white") {
         rights.whiteKingside = false;
         rights.whiteQueenside = false;
       } else {
         rights.blackKingside = false;
         rights.blackQueenside = false;
       }
-    } else if (piece.type === 'R') {
-      if (piece.color === 'white') {
+    } else if (piece.type === "R") {
+      if (piece.color === "white") {
         if (move.from === 0) rights.whiteQueenside = false;
         if (move.from === 7) rights.whiteKingside = false;
       } else {
@@ -173,24 +182,24 @@ export class Board {
     }
     this.setCastlingRights(rights);
 
-    if (piece.type === 'P' && Math.abs(move.to - move.from) === 16) {
+    if (piece.type === "P" && Math.abs(move.to - move.from) === 16) {
       const enPassantSquare = (move.from + move.to) / 2;
       this.setEnPassantTarget(enPassantSquare);
     } else {
       this.setEnPassantTarget(null);
     }
 
-    if (piece.type === 'P' || move.captured) {
+    if (piece.type === "P" || move.captured) {
       this.state.halfmoveClock = 0;
     } else {
       this.state.halfmoveClock++;
     }
 
-    if (piece.color === 'black') {
+    if (piece.color === "black") {
       this.state.fullmoveNumber++;
     }
 
-    this.setTurn(piece.color === 'white' ? 'black' : 'white');
+    this.setTurn(piece.color === "white" ? "black" : "white");
     this.state.moveHistory.push(move);
   }
 
@@ -202,21 +211,21 @@ export class Board {
     if (!piece) return null;
 
     if (move.promotion) {
-      this.setPiece(move.from, { type: 'P', color: piece.color });
+      this.setPiece(move.from, { type: "P", color: piece.color });
     } else {
       this.setPiece(move.from, piece);
     }
-    
+
     if (move.captured) {
-      const capturedColor = piece.color === 'white' ? 'black' : 'white';
+      const capturedColor = piece.color === "white" ? "black" : "white";
       this.setPiece(move.to, { type: move.captured, color: capturedColor });
     } else {
       this.setPiece(move.to, null);
     }
 
     if (move.castling) {
-      const rank = piece.color === 'white' ? 0 : 7;
-      if (move.castling === 'K' || move.castling === 'k') {
+      const rank = piece.color === "white" ? 0 : 7;
+      if (move.castling === "K" || move.castling === "k") {
         const rookFrom = rank * 8 + 5;
         const rookTo = rank * 8 + 7;
         const rook = this.getPiece(rookFrom);
@@ -236,9 +245,9 @@ export class Board {
     }
 
     if (move.enPassant) {
-      const capturedPawnSquare = move.to + (piece.color === 'white' ? -8 : 8);
-      const capturedColor = piece.color === 'white' ? 'black' : 'white';
-      this.setPiece(capturedPawnSquare, { type: 'P', color: capturedColor });
+      const capturedPawnSquare = move.to + (piece.color === "white" ? -8 : 8);
+      const capturedColor = piece.color === "white" ? "black" : "white";
+      this.setPiece(capturedPawnSquare, { type: "P", color: capturedColor });
     }
 
     this.setTurn(piece.color);
@@ -247,28 +256,27 @@ export class Board {
   }
 
   public display(): string {
-    let output = '  a b c d e f g h\n';
-    
+    let output = "  a b c d e f g h\n";
+
     for (let rank = 7; rank >= 0; rank--) {
       output += `${rank + 1} `;
       for (let file = 0; file < 8; file++) {
         const square = rank * 8 + file;
         const piece = this.getPiece(square);
         if (piece) {
-          const char = piece.color === 'white' 
-            ? piece.type 
-            : piece.type.toLowerCase();
+          const char =
+            piece.color === "white" ? piece.type : piece.type.toLowerCase();
           output += `${char} `;
         } else {
-          output += '. ';
+          output += ". ";
         }
       }
       output += `${rank + 1}\n`;
     }
-    
-    output += '  a b c d e f g h\n\n';
-    output += `${this.state.turn === 'white' ? 'White' : 'Black'} to move`;
-    
+
+    output += "  a b c d e f g h\n\n";
+    output += `${this.state.turn === "white" ? "White" : "Black"} to move`;
+
     return output;
   }
 }

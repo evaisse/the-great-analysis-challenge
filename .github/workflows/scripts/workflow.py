@@ -727,11 +727,67 @@ Performance testing completed with status updates."""
         except Exception as e:
             print(f"Error during cleanup: {e}")
             return False
-    
+
+    def verify_make_target(self, engine: str, target: str, timeout: int = 180) -> bool:
+        """Run a Make target inside the Docker image and fail on hidden errors."""
+
+        image_name = f"chess-{engine}-test"
+        command = f"cd /app && make {target}"
+
+        print(f"🛠️  Verifying 'make {target}' inside {image_name}...")
+        result = subprocess.run(
+            ["docker", "run", "--rm", image_name, "sh", "-c", command],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+
+        stdout = result.stdout or ""
+        stderr = result.stderr or ""
+
+        if stdout.strip():
+            print(f"📤 Output:\n{stdout}")
+        if stderr.strip():
+            print(f"⚠️ Stderr:\n{stderr}")
+
+        if result.returncode != 0:
+            print(f"❌ make {target} exited with status {result.returncode}")
+            raise SystemExit(result.returncode)
+
+        combined = f"{stdout}\n{stderr}".lower()
+
+        failure_signals = [
+            "❌",
+            "make: *** no rule",
+            "npm err!",
+            "could not find package `test`",
+            "no tests defined yet",
+        ]
+
+        if target == "analyze":
+            failure_signals.extend(["error -", "analysis failed", "code style issues found"])
+        if target == "test":
+            failure_signals.extend(["basic test failed", "test failed", "failing tests"])
+
+        for signal in failure_signals:
+            if signal in combined:
+                print(f"❌ Detected failure indicator '{signal.strip()}' in make {target} output")
+                raise SystemExit(1)
+
+        if "changed)" in combined:
+            match = re.search(r"\((\d+) changed\)", combined)
+            if match and match.group(1) != '0':
+                print("❌ Formatter modified files; please commit formatting changes before running in CI")
+                raise SystemExit(1)
+
+        print(f"✅ make {target} completed cleanly for {engine}")
+        return True
+
     def get_test_config(self, implementation: str) -> Dict:
         """Get test configuration from chess.meta."""
         print(f"🔧 Reading test configuration from chess.meta...")
-        
+
         impl_path = f"implementations/{implementation}"
         
         if not os.path.exists(impl_path):
@@ -850,7 +906,13 @@ def main():
     cleanup_parser = subparsers.add_parser('cleanup-docker', help='Cleanup Docker images')
     cleanup_parser.add_argument('engine', nargs='?', help='Engine name')
     cleanup_parser.add_argument('--all', action='store_true', help='Cleanup all implementations')
-    
+
+    # verify-make-target command
+    verify_make_parser = subparsers.add_parser('verify-make-target', help='Run make target inside Docker image')
+    verify_make_parser.add_argument('engine', help='Engine name')
+    verify_make_parser.add_argument('target', help='Make target to run (e.g., analyze, test)')
+    verify_make_parser.add_argument('--timeout', type=int, default=180, help='Command timeout in seconds')
+
     # get-test-config command
     config_parser = subparsers.add_parser('get-test-config', help='Get test configuration')
     config_parser.add_argument('implementation', nargs='?', help='Implementation name')
@@ -944,7 +1006,11 @@ def main():
             except NameError:
                 success = tool.cleanup_docker(args.engine)
                 return 0 if success else 1
-        
+
+        elif args.command == 'verify-make-target':
+            success = tool.verify_make_target(args.engine, args.target, args.timeout)
+            return 0 if success else 1
+
         elif args.command == 'get-test-config':
             try:
                 result = get_test_config_main(args)

@@ -10,17 +10,15 @@ build:
 
 # Run basic tests
 test:
-	npm test || true
-	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | node dist/chess.js | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	npm test
 
 # Static analysis and code quality
 analyze:
 	@echo "Running TypeScript static analysis..."
 	npm install
-	npm run lint || true
-	npx tsc --noEmit || true
-	npx prettier --check src/*.ts || true
+	npm run lint
+	npx tsc --noEmit
+	npx prettier --check src/*.ts
 
 # Clean build artifacts
 clean:
