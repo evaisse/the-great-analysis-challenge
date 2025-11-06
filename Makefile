@@ -30,7 +30,7 @@ test: test-all
 build: build-all
 
 # Define list of languages
-LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo
+LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo cplusplus
 
 # Run all tests using Docker - pure Makefile implementation
 test-all:
@@ -113,6 +113,11 @@ test-mojo:
 	@docker build -t chess-mojo -f implementations/mojo/Dockerfile implementations/mojo
 	@docker run --rm chess-mojo sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | ./run_chess.sh"
 
+test-cplusplus:
+	@echo "Testing C++ implementation in Docker..."
+	@docker build -t chess-cplusplus -f implementations/cplusplus/Dockerfile implementations/cplusplus
+	@docker run --rm chess-cplusplus sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | ./chess"
+
 # Build individual implementations
 build-typescript:
 	@docker build -t chess-typescript -f implementations/typescript/Dockerfile implementations/typescript
@@ -149,6 +154,9 @@ build-rescript:
 
 build-mojo:
 	@docker build -t chess-mojo -f implementations/mojo/Dockerfile implementations/mojo
+
+build-cplusplus:
+	@docker build -t chess-cplusplus -f implementations/cplusplus/Dockerfile implementations/cplusplus
 
 # Clean up Docker images and containers
 clean:

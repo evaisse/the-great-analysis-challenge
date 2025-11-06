@@ -222,13 +222,11 @@ public:
         // Check for checkmate or stalemate
         if (is_in_check(white_to_move)) {
             if (is_checkmate()) {
-                cout << "OK: " << move_str << "\n";
                 display();
                 cout << "CHECKMATE: " << (white_to_move ? "Black" : "White") << " wins\n";
                 return true;
             }
         } else if (is_stalemate()) {
-            cout << "OK: " << move_str << "\n";
             display();
             cout << "STALEMATE: Draw\n";
             return true;
@@ -892,6 +890,7 @@ int main() {
         
         if (cmd == "new") {
             chess.init_board();
+            cout << "OK: New game started\n";
             chess.display();
         }
         else if (cmd == "move") {
@@ -905,6 +904,7 @@ int main() {
         }
         else if (cmd == "undo") {
             chess.undo_move();
+            cout << "OK: Move undone\n";
             chess.display();
         }
         else if (cmd == "ai") {
@@ -918,6 +918,7 @@ int main() {
             if (!fen.empty()) {
                 fen = fen.substr(1); // Remove leading space
                 if (chess.load_fen(fen)) {
+                    cout << "OK: FEN loaded\n";
                     chess.display();
                 } else {
                     cout << "ERROR: Invalid FEN string\n";
