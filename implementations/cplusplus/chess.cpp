@@ -12,8 +12,6 @@
 #include <ctime>
 #include <climits>
 
-using namespace std;
-
 // Piece constants
 const int EMPTY = 0;
 const int PAWN = 1;
@@ -26,7 +24,8 @@ const int KING = 6;
 const int WHITE = 8;
 const int BLACK = 16;
 
-// Piece values for evaluation
+// Piece values for evaluation (indexed by piece type)
+// [EMPTY, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING]
 const int PIECE_VALUES[] = {0, 100, 320, 330, 500, 900, 20000};
 
 // Move structure
@@ -66,7 +65,7 @@ private:
     bool black_rook_a_moved;
     bool black_rook_h_moved;
     int en_passant_col;
-    vector<GameState> history;
+    std::vector<GameState> history;
 
 public:
     ChessBoard() {
@@ -120,16 +119,16 @@ public:
     }
 
     void display() {
-        cout << "  a b c d e f g h\n";
+        std::cout << "  a b c d e f g h\n";
         for (int i = 0; i < 8; i++) {
-            cout << (8 - i) << " ";
+            std::cout << (8 - i) << " ";
             for (int j = 0; j < 8; j++) {
-                cout << piece_to_char(board[i][j]) << " ";
+                std::cout << piece_to_char(board[i][j]) << " ";
             }
-            cout << (8 - i) << "\n";
+            std::cout << (8 - i) << "\n";
         }
-        cout << "  a b c d e f g h\n\n";
-        cout << (white_to_move ? "White" : "Black") << " to move\n";
+        std::cout << "  a b c d e f g h\n\n";
+        std::cout << (white_to_move ? "White" : "Black") << " to move\n";
     }
 
     char piece_to_char(int piece) {
@@ -149,10 +148,10 @@ public:
             default: c = '.';
         }
         
-        return is_white ? c : tolower(c);
+        return is_white ? c : std::tolower(c);
     }
 
-    bool parse_move(const string& move_str, Move& move) {
+    bool parse_move(const std::string& move_str, Move& move) {
         if (move_str.length() < 4) return false;
         
         move.from_col = move_str[0] - 'a';
@@ -169,7 +168,7 @@ public:
         
         move.promotion = QUEEN;
         if (move_str.length() >= 5) {
-            char promo = toupper(move_str[4]);
+            char promo = std::toupper(move_str[4]);
             switch (promo) {
                 case 'Q': move.promotion = QUEEN; break;
                 case 'R': move.promotion = ROOK; break;
@@ -182,27 +181,27 @@ public:
         return true;
     }
 
-    bool make_move(const string& move_str) {
+    bool make_move(const std::string& move_str) {
         Move move;
         if (!parse_move(move_str, move)) {
-            cout << "ERROR: Invalid move format\n";
+            std::cout << "ERROR: Invalid move format\n";
             return false;
         }
 
         int piece = board[move.from_row][move.from_col];
         if (piece == EMPTY) {
-            cout << "ERROR: No piece at source square\n";
+            std::cout << "ERROR: No piece at source square\n";
             return false;
         }
 
         bool is_white = (piece & WHITE) != 0;
         if (is_white != white_to_move) {
-            cout << "ERROR: Wrong color piece\n";
+            std::cout << "ERROR: Wrong color piece\n";
             return false;
         }
 
         if (!is_legal_move(move)) {
-            cout << "ERROR: Illegal move\n";
+            std::cout << "ERROR: Illegal move\n";
             return false;
         }
 
@@ -215,7 +214,7 @@ public:
         // Check if own king is in check (invalid move)
         if (is_in_check(!white_to_move)) {
             undo_move();
-            cout << "ERROR: King would be in check\n";
+            std::cout << "ERROR: King would be in check\n";
             return false;
         }
 
@@ -223,16 +222,16 @@ public:
         if (is_in_check(white_to_move)) {
             if (is_checkmate()) {
                 display();
-                cout << "CHECKMATE: " << (white_to_move ? "Black" : "White") << " wins\n";
+                std::cout << "CHECKMATE: " << (white_to_move ? "Black" : "White") << " wins\n";
                 return true;
             }
         } else if (is_stalemate()) {
             display();
-            cout << "STALEMATE: Draw\n";
+            std::cout << "STALEMATE: Draw\n";
             return true;
         }
 
-        cout << "OK: " << move_str << "\n";
+        std::cout << "OK: " << move_str << "\n";
         display();
         return true;
     }
@@ -263,7 +262,7 @@ public:
         en_passant_col = -1;
         
         // Check for castling
-        if (type == KING && abs(move.to_col - move.from_col) == 2) {
+        if (type == KING && std::abs(move.to_col - move.from_col) == 2) {
             move.is_castling = true;
             // Move king
             board[move.to_row][move.to_col] = piece;
@@ -299,7 +298,7 @@ public:
         }
         
         // Set en passant flag for double pawn move
-        if (type == PAWN && abs(move.to_row - move.from_row) == 2) {
+        if (type == PAWN && std::abs(move.to_row - move.from_row) == 2) {
             en_passant_col = move.from_col;
         }
         
@@ -362,13 +361,13 @@ public:
             case PAWN:
                 return is_legal_pawn_move(move, is_white, dr, dc, target);
             case KNIGHT:
-                return (abs(dr) == 2 && abs(dc) == 1) || (abs(dr) == 1 && abs(dc) == 2);
+                return (std::abs(dr) == 2 && std::abs(dc) == 1) || (std::abs(dr) == 1 && std::abs(dc) == 2);
             case BISHOP:
-                return abs(dr) == abs(dc) && is_path_clear(move);
+                return std::abs(dr) == std::abs(dc) && is_path_clear(move);
             case ROOK:
                 return (dr == 0 || dc == 0) && is_path_clear(move);
             case QUEEN:
-                return ((dr == 0 || dc == 0) || (abs(dr) == abs(dc))) && is_path_clear(move);
+                return ((dr == 0 || dc == 0) || (std::abs(dr) == std::abs(dc))) && is_path_clear(move);
             case KING:
                 return is_legal_king_move(move, is_white, dr, dc);
         }
@@ -395,7 +394,7 @@ public:
         }
         
         // Capture move
-        if (abs(dc) == 1 && dr == direction) {
+        if (std::abs(dc) == 1 && dr == direction) {
             if (target != EMPTY) return true;
             // En passant
             if (move.to_col == en_passant_col && 
@@ -409,10 +408,10 @@ public:
 
     bool is_legal_king_move(const Move& move, bool is_white, int dr, int dc) {
         // Normal king move
-        if (abs(dr) <= 1 && abs(dc) <= 1) return true;
+        if (std::abs(dr) <= 1 && std::abs(dc) <= 1) return true;
         
         // Castling
-        if (dr == 0 && abs(dc) == 2) {
+        if (dr == 0 && std::abs(dc) == 2) {
             if (is_white && white_king_moved) return false;
             if (!is_white && black_king_moved) return false;
             
@@ -478,25 +477,25 @@ public:
                 switch (type) {
                     case PAWN: {
                         int direction = by_white ? -1 : 1;
-                        can_attack = (dr == direction && abs(dc) == 1);
+                        can_attack = (dr == direction && std::abs(dc) == 1);
                         break;
                     }
                     case KNIGHT:
-                        can_attack = (abs(dr) == 2 && abs(dc) == 1) || 
-                                   (abs(dr) == 1 && abs(dc) == 2);
+                        can_attack = (std::abs(dr) == 2 && std::abs(dc) == 1) || 
+                                   (std::abs(dr) == 1 && std::abs(dc) == 2);
                         break;
                     case BISHOP:
-                        can_attack = abs(dr) == abs(dc) && is_path_clear(test_move);
+                        can_attack = std::abs(dr) == std::abs(dc) && is_path_clear(test_move);
                         break;
                     case ROOK:
                         can_attack = (dr == 0 || dc == 0) && is_path_clear(test_move);
                         break;
                     case QUEEN:
-                        can_attack = ((dr == 0 || dc == 0) || (abs(dr) == abs(dc))) && 
+                        can_attack = ((dr == 0 || dc == 0) || (std::abs(dr) == std::abs(dc))) && 
                                    is_path_clear(test_move);
                         break;
                     case KING:
-                        can_attack = abs(dr) <= 1 && abs(dc) <= 1;
+                        can_attack = std::abs(dr) <= 1 && std::abs(dc) <= 1;
                         break;
                 }
                 
@@ -527,8 +526,8 @@ public:
         return is_square_attacked(king_row, king_col, !white_king);
     }
 
-    vector<Move> get_legal_moves() {
-        vector<Move> moves;
+    std::vector<Move> get_legal_moves() {
+        std::vector<Move> moves;
         
         for (int fr = 0; fr < 8; fr++) {
             for (int fc = 0; fc < 8; fc++) {
@@ -570,8 +569,8 @@ public:
         return get_legal_moves().empty();
     }
 
-    string export_fen() {
-        ostringstream oss;
+    std::string export_fen() {
+        std::ostringstream oss;
         
         // Board position
         for (int i = 0; i < 8; i++) {
@@ -598,7 +597,7 @@ public:
         
         // Castling availability
         oss << " ";
-        string castling = "";
+        std::string castling = "";
         if (!white_king_moved) {
             if (!white_rook_h_moved) castling += "K";
             if (!white_rook_a_moved) castling += "Q";
@@ -625,9 +624,9 @@ public:
         return oss.str();
     }
 
-    bool load_fen(const string& fen) {
-        istringstream iss(fen);
-        string board_str, color, castling, en_passant;
+    bool load_fen(const std::string& fen) {
+        std::istringstream iss(fen);
+        std::string board_str, color, castling, en_passant;
         
         iss >> board_str >> color >> castling >> en_passant;
         
@@ -644,7 +643,7 @@ public:
             if (c == '/') {
                 row++;
                 col = 0;
-            } else if (isdigit(c)) {
+            } else if (std::isdigit(c)) {
                 col += (c - '0');
             } else {
                 int piece = char_to_piece(c);
@@ -684,8 +683,8 @@ public:
     }
 
     int char_to_piece(char c) {
-        bool is_white = isupper(c);
-        c = toupper(c);
+        bool is_white = std::isupper(c);
+        c = std::toupper(c);
         
         int type;
         switch (c) {
@@ -735,7 +734,7 @@ public:
             return evaluate();
         }
         
-        vector<Move> moves = get_legal_moves();
+        std::vector<Move> moves = get_legal_moves();
         
         if (moves.empty()) {
             if (is_in_check(white_to_move)) {
@@ -753,8 +752,8 @@ public:
                 int eval = minimax(depth - 1, alpha, beta, false);
                 undo_move();
                 
-                max_eval = max(max_eval, eval);
-                alpha = max(alpha, eval);
+                max_eval = std::max(max_eval, eval);
+                alpha = std::max(alpha, eval);
                 if (beta <= alpha) break;
             }
             return max_eval;
@@ -767,8 +766,8 @@ public:
                 int eval = minimax(depth - 1, alpha, beta, true);
                 undo_move();
                 
-                min_eval = min(min_eval, eval);
-                beta = min(beta, eval);
+                min_eval = std::min(min_eval, eval);
+                beta = std::min(beta, eval);
                 if (beta <= alpha) break;
             }
             return min_eval;
@@ -777,15 +776,15 @@ public:
 
     bool ai_move(int depth) {
         if (depth < 1 || depth > 5) {
-            cout << "ERROR: AI depth must be 1-5\n";
+            std::cout << "ERROR: AI depth must be 1-5\n";
             return false;
         }
         
         clock_t start = clock();
         
-        vector<Move> moves = get_legal_moves();
+        std::vector<Move> moves = get_legal_moves();
         if (moves.empty()) {
-            cout << "ERROR: No legal moves available\n";
+            std::cout << "ERROR: No legal moves available\n";
             return false;
         }
         
@@ -815,13 +814,14 @@ public:
         clock_t end = clock();
         double time_ms = 1000.0 * (end - start) / CLOCKS_PER_SEC;
         
-        // Format move string
-        char move_str[10];
-        sprintf(move_str, "%c%d%c%d", 
-                'a' + best_move.from_col, 8 - best_move.from_row,
-                'a' + best_move.to_col, 8 - best_move.to_row);
+        // Format move std::string using safe concatenation
+        std::string move_str;
+        move_str += ('a' + best_move.from_col);
+        move_str += std::to_string(8 - best_move.from_row);
+        move_str += ('a' + best_move.to_col);
+        move_str += std::to_string(8 - best_move.to_row);
         
-        cout << "AI: " << move_str << " (depth=" << depth 
+        std::cout << "AI: " << move_str << " (depth=" << depth 
              << ", eval=" << best_eval << ", time=" << (int)time_ms << "ms)\n";
         
         save_state();
@@ -831,10 +831,10 @@ public:
         // Check for checkmate or stalemate
         if (is_in_check(white_to_move)) {
             if (is_checkmate()) {
-                cout << "CHECKMATE: " << (white_to_move ? "Black" : "White") << " wins\n";
+                std::cout << "CHECKMATE: " << (white_to_move ? "Black" : "White") << " wins\n";
             }
         } else if (is_stalemate()) {
-            cout << "STALEMATE: Draw\n";
+            std::cout << "STALEMATE: Draw\n";
         }
         
         return true;
@@ -843,7 +843,7 @@ public:
     long long perft(int depth) {
         if (depth == 0) return 1;
         
-        vector<Move> moves = get_legal_moves();
+        std::vector<Move> moves = get_legal_moves();
         long long nodes = 0;
         
         for (const Move& move : moves) {
@@ -859,52 +859,53 @@ public:
 };
 
 void print_help() {
-    cout << "Available commands:\n";
-    cout << "  new                  - Start a new game\n";
-    cout << "  move <from><to>      - Make a move (e.g., move e2e4)\n";
-    cout << "  undo                 - Undo the last move\n";
-    cout << "  ai <depth>           - Let AI make a move (depth 1-5)\n";
-    cout << "  fen <string>         - Load position from FEN\n";
-    cout << "  export               - Export current position as FEN\n";
-    cout << "  eval                 - Display position evaluation\n";
-    cout << "  perft <depth>        - Performance test\n";
-    cout << "  help                 - Display this help message\n";
-    cout << "  quit                 - Exit the program\n";
+    std::cout << "Available commands:\n";
+    std::cout << "  new                  - Start a new game\n";
+    std::cout << "  move <from><to>      - Make a move (e.g., move e2e4)\n";
+    std::cout << "  undo                 - Undo the last move\n";
+    std::cout << "  ai <depth>           - Let AI make a move (depth 1-5)\n";
+    std::cout << "  fen <std::string>         - Load position from FEN\n";
+    std::cout << "  export               - Export current position as FEN\n";
+    std::cout << "  eval                 - Display position evaluation\n";
+    std::cout << "  perft <depth>        - Performance test\n";
+    std::cout << "  help                 - Display this help message\n";
+    std::cout << "  quit                 - Exit the program\n";
 }
 
 int main() {
     ChessBoard chess;
     chess.display();
-    cout.flush();
+    std::cout.flush();
     
-    string line;
-    while (getline(cin, line)) {
+    std::string line;
+    while (std::getline(std::cin, line)) {
         if (line.empty()) continue;
         
-        istringstream iss(line);
-        string cmd;
+        std::istringstream iss(line);
+        std::string cmd;
         iss >> cmd;
         
         // Convert command to lowercase
-        transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
+        std::transform(cmd.begin(), cmd.end(), cmd.begin(), 
+                      [](unsigned char c){ return std::tolower(c); });
         
         if (cmd == "new") {
             chess.init_board();
-            cout << "OK: New game started\n";
+            std::cout << "OK: New game started\n";
             chess.display();
         }
         else if (cmd == "move") {
-            string move_str;
+            std::string move_str;
             iss >> move_str;
             if (!move_str.empty()) {
                 chess.make_move(move_str);
             } else {
-                cout << "ERROR: Invalid move format\n";
+                std::cout << "ERROR: Invalid move format\n";
             }
         }
         else if (cmd == "undo") {
             chess.undo_move();
-            cout << "OK: Move undone\n";
+            std::cout << "OK: Move undone\n";
             chess.display();
         }
         else if (cmd == "ai") {
@@ -913,26 +914,26 @@ int main() {
             chess.ai_move(depth);
         }
         else if (cmd == "fen") {
-            string fen;
-            getline(iss, fen);
+            std::string fen;
+            std::getline(iss, fen);
             if (!fen.empty()) {
                 fen = fen.substr(1); // Remove leading space
                 if (chess.load_fen(fen)) {
-                    cout << "OK: FEN loaded\n";
+                    std::cout << "OK: FEN loaded\n";
                     chess.display();
                 } else {
-                    cout << "ERROR: Invalid FEN string\n";
+                    std::cout << "ERROR: Invalid FEN std::string\n";
                 }
             } else {
-                cout << "ERROR: Invalid FEN string\n";
+                std::cout << "ERROR: Invalid FEN std::string\n";
             }
         }
         else if (cmd == "export") {
-            cout << "FEN: " << chess.export_fen() << "\n";
+            std::cout << "FEN: " << chess.export_fen() << "\n";
         }
         else if (cmd == "eval") {
             int score = chess.evaluate();
-            cout << "Evaluation: " << score << " (positive = white advantage)\n";
+            std::cout << "Evaluation: " << score << " (positive = white advantage)\n";
         }
         else if (cmd == "perft") {
             int depth = 4;
@@ -941,21 +942,21 @@ int main() {
             long long nodes = chess.perft(depth);
             clock_t end = clock();
             double time_ms = 1000.0 * (end - start) / CLOCKS_PER_SEC;
-            cout << "Perft(" << depth << "): " << nodes << " nodes in " 
+            std::cout << "Perft(" << depth << "): " << nodes << " nodes in " 
                  << (int)time_ms << "ms\n";
         }
         else if (cmd == "help") {
             print_help();
         }
         else if (cmd == "quit" || cmd == "exit") {
-            cout << "Goodbye!\n";
+            std::cout << "Goodbye!\n";
             break;
         }
         else {
-            cout << "ERROR: Invalid command. Type 'help' for available commands.\n";
+            std::cout << "ERROR: Invalid command. Type 'help' for available commands.\n";
         }
         
-        cout.flush();
+        std::cout.flush();
     }
     
     return 0;
