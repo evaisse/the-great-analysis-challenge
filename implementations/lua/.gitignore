@@ -1,3 +1,4 @@
 *.o
 *.so
 luac.out
+*_output.txt
