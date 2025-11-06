@@ -1,4 +1,5 @@
 .aider*
 *.log
 *.tmp
-__pycache__*_output.txt
+__pycache__
+*_output.txt
