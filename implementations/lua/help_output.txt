@@ -1,0 +1,13 @@
+> Available commands:
+  new              - Start a new game
+  move <from><to>  - Make a move (e.g., 'move e2e4')
+  undo             - Undo last move
+  board            - Show the board (also: display, show)
+  export           - Export position as FEN
+  fen <string>     - Load position from FEN
+  ai <depth>       - AI makes a move (depth 1-5)
+  eval             - Show position evaluation
+  perft <depth>    - Performance test
+  help             - Show this help
+  quit             - Exit the program
+> 
