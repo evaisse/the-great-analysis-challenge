@@ -1,7 +1,7 @@
 # Makefile for Chess Engine Implementations
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 
-.PHONY: all test build clean help test-all build-all
+.PHONY: all test build clean help test-all build-all website
 
 # Default target
 all: build-all test-all
@@ -19,6 +19,7 @@ help:
 	@echo "  make build            - Alias for build-all"
 	@echo "  make test-<lang>      - Test specific implementation (e.g., make test-ruby)"
 	@echo "  make build-<lang>     - Build specific implementation (e.g., make build-typescript)"
+	@echo "  make website          - Generate static website in docs/"
 	@echo "  make clean            - Remove Docker images and build artifacts"
 	@echo "  make help             - Show this help message"
 
@@ -156,6 +157,13 @@ clean:
 		docker rmi chess-$$lang 2>/dev/null || true; \
 	done
 	@echo "Cleaned up successfully"
+
+# Generate static website
+website:
+	@echo "Generating static website..."
+	@python3 build_website.py
+	@echo "Website generated in docs/"
+	@echo "To preview: cd docs && python3 -m http.server 8080"
 
 # Docker requirement enforcement
 .DEFAULT:
