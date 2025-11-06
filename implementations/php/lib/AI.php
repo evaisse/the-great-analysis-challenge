@@ -122,11 +122,7 @@ class AI {
                 
                 // Center control bonus
                 if (($row === 3 || $row === 4) && ($col === 3 || $col === 4)) {
-                    if ($piece === CHESS_PAWN) {
-                        $value += 10;
-                    } else {
-                        $value += 10;
-                    }
+                    $value += 10;
                 }
                 
                 // Apply color
