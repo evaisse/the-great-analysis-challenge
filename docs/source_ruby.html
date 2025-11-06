@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ruby Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Ruby Implementation</h2>
+<h2>💎 <a href="https://www.ruby-lang.org/" target="_blank" rel="noopener">Ruby</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code># Use Ubuntu base image
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile"># Use Ubuntu base image
 FROM ubuntu:24.04
 
 # Set environment variables
@@ -74,7 +76,7 @@ CMD ["ruby", "chess.rb"]
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Gemfile')">📄 Gemfile</button>
-<pre id="Gemfile" class="file-content" style="display:none;"><code># frozen_string_literal: true
+<pre id="Gemfile" class="file-content" style="display:none;"><code class="language-ruby"># frozen_string_literal: true
 
 source 'https://rubygems.org'
 
@@ -91,7 +93,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Gemfile_lock')">📄 Gemfile.lock</button>
-<pre id="Gemfile_lock" class="file-content" style="display:none;"><code>GEM
+<pre id="Gemfile_lock" class="file-content" style="display:none;"><code class="language-ruby">GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
@@ -160,7 +162,7 @@ BUNDLED WITH
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -206,7 +208,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Ruby Chess Engine Implementation
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Ruby Chess Engine Implementation
 
 A complete chess engine implementation in Ruby, conforming to the Chess Engine Specification.
 
@@ -349,7 +351,7 @@ This implementation showcases Ruby's strengths:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('analyze_rb')">📄 analyze.rb</button>
-<pre id="analyze_rb" class="file-content" style="display:none;"><code>#!/usr/bin/env ruby
+<pre id="analyze_rb" class="file-content" style="display:none;"><code class="language-ruby">#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 # Simple static analysis for Ruby chess engine
@@ -425,7 +427,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-ruby">{
   "language": "ruby",
   "version": "3.2",
   "author": "Ruby Implementation",
@@ -440,7 +442,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_rb')">📄 chess.rb</button>
-<pre id="chess_rb" class="file-content" style="display:none;"><code>#!/usr/bin/env ruby
+<pre id="chess_rb" class="file-content" style="display:none;"><code class="language-ruby">#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 require_relative 'lib/types'
@@ -714,7 +716,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_ai_rb')">📄 lib/ai.rb</button>
-<pre id="lib_ai_rb" class="file-content" style="display:none;"><code># frozen_string_literal: true
+<pre id="lib_ai_rb" class="file-content" style="display:none;"><code class="language-ruby"># frozen_string_literal: true
 
 require_relative 'types'
 
@@ -955,7 +957,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_board_rb')">📄 lib/board.rb</button>
-<pre id="lib_board_rb" class="file-content" style="display:none;"><code># frozen_string_literal: true
+<pre id="lib_board_rb" class="file-content" style="display:none;"><code class="language-ruby"># frozen_string_literal: true
 
 require_relative 'types'
 
@@ -1275,7 +1277,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_fen_parser_rb')">📄 lib/fen_parser.rb</button>
-<pre id="lib_fen_parser_rb" class="file-content" style="display:none;"><code># frozen_string_literal: true
+<pre id="lib_fen_parser_rb" class="file-content" style="display:none;"><code class="language-ruby"># frozen_string_literal: true
 
 require_relative 'types'
 
@@ -1483,7 +1485,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_move_generator_rb')">📄 lib/move_generator.rb</button>
-<pre id="lib_move_generator_rb" class="file-content" style="display:none;"><code># frozen_string_literal: true
+<pre id="lib_move_generator_rb" class="file-content" style="display:none;"><code class="language-ruby"># frozen_string_literal: true
 
 require_relative 'types'
 
@@ -1794,7 +1796,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_perft_rb')">📄 lib/perft.rb</button>
-<pre id="lib_perft_rb" class="file-content" style="display:none;"><code># frozen_string_literal: true
+<pre id="lib_perft_rb" class="file-content" style="display:none;"><code class="language-ruby"># frozen_string_literal: true
 
 require_relative 'types'
 
@@ -1893,7 +1895,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('lib_types_rb')">📄 lib/types.rb</button>
-<pre id="lib_types_rb" class="file-content" style="display:none;"><code># frozen_string_literal: true
+<pre id="lib_types_rb" class="file-content" style="display:none;"><code class="language-ruby"># frozen_string_literal: true
 
 module Chess
   # Piece types
@@ -1995,6 +1997,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

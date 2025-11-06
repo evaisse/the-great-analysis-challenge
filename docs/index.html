@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Implementation Comparison - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -18,215 +23,243 @@
     <main>
 <section class="intro">
 <p>Welcome to The Great Analysis Challenge! This project implements identical chess engines across different programming languages to compare their approaches, performance, and unique paradigms.</p>
-<p>Below you'll find a comprehensive comparison of all implementations, including lines of code, build times, and feature support.</p>
+<p>Below you'll find a comprehensive comparison of all implementations, including lines of code, build times, and feature support. Click on column headers to sort the table.</p>
 </section>
 <h2>📊 Implementation Comparison</h2>
 <div class="table-container">
-<table class="comparison-table">
+<table id="comparison-table" class="comparison-table">
 <thead>
 <tr>
 <th>Language</th>
 <th>Version</th>
 <th>LOC</th>
 <th>Files</th>
-<th>Build Time</th>
-<th>Test Time</th>
-<th>Analyze Time</th>
+<th>Build Time (ms)</th>
+<th>Test Time (ms)</th>
+<th>Analyze Time (ms)</th>
+<th>Popularity</th>
 <th>Features</th>
 <th>Source</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Crystal</strong></td>
+<td><a href="https://crystal-lang.org/" target="_blank" rel="noopener">💎 <strong>Crystal</strong></a></td>
 <td>1.14.0</td>
-<td>1537</td>
-<td>7</td>
-<td>17ms</td>
-<td>0ms</td>
-<td>38ms</td>
+<td data-order="1537">1537</td>
+<td data-order="7">7</td>
+<td data-order="17">17</td>
+<td data-order="0">0</td>
+<td data-order="38">38</td>
+<td title="TIOBE Rank: N/A, GitHub: 60K+ repos">📊 N/A / 60K+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_crystal.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Dart</strong></td>
+<td><a href="https://dart.dev/" target="_blank" rel="noopener">🎯 <strong>Dart</strong></a></td>
 <td>3.0</td>
-<td>975</td>
-<td>8</td>
-<td>638ms</td>
-<td>0ms</td>
-<td>1054ms</td>
+<td data-order="975">975</td>
+<td data-order="8">8</td>
+<td data-order="638">638</td>
+<td data-order="0">0</td>
+<td data-order="1054">1054</td>
+<td title="TIOBE Rank: 25, GitHub: 1M+ repos">📊 25 / 1M+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_dart.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Elm</strong></td>
+<td><a href="https://elm-lang.org/" target="_blank" rel="noopener">🌳 <strong>Elm</strong></a></td>
 <td>0.19.1</td>
-<td>1663</td>
-<td>7</td>
-<td>846ms</td>
-<td>0ms</td>
-<td>721ms</td>
+<td data-order="1663">1663</td>
+<td data-order="7">7</td>
+<td data-order="846">846</td>
+<td data-order="0">0</td>
+<td data-order="721">721</td>
+<td title="TIOBE Rank: N/A, GitHub: 100K+ repos">📊 N/A / 100K+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_elm.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Gleam</strong></td>
+<td><a href="https://gleam.run/" target="_blank" rel="noopener">⭐ <strong>Gleam</strong></a></td>
 <td>1.2.1</td>
-<td>1516</td>
-<td>7</td>
-<td>21ms</td>
-<td>0ms</td>
-<td>36ms</td>
+<td data-order="1516">1516</td>
+<td data-order="7">7</td>
+<td data-order="21">21</td>
+<td data-order="0">0</td>
+<td data-order="36">36</td>
+<td title="TIOBE Rank: N/A, GitHub: 15K+ repos">📊 N/A / 15K+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_gleam.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Go</strong></td>
+<td><a href="https://go.dev/" target="_blank" rel="noopener">🐹 <strong>Go</strong></a></td>
 <td>1.21</td>
-<td>1366</td>
-<td>5</td>
-<td>153ms</td>
-<td>0ms</td>
-<td>279ms</td>
+<td data-order="1366">1366</td>
+<td data-order="5">5</td>
+<td data-order="153">153</td>
+<td data-order="0">0</td>
+<td data-order="279">279</td>
+<td title="TIOBE Rank: 8, GitHub: 3.5M+ repos">📊 8 / 3.5M+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_go.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Haskell</strong></td>
+<td><a href="https://www.haskell.org/" target="_blank" rel="noopener">🎓 <strong>Haskell</strong></a></td>
 <td>9.0</td>
-<td>1085</td>
-<td>7</td>
-<td>14ms</td>
-<td>0ms</td>
-<td>41ms</td>
+<td data-order="1085">1085</td>
+<td data-order="7">7</td>
+<td data-order="14">14</td>
+<td data-order="0">0</td>
+<td data-order="41">41</td>
+<td title="TIOBE Rank: 38, GitHub: 500K+ repos">📊 38 / 500K+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_haskell.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Julia</strong></td>
+<td><a href="https://julialang.org/" target="_blank" rel="noopener">🔴 <strong>Julia</strong></a></td>
 <td>1.9</td>
-<td>1094</td>
-<td>6</td>
-<td>24ms</td>
-<td>0ms</td>
-<td>33ms</td>
+<td data-order="1094">1094</td>
+<td data-order="6">6</td>
+<td data-order="24">24</td>
+<td data-order="0">0</td>
+<td data-order="33">33</td>
+<td title="TIOBE Rank: 30, GitHub: 200K+ repos">📊 30 / 200K+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_julia.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Kotlin</strong></td>
+<td><a href="https://kotlinlang.org/" target="_blank" rel="noopener">🟣 <strong>Kotlin</strong></a></td>
 <td>1.9.10</td>
-<td>1367</td>
-<td>7</td>
-<td>128ms</td>
-<td>0ms</td>
-<td>258ms</td>
+<td data-order="1367">1367</td>
+<td data-order="7">7</td>
+<td data-order="128">128</td>
+<td data-order="0">0</td>
+<td data-order="258">258</td>
+<td title="TIOBE Rank: 24, GitHub: 1.5M+ repos">📊 24 / 1.5M+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_kotlin.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Mojo</strong></td>
+<td><a href="https://www.modular.com/mojo" target="_blank" rel="noopener">🔥 <strong>Mojo</strong></a></td>
 <td>0.6.0</td>
-<td>981</td>
-<td>5</td>
-<td>33ms</td>
-<td>0ms</td>
-<td>33ms</td>
+<td data-order="981">981</td>
+<td data-order="5">5</td>
+<td data-order="33">33</td>
+<td data-order="0">0</td>
+<td data-order="33">33</td>
+<td title="TIOBE Rank: N/A, GitHub: 20K+ repos">📊 N/A / 20K+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_mojo.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Nim</strong></td>
+<td><a href="https://nim-lang.org/" target="_blank" rel="noopener">👑 <strong>Nim</strong></a></td>
 <td>1.6.14</td>
-<td>888</td>
-<td>1</td>
-<td>29ms</td>
-<td>0ms</td>
-<td>32ms</td>
+<td data-order="888">888</td>
+<td data-order="1">1</td>
+<td data-order="29">29</td>
+<td data-order="0">0</td>
+<td data-order="32">32</td>
+<td title="TIOBE Rank: N/A, GitHub: 100K+ repos">📊 N/A / 100K+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_nim.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Python</strong></td>
+<td><a href="https://www.python.org/" target="_blank" rel="noopener">🐍 <strong>Python</strong></a></td>
 <td>3.11</td>
-<td>1780</td>
-<td>10</td>
-<td>103ms</td>
-<td>596ms</td>
-<td>208ms</td>
+<td data-order="1780">1780</td>
+<td data-order="10">10</td>
+<td data-order="103">103</td>
+<td data-order="596">596</td>
+<td data-order="208">208</td>
+<td title="TIOBE Rank: 1, GitHub: 10M+ repos">📊 1 / 10M+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_python.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Rescript</strong></td>
+<td><a href="https://rescript-lang.org/" target="_blank" rel="noopener">🔴 <strong>Rescript</strong></a></td>
 <td>10.0</td>
-<td>312</td>
-<td>2</td>
-<td>3443ms</td>
-<td>0ms</td>
-<td>140ms</td>
+<td data-order="312">312</td>
+<td data-order="2">2</td>
+<td data-order="3443">3443</td>
+<td data-order="0">0</td>
+<td data-order="140">140</td>
+<td title="TIOBE Rank: N/A, GitHub: 50K+ repos">📊 N/A / 50K+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_rescript.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Ruby</strong></td>
+<td><a href="https://www.ruby-lang.org/" target="_blank" rel="noopener">💎 <strong>Ruby</strong></a></td>
 <td>3.2</td>
-<td>1602</td>
-<td>8</td>
-<td>354ms</td>
-<td>1850ms</td>
-<td>1661ms</td>
+<td data-order="1602">1602</td>
+<td data-order="8">8</td>
+<td data-order="354">354</td>
+<td data-order="1850">1850</td>
+<td data-order="1661">1661</td>
+<td title="TIOBE Rank: 17, GitHub: 2M+ repos">📊 17 / 2M+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_ruby.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Rust</strong></td>
+<td><a href="https://www.rust-lang.org/" target="_blank" rel="noopener">🦀 <strong>Rust</strong></a></td>
 <td>1.70</td>
-<td>1523</td>
-<td>7</td>
-<td>566ms</td>
-<td>518ms</td>
-<td>898ms</td>
+<td data-order="1523">1523</td>
+<td data-order="7">7</td>
+<td data-order="566">566</td>
+<td data-order="518">518</td>
+<td data-order="898">898</td>
+<td title="TIOBE Rank: 14, GitHub: 4.5M+ repos">📊 14 / 4.5M+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_rust.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Swift</strong></td>
+<td><a href="https://www.swift.org/" target="_blank" rel="noopener">🐦 <strong>Swift</strong></a></td>
 <td>5.5</td>
-<td>805</td>
-<td>1</td>
-<td>397ms</td>
-<td>0ms</td>
-<td>1087ms</td>
+<td data-order="805">805</td>
+<td data-order="1">1</td>
+<td data-order="397">397</td>
+<td data-order="0">0</td>
+<td data-order="1087">1087</td>
+<td title="TIOBE Rank: 15, GitHub: 2.5M+ repos">📊 15 / 2.5M+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_swift.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Typescript</strong></td>
+<td><a href="https://www.typescriptlang.org/" target="_blank" rel="noopener">📘 <strong>Typescript</strong></a></td>
 <td>5.0</td>
-<td>1260</td>
-<td>7</td>
-<td>0ms</td>
-<td>0ms</td>
-<td>0ms</td>
+<td data-order="1260">1260</td>
+<td data-order="7">7</td>
+<td data-order="0">0</td>
+<td data-order="0">0</td>
+<td data-order="0">0</td>
+<td title="TIOBE Rank: 20, GitHub: 5M+ repos">📊 20 / 5M+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_typescript.html">View Source</a></td>
 </tr>
 <tr>
-<td><strong>Zig</strong></td>
+<td><a href="https://ziglang.org/" target="_blank" rel="noopener">⚡ <strong>Zig</strong></a></td>
 <td>0.13.0</td>
-<td>1544</td>
-<td>6</td>
-<td>17ms</td>
-<td>0ms</td>
-<td>28ms</td>
+<td data-order="1544">1544</td>
+<td data-order="6">6</td>
+<td data-order="17">17</td>
+<td data-order="0">0</td>
+<td data-order="28">28</td>
+<td title="TIOBE Rank: N/A, GitHub: 150K+ repos">📊 N/A / 150K+ repos</td>
 <td>✅✅✅</td>
 <td><a href="source_zig.html">View Source</a></td>
 </tr>
 </tbody>
 </table>
 </div>
+
+<script>
+$(document).ready(function() {
+    $('#comparison-table').DataTable({
+        "paging": false,
+        "info": false,
+        "order": [[2, "asc"]]  // Default sort by LOC
+    });
+});
+</script>
 
     </main>
     <footer>

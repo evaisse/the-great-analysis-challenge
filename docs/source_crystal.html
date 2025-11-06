@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crystal Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Crystal Implementation</h2>
+<h2>💎 <a href="https://crystal-lang.org/" target="_blank" rel="noopener">Crystal</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -63,7 +65,7 @@ CMD ["./chess_engine"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -109,7 +111,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Crystal Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Crystal Chess Engine
 
 A comprehensive chess engine implementation in Crystal, showcasing the language's Ruby-like syntax with compile-time type safety and performance.
 
@@ -218,7 +220,7 @@ Crystal offers a unique position in chess engine development:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-crystal">{
   "language": "crystal",
   "version": "1.14.0",
   "author": "Crystal Implementation",
@@ -233,7 +235,7 @@ Crystal offers a unique position in chess engine development:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('shard_yml')">📄 shard.yml</button>
-<pre id="shard_yml" class="file-content" style="display:none;"><code>name: chess_engine
+<pre id="shard_yml" class="file-content" style="display:none;"><code class="language-yaml">name: chess_engine
 version: 1.0.0
 
 targets:
@@ -246,7 +248,7 @@ license: MIT</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_ai_cr')">📄 src/ai.cr</button>
-<pre id="src_ai_cr" class="file-content" style="display:none;"><code># Chess AI with minimax and alpha-beta pruning
+<pre id="src_ai_cr" class="file-content" style="display:none;"><code class="language-crystal"># Chess AI with minimax and alpha-beta pruning
 
 require "./types"
 require "./board"
@@ -461,7 +463,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_board_cr')">📄 src/board.cr</button>
-<pre id="src_board_cr" class="file-content" style="display:none;"><code># Board representation and game state management
+<pre id="src_board_cr" class="file-content" style="display:none;"><code class="language-crystal"># Board representation and game state management
 
 require "./types"
 
@@ -669,7 +671,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_chess_engine_cr')">📄 src/chess_engine.cr</button>
-<pre id="src_chess_engine_cr" class="file-content" style="display:none;"><code># Main chess engine CLI
+<pre id="src_chess_engine_cr" class="file-content" style="display:none;"><code class="language-crystal"># Main chess engine CLI
 
 require "./types"
 require "./board"
@@ -949,7 +951,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_fen_cr')">📄 src/fen.cr</button>
-<pre id="src_fen_cr" class="file-content" style="display:none;"><code># FEN (Forsyth-Edwards Notation) parsing and export
+<pre id="src_fen_cr" class="file-content" style="display:none;"><code class="language-crystal"># FEN (Forsyth-Edwards Notation) parsing and export
 
 require "./types"
 require "./board"
@@ -1106,7 +1108,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_move_generator_cr')">📄 src/move_generator.cr</button>
-<pre id="src_move_generator_cr" class="file-content" style="display:none;"><code># Move generation and validation
+<pre id="src_move_generator_cr" class="file-content" style="display:none;"><code class="language-crystal"># Move generation and validation
 
 require "./types"
 
@@ -1406,7 +1408,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_perft_cr')">📄 src/perft.cr</button>
-<pre id="src_perft_cr" class="file-content" style="display:none;"><code># Performance testing utilities
+<pre id="src_perft_cr" class="file-content" style="display:none;"><code class="language-crystal"># Performance testing utilities
 
 require "./types"
 require "./board"
@@ -1595,7 +1597,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_types_cr')">📄 src/types.cr</button>
-<pre id="src_types_cr" class="file-content" style="display:none;"><code># Core chess types and data structures
+<pre id="src_types_cr" class="file-content" style="display:none;"><code class="language-crystal"># Core chess types and data structures
 
 enum Color
   White
@@ -1809,6 +1811,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

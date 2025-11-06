@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nim Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Nim Implementation</h2>
+<h2>👑 <a href="https://nim-lang.org/" target="_blank" rel="noopener">Nim</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -49,7 +51,7 @@ ENTRYPOINT ["./chess"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test help
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test help
 
 # Default target - build the chess engine
 all: build
@@ -94,7 +96,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Nim Chess Engine Implementation
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Nim Chess Engine Implementation
 
 This directory contains a complete chess engine implementation in Nim, rewritten from the ground up with a clean, modular architecture.
 
@@ -198,7 +200,7 @@ The code is organized into clear sections with comprehensive documentation:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-nim">{
   "language": "nim",
   "version": "1.6.14",
   "author": "Nim Implementation",
@@ -214,7 +216,7 @@ The code is organized into clear sections with comprehensive documentation:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_nim')">📄 chess.nim</button>
-<pre id="chess_nim" class="file-content" style="display:none;"><code>import std/[strutils, sequtils, tables, strformat]
+<pre id="chess_nim" class="file-content" style="display:none;"><code class="language-nim">import std/[strutils, sequtils, tables, strformat]
 
 # ================================
 # Type Definitions
@@ -1110,6 +1112,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }
