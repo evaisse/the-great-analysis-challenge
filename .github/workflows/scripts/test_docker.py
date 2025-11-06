@@ -27,13 +27,13 @@ def discover_implementations() -> List[str]:
     return sorted(implementations)
 
 
-def run_command(cmd: List[str], timeout: int = 30, input_text: str = None, show_output: bool = False) -> subprocess.CompletedProcess:
+def run_command(cmd: List[str], timeout: int = 30, input: str = None, show_output: bool = False) -> subprocess.CompletedProcess:
     """Run a shell command with error handling and optional output logging."""
     cmd_str = ' '.join(cmd)
     print(f"🔧 Running: {cmd_str}")
     
     try:
-        result = subprocess.run(cmd, input=input_text, capture_output=True, text=True, 
+        result = subprocess.run(cmd, input=input, capture_output=True, text=True, 
                               timeout=timeout, check=False)
         
         if show_output and result.stdout.strip():
