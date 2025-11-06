@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Julia Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Julia Implementation</h2>
+<h2>🔴 <a href="https://julialang.org/" target="_blank" rel="noopener">Julia</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -56,7 +58,7 @@ CMD ["julia", "--project=.", "chess.jl"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -101,7 +103,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Project_toml')">📄 Project.toml</button>
-<pre id="Project_toml" class="file-content" style="display:none;"><code>name = "ChessEngine"
+<pre id="Project_toml" class="file-content" style="display:none;"><code class="language-toml">name = "ChessEngine"
 uuid = "abcd1234-5678-9012-3456-789012345678"
 authors = ["Julia Implementation"]
 version = "1.0.0"
@@ -110,7 +112,7 @@ version = "1.0.0"
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Julia Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Julia Chess Engine
 
 A complete chess engine implementation in Julia, featuring:
 
@@ -158,7 +160,7 @@ docker run -it chess-julia
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_jl')">📄 chess.jl</button>
-<pre id="chess_jl" class="file-content" style="display:none;"><code>#!/usr/bin/env julia
+<pre id="chess_jl" class="file-content" style="display:none;"><code class="language-julia">#!/usr/bin/env julia
 
 """
 Chess Engine Main Program
@@ -390,7 +392,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-julia">{
   "language": "julia",
   "version": "1.9",
   "author": "Julia Implementation",
@@ -405,7 +407,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_ai_jl')">📄 src/ai.jl</button>
-<pre id="src_ai_jl" class="file-content" style="display:none;"><code>"""
+<pre id="src_ai_jl" class="file-content" style="display:none;"><code class="language-julia">"""
 Chess AI engine with minimax and alpha-beta pruning
 """
 
@@ -558,7 +560,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_board_jl')">📄 src/board.jl</button>
-<pre id="src_board_jl" class="file-content" style="display:none;"><code>"""
+<pre id="src_board_jl" class="file-content" style="display:none;"><code class="language-julia">"""
 Chess board representation and basic operations
 """
 
@@ -782,7 +784,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_fen_jl')">📄 src/fen.jl</button>
-<pre id="src_fen_jl" class="file-content" style="display:none;"><code>"""
+<pre id="src_fen_jl" class="file-content" style="display:none;"><code class="language-julia">"""
 FEN (Forsyth-Edwards Notation) parser and serializer
 """
 
@@ -917,7 +919,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_move_generator_jl')">📄 src/move_generator.jl</button>
-<pre id="src_move_generator_jl" class="file-content" style="display:none;"><code>"""
+<pre id="src_move_generator_jl" class="file-content" style="display:none;"><code class="language-julia">"""
 Chess move generation and validation
 """
 
@@ -1354,7 +1356,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_perft_jl')">📄 src/perft.jl</button>
-<pre id="src_perft_jl" class="file-content" style="display:none;"><code>"""
+<pre id="src_perft_jl" class="file-content" style="display:none;"><code class="language-julia">"""
 Perft (Performance Test) function for move generation validation
 """
 
@@ -1397,7 +1399,7 @@ end</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_types_jl')">📄 src/types.jl</button>
-<pre id="src_types_jl" class="file-content" style="display:none;"><code>"""
+<pre id="src_types_jl" class="file-content" style="display:none;"><code class="language-julia">"""
 Chess piece types and utilities
 """
 
@@ -1522,6 +1524,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

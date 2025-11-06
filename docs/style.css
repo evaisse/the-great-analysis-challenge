@@ -62,12 +62,30 @@ h2 {
     font-size: 2rem;
 }
 
+h2 a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+h2 a:hover {
+    text-decoration: underline;
+}
+
+.intro {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
 .table-container {
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     overflow-x: auto;
     margin: 2rem 0;
+    padding: 1rem;
 }
 
 .comparison-table {
@@ -88,6 +106,11 @@ h2 {
     color: #667eea;
     position: sticky;
     top: 0;
+    cursor: pointer;
+}
+
+.comparison-table th:hover {
+    background: #e9ecef;
 }
 
 .comparison-table tr:hover {
@@ -102,6 +125,43 @@ h2 {
 
 .comparison-table a:hover {
     text-decoration: underline;
+}
+
+/* DataTables styling overrides */
+.dataTables_wrapper .dataTables_filter {
+    margin-bottom: 1rem;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-left: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin: 0 0.5rem;
+}
+
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_asc_disabled:before,
+table.dataTable thead .sorting_desc_disabled:before {
+    right: 0.5em;
+    content: "↕";
+}
+
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_desc:after,
+table.dataTable thead .sorting_asc_disabled:after,
+table.dataTable thead .sorting_desc_disabled:after {
+    right: 0.5em;
+    content: "";
 }
 
 .breadcrumb {
@@ -149,17 +209,25 @@ h2 {
 }
 
 .file-content {
-    padding: 1rem;
+    padding: 0;
     background: #282c34;
     color: #abb2bf;
     overflow-x: auto;
     font-size: 0.9rem;
-    line-height: 1.4;
+    line-height: 1.5;
     margin: 0;
 }
 
 .file-content code {
     font-family: 'Courier New', Courier, monospace;
+    display: block;
+    padding: 1rem;
+}
+
+/* Highlight.js styling overrides */
+.hljs {
+    background: #282c34;
+    color: #abb2bf;
 }
 
 footer {

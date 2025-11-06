@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Go Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Go Implementation</h2>
+<h2>🐹 <a href="https://go.dev/" target="_blank" rel="noopener">Go</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -42,7 +44,7 @@ CMD ["./chess"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -90,7 +92,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Go Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Go Chess Engine
 
 A complete chess engine implementation in Go, featuring:
 
@@ -131,7 +133,7 @@ make test-go
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_go')">📄 chess.go</button>
-<pre id="chess_go" class="file-content" style="display:none;"><code>package main
+<pre id="chess_go" class="file-content" style="display:none;"><code class="language-go">package main
 
 import (
 	"bufio"
@@ -410,7 +412,7 @@ func (engine *ChessEngine) showHelp() {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-go">{
   "language": "go",
   "version": "1.21",
   "author": "AI Implementation",
@@ -425,13 +427,13 @@ func (engine *ChessEngine) showHelp() {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('go_mod')">📄 go.mod</button>
-<pre id="go_mod" class="file-content" style="display:none;"><code>module chess
+<pre id="go_mod" class="file-content" style="display:none;"><code class="language-go">module chess
 
 go 1.21</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_ai_go')">📄 src/ai.go</button>
-<pre id="src_ai_go" class="file-content" style="display:none;"><code>package main
+<pre id="src_ai_go" class="file-content" style="display:none;"><code class="language-go">package main
 
 import "math"
 
@@ -749,7 +751,7 @@ func min(a, b int) int {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_board_go')">📄 src/board.go</button>
-<pre id="src_board_go" class="file-content" style="display:none;"><code>package main
+<pre id="src_board_go" class="file-content" style="display:none;"><code class="language-go">package main
 
 import (
 	"fmt"
@@ -992,7 +994,7 @@ func (gs *GameState) Clone() *GameState {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_fen_go')">📄 src/fen.go</button>
-<pre id="src_fen_go" class="file-content" style="display:none;"><code>package main
+<pre id="src_fen_go" class="file-content" style="display:none;"><code class="language-go">package main
 
 import (
 	"fmt"
@@ -1215,7 +1217,7 @@ const StartingPositionFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq 
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_move_generator_go')">📄 src/move_generator.go</button>
-<pre id="src_move_generator_go" class="file-content" style="display:none;"><code>package main
+<pre id="src_move_generator_go" class="file-content" style="display:none;"><code class="language-go">package main
 
 import "fmt"
 
@@ -1700,7 +1702,7 @@ func abs(x int) int {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_types_go')">📄 src/types.go</button>
-<pre id="src_types_go" class="file-content" style="display:none;"><code>package main
+<pre id="src_types_go" class="file-content" style="display:none;"><code class="language-go">package main
 
 type PieceType int
 type Color int
@@ -1822,6 +1824,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Typescript Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Typescript Implementation</h2>
+<h2>📘 <a href="https://www.typescriptlang.org/" target="_blank" rel="noopener">Typescript</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code># Use Ubuntu base image
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile"># Use Ubuntu base image
 FROM ubuntu:24.04
 
 # Set environment variables
@@ -76,7 +78,7 @@ CMD ["node", "dist/chess.js"]
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -126,7 +128,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># TypeScript Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># TypeScript Chess Engine
 
 A complete chess engine implementation in TypeScript following the Chess Engine Specification v1.0.
 
@@ -220,7 +222,7 @@ Expected result: 197281 nodes for perft(4) from starting position.</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-typescript">{
   "language": "typescript",
   "version": "5.0",
   "author": "TypeScript Implementation",
@@ -235,7 +237,7 @@ Expected result: 197281 nodes for perft(4) from starting position.</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('docker-compose_yml')">📄 docker-compose.yml</button>
-<pre id="docker-compose_yml" class="file-content" style="display:none;"><code>version: '3.8'
+<pre id="docker-compose_yml" class="file-content" style="display:none;"><code class="language-yaml">version: '3.8'
 
 services:
   chess-engine:
@@ -267,7 +269,7 @@ services:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('package-lock_json')">📄 package-lock.json</button>
-<pre id="package-lock_json" class="file-content" style="display:none;"><code>{
+<pre id="package-lock_json" class="file-content" style="display:none;"><code class="language-json">{
   "name": "typescript",
   "version": "1.0.0",
   "lockfileVersion": 3,
@@ -336,7 +338,7 @@ services:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('package_json')">📄 package.json</button>
-<pre id="package_json" class="file-content" style="display:none;"><code>{
+<pre id="package_json" class="file-content" style="display:none;"><code class="language-json">{
   "name": "typescript",
   "version": "1.0.0",
   "main": "index.js",
@@ -362,7 +364,7 @@ services:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_ai_ts')">📄 src/ai.ts</button>
-<pre id="src_ai_ts" class="file-content" style="display:none;"><code>import { Board } from './board';
+<pre id="src_ai_ts" class="file-content" style="display:none;"><code class="language-typescript">import { Board } from './board';
 import { MoveGenerator } from './moveGenerator';
 import { Move, Color, Square, PIECE_VALUES } from './types';
 
@@ -547,7 +549,7 @@ export class AI {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_board_ts')">📄 src/board.ts</button>
-<pre id="src_board_ts" class="file-content" style="display:none;"><code>import { Piece, Color, Square, Move, CastlingRights, GameState, FILES, RANKS } from './types';
+<pre id="src_board_ts" class="file-content" style="display:none;"><code class="language-typescript">import { Piece, Color, Square, Move, CastlingRights, GameState, FILES, RANKS } from './types';
 
 export class Board {
   private state: GameState;
@@ -824,7 +826,7 @@ export class Board {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_chess_ts')">📄 src/chess.ts</button>
-<pre id="src_chess_ts" class="file-content" style="display:none;"><code>import * as readline from 'readline';
+<pre id="src_chess_ts" class="file-content" style="display:none;"><code class="language-typescript">import * as readline from 'readline';
 import { Board } from './board';
 import { MoveGenerator } from './moveGenerator';
 import { FenParser } from './fen';
@@ -1090,7 +1092,7 @@ engine.start();</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_fen_ts')">📄 src/fen.ts</button>
-<pre id="src_fen_ts" class="file-content" style="display:none;"><code>import { Board } from './board';
+<pre id="src_fen_ts" class="file-content" style="display:none;"><code class="language-typescript">import { Board } from './board';
 import { Piece, Color, CastlingRights, Square } from './types';
 
 export class FenParser {
@@ -1240,7 +1242,7 @@ export class FenParser {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_moveGenerator_ts')">📄 src/moveGenerator.ts</button>
-<pre id="src_moveGenerator_ts" class="file-content" style="display:none;"><code>import { Board } from './board';
+<pre id="src_moveGenerator_ts" class="file-content" style="display:none;"><code class="language-typescript">import { Board } from './board';
 import { Move, Piece, Color, Square, PieceType } from './types';
 
 export class MoveGenerator {
@@ -1537,7 +1539,7 @@ export class MoveGenerator {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_perft_ts')">📄 src/perft.ts</button>
-<pre id="src_perft_ts" class="file-content" style="display:none;"><code>import { Board } from './board';
+<pre id="src_perft_ts" class="file-content" style="display:none;"><code class="language-typescript">import { Board } from './board';
 import { MoveGenerator } from './moveGenerator';
 import { Color } from './types';
 
@@ -1593,7 +1595,7 @@ export class Perft {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_types_ts')">📄 src/types.ts</button>
-<pre id="src_types_ts" class="file-content" style="display:none;"><code>export type PieceType = 'K' | 'Q' | 'R' | 'B' | 'N' | 'P';
+<pre id="src_types_ts" class="file-content" style="display:none;"><code class="language-typescript">export type PieceType = 'K' | 'Q' | 'R' | 'B' | 'N' | 'P';
 export type Color = 'white' | 'black';
 export type Square = number;
 
@@ -1643,7 +1645,7 @@ export const RANKS = ['1', '2', '3', '4', '5', '6', '7', '8'];</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('test_js')">📄 test.js</button>
-<pre id="test_js" class="file-content" style="display:none;"><code>const { ChessEngine } = require('./dist/chess.js');
+<pre id="test_js" class="file-content" style="display:none;"><code class="language-typescript">const { ChessEngine } = require('./dist/chess.js');
 const { Board } = require('./dist/board.js');
 const { MoveGenerator } = require('./dist/moveGenerator.js');
 
@@ -1675,7 +1677,7 @@ if (e2e4Move) {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('test2_js')">📄 test2.js</button>
-<pre id="test2_js" class="file-content" style="display:none;"><code>const { Board } = require('./dist/board.js');
+<pre id="test2_js" class="file-content" style="display:none;"><code class="language-typescript">const { Board } = require('./dist/board.js');
 
 const board = new Board();
 
@@ -1711,7 +1713,7 @@ for (let rank = 7; rank &gt;= 0; rank--) {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('test3_js')">📄 test3.js</button>
-<pre id="test3_js" class="file-content" style="display:none;"><code>const { Board } = require('./dist/board.js');
+<pre id="test3_js" class="file-content" style="display:none;"><code class="language-typescript">const { Board } = require('./dist/board.js');
 const { MoveGenerator } = require('./dist/moveGenerator.js');
 
 const board = new Board();
@@ -1754,7 +1756,7 @@ for (let rank = 7; rank &gt;= 0; rank--) {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('test4_js')">📄 test4.js</button>
-<pre id="test4_js" class="file-content" style="display:none;"><code>const { Board } = require('./dist/board.js');
+<pre id="test4_js" class="file-content" style="display:none;"><code class="language-typescript">const { Board } = require('./dist/board.js');
 const { MoveGenerator } = require('./dist/moveGenerator.js');
 
 const board = new Board();
@@ -1778,7 +1780,7 @@ console.log('e4 should be square:', board.algebraicToSquare('e4'));</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('test5_js')">📄 test5.js</button>
-<pre id="test5_js" class="file-content" style="display:none;"><code>const { Board } = require('./dist/board.js');
+<pre id="test5_js" class="file-content" style="display:none;"><code class="language-typescript">const { Board } = require('./dist/board.js');
 
 const board = new Board();
 
@@ -1811,7 +1813,7 @@ for (let i = 0; i &lt; 64; i++) {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('test6_js')">📄 test6.js</button>
-<pre id="test6_js" class="file-content" style="display:none;"><code>const { Board } = require('./dist/board.js');
+<pre id="test6_js" class="file-content" style="display:none;"><code class="language-typescript">const { Board } = require('./dist/board.js');
 
 const board = new Board();
 
@@ -1856,7 +1858,7 @@ console.log(output);</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('tsconfig_json')">📄 tsconfig.json</button>
-<pre id="tsconfig_json" class="file-content" style="display:none;"><code>{
+<pre id="tsconfig_json" class="file-content" style="display:none;"><code class="language-json">{
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
@@ -1883,6 +1885,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }
