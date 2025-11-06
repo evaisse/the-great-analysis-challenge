@@ -34,6 +34,14 @@ jobs:
         run: |
           python3 build_website.py
       
+      - name: Verify website build
+        run: |
+          if [ ! -f docs/index.html ]; then
+            echo "Error: Website build failed - index.html not found"
+            exit 1
+          fi
+          echo "Website build successful"
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
