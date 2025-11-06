@@ -15,7 +15,7 @@ build:
 # Run basic tests
 test:
 	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | php chess.php | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | php chess.php | grep "FEN:" | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
 
 # Static analysis and code quality
 analyze:
@@ -37,7 +37,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing PHP implementation in Docker..."
-	docker run --rm -i chess-php sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | php chess.php"
+	docker run --rm -i chess-php sh -c "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | php chess.php"
 
 # Help target
 help:

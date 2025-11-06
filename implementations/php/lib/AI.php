@@ -53,7 +53,7 @@ class AI {
         return [$best_move, $best_eval, $time_ms];
     }
     
-    private function minimax(int $depth, int $alpha, int $beta, bool $maximizing): int {
+    private function minimax(int $depth, float|int $alpha, float|int $beta, bool $maximizing): float|int {
         if ($depth === 0) {
             return $this->evaluate();
         }
