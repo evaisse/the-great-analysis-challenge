@@ -154,7 +154,7 @@ class Board {
         $this->en_passant_target = null;
         if ($piece === CHESS_PAWN && abs($move->to_row - $move->from_row) === 2) {
             $this->en_passant_target = [
-                ($move->from_row + $move->to_row) / 2,
+                intval(($move->from_row + $move->to_row) / 2),
                 $move->from_col
             ];
         }
