@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gleam Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Gleam Implementation</h2>
+<h2>⭐ <a href="https://gleam.run/" target="_blank" rel="noopener">Gleam</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -62,7 +64,7 @@ CMD ["gleam", "run"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test help
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test help
 
 # Default target - build the chess engine
 all: build
@@ -108,7 +110,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Gleam Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Gleam Chess Engine
 
 A complete chess engine implementation in Gleam following the Chess Engine Specification v1.0.
 
@@ -199,7 +201,7 @@ The Gleam chess engine demonstrates functional programming principles:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-rust">{
   "language": "gleam",
   "version": "1.2.1",
   "author": "Gleam Implementation",
@@ -214,7 +216,7 @@ The Gleam chess engine demonstrates functional programming principles:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('gleam_toml')">📄 gleam.toml</button>
-<pre id="gleam_toml" class="file-content" style="display:none;"><code>name = "chess_engine"
+<pre id="gleam_toml" class="file-content" style="display:none;"><code class="language-toml">name = "chess_engine"
 version = "1.0.0"
 
 [dependencies]
@@ -225,7 +227,7 @@ gleeunit = "&gt;= 1.0.0 and &lt; 2.0.0"</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_ai_gleam')">📄 src/ai.gleam</button>
-<pre id="src_ai_gleam" class="file-content" style="display:none;"><code>// AI engine with minimax and alpha-beta pruning
+<pre id="src_ai_gleam" class="file-content" style="display:none;"><code class="language-rust">// AI engine with minimax and alpha-beta pruning
 
 import gleam/list
 import gleam/int
@@ -419,7 +421,7 @@ fn is_endgame(game_state: GameState) -&gt; Bool {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_board_gleam')">📄 src/board.gleam</button>
-<pre id="src_board_gleam" class="file-content" style="display:none;"><code>// Board representation and game state management
+<pre id="src_board_gleam" class="file-content" style="display:none;"><code class="language-rust">// Board representation and game state management
 
 import gleam/list
 import gleam/string
@@ -680,7 +682,7 @@ pub fn display_board(game_state: GameState) -&gt; String {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_chess_engine_gleam')">📄 src/chess_engine.gleam</button>
-<pre id="src_chess_engine_gleam" class="file-content" style="display:none;"><code>// Main chess engine with CLI interface
+<pre id="src_chess_engine_gleam" class="file-content" style="display:none;"><code class="language-rust">// Main chess engine with CLI interface
 
 import gleam/io
 import gleam/string
@@ -971,7 +973,7 @@ fn check_game_end(game_state: GameState) -&gt; Nil {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_fen_gleam')">📄 src/fen.gleam</button>
-<pre id="src_fen_gleam" class="file-content" style="display:none;"><code>// FEN parsing and export functionality
+<pre id="src_fen_gleam" class="file-content" style="display:none;"><code class="language-rust">// FEN parsing and export functionality
 
 import gleam/list
 import gleam/string
@@ -1187,7 +1189,7 @@ external fn is_string(value: a) -&gt; Bool =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_move_generator_gleam')">📄 src/move_generator.gleam</button>
-<pre id="src_move_generator_gleam" class="file-content" style="display:none;"><code>// Move generation and validation
+<pre id="src_move_generator_gleam" class="file-content" style="display:none;"><code class="language-rust">// Move generation and validation
 
 import gleam/list
 import gleam/int
@@ -1524,7 +1526,7 @@ fn is_valid_square(square: Square) -&gt; Bool {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_perft_gleam')">📄 src/perft.gleam</button>
-<pre id="src_perft_gleam" class="file-content" style="display:none;"><code>// Performance testing utilities
+<pre id="src_perft_gleam" class="file-content" style="display:none;"><code class="language-rust">// Performance testing utilities
 
 import gleam/list
 import types.{type GameState}
@@ -1576,7 +1578,7 @@ fn move_to_string(chess_move: types.Move) -&gt; String {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_types_gleam')">📄 src/types.gleam</button>
-<pre id="src_types_gleam" class="file-content" style="display:none;"><code>// Core chess types and data structures
+<pre id="src_types_gleam" class="file-content" style="display:none;"><code class="language-rust">// Core chess types and data structures
 
 import gleam/string
 import gleam/int
@@ -1762,7 +1764,7 @@ pub fn no_castling_rights() -&gt; CastlingRights {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('test_chess_engine_test_gleam')">📄 test/chess_engine_test.gleam</button>
-<pre id="test_chess_engine_test_gleam" class="file-content" style="display:none;"><code>import gleeunit
+<pre id="test_chess_engine_test_gleam" class="file-content" style="display:none;"><code class="language-rust">import gleeunit
 import gleeunit/should
 import gleam/list
 import types.{White, Black}
@@ -1853,6 +1855,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

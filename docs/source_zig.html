@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zig Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Zig Implementation</h2>
+<h2>⚡ <a href="https://ziglang.org/" target="_blank" rel="noopener">Zig</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -58,7 +60,7 @@ CMD ["./zig-out/bin/chess"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test help
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test help
 
 # Default target - build the chess engine
 all: build
@@ -104,7 +106,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Zig Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Zig Chess Engine
 
 A high-performance chess engine implementation in Zig, showcasing the language's systems programming capabilities and zero-cost abstractions.
 
@@ -250,7 +252,7 @@ This implementation follows the Chess Engine Specification v1.0. When making cha
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('build_zig')">📄 build.zig</button>
-<pre id="build_zig" class="file-content" style="display:none;"><code>const std = @import("std");
+<pre id="build_zig" class="file-content" style="display:none;"><code class="language-zig">const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -289,7 +291,7 @@ pub fn build(b: *std.Build) void {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-zig">{
   "language": "zig",
   "version": "0.13.0",
   "author": "Zig Implementation",
@@ -304,7 +306,7 @@ pub fn build(b: *std.Build) void {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_ai_zig')">📄 src/ai.zig</button>
-<pre id="src_ai_zig" class="file-content" style="display:none;"><code>const std = @import("std");
+<pre id="src_ai_zig" class="file-content" style="display:none;"><code class="language-zig">const std = @import("std");
 const board = @import("board.zig");
 const move_gen = @import("move_generator.zig");
 
@@ -542,7 +544,7 @@ pub const AI = struct {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_board_zig')">📄 src/board.zig</button>
-<pre id="src_board_zig" class="file-content" style="display:none;"><code>const std = @import("std");
+<pre id="src_board_zig" class="file-content" style="display:none;"><code class="language-zig">const std = @import("std");
 
 pub const PieceType = enum(u8) {
     Pawn = 1,
@@ -958,7 +960,7 @@ pub const Board = struct {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_fen_zig')">📄 src/fen.zig</button>
-<pre id="src_fen_zig" class="file-content" style="display:none;"><code>const std = @import("std");
+<pre id="src_fen_zig" class="file-content" style="display:none;"><code class="language-zig">const std = @import("std");
 const board = @import("board.zig");
 
 pub const FenParser = struct {
@@ -1171,7 +1173,7 @@ pub const FenParser = struct {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_zig')">📄 src/main.zig</button>
-<pre id="src_main_zig" class="file-content" style="display:none;"><code>const std = @import("std");
+<pre id="src_main_zig" class="file-content" style="display:none;"><code class="language-zig">const std = @import("std");
 const board = @import("board.zig");
 const move_gen = @import("move_generator.zig");
 const fen = @import("fen.zig");
@@ -1436,7 +1438,7 @@ pub fn main() !void {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_move_generator_zig')">📄 src/move_generator.zig</button>
-<pre id="src_move_generator_zig" class="file-content" style="display:none;"><code>const std = @import("std");
+<pre id="src_move_generator_zig" class="file-content" style="display:none;"><code class="language-zig">const std = @import("std");
 const board = @import("board.zig");
 
 pub const MoveGenerator = struct {
@@ -1729,7 +1731,7 @@ pub const MoveGenerator = struct {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_perft_zig')">📄 src/perft.zig</button>
-<pre id="src_perft_zig" class="file-content" style="display:none;"><code>const std = @import("std");
+<pre id="src_perft_zig" class="file-content" style="display:none;"><code class="language-zig">const std = @import("std");
 const board = @import("board.zig");
 const move_gen = @import("move_generator.zig");
 
@@ -1866,7 +1868,7 @@ pub const Perft = struct {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('verify_implementation_py')">📄 verify_implementation.py</button>
-<pre id="verify_implementation_py" class="file-content" style="display:none;"><code>#!/usr/bin/env python3
+<pre id="verify_implementation_py" class="file-content" style="display:none;"><code class="language-python">#!/usr/bin/env python3
 """
 Verification script for Zig chess engine implementation
 Checks that all required components are present and properly structured
@@ -2004,6 +2006,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

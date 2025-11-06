@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kotlin Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Kotlin Implementation</h2>
+<h2>🟣 <a href="https://kotlinlang.org/" target="_blank" rel="noopener">Kotlin</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -55,7 +57,7 @@ CMD ["java", "-jar", "build/libs/chess-1.0.0.jar"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -100,7 +102,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Kotlin Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Kotlin Chess Engine
 
 A complete chess engine implementation in Kotlin following the Chess Engine Specification v1.0.
 
@@ -196,7 +198,7 @@ The Kotlin chess engine demonstrates object-oriented and functional programming:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('build_gradle_kts')">📄 build.gradle.kts</button>
-<pre id="build_gradle_kts" class="file-content" style="display:none;"><code>plugins {
+<pre id="build_gradle_kts" class="file-content" style="display:none;"><code class="language-kotlin">plugins {
     kotlin("jvm") version "1.9.10"
     application
 }
@@ -231,7 +233,7 @@ tasks.jar {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-kotlin">{
   "language": "kotlin",
   "version": "1.9.10",
   "author": "Kotlin Implementation",
@@ -246,7 +248,7 @@ tasks.jar {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('gradlew')">📄 gradlew</button>
-<pre id="gradlew" class="file-content" style="display:none;"><code>#!/usr/bin/env sh
+<pre id="gradlew" class="file-content" style="display:none;"><code class="language-kotlin">#!/usr/bin/env sh
 
 ##############################################################################
 ##
@@ -417,7 +419,7 @@ set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$APP_BA
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_kotlin_AI_kt')">📄 src/main/kotlin/AI.kt</button>
-<pre id="src_main_kotlin_AI_kt" class="file-content" style="display:none;"><code>// AI engine with minimax and alpha-beta pruning
+<pre id="src_main_kotlin_AI_kt" class="file-content" style="display:none;"><code class="language-kotlin">// AI engine with minimax and alpha-beta pruning
 
 class AI {
     private val moveGenerator = MoveGenerator()
@@ -623,7 +625,7 @@ class AI {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_kotlin_Board_kt')">📄 src/main/kotlin/Board.kt</button>
-<pre id="src_main_kotlin_Board_kt" class="file-content" style="display:none;"><code>// Board representation and game state management
+<pre id="src_main_kotlin_Board_kt" class="file-content" style="display:none;"><code class="language-kotlin">// Board representation and game state management
 
 class Board {
     private var gameState: GameState = createInitialGameState()
@@ -851,7 +853,7 @@ class Board {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_kotlin_ChessEngine_kt')">📄 src/main/kotlin/ChessEngine.kt</button>
-<pre id="src_main_kotlin_ChessEngine_kt" class="file-content" style="display:none;"><code>// Main chess engine with CLI interface
+<pre id="src_main_kotlin_ChessEngine_kt" class="file-content" style="display:none;"><code class="language-kotlin">// Main chess engine with CLI interface
 
 import kotlin.system.measureTimeMillis
 
@@ -1090,7 +1092,7 @@ fun main() {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_kotlin_FenParser_kt')">📄 src/main/kotlin/FenParser.kt</button>
-<pre id="src_main_kotlin_FenParser_kt" class="file-content" style="display:none;"><code>// FEN parsing and export functionality
+<pre id="src_main_kotlin_FenParser_kt" class="file-content" style="display:none;"><code class="language-kotlin">// FEN parsing and export functionality
 
 class FenParser {
     
@@ -1243,7 +1245,7 @@ class FenParser {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_kotlin_MoveGenerator_kt')">📄 src/main/kotlin/MoveGenerator.kt</button>
-<pre id="src_main_kotlin_MoveGenerator_kt" class="file-content" style="display:none;"><code>// Move generation and validation
+<pre id="src_main_kotlin_MoveGenerator_kt" class="file-content" style="display:none;"><code class="language-kotlin">// Move generation and validation
 
 class MoveGenerator {
     
@@ -1579,7 +1581,7 @@ class MoveGenerator {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_kotlin_Perft_kt')">📄 src/main/kotlin/Perft.kt</button>
-<pre id="src_main_kotlin_Perft_kt" class="file-content" style="display:none;"><code>// Performance testing utilities
+<pre id="src_main_kotlin_Perft_kt" class="file-content" style="display:none;"><code class="language-kotlin">// Performance testing utilities
 
 class Perft {
     private val moveGenerator = MoveGenerator()
@@ -1668,7 +1670,7 @@ class Perft {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_kotlin_Types_kt')">📄 src/main/kotlin/Types.kt</button>
-<pre id="src_main_kotlin_Types_kt" class="file-content" style="display:none;"><code>// Core chess types and data structures
+<pre id="src_main_kotlin_Types_kt" class="file-content" style="display:none;"><code class="language-kotlin">// Core chess types and data structures
 
 enum class Color {
     WHITE, BLACK;
@@ -1810,6 +1812,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

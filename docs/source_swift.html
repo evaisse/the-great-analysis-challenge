@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Swift Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Swift Implementation</h2>
+<h2>🐦 <a href="https://www.swift.org/" target="_blank" rel="noopener">Swift</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -74,7 +76,7 @@ CMD [".build/release/Chess"]
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test help
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test help
 
 # Default target - build the chess engine
 all: build
@@ -120,7 +122,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Package_swift')">📄 Package.swift</button>
-<pre id="Package_swift" class="file-content" style="display:none;"><code>// swift-tools-version:5.5
+<pre id="Package_swift" class="file-content" style="display:none;"><code class="language-swift">// swift-tools-version:5.5
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -146,7 +148,7 @@ let package = Package(
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Swift Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Swift Chess Engine
 
 A complete chess engine implementation in Swift following the Chess Engine Specification v1.0.
 
@@ -256,7 +258,7 @@ This Swift implementation leverages:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Tests_ChessTests_ChessTests_swift')">📄 Tests/ChessTests/ChessTests.swift</button>
-<pre id="Tests_ChessTests_ChessTests_swift" class="file-content" style="display:none;"><code>import XCTest
+<pre id="Tests_ChessTests_ChessTests_swift" class="file-content" style="display:none;"><code class="language-swift">import XCTest
 @testable import Chess
 
 final class ChessTests: XCTestCase {
@@ -311,7 +313,7 @@ final class ChessTests: XCTestCase {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-swift">{
   "language": "swift",
   "version": "5.5",
   "author": "Jules",
@@ -327,7 +329,7 @@ final class ChessTests: XCTestCase {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_swift')">📄 src/main.swift</button>
-<pre id="src_main_swift" class="file-content" style="display:none;"><code>import Foundation
+<pre id="src_main_swift" class="file-content" style="display:none;"><code class="language-swift">import Foundation
 
 // Represents the color of a piece
 enum Color {
@@ -1141,6 +1143,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

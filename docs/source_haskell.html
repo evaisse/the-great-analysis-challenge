@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Haskell Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Haskell Implementation</h2>
+<h2>🎓 <a href="https://www.haskell.org/" target="_blank" rel="noopener">Haskell</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -52,7 +54,7 @@ CMD ["cabal", "run", "chess"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -98,7 +100,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Haskell Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Haskell Chess Engine
 
 A functional programming implementation of a chess engine showcasing Haskell's strengths:
 
@@ -162,12 +164,12 @@ The design emphasizes immutability - game states are never modified in place, bu
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess')">📄 chess</button>
-<pre id="chess" class="file-content" style="display:none;"><code>#!/bin/bash
+<pre id="chess" class="file-content" style="display:none;"><code class="language-haskell">#!/bin/bash
 exec ./dist-newstyle/build/x86_64-linux/ghc-9.12.2/chess-1.0.0.0/x/chess/build/chess/chess "$@"</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_cabal')">📄 chess.cabal</button>
-<pre id="chess_cabal" class="file-content" style="display:none;"><code>cabal-version: 2.0
+<pre id="chess_cabal" class="file-content" style="display:none;"><code class="language-haskell">cabal-version: 2.0
 name: chess
 version: 1.0.0.0
 author: Haskell Implementation
@@ -194,7 +196,7 @@ executable chess
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-haskell">{
   "language": "haskell",
   "version": "9.0",
   "author": "Haskell Implementation",
@@ -209,7 +211,7 @@ executable chess
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_AI_hs')">📄 src/AI.hs</button>
-<pre id="src_AI_hs" class="file-content" style="display:none;"><code>module AI where
+<pre id="src_AI_hs" class="file-content" style="display:none;"><code class="language-haskell">module AI where
 
 import Types
 import Board
@@ -368,7 +370,7 @@ sortByScore (x:xs) =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_Board_hs')">📄 src/Board.hs</button>
-<pre id="src_Board_hs" class="file-content" style="display:none;"><code>module Board where
+<pre id="src_Board_hs" class="file-content" style="display:none;"><code class="language-haskell">module Board where
 
 import Types
 import Data.Array
@@ -693,7 +695,7 @@ kingDirections = queenDirections</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_FEN_hs')">📄 src/FEN.hs</button>
-<pre id="src_FEN_hs" class="file-content" style="display:none;"><code>module FEN where
+<pre id="src_FEN_hs" class="file-content" style="display:none;"><code class="language-haskell">module FEN where
 
 import Types
 import Data.Array
@@ -838,7 +840,7 @@ startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"</code><
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_Main_hs')">📄 src/Main.hs</button>
-<pre id="src_Main_hs" class="file-content" style="display:none;"><code>module Main where
+<pre id="src_Main_hs" class="file-content" style="display:none;"><code class="language-haskell">module Main where
 
 import Types
 import Board
@@ -1017,7 +1019,7 @@ wouldGiveCheck gs move =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_MoveGenerator_hs')">📄 src/MoveGenerator.hs</button>
-<pre id="src_MoveGenerator_hs" class="file-content" style="display:none;"><code>module MoveGenerator where
+<pre id="src_MoveGenerator_hs" class="file-content" style="display:none;"><code class="language-haskell">module MoveGenerator where
 
 import Types
 import Board
@@ -1143,7 +1145,7 @@ minimumBy cmp (x:xs) = foldl (\acc y -&gt; if cmp acc y == GT then y else acc) x
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_Perft_hs')">📄 src/Perft.hs</button>
-<pre id="src_Perft_hs" class="file-content" style="display:none;"><code>module Perft where
+<pre id="src_Perft_hs" class="file-content" style="display:none;"><code class="language-haskell">module Perft where
 
 import Types
 import Board
@@ -1211,7 +1213,7 @@ testPositions =
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_Types_hs')">📄 src/Types.hs</button>
-<pre id="src_Types_hs" class="file-content" style="display:none;"><code>module Types where
+<pre id="src_Types_hs" class="file-content" style="display:none;"><code class="language-haskell">module Types where
 
 import Data.Array
 
@@ -1320,6 +1322,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }

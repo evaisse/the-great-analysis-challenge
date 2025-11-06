@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rust Source Code - The Great Analysis Challenge</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
@@ -16,12 +18,12 @@
         </nav>
     </header>
     <main>
-<h2>📁 Rust Implementation</h2>
+<h2>🦀 <a href="https://www.rust-lang.org/" target="_blank" rel="noopener">Rust</a> Implementation</h2>
 <div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
 <div class="file-tree">
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Cargo_toml')">📄 Cargo.toml</button>
-<pre id="Cargo_toml" class="file-content" style="display:none;"><code>[package]
+<pre id="Cargo_toml" class="file-content" style="display:none;"><code class="language-toml">[package]
 name = "chess-engine"
 version = "0.1.0"
 edition = "2021"
@@ -34,7 +36,7 @@ path = "src/main.rs"
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
-<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -64,7 +66,7 @@ CMD ["./target/release/chess"]</code></pre>
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
-<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
 
 # Default target - build the chess engine
 all: build
@@ -110,7 +112,7 @@ help:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
-<pre id="README_md" class="file-content" style="display:none;"><code># Rust Chess Engine
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Rust Chess Engine
 
 A complete chess engine implementation in Rust following the Chess Engine Specification v1.0.
 
@@ -212,7 +214,7 @@ This Rust implementation is optimized for performance with:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
-<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-rust">{
   "language": "rust",
   "version": "1.70",
   "author": "Rust Implementation",
@@ -227,7 +229,7 @@ This Rust implementation is optimized for performance with:
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_ai_rs')">📄 src/ai.rs</button>
-<pre id="src_ai_rs" class="file-content" style="display:none;"><code>use crate::types::*;
+<pre id="src_ai_rs" class="file-content" style="display:none;"><code class="language-rust">use crate::types::*;
 use crate::board::Board;
 use crate::move_generator::MoveGenerator;
 use std::time::Instant;
@@ -430,7 +432,7 @@ impl AI {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_board_rs')">📄 src/board.rs</button>
-<pre id="src_board_rs" class="file-content" style="display:none;"><code>use crate::types::*;
+<pre id="src_board_rs" class="file-content" style="display:none;"><code class="language-rust">use crate::types::*;
 use std::fmt;
 
 pub struct Board {
@@ -662,7 +664,7 @@ impl fmt::Display for Board {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_fen_rs')">📄 src/fen.rs</button>
-<pre id="src_fen_rs" class="file-content" style="display:none;"><code>use crate::types::*;
+<pre id="src_fen_rs" class="file-content" style="display:none;"><code class="language-rust">use crate::types::*;
 use crate::board::Board;
 
 pub struct FenParser;
@@ -813,7 +815,7 @@ impl FenParser {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_main_rs')">📄 src/main.rs</button>
-<pre id="src_main_rs" class="file-content" style="display:none;"><code>mod types;
+<pre id="src_main_rs" class="file-content" style="display:none;"><code class="language-rust">mod types;
 mod board;
 mod move_generator;
 mod fen;
@@ -1122,7 +1124,7 @@ fn main() {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_move_generator_rs')">📄 src/move_generator.rs</button>
-<pre id="src_move_generator_rs" class="file-content" style="display:none;"><code>use crate::types::*;
+<pre id="src_move_generator_rs" class="file-content" style="display:none;"><code class="language-rust">use crate::types::*;
 use crate::board::Board;
 
 pub struct MoveGenerator;
@@ -1447,7 +1449,7 @@ impl MoveGenerator {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_perft_rs')">📄 src/perft.rs</button>
-<pre id="src_perft_rs" class="file-content" style="display:none;"><code>use crate::types::*;
+<pre id="src_perft_rs" class="file-content" style="display:none;"><code class="language-rust">use crate::types::*;
 use crate::board::Board;
 use crate::move_generator::MoveGenerator;
 use std::collections::HashMap;
@@ -1512,7 +1514,7 @@ impl Perft {
 </div>
 <div class="file-item">
 <button class="file-toggle" onclick="toggleFile('src_types_rs')">📄 src/types.rs</button>
-<pre id="src_types_rs" class="file-content" style="display:none;"><code>use std::fmt;
+<pre id="src_types_rs" class="file-content" style="display:none;"><code class="language-rust">use std::fmt;
 
 pub type Square = usize;
 
@@ -1776,6 +1778,11 @@ function toggleFile(id) {
     var content = document.getElementById(id);
     if (content.style.display === 'none') {
         content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
     } else {
         content.style.display = 'none';
     }
