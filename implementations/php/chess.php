@@ -164,16 +164,22 @@ class ChessEngine {
         }
         
         $this->board->make_move($move);
-        echo "OK: " . $move->to_string() . "\n";
-        echo $this->board->display();
         
-        // Check for game end
-        if ($this->move_gen->is_checkmate()) {
+        // Check for game end first
+        $is_checkmate = $this->move_gen->is_checkmate();
+        $is_stalemate = $this->move_gen->is_stalemate();
+        
+        if ($is_checkmate) {
             $winner = $this->board->current_player === CHESS_WHITE ? "Black" : "White";
             echo "CHECKMATE: $winner wins\n";
-        } elseif ($this->move_gen->is_stalemate()) {
+        } elseif ($is_stalemate) {
             echo "STALEMATE: Draw\n";
+        } else {
+            // Only output OK if game continues
+            echo "OK: " . $move->to_string() . "\n";
         }
+        
+        echo $this->board->display();
     }
     
     private function handle_undo(): void {
@@ -207,16 +213,22 @@ class ChessEngine {
         [$move, $eval, $time_ms] = $result;
         
         $this->board->make_move($move);
-        echo "AI: " . $move->to_string() . " (depth=$depth, eval=$eval, time={$time_ms}ms)\n";
-        echo $this->board->display();
         
-        // Check for game end
-        if ($this->move_gen->is_checkmate()) {
+        // Check for game end first
+        $is_checkmate = $this->move_gen->is_checkmate();
+        $is_stalemate = $this->move_gen->is_stalemate();
+        
+        if ($is_checkmate) {
             $winner = $this->board->current_player === CHESS_WHITE ? "Black" : "White";
             echo "CHECKMATE: $winner wins\n";
-        } elseif ($this->move_gen->is_stalemate()) {
+        } elseif ($is_stalemate) {
             echo "STALEMATE: Draw\n";
+        } else {
+            // Only output AI message if game continues
+            echo "AI: " . $move->to_string() . " (depth=$depth, eval=$eval, time={$time_ms}ms)\n";
         }
+        
+        echo $this->board->display();
     }
     
     private function handle_fen(?string $fen): void {
