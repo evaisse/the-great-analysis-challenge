@@ -15,26 +15,25 @@ All implementations have complete feature parity:
 
 <!-- status-table-start -->
 
-| Language   | Status | Analysis Time | Build Time | Test Time |
-| ---------- | ------ | ------------- | ---------- | --------- |
-| Crystal    | 🟢     | 38ms          | 18ms       | 0ms       |
-| Dart       | 🟢     | 1055ms        | 639ms      | 0ms       |
-| Elm        | 🟢     | 722ms         | 847ms      | 0ms       |
-| Gleam      | 🟢     | 36ms          | 22ms       | 0ms       |
-| Go         | 🟢     | 280ms         | 153ms      | 0ms       |
-| Haskell    | 🟢     | 42ms          | 15ms       | 0ms       |
-| Julia      | 🟢     | 33ms          | 25ms       | 0ms       |
-| Kotlin     | 🟢     | 258ms         | 128ms      | 0ms       |
-| Mojo       | 🟢     | 33ms          | 33ms       | 0ms       |
-| Nim        | 🟢     | 33ms          | 29ms       | 0ms       |
-| Python     | 🟢     | 209ms         | 103ms      | 597ms     |
-| Rescript   | 🟢     | 141ms         | 3443ms     | 0ms       |
-| Ruby       | 🟢     | 1661ms        | 354ms      | 1850ms    |
-| Rust       | 🟢     | 899ms         | 567ms      | 518ms     |
-| Swift      | 🟢     | 1087ms        | 398ms      | 0ms       |
-| Typescript | 🟢     | 0ms           | 0ms        | 0ms       |
-| Zig        | 🟢     | 29ms          | 18ms       | 0ms       |
-
+| Language | Status | Analysis Time | Build Time | Test Time |
+|----------|--------|---------------|------------|-----------|
+| Crystal | 🟢 | 38ms | 18ms | - |
+| Dart | 🟢 | 1055ms | 639ms | - |
+| Elm | 🟢 | 722ms | 847ms | - |
+| Gleam | 🟢 | 36ms | 22ms | - |
+| Go | 🟢 | 280ms | 153ms | - |
+| Haskell | 🟢 | 42ms | 15ms | - |
+| Julia | 🟢 | 33ms | 25ms | - |
+| Kotlin | 🟢 | 258ms | 128ms | - |
+| Mojo | 🟢 | 33ms | 33ms | - |
+| Nim | 🟢 | 33ms | 29ms | - |
+| Python | 🟢 | 209ms | 103ms | 597ms |
+| Rescript | 🟢 | 141ms | 3443ms | - |
+| Ruby | 🟢 | 1661ms | 354ms | 1850ms |
+| Rust | 🟢 | 899ms | 567ms | 518ms |
+| Swift | 🟢 | 1087ms | 398ms | - |
+| Typescript | 🟢 | - | - | - |
+| Zig | 🟢 | 29ms | 18ms | - |
 <!-- status-table-end -->
 
 _All implementations tested via Docker for consistency. Times in milliseconds, measured on the same github actions vm._
