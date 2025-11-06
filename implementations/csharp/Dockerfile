@@ -14,8 +14,10 @@ COPY . ./
 # Build the application
 RUN dotnet build -c Release --no-restore
 
-# Runtime stage
+# Runtime stage  
 FROM mcr.microsoft.com/dotnet/runtime:8.0
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
