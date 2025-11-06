@@ -1,0 +1,12 @@
+{
+  "language": "java",
+  "version": "17",
+  "author": "Java Implementation",
+  "build": "mvn clean package",
+  "run": "java -jar target/chess-1.0.0.jar",
+  "analyze": "mvn checkstyle:check pmd:check",
+  "test": "mvn test",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 500
+}
