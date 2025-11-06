@@ -26,9 +26,6 @@ RUN npm install
 # Copy source code
 COPY src/ ./src/
 
-# Build the Imba project
-RUN npm run build
-
 # Create a non-root user
 RUN addgroup --gid 1001 nodejs && \
     adduser --system --uid 1001 chess
@@ -40,4 +37,4 @@ RUN chown -R chess:nodejs /app
 USER chess
 
 # Default command to run the chess engine
-CMD ["node", "dist/chess.js"]
+CMD ["npx", "imba", "run", "src/chess.imba"]

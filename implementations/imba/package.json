@@ -4,15 +4,16 @@
   "description": "Chess engine implementation in Imba",
   "type": "module",
   "scripts": {
-    "build": "imba build src/chess.imba -o dist/chess.js",
-    "start": "node dist/chess.js",
+    "start": "imba run src/chess.imba",
     "dev": "imba run src/chess.imba",
-    "test": "echo 'new' | node dist/chess.js"
+    "test": "echo 'new' | imba run src/chess.imba"
   },
   "dependencies": {
     "imba": "^2.0.0-alpha.250"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
   "keywords": ["chess", "imba", "game"],
   "author": "Imba Implementation",
   "license": "MIT"

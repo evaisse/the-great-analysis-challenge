@@ -101,7 +101,18 @@ class Board
 				if piece !== '.' and getPieceColor(piece) === turn
 					const pieceMoves = generatePieceMoves(row, col, piece)
 					moves.push(...pieceMoves)
-		return moves
+		
+		# Filter out illegal moves (those that leave king in check)
+		const legalMoves = []
+		for move in moves
+			const moveStr = indicesToAlgebraic(move.from.row, move.from.col) + indicesToAlgebraic(move.to.row, move.to.col)
+			const result = makeMoveWithoutLegalityCheck(moveStr, move)
+			if result.success
+				if !isInCheck!
+					legalMoves.push(move)
+				undoMove!
+		
+		return legalMoves
 
 	# Generate moves for a specific piece
 	def generatePieceMoves row\number, col\number, piece\string
@@ -242,11 +253,11 @@ class Board
 		const opponentColor = turn === WHITE ? BLACK : WHITE
 		return isSquareUnderAttack(kingPos.row, kingPos.col, opponentColor)
 
-	# Make a move
-	def makeMove moveStr\string
+	# Make a move without checking legality (for internal use in move generation)
+	def makeMoveWithoutLegalityCheck moveStr\string, validMove\any = null
 		# Parse move string (e.g., "e2e4" or "e7e8Q")
 		if moveStr.length < 4
-			return { success: false, error: "Invalid move format" }
+			return { success: false, error: "Invalid move format", madeMove: false }
 
 		const fromSquare = moveStr.substring(0, 2)
 		const toSquare = moveStr.substring(2, 4)
@@ -259,22 +270,22 @@ class Board
 		
 		# Validate piece exists
 		if piece === '.'
-			return { success: false, error: "No piece at source square" }
+			return { success: false, error: "No piece at source square", madeMove: false }
 
 		# Validate piece color
 		if getPieceColor(piece) !== turn
-			return { success: false, error: "Wrong color piece" }
+			return { success: false, error: "Wrong color piece", madeMove: false }
 
-		# Validate move is legal
-		const legalMoves = generateMoves!
-		let validMove = null
-		for move in legalMoves
-			if move.from.row === from.row and move.from.col === from.col and move.to.row === to.row and move.to.col === to.col
-				validMove = move
-				break
-
+		# If no validMove provided, find it
 		if !validMove
-			return { success: false, error: "Illegal move" }
+			const legalMoves = generatePieceMoves(from.row, from.col, piece)
+			for move in legalMoves
+				if move.from.row === from.row and move.from.col === from.col and move.to.row === to.row and move.to.col === to.col
+					validMove = move
+					break
+
+			if !validMove
+				return { success: false, error: "Illegal move", madeMove: false }
 
 		# Save move for undo
 		const moveRecord = {
@@ -344,19 +355,45 @@ class Board
 		halfmoveClock = piece.toUpperCase! === PAWN or moveRecord.capturedPiece !== '.' ? 0 : halfmoveClock + 1
 		fullmoveNumber += 1 if turn === BLACK
 
-		# Check if move leaves king in check
-		if isInCheck!
-			# Undo move
-			undoMove(moveRecord)
-			return { success: false, error: "King would be in check" }
-
 		# Switch turn
 		turn = turn === WHITE ? BLACK : WHITE
 
 		# Store move
 		moveHistory.push(moveRecord)
 
-		return { success: true }
+		return { success: true, madeMove: true }
+
+	# Make a move (public interface with legality check)
+	def makeMove moveStr\string
+		# First check if this is a legal move
+		const legalMoves = generateMoves!
+		
+		# Parse move to find matching legal move
+		if moveStr.length < 4
+			return { success: false, error: "Invalid move format" }
+
+		const fromSquare = moveStr.substring(0, 2)
+		const toSquare = moveStr.substring(2, 4)
+		const from = algebraicToIndices(fromSquare)
+		const to = algebraicToIndices(toSquare)
+
+		let validMove = null
+		for move in legalMoves
+			if move.from.row === from.row and move.from.col === from.col and move.to.row === to.row and move.to.col === to.col
+				validMove = move
+				break
+
+		if !validMove
+			const piece = getPiece(from.row, from.col)
+			if piece === '.'
+				return { success: false, error: "No piece at source square" }
+			if getPieceColor(piece) !== turn
+				return { success: false, error: "Wrong color piece" }
+			return { success: false, error: "Illegal move" }
+
+		# Make the move (we know it's legal)
+		const result = makeMoveWithoutLegalityCheck(moveStr, validMove)
+		return result
 
 	# Undo last move
 	def undoMove moveRecord\any = null
