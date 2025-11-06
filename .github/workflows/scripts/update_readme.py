@@ -99,9 +99,18 @@ def classify_implementation_status(impl_data):
 
 
 def format_time(seconds):
-    """Format time duration in milliseconds for better precision"""
-    if seconds == 0:
-        return "0ms"
+    """Format time duration in milliseconds for better precision
+    
+    Args:
+        seconds: Time in seconds, or None if data is not available
+        
+    Returns:
+        Formatted time string or "-" if data is missing
+    """
+    if seconds is None:
+        return "-"
+    elif seconds == 0:
+        return "<1ms"
     else:
         ms = seconds * 1000
         if ms < 1:
@@ -186,7 +195,7 @@ def update_readme() -> bool:
             if lang not in combined_data:
                 combined_data[lang] = {
                     'language': lang,
-                    'timings': {'build_seconds': 0, 'test_seconds': 0},
+                    'timings': {},
                     'test_results': {'passed': [], 'failed': []},
                     'status': 'completed'
                 }
@@ -204,9 +213,10 @@ def update_readme() -> bool:
             emoji = status_emoji.get(status, '❓')
             
             timings = impl_data.get('timings', {})
-            analyze_time = format_time(timings.get('analyze_seconds', 0))
-            build_time = format_time(timings.get('build_seconds', 0))
-            test_time = format_time(timings.get('test_seconds', 0))
+            # Use None as default instead of 0 to distinguish missing data from zero time
+            analyze_time = format_time(timings.get('analyze_seconds'))
+            build_time = format_time(timings.get('build_seconds'))
+            test_time = format_time(timings.get('test_seconds'))
             
             table_rows.append(f"| {language.title()} | {emoji} | {analyze_time} | {build_time} | {test_time} |")
         
