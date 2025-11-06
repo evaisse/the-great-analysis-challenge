@@ -495,8 +495,13 @@ namespace Chess
                 case PieceType.Pawn:
                     return IsValidPawnMove(move, piece.Color);
                 case PieceType.Knight:
-                    return (Math.Abs(rowDiff) == 2 && Math.Abs(colDiff) == 1) ||
-                           (Math.Abs(rowDiff) == 1 && Math.Abs(colDiff) == 2);
+                    if ((Math.Abs(rowDiff) == 2 && Math.Abs(colDiff) == 1) ||
+                        (Math.Abs(rowDiff) == 1 && Math.Abs(colDiff) == 2))
+                    {
+                        var target = board[move.ToRow, move.ToCol];
+                        return target == null || target.Color != piece.Color;
+                    }
+                    return false;
                 case PieceType.Bishop:
                     return Math.Abs(rowDiff) == Math.Abs(colDiff) && IsPathClear(move);
                 case PieceType.Rook:
@@ -1042,6 +1047,15 @@ namespace Chess
                             int nodeCount = board.Perft(perftDepth);
                             var perftElapsed = (DateTime.Now - perftStart).TotalMilliseconds;
                             Console.WriteLine($"Perft({perftDepth}): {nodeCount} nodes in {perftElapsed:F0}ms");
+                            break;
+
+                        case "moves":
+                            var legalMoves = board.GetLegalMoves();
+                            Console.WriteLine($"Legal moves ({legalMoves.Count}):");
+                            foreach (var move in legalMoves)
+                            {
+                                Console.WriteLine($"  {move}");
+                            }
                             break;
 
                         case "help":

@@ -28,7 +28,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing C# implementation in Docker..."
-	docker run --rm -i chess-csharp sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | dotnet run --no-build -c Release"
+	@printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | docker run --rm -i chess-csharp dotnet chess.dll | grep -q "FEN: rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Docker test passed" || echo "❌ Docker test failed"
 
 # Help target
 help:
