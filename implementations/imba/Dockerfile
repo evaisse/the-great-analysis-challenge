@@ -4,15 +4,12 @@ FROM ubuntu:24.04
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies and Node.js
+# Install system dependencies and Node.js from Ubuntu repos
 RUN apt-get update && apt-get install -y \
-    curl \
+    nodejs \
+    npm \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Node.js and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
 
 # Set working directory
 WORKDIR /app
@@ -21,7 +18,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies (including Imba)
-RUN npm install
+RUN npm config set strict-ssl false && npm install
 
 # Copy source code
 COPY src/ ./src/
