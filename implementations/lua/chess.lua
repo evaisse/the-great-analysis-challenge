@@ -174,6 +174,8 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
                           black_king = castling_rights.black_king, black_queen = castling_rights.black_queen},
         en_passant_target = en_passant_target,
         halfmove_clock = halfmove_clock,
+        fullmove_number = fullmove_number,
+        white_to_move = white_to_move,
         promotion = promotion
     }
     
@@ -251,11 +253,14 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
         halfmove_clock = halfmove_clock + 1
     end
     
-    if not white_to_move then
+    -- Update turn (switch before checking fullmove)
+    white_to_move = not white_to_move
+    
+    -- Increment fullmove after Black's turn
+    if white_to_move then
         fullmove_number = fullmove_number + 1
     end
     
-    white_to_move = not white_to_move
     table.insert(move_history, move_record)
     
     return true
@@ -300,11 +305,8 @@ local function undo_move()
     castling_rights = move.castling_rights
     en_passant_target = move.en_passant_target
     halfmove_clock = move.halfmove_clock
-    white_to_move = not white_to_move
-    
-    if white_to_move then
-        fullmove_number = fullmove_number - 1
-    end
+    fullmove_number = move.fullmove_number
+    white_to_move = move.white_to_move
     
     return true
 end
