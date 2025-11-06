@@ -101,6 +101,7 @@ public class Board {
         move.setPreviousEnPassantCol(enPassantCol);
         move.setPreviousCastlingRights(castlingRights);
         move.setCapturedPiece(board[move.getToRow()][move.getToCol()]);
+        move.setPreviousFullMoveNumber(fullMoveNumber);
 
         // Handle castling
         if (piece.getType() == PieceType.KING && Math.abs(move.getToCol() - move.getFromCol()) == 2) {
@@ -174,7 +175,7 @@ public class Board {
 
         Move move = moveHistory.pop();
         whiteTurn = !whiteTurn;
-        if (whiteTurn) fullMoveNumber--;
+        fullMoveNumber = move.getPreviousFullMoveNumber();
 
         Piece piece = board[move.getToRow()][move.getToCol()];
         board[move.getFromRow()][move.getFromCol()] = piece;

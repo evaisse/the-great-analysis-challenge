@@ -9,6 +9,7 @@ public class Move {
     private boolean isEnPassant;
     private int previousEnPassantCol;
     private boolean[] previousCastlingRights;
+    private int previousFullMoveNumber;
 
     public Move(int fromRow, int fromCol, int toRow, int toCol) {
         this.fromRow = fromRow;
@@ -21,6 +22,7 @@ public class Move {
         this.isEnPassant = false;
         this.previousEnPassantCol = -1;
         this.previousCastlingRights = new boolean[4];
+        this.previousFullMoveNumber = 0;
     }
 
     public int getFromRow() { return fromRow; }
@@ -41,6 +43,8 @@ public class Move {
     public void setPreviousCastlingRights(boolean[] rights) {
         System.arraycopy(rights, 0, this.previousCastlingRights, 0, 4);
     }
+    public int getPreviousFullMoveNumber() { return previousFullMoveNumber; }
+    public void setPreviousFullMoveNumber(int num) { this.previousFullMoveNumber = num; }
 
     @Override
     public String toString() {
