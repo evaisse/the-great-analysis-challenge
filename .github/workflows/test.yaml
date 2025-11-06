@@ -120,6 +120,15 @@ jobs:
         if: steps.config.outputs.test_mode == 'demo'
         run: ./workflow test-demo-mode ${{ matrix.engine }}
 
+      - name: Ensure workspace clean for ${{ matrix.engine }}
+        run: |
+          ENGINE=${{ matrix.engine }}
+          if [[ -n "$(git status --porcelain implementations/${ENGINE})" ]]; then
+            echo "Uncommitted changes detected after testing ${ENGINE}" >&2
+            git status --short implementations/${ENGINE}
+            exit 1
+          fi
+
       - name: Cleanup
         if: always()
         run: ./workflow cleanup-docker ${{ matrix.engine }}
