@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swift Source Code - The Great Analysis Challenge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🏆 The Great Analysis Challenge</h1>
+        <p class="subtitle">Multi-Language Chess Engine Comparison</p>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="https://github.com/evaisse/the-great-analysis-challenge">GitHub</a>
+        </nav>
+    </header>
+    <main>
+<h2>📁 Swift Implementation</h2>
+<div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
+<div class="file-tree">
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
+<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update &amp;&amp; apt-get install -y \
+    curl \
+    wget \
+    binutils \
+    git \
+    gnupg2 \
+    libc6-dev \
+    libcurl4-openssl-dev \
+    libedit2 \
+    libgcc-9-dev \
+    libpython3-dev \
+    libsqlite3-0 \
+    libstdc++-9-dev \
+    libxml2-dev \
+    libz3-dev \
+    pkg-config \
+    tzdata \
+    zlib1g-dev \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Install Swift
+RUN SWIFT_VERSION="5.9.2" \
+    &amp;&amp; SWIFT_URL="https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz" \
+    &amp;&amp; wget "${SWIFT_URL}" \
+    &amp;&amp; tar -xzf "swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz" \
+    &amp;&amp; mv "swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04" /opt/swift \
+    &amp;&amp; ln -s /opt/swift/usr/bin/swift* /usr/local/bin/ \
+    &amp;&amp; rm "swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz"
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the Swift package file
+COPY Package.swift .
+
+# Copy the source code
+COPY src/ src/
+
+# Build the project
+RUN swift build -c release
+
+# Set the entrypoint
+CMD [".build/release/Chess"]
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
+<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test help
+
+# Default target - build the chess engine
+all: build
+
+# Build target - compile Swift project
+build:
+	swift build --configuration release
+
+# Run basic tests
+test:
+	swift test
+	@echo "Running basic functionality test..."
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | .build/release/Chess | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" &amp;&amp; echo "✅ Basic test passed" || echo "❌ Basic test failed"
+
+# Static analysis and code quality
+analyze:
+	@echo "Running Swift static analysis..."
+	swift build --configuration debug
+	@echo "Swift build successful - static analysis complete"
+
+# Clean build artifacts
+clean:
+	swift package clean
+	rm -rf .build/
+
+# Docker targets
+docker-build:
+	docker build -t chess-swift .
+
+docker-test: docker-build
+	@echo "Testing Swift implementation in Docker..."
+	docker run --rm -i chess-swift sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | .build/release/Chess"
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  make         - Build the chess engine"
+	@echo "  make test    - Run tests"
+	@echo "  make analyze - Run static analysis"
+	@echo "  make clean   - Clean build artifacts"
+	@echo "  make docker-build - Build Docker image"
+	@echo "  make docker-test  - Test in Docker"</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Package_swift')">📄 Package.swift</button>
+<pre id="Package_swift" class="file-content" style="display:none;"><code>// swift-tools-version:5.5
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
+import PackageDescription
+
+let package = Package(
+    name: "Chess",
+    dependencies: [
+        // Dependencies declare other packages that this package depends on.
+        // .package(url: /* package url */, from: "1.0.0"),
+    ],
+    targets: [
+        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
+        // Targets can depend on other targets in this package, and on products in packages this package depends on.
+        .executableTarget(
+            name: "Chess",
+            dependencies: []),
+        .testTarget(
+            name: "ChessTests",
+            dependencies: ["Chess"]),
+    ]
+)
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
+<pre id="README_md" class="file-content" style="display:none;"><code># Swift Chess Engine
+
+A complete chess engine implementation in Swift following the Chess Engine Specification v1.0.
+
+## Features
+
+- Complete chess rules implementation (castling, en passant, promotion)
+- AI opponent with minimax algorithm and alpha-beta pruning
+- FEN import/export support
+- Performance testing with perft
+- Interactive command-line interface
+- All standard chess piece movements and special rules
+- Native Swift performance and type safety
+
+## Local Development
+
+### Prerequisites
+- Swift 5.5+ 
+- Swift Package Manager
+
+### Setup
+```bash
+swift build -c release
+.build/release/Chess
+```
+
+### Development and Testing
+```bash
+# Build for development
+swift build
+
+# Run tests
+swift test
+
+# Build and run
+swift run Chess
+```
+
+## Docker Usage
+
+### Build the Docker image
+```bash
+docker build -t chess-engine .
+```
+
+### Run interactively
+```bash
+docker run -it chess-engine
+```
+
+### Using Docker Compose
+```bash
+# Run the chess engine
+docker-compose up chess-engine
+
+# Development mode with shell access
+docker-compose run chess-dev
+```
+
+### Example Docker commands
+```bash
+# Quick game
+echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run -i chess-engine
+
+# Interactive play
+docker run -it chess-engine
+
+# Build and run in one command
+docker-compose up --build chess-engine
+```
+
+## Commands
+
+- `move &lt;from&gt;&lt;to&gt;[promotion]` - Make a move (e.g., e2e4, e7e8Q)
+- `undo` - Undo the last move
+- `new` - Start a new game  
+- `ai &lt;depth&gt;` - Let AI make a move (depth 1-5)
+- `fen &lt;string&gt;` - Load position from FEN
+- `export` - Export current position as FEN
+- `eval` - Evaluate current position
+- `perft &lt;depth&gt;` - Run performance test
+- `help` - Show available commands
+- `quit` - Exit the program
+
+## Architecture
+
+- `src/main.swift` - Main application entry point and chess engine implementation
+- `Package.swift` - Swift Package Manager configuration
+- `Tests/ChessTests/` - Unit tests for the chess engine
+
+## Testing
+
+The engine includes perft testing for move generation verification:
+```bash
+# In the chess engine
+perft 4
+```
+
+Expected result: 197281 nodes for perft(4) from starting position.
+
+## Performance
+
+This Swift implementation leverages:
+- Strong type system for correctness
+- Value types for performance
+- Memory safety
+- Native compilation for speed</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Tests_ChessTests_ChessTests_swift')">📄 Tests/ChessTests/ChessTests.swift</button>
+<pre id="Tests_ChessTests_ChessTests_swift" class="file-content" style="display:none;"><code>import XCTest
+@testable import Chess
+
+final class ChessTests: XCTestCase {
+    func testInitialBoardSetup() {
+        let board = Board()
+        // Test white pieces
+        XCTAssertEqual(board.pieces[0][0]?.type, .rook)
+        XCTAssertEqual(board.pieces[0][0]?.color, .white)
+        XCTAssertEqual(board.pieces[0][1]?.type, .knight)
+        XCTAssertEqual(board.pieces[0][1]?.color, .white)
+        XCTAssertEqual(board.pieces[0][2]?.type, .bishop)
+        XCTAssertEqual(board.pieces[0][2]?.color, .white)
+        XCTAssertEqual(board.pieces[0][3]?.type, .queen)
+        XCTAssertEqual(board.pieces[0][3]?.color, .white)
+        XCTAssertEqual(board.pieces[0][4]?.type, .king)
+        XCTAssertEqual(board.pieces[0][4]?.color, .white)
+        XCTAssertEqual(board.pieces[0][5]?.type, .bishop)
+        XCTAssertEqual(board.pieces[0][5]?.color, .white)
+        XCTAssertEqual(board.pieces[0][6]?.type, .knight)
+        XCTAssertEqual(board.pieces[0][6]?.color, .white)
+        XCTAssertEqual(board.pieces[0][7]?.type, .rook)
+        XCTAssertEqual(board.pieces[0][7]?.color, .white)
+        for i in 0...7 {
+            XCTAssertEqual(board.pieces[1][i]?.type, .pawn)
+            XCTAssertEqual(board.pieces[1][i]?.color, .white)
+        }
+
+        // Test black pieces
+        XCTAssertEqual(board.pieces[7][0]?.type, .rook)
+        XCTAssertEqual(board.pieces[7][0]?.color, .black)
+        XCTAssertEqual(board.pieces[7][1]?.type, .knight)
+        XCTAssertEqual(board.pieces[7][1]?.color, .black)
+        XCTAssertEqual(board.pieces[7][2]?.type, .bishop)
+        XCTAssertEqual(board.pieces[7][2]?.color, .black)
+        XCTAssertEqual(board.pieces[7][3]?.type, .queen)
+        XCTAssertEqual(board.pieces[7][3]?.color, .black)
+        XCTAssertEqual(board.pieces[7][4]?.type, .king)
+        XCTAssertEqual(board.pieces[7][4]?.color, .black)
+        XCTAssertEqual(board.pieces[7][5]?.type, .bishop)
+        XCTAssertEqual(board.pieces[7][5]?.color, .black)
+        XCTAssertEqual(board.pieces[7][6]?.type, .knight)
+        XCTAssertEqual(board.pieces[7][6]?.color, .black)
+        XCTAssertEqual(board.pieces[7][7]?.type, .rook)
+        XCTAssertEqual(board.pieces[7][7]?.color, .black)
+        for i in 0...7 {
+            XCTAssertEqual(board.pieces[6][i]?.type, .pawn)
+            XCTAssertEqual(board.pieces[6][i]?.color, .black)
+        }
+    }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
+<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+  "language": "swift",
+  "version": "5.5",
+  "author": "Jules",
+  "build": "swift build -c release",
+  "run": ".build/release/Chess",
+  "analyze": "swiftlint &amp;&amp; swift build --configuration debug",
+  "test": "swift test",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 1000
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_main_swift')">📄 src/main.swift</button>
+<pre id="src_main_swift" class="file-content" style="display:none;"><code>import Foundation
+
+// Represents the color of a piece
+enum Color {
+    case white
+    case black
+}
+
+// Represents the type of a piece
+enum PieceType {
+    case king
+    case queen
+    case rook
+    case bishop
+    case knight
+    case pawn
+}
+
+// Represents a single chess piece
+struct Piece {
+    let type: PieceType
+    let color: Color
+
+    var character: Character {
+        switch type {
+        case .king: return color == .white ? "K" : "k"
+        case .queen: return color == .white ? "Q" : "q"
+        case .rook: return color == .white ? "R" : "r"
+        case .bishop: return color == .white ? "B" : "b"
+        case .knight: return color == .white ? "N" : "n"
+        case .pawn: return color == .white ? "P" : "p"
+        }
+    }
+}
+
+// Represents a move from a source square to a destination square
+struct Move: Equatable {
+    let from: (Int, Int)
+    let to: (Int, Int)
+    let promotionPiece: PieceType? = nil
+
+    static func == (lhs: Move, rhs: Move) -&gt; Bool {
+        return lhs.from.0 == rhs.from.0 &amp;&amp; lhs.from.1 == rhs.from.1 &amp;&amp;
+               lhs.to.0 == rhs.to.0 &amp;&amp; lhs.to.1 == rhs.to.1 &amp;&amp;
+               lhs.promotionPiece == rhs.promotionPiece
+    }
+}
+
+// Game state for undoing moves
+struct GameState {
+    let whiteKingSideCastle: Bool
+    let whiteQueenSideCastle: Bool
+    let blackKingSideCastle: Bool
+    let blackQueenSideCastle: Bool
+    let enPassantTarget: (Int, Int)?
+}
+
+// Represents the game board
+struct Board {
+    var pieces: [[Piece?]] = Array(repeating: Array(repeating: nil, count: 8), count: 8)
+    var currentPlayer: Color = .white
+    var whiteKingSideCastle: Bool = true
+    var whiteQueenSideCastle: Bool = true
+    var blackKingSideCastle: Bool = true
+    var blackQueenSideCastle: Bool = true
+    var enPassantTarget: (Int, Int)? = nil
+    var history: [GameState] = []
+
+    init() {
+        setupBoard()
+    }
+
+    mutating func setupBoard() {
+        // Set up the white pieces
+        pieces[0] = [
+            Piece(type: .rook, color: .white),
+            Piece(type: .knight, color: .white),
+            Piece(type: .bishop, color: .white),
+            Piece(type: .queen, color: .white),
+            Piece(type: .king, color: .white),
+            Piece(type: .bishop, color: .white),
+            Piece(type: .knight, color: .white),
+            Piece(type: .rook, color: .white),
+        ]
+        pieces[1] = Array(repeating: Piece(type: .pawn, color: .white), count: 8)
+
+        // Set up the black pieces
+        pieces[6] = Array(repeating: Piece(type: .pawn, color: .black), count: 8)
+        pieces[7] = [
+            Piece(type: .rook, color: .black),
+            Piece(type: .knight, color: .black),
+            Piece(type: .bishop, color: .black),
+            Piece(type: .queen, color: .black),
+            Piece(type: .king, color: .black),
+            Piece(type: .bishop, color: .black),
+            Piece(type: .knight, color: .black),
+            Piece(type: .rook, color: .black),
+        ]
+    }
+
+    func generateMoves() -&gt; [Move] {
+        var moves: [Move] = []
+        for row in 0..&lt;8 {
+            for col in 0..&lt;8 {
+                if let piece = pieces[row][col], piece.color == currentPlayer {
+                    moves.append(contentsOf: generateMoves(for: piece, at: (row, col)))
+                }
+            }
+        }
+        return moves.filter { move in
+            var boardCopy = self
+            let capturedPiece = boardCopy.pieces[move.to.0][move.to.1]
+            boardCopy.makeMove(move)
+            return !boardCopy.isInCheck(color: currentPlayer)
+        }
+    }
+
+    func generateMoves(for piece: Piece, at position: (Int, Int)) -&gt; [Move] {
+        switch piece.type {
+        case .pawn:
+            return generatePawnMoves(from: position)
+        case .knight:
+            return generateKnightMoves(from: position)
+        case .rook:
+            return generateRookMoves(from: position)
+        case .bishop:
+            return generateBishopMoves(from: position)
+        case .queen:
+            return generateQueenMoves(from: position)
+        case .king:
+            return generateKingMoves(from: position)
+        }
+    }
+
+    func generatePawnMoves(from position: (Int, Int)) -&gt; [Move] {
+        var moves: [Move] = []
+        let (row, col) = position
+        let direction = currentPlayer == .white ? 1 : -1
+        let isPromotionRank = (currentPlayer == .white &amp;&amp; row == 6) || (currentPlayer == .black &amp;&amp; row == 1)
+
+        if isPromotionRank {
+            // Forward move promotion
+            if isWithinBounds(row: row + direction, col: col) &amp;&amp; pieces[row + direction][col] == nil {
+                for pieceType in [PieceType.queen, .rook, .bishop, .knight] {
+                    moves.append(Move(from: position, to: (row + direction, col), promotionPiece: pieceType))
+                }
+            }
+            // Capture promotion
+            if isWithinBounds(row: row + direction, col: col - 1) {
+                if let piece = pieces[row + direction][col - 1], piece.color != currentPlayer {
+                    for pieceType in [PieceType.queen, .rook, .bishop, .knight] {
+                        moves.append(Move(from: position, to: (row + direction, col - 1), promotionPiece: pieceType))
+                    }
+                }
+            }
+            if isWithinBounds(row: row + direction, col: col + 1) {
+                if let piece = pieces[row + direction][col + 1], piece.color != currentPlayer {
+                    for pieceType in [PieceType.queen, .rook, .bishop, .knight] {
+                        moves.append(Move(from: position, to: (row + direction, col + 1), promotionPiece: pieceType))
+                    }
+                }
+            }
+        } else {
+            // Single square move
+            if isWithinBounds(row: row + direction, col: col) &amp;&amp; pieces[row + direction][col] == nil {
+                moves.append(Move(from: position, to: (row + direction, col)))
+            }
+
+            // Double square move
+            if (currentPlayer == .white &amp;&amp; row == 1) || (currentPlayer == .black &amp;&amp; row == 6) {
+                if isWithinBounds(row: row + 2 * direction, col: col) &amp;&amp; pieces[row + 2 * direction][col] == nil &amp;&amp; pieces[row + direction][col] == nil {
+                    moves.append(Move(from: position, to: (row + 2 * direction, col)))
+                }
+            }
+
+            // Captures
+            if isWithinBounds(row: row + direction, col: col - 1) {
+                if let piece = pieces[row + direction][col - 1], piece.color != currentPlayer {
+                    moves.append(Move(from: position, to: (row + direction, col - 1)))
+                }
+            }
+            if isWithinBounds(row: row + direction, col: col + 1) {
+                if let piece = pieces[row + direction][col + 1], piece.color != currentPlayer {
+                    moves.append(Move(from: position, to: (row + direction, col + 1)))
+                }
+            }
+        }
+
+        // En passant
+        if let enPassantTarget = enPassantTarget, row + direction == enPassantTarget.0 &amp;&amp; (col - 1 == enPassantTarget.1 || col + 1 == enPassantTarget.1) {
+            moves.append(Move(from: position, to: enPassantTarget))
+        }
+
+        return moves
+    }
+
+    func isWithinBounds(row: Int, col: Int) -&gt; Bool {
+        return row &gt;= 0 &amp;&amp; row &lt; 8 &amp;&amp; col &gt;= 0 &amp;&amp; col &lt; 8
+    }
+
+    func generateKnightMoves(from position: (Int, Int)) -&gt; [Move] {
+        var moves: [Move] = []
+        let (row, col) = position
+        let knightMoves = [
+            (row + 2, col + 1), (row + 2, col - 1),
+            (row - 2, col + 1), (row - 2, col - 1),
+            (row + 1, col + 2), (row + 1, col - 2),
+            (row - 1, col + 2), (row - 1, col - 2),
+        ]
+
+        for (newRow, newCol) in knightMoves {
+            if isWithinBounds(row: newRow, col: newCol) {
+                if let piece = pieces[newRow][newCol] {
+                    if piece.color != currentPlayer {
+                        moves.append(Move(from: position, to: (newRow, newCol)))
+                    }
+                } else {
+                    moves.append(Move(from: position, to: (newRow, newCol)))
+                }
+            }
+        }
+
+        return moves
+    }
+
+    func generateRookMoves(from position: (Int, Int)) -&gt; [Move] {
+        return generateSlidingMoves(from: position, directions: [(0, 1), (0, -1), (1, 0), (-1, 0)])
+    }
+
+    func generateBishopMoves(from position: (Int, Int)) -&gt; [Move] {
+        return generateSlidingMoves(from: position, directions: [(1, 1), (1, -1), (-1, 1), (-1, -1)])
+    }
+
+    func generateQueenMoves(from position: (Int, Int)) -&gt; [Move] {
+        return generateSlidingMoves(from: position, directions: [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)])
+    }
+
+    func generateSlidingMoves(from position: (Int, Int), directions: [(Int, Int)]) -&gt; [Move] {
+        var moves: [Move] = []
+        let (row, col) = position
+
+        for (rowDir, colDir) in directions {
+            var newRow = row + rowDir
+            var newCol = col + colDir
+            while isWithinBounds(row: newRow, col: newCol) {
+                if let piece = pieces[newRow][newCol] {
+                    if piece.color != currentPlayer {
+                        moves.append(Move(from: position, to: (newRow, newCol)))
+                    }
+                    break
+                }
+                moves.append(Move(from: position, to: (newRow, newCol)))
+                newRow += rowDir
+                newCol += colDir
+            }
+        }
+        return moves
+    }
+
+    func generateKingMoves(from position: (Int, Int)) -&gt; [Move] {
+        var moves: [Move] = []
+        let (row, col) = position
+        let kingMoves = [
+            (row + 1, col), (row - 1, col),
+            (row, col + 1), (row, col - 1),
+            (row + 1, col + 1), (row + 1, col - 1),
+            (row - 1, col + 1), (row - 1, col - 1),
+        ]
+
+        for (newRow, newCol) in kingMoves {
+            if isWithinBounds(row: newRow, col: newCol) {
+                if let piece = pieces[newRow][newCol] {
+                    if piece.color != currentPlayer {
+                        moves.append(Move(from: position, to: (newRow, newCol)))
+                    }
+                } else {
+                    moves.append(Move(from: position, to: (newRow, newCol)))
+                }
+            }
+        }
+
+        // Castling
+        if currentPlayer == .white {
+            if whiteKingSideCastle &amp;&amp; pieces[0][5] == nil &amp;&amp; pieces[0][6] == nil &amp;&amp;
+               !isSquareAttacked(at: (0, 4), by: .black) &amp;&amp; !isSquareAttacked(at: (0, 5), by: .black) &amp;&amp; !isSquareAttacked(at: (0, 6), by: .black) {
+                moves.append(Move(from: position, to: (0, 6)))
+            }
+            if whiteQueenSideCastle &amp;&amp; pieces[0][1] == nil &amp;&amp; pieces[0][2] == nil &amp;&amp; pieces[0][3] == nil &amp;&amp;
+               !isSquareAttacked(at: (0, 4), by: .black) &amp;&amp; !isSquareAttacked(at: (0, 3), by: .black) &amp;&amp; !isSquareAttacked(at: (0, 2), by: .black) {
+                moves.append(Move(from: position, to: (0, 2)))
+            }
+        } else {
+            if blackKingSideCastle &amp;&amp; pieces[7][5] == nil &amp;&amp; pieces[7][6] == nil &amp;&amp;
+               !isSquareAttacked(at: (7, 4), by: .white) &amp;&amp; !isSquareAttacked(at: (7, 5), by: .white) &amp;&amp; !isSquareAttacked(at: (7, 6), by: .white) {
+                moves.append(Move(from: position, to: (7, 6)))
+            }
+            if blackQueenSideCastle &amp;&amp; pieces[7][1] == nil &amp;&amp; pieces[7][2] == nil &amp;&amp; pieces[7][3] == nil &amp;&amp;
+               !isSquareAttacked(at: (7, 4), by: .white) &amp;&amp; !isSquareAttacked(at: (7, 3), by: .white) &amp;&amp; !isSquareAttacked(at: (7, 2), by: .white) {
+                moves.append(Move(from: position, to: (7, 2)))
+            }
+        }
+
+        return moves
+    }
+
+    func isSquareAttacked(at position: (Int, Int), by color: Color) -&gt; Bool {
+        // Check for pawn attacks
+        let direction = color == .white ? -1 : 1
+        if isWithinBounds(row: position.0 + direction, col: position.1 - 1) {
+            if let piece = pieces[position.0 + direction][position.1 - 1], piece.type == .pawn &amp;&amp; piece.color == color {
+                return true
+            }
+        }
+        if isWithinBounds(row: position.0 + direction, col: position.1 + 1) {
+            if let piece = pieces[position.0 + direction][position.1 + 1], piece.type == .pawn &amp;&amp; piece.color == color {
+                return true
+            }
+        }
+
+        // Check for knight attacks
+        let knightMoves = [
+            (position.0 + 2, position.1 + 1), (position.0 + 2, position.1 - 1),
+            (position.0 - 2, position.1 + 1), (position.0 - 2, position.1 - 1),
+            (position.0 + 1, position.1 + 2), (position.0 + 1, position.1 - 2),
+            (position.0 - 1, position.1 + 2), (position.0 - 1, position.1 - 2),
+        ]
+        for (row, col) in knightMoves {
+            if isWithinBounds(row: row, col: col) {
+                if let piece = pieces[row][col], piece.type == .knight &amp;&amp; piece.color == color {
+                    return true
+                }
+            }
+        }
+
+        // Check for sliding piece attacks
+        let rookDirections = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+        let bishopDirections = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+        let queenDirections = rookDirections + bishopDirections
+        for (rowDir, colDir) in queenDirections {
+            var newRow = position.0 + rowDir
+            var newCol = position.1 + colDir
+            while isWithinBounds(row: newRow, col: newCol) {
+                if let piece = pieces[newRow][newCol] {
+                    if piece.color == color {
+                        if (piece.type == .rook &amp;&amp; rookDirections.contains(where: { $0 == (rowDir, colDir) })) ||
+                           (piece.type == .bishop &amp;&amp; bishopDirections.contains(where: { $0 == (rowDir, colDir) })) ||
+                           piece.type == .queen {
+                            return true
+                        }
+                    }
+                    break
+                }
+                newRow += rowDir
+                newCol += colDir
+            }
+        }
+
+        return false
+    }
+
+    func kingPosition(for color: Color) -&gt; (Int, Int)? {
+        for row in 0..&lt;8 {
+            for col in 0..&lt;8 {
+                if let piece = pieces[row][col], piece.type == .king &amp;&amp; piece.color == color {
+                    return (row, col)
+                }
+            }
+        }
+        return nil
+    }
+
+    func isInCheck(color: Color) -&gt; Bool {
+        guard let kingPos = kingPosition(for: color) else { return false }
+        return isSquareAttacked(at: kingPos, by: color == .white ? .black : .white)
+    }
+
+    func isCheckmate() -&gt; Bool {
+        return isInCheck(color: currentPlayer) &amp;&amp; generateMoves().isEmpty
+    }
+
+    func isStalemate() -&gt; Bool {
+        return !isInCheck(color: currentPlayer) &amp;&amp; generateMoves().isEmpty
+    }
+
+    mutating func makeMove(_ move: Move) {
+        let gameState = GameState(whiteKingSideCastle: whiteKingSideCastle, whiteQueenSideCastle: whiteQueenSideCastle, blackKingSideCastle: blackKingSideCastle, blackQueenSideCastle: blackQueenSideCastle, enPassantTarget: enPassantTarget)
+        history.append(gameState)
+}
+
+extension Board: CustomStringConvertible {
+    var description: String {
+        var result = "  a b c d e f g h\n"
+        for i in (0...7).reversed() {
+            result += "\(i + 1) "
+            for j in 0...7 {
+                if let piece = pieces[i][j] {
+                    result += "\(piece.character) "
+                } else {
+                    result += ". "
+                }
+            }
+            result += "\(i + 1)\n"
+        }
+        result += "  a b c d e f g h\n\n"
+        result += "\(currentPlayer == .white ? "White" : "Black") to move"
+        return result
+    }
+}
+
+        let piece = pieces[move.from.0][move.from.1]
+        // Handle castling
+        if piece?.type == .king {
+            if move.to.1 - move.from.1 == 2 { // Kingside
+                pieces[move.from.0][5] = pieces[move.from.0][7]
+                pieces[move.from.0][7] = nil
+            } else if move.to.1 - move.from.1 == -2 { // Queenside
+                pieces[move.from.0][3] = pieces[move.from.0][0]
+                pieces[move.from.0][0] = nil
+            }
+        }
+
+        // Handle en passant
+        if piece?.type == .pawn &amp;&amp; move.to == enPassantTarget {
+            pieces[move.from.0][move.to.1] = nil
+        }
+
+        pieces[move.to.0][move.to.1] = pieces[move.from.0][move.from.1]
+        pieces[move.from.0][move.from.1] = nil
+
+        // Handle promotion
+        if let promotionPiece = move.promotionPiece {
+            pieces[move.to.0][move.to.1] = Piece(type: promotionPiece, color: currentPlayer)
+        }
+
+        // Update castling rights
+        if piece?.type == .king {
+            if currentPlayer == .white {
+                whiteKingSideCastle = false
+                whiteQueenSideCastle = false
+            } else {
+                blackKingSideCastle = false
+                blackQueenSideCastle = false
+            }
+        }
+        if piece?.type == .rook {
+            if move.from == (0, 0) { whiteQueenSideCastle = false }
+            if move.from == (0, 7) { whiteKingSideCastle = false }
+            if move.from == (7, 0) { blackQueenSideCastle = false }
+            if move.from == (7, 7) { blackKingSideCastle = false }
+        }
+
+        // Update en passant target
+        if piece?.type == .pawn &amp;&amp; abs(move.to.0 - move.from.0) == 2 {
+            enPassantTarget = ( (move.from.0 + move.to.0) / 2, move.from.1)
+        } else {
+            enPassantTarget = nil
+        }
+
+        currentPlayer = (currentPlayer == .white) ? .black : .white
+    }
+
+    func evaluate() -&gt; Int {
+        var score = 0
+        for row in 0..&lt;8 {
+            for col in 0..&lt;8 {
+                if let piece = pieces[row][col] {
+                    score += pieceValue(piece)
+                    score += positionalValue(piece, at: (row, col))
+                }
+            }
+        }
+        return score
+    }
+
+    private func pieceValue(_ piece: Piece) -&gt; Int {
+        let value: Int
+        switch piece.type {
+        case .pawn: value = 100
+        case .knight: value = 320
+        case .bishop: value = 330
+        case .rook: value = 500
+        case .queen: value = 900
+        case .king: value = 20000
+        }
+        return piece.color == .white ? value : -value
+    }
+
+    private func positionalValue(_ piece: Piece, at position: (Int, Int)) -&gt; Int {
+        var score = 0
+        let (row, col) = position
+        // Center control
+        if (row == 3 || row == 4) &amp;&amp; (col == 3 || col == 4) {
+            score += 10
+        }
+        // Pawn advancement
+        if piece.type == .pawn {
+            if piece.color == .white {
+                score += 5 * (row - 1)
+            } else {
+                score += 5 * (6 - row)
+            }
+        }
+        return piece.color == .white ? score : -score
+    }
+
+    mutating func undoMove(_ move: Move, capturedPiece: Piece?) {
+        let piece = pieces[move.to.0][move.to.1]
+        // Handle castling
+        if piece?.type == .king {
+            if move.to.1 - move.from.1 == 2 { // Kingside
+                pieces[move.from.0][7] = pieces[move.from.0][5]
+                pieces[move.from.0][5] = nil
+            } else if move.to.1 - move.from.1 == -2 { // Queenside
+                pieces[move.from.0][0] = pieces[move.from.0][3]
+                pieces[move.from.0][3] = nil
+            }
+        }
+
+        // Handle en passant
+        if piece?.type == .pawn &amp;&amp; capturedPiece == nil &amp;&amp; move.from.1 != move.to.1 {
+            let capturedPawnRow = move.from.0
+            let capturedPawnCol = move.to.1
+            let capturedPawnColor: Color = currentPlayer == .white ? .black : .white
+            pieces[capturedPawnRow][capturedPawnCol] = Piece(type: .pawn, color: capturedPawnColor)
+        }
+
+        // Handle promotion
+        if move.promotionPiece != nil {
+            let pawnColor: Color = currentPlayer == .white ? .black : .white
+            pieces[move.from.0][move.from.1] = Piece(type: .pawn, color: pawnColor)
+        } else {
+            pieces[move.from.0][move.from.1] = pieces[move.to.0][move.to.1]
+        }
+
+        pieces[move.to.0][move.to.1] = capturedPiece
+        currentPlayer = (currentPlayer == .white) ? .black : .white
+
+        if let lastState = history.popLast() {
+            whiteKingSideCastle = lastState.whiteKingSideCastle
+            whiteQueenSideCastle = lastState.whiteQueenSideCastle
+            blackKingSideCastle = lastState.blackKingSideCastle
+            blackQueenSideCastle = lastState.blackQueenSideCastle
+            enPassantTarget = lastState.enPassantTarget
+        }
+    }
+
+    func toFen() -&gt; String {
+        var fen = ""
+        for i in (0...7).reversed() {
+            var empty = 0
+            for j in 0...7 {
+                if let piece = pieces[i][j] {
+                    if empty &gt; 0 {
+                        fen += "\(empty)"
+                        empty = 0
+                    }
+                    fen += "\(piece.character)"
+                } else {
+                    empty += 1
+                }
+            }
+            if empty &gt; 0 {
+                fen += "\(empty)"
+            }
+            if i &gt; 0 {
+                fen += "/"
+            }
+        }
+        fen += " \(currentPlayer == .white ? "w" : "b")"
+
+        var castlingRights = ""
+        if whiteKingSideCastle { castlingRights += "K" }
+        if whiteQueenSideCastle { castlingRights += "Q" }
+        if blackKingSideCastle { castlingRights += "k" }
+        if blackQueenSideCastle { castlingRights += "q" }
+        if castlingRights.isEmpty { castlingRights = "-" }
+        fen += " \(castlingRights)"
+
+        if let enPassantTarget = enPassantTarget {
+            let col = "abcdefgh"[String.Index(utf16Offset: enPassantTarget.1, in: "abcdefgh")]
+            let row = enPassantTarget.0 + 1
+            fen += " \(col)\(row)"
+        } else {
+            fen += " -"
+        }
+
+        fen += " 0 1"
+        return fen
+    }
+
+    mutating func loadFen(_ fen: String) {
+        let parts = fen.split(separator: " ")
+        let ranks = parts[0].split(separator: "/")
+        pieces = Array(repeating: Array(repeating: nil, count: 8), count: 8)
+        for (i, rank) in ranks.enumerated() {
+            var col = 0
+            for char in rank {
+                if let num = Int(String(char)) {
+                    col += num
+                } else {
+                    let color: Color = char.isUppercase ? .white : .black
+                    let type: PieceType
+                    switch char.lowercased() {
+                    case "k": type = .king
+                    case "q": type = .queen
+                    case "r": type = .rook
+                    case "b": type = .bishop
+                    case "n": type = .knight
+                    case "p": type = .pawn
+                    default: continue
+                    }
+                    pieces[7 - i][col] = Piece(type: type, color: color)
+                    col += 1
+                }
+            }
+        }
+        currentPlayer = parts[1] == "w" ? .white : .black
+
+        let castlingRights = parts[2]
+        whiteKingSideCastle = castlingRights.contains("K")
+        whiteQueenSideCastle = castlingRights.contains("Q")
+        blackKingSideCastle = castlingRights.contains("k")
+        blackQueenSideCastle = castlingRights.contains("q")
+
+        if parts[3] != "-" {
+            let enPassantString = String(parts[3])
+            let col = enPassantString[enPassantString.startIndex]
+            let row = enPassantString[enPassantString.index(enPassantString.startIndex, offsetBy: 1)]
+            if let colIndex = "abcdefgh".firstIndex(of: col)?.utf16Offset(in: "abcdefgh"),
+               let rowIndex = Int(String(row)) {
+                enPassantTarget = (rowIndex - 1, colIndex)
+            }
+        } else {
+            enPassantTarget = nil
+        }
+    }
+}
+
+func minimax(board: inout Board, depth: Int, alpha: inout Int, beta: inout Int, maximizingPlayer: Bool) -&gt; Int {
+    if depth == 0 {
+        return board.evaluate()
+    }
+
+    if maximizingPlayer {
+        var maxEval = Int.min
+        for move in board.generateMoves() {
+            let capturedPiece = board.pieces[move.to.0][move.to.1]
+            board.makeMove(move)
+            let eval = minimax(board: &amp;board, depth: depth - 1, alpha: &amp;alpha, beta: &amp;beta, maximizingPlayer: false)
+            board.undoMove(move, capturedPiece: capturedPiece)
+            maxEval = max(maxEval, eval)
+            alpha = max(alpha, eval)
+            if beta &lt;= alpha {
+                break
+            }
+        }
+        return maxEval
+    } else {
+        var minEval = Int.max
+        for move in board.generateMoves() {
+            let capturedPiece = board.pieces[move.to.0][move.to.1]
+            board.makeMove(move)
+            let eval = minimax(board: &amp;board, depth: depth - 1, alpha: &amp;alpha, beta: &amp;beta, maximizingPlayer: true)
+            board.undoMove(move, capturedPiece: capturedPiece)
+            minEval = min(minEval, eval)
+            beta = min(beta, eval)
+            if beta &lt;= alpha {
+                break
+            }
+        }
+        return minEval
+    }
+}
+
+// Main game loop
+func main() {
+    var board = Board()
+    while true {
+        print(board)
+
+        if board.isCheckmate() {
+            print("CHECKMATE: \(board.currentPlayer == .white ? "Black" : "White") wins")
+            break
+        }
+        if board.isStalemate() {
+            print("STALEMATE: Draw")
+            break
+        }
+
+        if let input = readLine() {
+            let components = input.split(separator: " ")
+            guard let command = components.first else { continue }
+
+            switch command {
+            case "quit":
+                return
+            case "new":
+                board = Board()
+            case "move":
+                if components.count &gt; 1 {
+                    let moveString = String(components[1])
+                    if let move = parseMove(moveString) {
+                        board.makeMove(move)
+                    } else {
+                        print("ERROR: Invalid move format")
+                    }
+                }
+            case "ai":
+                if let bestMove = findBestMove(board: &amp;board, depth: 3) {
+                    board.makeMove(bestMove)
+                } else {
+                    print("No legal moves available.")
+                }
+            case "fen":
+                let fen = components.dropFirst().joined(separator: " ")
+                board.loadFen(fen)
+            case "export":
+                print("FEN: \(board.toFen())")
+            case "perft":
+                if components.count &gt; 1, let depth = Int(String(components[1])) {
+                    let count = perft(board: &amp;board, depth: depth)
+                    print("Perft(\(depth)): \(count)")
+                } else {
+                    print("ERROR: Invalid perft command")
+                }
+            default:
+                print("ERROR: Invalid command")
+            }
+        }
+    }
+}
+
+func findBestMove(board: inout Board, depth: Int) -&gt; Move? {
+    var bestMove: Move?
+    var bestValue = board.currentPlayer == .white ? Int.min : Int.max
+
+    for move in board.generateMoves() {
+        let capturedPiece = board.pieces[move.to.0][move.to.1]
+        board.makeMove(move)
+        var alpha = Int.min
+        var beta = Int.max
+        let boardValue = minimax(board: &amp;board, depth: depth - 1, alpha: &amp;alpha, beta: &amp;beta, maximizingPlayer: board.currentPlayer == .white)
+        board.undoMove(move, capturedPiece: capturedPiece)
+
+        if board.currentPlayer == .white {
+            if boardValue &gt; bestValue {
+                bestValue = boardValue
+                bestMove = move
+            }
+        } else {
+            if boardValue &lt; bestValue {
+                bestValue = boardValue
+                bestMove = move
+            }
+        }
+    }
+    return bestMove
+}
+
+func perft(board: inout Board, depth: Int) -&gt; Int {
+    if depth == 0 {
+        return 1
+    }
+
+    var count = 0
+    for move in board.generateMoves() {
+        let capturedPiece = board.pieces[move.to.0][move.to.1]
+        board.makeMove(move)
+        count += perft(board: &amp;board, depth: depth - 1)
+        board.undoMove(move, capturedPiece: capturedPiece)
+    }
+    return count
+}
+
+func parseMove(_ moveString: String) -&gt; Move? {
+    let promotionChar = moveString.last
+    let movePart = moveString.count == 5 ? String(moveString.dropLast()) : moveString
+    guard movePart.count == 4 else { return nil }
+    let fromCol = movePart[movePart.startIndex].lowercased()
+    let fromRow = movePart[movePart.index(movePart.startIndex, offsetBy: 1)]
+    let toCol = movePart[movePart.index(movePart.startIndex, offsetBy: 2)].lowercased()
+    let toRow = movePart[movePart.index(movePart.startIndex, offsetBy: 3)]
+
+    guard let fromColIndex = "abcdefgh".firstIndex(of: Character(fromCol))?.utf16Offset(in: "abcdefgh"),
+          let fromRowIndex = Int(String(fromRow)) - 1,
+          let toColIndex = "abcdefgh".firstIndex(of: Character(toCol))?.utf16Offset(in: "abcdefgh"),
+          let toRowIndex = Int(String(toRow)) - 1 else {
+        return nil
+    }
+
+    var promotionPiece: PieceType?
+    if let promotionChar = promotionChar {
+        switch promotionChar.lowercased() {
+        case "q": promotionPiece = .queen
+        case "r": promotionPiece = .rook
+        case "b": promotionPiece = .bishop
+        case "n": promotionPiece = .knight
+        default: break
+        }
+    }
+
+    return Move(from: (fromRowIndex, fromColIndex), to: (toRowIndex, toColIndex), promotionPiece: promotionPiece)
+}
+
+main()
+</code></pre>
+</div>
+</div>
+
+<script>
+function toggleFile(id) {
+    var content = document.getElementById(id);
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+    } else {
+        content.style.display = 'none';
+    }
+}
+</script>
+
+    </main>
+    <footer>
+        <p>Generated from benchmark data. All implementations tested via Docker for consistency.</p>
+        <p><a href="https://github.com/evaisse/the-great-analysis-challenge">View on GitHub</a></p>
+    </footer>
+</body>
+</html>

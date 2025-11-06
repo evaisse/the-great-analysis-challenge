@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rescript Source Code - The Great Analysis Challenge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🏆 The Great Analysis Challenge</h1>
+        <p class="subtitle">Multi-Language Chess Engine Comparison</p>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="https://github.com/evaisse/the-great-analysis-challenge">GitHub</a>
+        </nav>
+    </header>
+    <main>
+<h2>📁 Rescript Implementation</h2>
+<div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
+<div class="file-tree">
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
+<pre id="Dockerfile" class="file-content" style="display:none;"><code># Use Ubuntu base image
+FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and Node.js
+RUN apt-get update &amp;&amp; apt-get install -y \
+    curl \
+    build-essential \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Install Node.js and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    &amp;&amp; apt-get install -y nodejs
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY bsconfig.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY src/ ./src/
+
+# Build the ReScript project
+RUN npm run build
+
+# Create a non-root user
+RUN addgroup -g 1001 -S nodejs &amp;&amp; \
+    adduser -S chess -u 1001
+
+# Change ownership of the app directory
+RUN chown -R chess:nodejs /app
+
+# Switch to non-root user
+USER chess
+
+# Expose port (not needed for CLI but good practice)
+EXPOSE 3000
+
+# Default command to run the chess engine
+CMD ["node", "lib/js/src/Chess.js"]
+
+# Alternative commands for different use cases:
+# To build only: docker run --rm chess-engine npm run build
+# To run tests: docker run --rm chess-engine npm test
+# Interactive mode: docker run -it chess-engine</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
+<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test help
+
+# Default target - build the chess engine
+all: build
+
+# Build target - install dependencies and compile ReScript project
+build:
+	npm install
+	npm run build
+
+# Run basic tests
+test:
+	@echo "Running basic functionality test..."
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | node lib/js/src/Chess.js | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" &amp;&amp; echo "✅ Basic test passed" || echo "❌ Basic test failed"
+
+# Static analysis and code quality
+analyze:
+	@echo "Running ReScript static analysis..."
+	npm run build
+	@echo "ReScript compilation check complete"
+
+# Clean build artifacts
+clean:
+	rm -rf lib/
+	rm -rf node_modules/
+
+# Docker targets
+docker-build:
+	docker build -t chess-rescript .
+
+docker-test: docker-build
+	@echo "Testing ReScript implementation in Docker..."
+	docker run --rm -i chess-rescript sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | node lib/js/src/Chess.js"
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  make         - Build the chess engine"
+	@echo "  make test    - Run tests"
+	@echo "  make analyze - Run static analysis"
+	@echo "  make clean   - Clean build artifacts"
+	@echo "  make docker-build - Build Docker image"
+	@echo "  make docker-test  - Test in Docker"</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
+<pre id="README_md" class="file-content" style="display:none;"><code># ReScript Chess Engine
+
+A complete chess engine implementation in ReScript following the Chess Engine Specification v1.0.
+
+## Features
+
+- Complete chess rules implementation (castling, en passant, promotion)
+- AI opponent with minimax algorithm and alpha-beta pruning
+- FEN import/export support
+- Performance testing with perft
+- Interactive command-line interface
+- All standard chess piece movements and special rules
+
+## Local Development
+
+### Prerequisites
+- Node.js 18+ 
+- npm
+
+### Setup
+```bash
+npm install
+npm run build
+node lib/js/src/Chess.js
+```
+
+## Docker Usage
+
+### Build the Docker image
+```bash
+docker build -t chess-engine .
+```
+
+### Run interactively
+```bash
+docker run -it chess-engine
+```
+
+### Using Docker Compose
+```bash
+# Run the chess engine
+docker-compose up chess-engine
+
+# Development mode with shell access
+docker-compose run chess-dev
+```
+
+### Example Docker commands
+```bash
+# Quick game
+echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run -i chess-engine
+
+# Interactive play
+docker run -it chess-engine
+
+# Build and run in one command
+docker-compose up --build chess-engine
+```
+
+## Commands
+
+- `move &lt;from&gt;&lt;to&gt;[promotion]` - Make a move (e.g., e2e4, e7e8Q)
+- `undo` - Undo the last move
+- `new` - Start a new game  
+- `ai &lt;depth&gt;` - Let AI make a move (depth 1-5)
+- `fen &lt;string&gt;` - Load position from FEN
+- `export` - Export current position as FEN
+- `eval` - Evaluate current position
+- `perft &lt;depth&gt;` - Run performance test
+- `help` - Show available commands
+- `quit` - Exit the program
+
+## Architecture
+
+- `src/Chess.res` - Main chess engine implementation
+- `src/Node.res` - Node.js bindings and utilities
+
+## Testing
+
+The engine includes perft testing for move generation verification:
+```bash
+# In the chess engine
+perft 4
+```
+
+Expected result: 197281 nodes for perft(4) from starting position.</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('bsconfig_json')">📄 bsconfig.json</button>
+<pre id="bsconfig_json" class="file-content" style="display:none;"><code>{
+  "name": "chess-engine-rescript",
+  "version": "1.0.0",
+  "sources": {
+    "dir": "src",
+    "subdirs": true
+  },
+  "package-specs": {
+    "module": "es6",
+    "in-source": true
+  },
+  "suffix": ".bs.js",
+  "bs-dependencies": [
+    "@rescript/core"
+  ],
+  "warnings": {
+    "error": "+101"
+  }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
+<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+  "language": "rescript",
+  "version": "10.0",
+  "author": "ReScript Implementation",
+  "build": "npm install &amp;&amp; npm run build",
+  "run": "node lib/js/src/Chess.js",
+  "analyze": "npx rescript build",
+  "test": "node lib/js/src/Chess.js",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 4,
+  "estimated_perft4_ms": 1500
+}</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('package_json')">📄 package.json</button>
+<pre id="package_json" class="file-content" style="display:none;"><code>{
+  "name": "chess-engine-rescript",
+  "version": "1.0.0",
+  "description": "Chess engine implementation in ReScript",
+  "type": "module",
+  "scripts": {
+    "build": "rescript",
+    "clean": "rescript clean",
+    "watch": "rescript -w",
+    "start": "node src/Chess.bs.js",
+    "chess": "npm run build &amp;&amp; npm start"
+  },
+  "dependencies": {
+    "rescript": "^11.1.0",
+    "@rescript/core": "^1.3.0"
+  }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_Chess_res')">📄 src/Chess.res</button>
+<pre id="src_Chess_res" class="file-content" style="display:none;"><code>open Types
+
+type gameEngine = {
+  mutable state: gameState,
+  mutable history: array&lt;gameState&gt;,
+}
+
+let createEngine = (): gameEngine =&gt; {
+  {
+    state: Board.createInitialState(),
+    history: [],
+  }
+}
+
+let parseMove = (moveStr: string): option&lt;(int, int, option&lt;pieceType&gt;)&gt; =&gt; {
+  let len = Js.String.length(moveStr)
+  
+  if len &lt; 4 || len &gt; 5 {
+    None
+  } else {
+    let fromStr = Js.String.substring(~from=0, ~to_=2, moveStr)
+    let toStr = Js.String.substring(~from=2, ~to_=4, moveStr)
+    
+    switch (Utils.parseSquare(fromStr), Utils.parseSquare(toStr)) {
+    | (Some(from), Some(to)) =&gt;
+      let promotion = if len == 5 {
+        switch Js.String.toLowerCase(Js.String.charAt(moveStr, 4)) {
+        | "q" =&gt; Some(Queen)
+        | "r" =&gt; Some(Rook)
+        | "b" =&gt; Some(Bishop)
+        | "n" =&gt; Some(Knight)
+        | _ =&gt; None
+        }
+      } else {
+        None
+      }
+      Some((from, to, promotion))
+    | _ =&gt; None
+    }
+  }
+}
+
+let executeMove = (engine: gameEngine, moveStr: string): result&lt;unit, string&gt; =&gt; {
+  switch parseMove(moveStr) {
+  | None =&gt; Error("Invalid move format")
+  | Some((from, to, promotion)) =&gt;
+    switch engine.state.board[from] {
+    | None =&gt; Error("No piece at source square")
+    | Some(piece) =&gt;
+      if piece.color != engine.state.turn {
+        Error("Wrong color piece")
+      } else {
+        let legalMoves = MoveGenerator.generateLegalMoves(engine.state)
+        
+        let matchingMove = Belt.Array.getBy(legalMoves, move =&gt; {
+          move.from == from &amp;&amp; 
+          move.to == to &amp;&amp; 
+          (promotion == None || move.promotion == promotion)
+        })
+        
+        switch matchingMove {
+        | None =&gt; Error("Illegal move")
+        | Some(move) =&gt;
+          engine.history = Belt.Array.concat(engine.history, [engine.state])
+          engine.state = MoveGenerator.makeMove(engine.state, move)
+          Ok()
+        }
+      }
+    }
+  }
+}
+
+let undoMove = (engine: gameEngine): bool =&gt; {
+  let len = Belt.Array.length(engine.history)
+  if len &gt; 0 {
+    engine.state = engine.history[len - 1]
+    engine.history = Belt.Array.slice(engine.history, ~offset=0, ~len=len - 1)
+    true
+  } else {
+    false
+  }
+}
+
+let checkGameStatus = (state: gameState): gameStatus =&gt; {
+  let legalMoves = MoveGenerator.generateLegalMoves(state)
+  
+  if Belt.Array.length(legalMoves) == 0 {
+    if MoveGenerator.isKingInCheck(state, state.turn) {
+      Checkmate(Utils.oppositeColor(state.turn))
+    } else {
+      Stalemate
+    }
+  } else {
+    InProgress
+  }
+}
+
+let processCommand = (engine: gameEngine, input: string): unit =&gt; {
+  let parts = Js.String.split(" ", Js.String.trim(input))
+  
+  if Belt.Array.length(parts) == 0 {
+    ()
+  } else {
+    switch parts[0] {
+    | "move" =&gt;
+      if Belt.Array.length(parts) &lt; 2 {
+        Js.log("ERROR: Invalid command")
+      } else {
+        switch executeMove(engine, parts[1]) {
+        | Ok() =&gt;
+          Js.log("OK: " ++ parts[1])
+          
+          switch checkGameStatus(engine.state) {
+          | Checkmate(winner) =&gt;
+            let winnerStr = if winner == White { "White" } else { "Black" }
+            Js.log("CHECKMATE: " ++ winnerStr ++ " wins")
+          | Stalemate =&gt; Js.log("STALEMATE: Draw")
+          | _ =&gt; ()
+          }
+        | Error(msg) =&gt; Js.log("ERROR: " ++ msg)
+        }
+      }
+      
+    | "undo" =&gt;
+      if undoMove(engine) {
+        Js.log("OK: Move undone")
+      } else {
+        Js.log("ERROR: No moves to undo")
+      }
+      
+    | "new" =&gt;
+      engine.state = Board.createInitialState()
+      engine.history = []
+      Js.log("OK: New game started")
+      
+    | "ai" =&gt;
+      let depth = if Belt.Array.length(parts) &gt; 1 {
+        Belt.Int.fromString(parts[1])-&gt;Belt.Option.getWithDefault(3)
+      } else {
+        3
+      }
+      
+      if depth &lt; 1 || depth &gt; 5 {
+        Js.log("ERROR: AI depth must be 1-5")
+      } else {
+        let startTime = Js.Date.now()
+        
+        switch AI.findBestMove(engine.state, depth) {
+        | None =&gt; Js.log("ERROR: No legal moves available")
+        | Some((move, eval)) =&gt;
+          let moveStr = Utils.squareToString(move.from) ++ Utils.squareToString(move.to)
+          let moveStrWithPromo = switch move.promotion {
+          | Some(Queen) =&gt; moveStr ++ "q"
+          | Some(Rook) =&gt; moveStr ++ "r"
+          | Some(Bishop) =&gt; moveStr ++ "b"
+          | Some(Knight) =&gt; moveStr ++ "n"
+          | _ =&gt; moveStr
+          }
+          
+          engine.history = Belt.Array.concat(engine.history, [engine.state])
+          engine.state = MoveGenerator.makeMove(engine.state, move)
+          
+          let endTime = Js.Date.now()
+          let timeMs = Belt.Int.fromFloat(endTime -. startTime)
+          
+          Js.log("AI: " ++ moveStrWithPromo ++ " (depth=" ++ Belt.Int.toString(depth) ++ 
+                 ", eval=" ++ Belt.Int.toString(eval) ++ ", time=" ++ Belt.Int.toString(timeMs) ++ ")")
+          
+          switch checkGameStatus(engine.state) {
+          | Checkmate(winner) =&gt;
+            let winnerStr = if winner == White { "White" } else { "Black" }
+            Js.log("CHECKMATE: " ++ winnerStr ++ " wins")
+          | Stalemate =&gt; Js.log("STALEMATE: Draw")
+          | _ =&gt; ()
+          }
+        }
+      }
+      
+    | "fen" =&gt;
+      if Belt.Array.length(parts) &lt; 2 {
+        Js.log("ERROR: Invalid FEN command")
+      } else {
+        let fenStr = Belt.Array.sliceToEnd(parts, 1)-&gt;Js.Array.joinWith(" ")
+        switch Board.parseFen(fenStr) {
+        | Ok(newState) =&gt;
+          engine.state = newState
+          engine.history = []
+          Js.log("OK: Position loaded")
+        | Error(msg) =&gt; Js.log("ERROR: " ++ msg)
+        }
+      }
+      
+    | "export" =&gt;
+      let fen = Board.exportFen(engine.state)
+      Js.log("FEN: " ++ fen)
+      
+    | "eval" =&gt;
+      let score = Evaluation.evaluateGameState(engine.state)
+      Js.log("Evaluation: " ++ Belt.Int.toString(score))
+      
+    | "perft" =&gt;
+      if Belt.Array.length(parts) &lt; 2 {
+        Js.log("ERROR: Invalid perft command")
+      } else {
+        switch Belt.Int.fromString(parts[1]) {
+        | None =&gt; Js.log("ERROR: Invalid depth")
+        | Some(depth) if depth &lt; 1 || depth &gt; 6 =&gt;
+          Js.log("ERROR: Depth must be 1-6")
+        | Some(depth) =&gt;
+          let startTime = Js.Date.now()
+          let count = Perft.perft(engine.state, depth)
+          let endTime = Js.Date.now()
+          let timeMs = Belt.Int.fromFloat(endTime -. startTime)
+          
+          Js.log("Perft(" ++ Belt.Int.toString(depth) ++ "): " ++ 
+                 Belt.Int.toString(count) ++ " nodes in " ++ 
+                 Belt.Int.toString(timeMs) ++ "ms")
+        }
+      }
+      
+    | "help" =&gt;
+      Js.log("Available commands:")
+      Js.log("  move &lt;from&gt;&lt;to&gt;[promotion] - Make a move (e.g., e2e4, e7e8Q)")
+      Js.log("  undo - Undo the last move")
+      Js.log("  new - Start a new game")
+      Js.log("  ai &lt;depth&gt; - Let AI make a move (depth 1-5)")
+      Js.log("  fen &lt;string&gt; - Load position from FEN")
+      Js.log("  export - Export current position as FEN")
+      Js.log("  eval - Display position evaluation")
+      Js.log("  perft &lt;depth&gt; - Run performance test")
+      Js.log("  help - Display this help message")
+      Js.log("  quit - Exit the program")
+      
+    | "quit" =&gt;
+      Node.Process.exit(0)
+      
+    | _ =&gt;
+      Js.log("ERROR: Invalid command. Type 'help' for available commands.")
+    }
+  }
+  
+  // Display board after each command
+  if parts[0] != "help" &amp;&amp; parts[0] != "quit" {
+    Js.log("")
+    Js.log(Board.boardToString(engine.state))
+  }
+}
+
+// Main program
+let main = () =&gt; {
+  let engine = createEngine()
+  
+  Js.log("Chess Engine - ReScript Implementation")
+  Js.log("Type 'help' for available commands")
+  Js.log("")
+  Js.log(Board.boardToString(engine.state))
+  
+  // Setup readline interface
+  let readline = Node.Readline.createInterface({
+    input: Node.Process.stdin,
+    output: Node.Process.stdout,
+    prompt: "&gt; ",
+  })
+  
+  Node.Readline.Interface.prompt(readline)
+  
+  Node.Readline.Interface.on(readline, #line, (line: string) =&gt; {
+    processCommand(engine, line)
+    Node.Readline.Interface.prompt(readline)
+  })
+  
+  Node.Readline.Interface.on(readline, #close, () =&gt; {
+    Js.log("\nGoodbye!")
+    Node.Process.exit(0)
+  })
+}
+
+// Run the main program
+main()
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_Node_res')">📄 src/Node.res</button>
+<pre id="src_Node_res" class="file-content" style="display:none;"><code>module Process = {
+  @val external exit: int =&gt; unit = "process.exit"
+  @val external stdin: Stream.readable = "process.stdin"
+  @val external stdout: Stream.writable = "process.stdout"
+}
+
+module Stream = {
+  type readable
+  type writable
+}
+
+module Readline = {
+  type readlineInterface
+
+  type createInterfaceOptions = {
+    input: Stream.readable,
+    output: Stream.writable,
+    prompt: string,
+  }
+
+  @module("readline")
+  external createInterface: createInterfaceOptions =&gt; readlineInterface = "createInterface"
+
+  module Interface = {
+    @send external prompt: readlineInterface =&gt; unit = "prompt"
+    
+    @send external on: (readlineInterface, @string [#line | #close], 'a) =&gt; unit = "on"
+    
+    @send external question: (readlineInterface, string, string =&gt; unit) =&gt; unit = "question"
+    
+    @send external close: readlineInterface =&gt; unit = "close"
+  }
+}
+</code></pre>
+</div>
+</div>
+
+<script>
+function toggleFile(id) {
+    var content = document.getElementById(id);
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+    } else {
+        content.style.display = 'none';
+    }
+}
+</script>
+
+    </main>
+    <footer>
+        <p>Generated from benchmark data. All implementations tested via Docker for consistency.</p>
+        <p><a href="https://github.com/evaisse/the-great-analysis-challenge">View on GitHub</a></p>
+    </footer>
+</body>
+</html>

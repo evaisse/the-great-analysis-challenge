@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Julia Source Code - The Great Analysis Challenge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🏆 The Great Analysis Challenge</h1>
+        <p class="subtitle">Multi-Language Chess Engine Comparison</p>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="https://github.com/evaisse/the-great-analysis-challenge">GitHub</a>
+        </nav>
+    </header>
+    <main>
+<h2>📁 Julia Implementation</h2>
+<div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
+<div class="file-tree">
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
+<pre id="Dockerfile" class="file-content" style="display:none;"><code>FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update &amp;&amp; apt-get install -y \
+    curl \
+    wget \
+    ca-certificates \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Install Julia
+RUN JULIA_VERSION="1.9.4" \
+    &amp;&amp; wget "https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
+    &amp;&amp; tar -xzf "julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
+    &amp;&amp; mv "julia-${JULIA_VERSION}" /opt/julia \
+    &amp;&amp; ln -s /opt/julia/bin/julia /usr/local/bin/julia \
+    &amp;&amp; rm "julia-${JULIA_VERSION}-linux-x86_64.tar.gz"
+
+WORKDIR /app
+
+# Copy project files
+COPY Project.toml .
+COPY src/ src/
+COPY chess.jl .
+
+# Install dependencies (if any)
+RUN julia --project=. -e "using Pkg; Pkg.instantiate()"
+
+# Make the chess engine executable
+CMD ["julia", "--project=.", "chess.jl"]</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
+<pre id="Makefile" class="file-content" style="display:none;"><code>.PHONY: all build test analyze clean docker-build docker-test
+
+# Default target - build the chess engine
+all: build
+
+# Build target - instantiate Julia packages
+build:
+	julia --project=. -e "using Pkg; Pkg.instantiate()"
+
+# Run basic tests
+test:
+	julia --project=. -e "using Pkg; Pkg.test()" || true
+	@echo "Running basic functionality test..."
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | julia --project=. chess.jl | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" &amp;&amp; echo "✅ Basic test passed" || echo "❌ Basic test failed"
+
+# Static analysis and code quality
+analyze:
+	@echo "Running Julia static analysis..."
+	julia --project=. -e "using Pkg; Pkg.add(\"JuliaFormatter\"); using JuliaFormatter; format(\".\")" || true
+
+# Clean build artifacts
+clean:
+	julia --project=. -e "using Pkg; Pkg.gc()" || true
+	rm -rf Manifest.toml
+
+# Docker targets
+docker-build:
+	docker build -t chess-julia .
+
+docker-test: docker-build
+	@echo "Testing Julia implementation in Docker..."
+	docker run --rm -i chess-julia sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | julia --project=. chess.jl"
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  make         - Build the chess engine"
+	@echo "  make test    - Run tests"
+	@echo "  make analyze - Run static analysis"
+	@echo "  make clean   - Clean build artifacts"
+	@echo "  make docker-build - Build Docker image"
+	@echo "  make docker-test  - Test in Docker"</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Project_toml')">📄 Project.toml</button>
+<pre id="Project_toml" class="file-content" style="display:none;"><code>name = "ChessEngine"
+uuid = "abcd1234-5678-9012-3456-789012345678"
+authors = ["Julia Implementation"]
+version = "1.0.0"
+
+[deps]</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
+<pre id="README_md" class="file-content" style="display:none;"><code># Julia Chess Engine
+
+A complete chess engine implementation in Julia, featuring:
+
+- Full chess rules implementation (moves, castling, en passant, promotion)
+- AI with minimax algorithm and alpha-beta pruning (depths 1-5)
+- FEN import/export support
+- Performance testing (perft) 
+- Command-line interface
+
+## Requirements
+
+- Julia 1.9 or later
+
+## Running
+
+```bash
+julia chess.jl
+```
+
+## Docker
+
+```bash
+docker build -t chess-julia .
+docker run -it chess-julia
+```
+
+## Commands
+
+- `new` - Start a new game
+- `move &lt;from&gt;&lt;to&gt;` - Make a move (e.g., `move e2e4`)
+- `undo` - Undo the last move
+- `ai &lt;depth&gt;` - AI makes a move (depth 1-5)
+- `fen &lt;string&gt;` - Load position from FEN
+- `export` - Export current position as FEN
+- `eval` - Display position evaluation
+- `perft &lt;depth&gt;` - Performance test (move count)
+- `help` - Display available commands
+- `quit` - Exit the program
+
+## Features
+
+- **Paradigm**: High-performance dynamic programming
+- **Key Features**: Multiple dispatch, metaprogramming, scientific computing optimizations
+- **Build Time**: ~0-2 seconds (interpreted/JIT compiled)</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_jl')">📄 chess.jl</button>
+<pre id="chess_jl" class="file-content" style="display:none;"><code>#!/usr/bin/env julia
+
+"""
+Chess Engine Main Program
+Command-line interface for the Julia chess engine implementation
+"""
+
+include("src/types.jl")
+include("src/board.jl")
+include("src/move_generator.jl")
+include("src/fen.jl")
+include("src/ai.jl")
+include("src/perft.jl")
+
+mutable struct ChessEngine
+    board::Board
+    
+    function ChessEngine()
+        board = Board()
+        setup_starting_position!(board)
+        new(board)
+    end
+end
+
+function process_command(engine::ChessEngine, command::String)
+    parts = split(strip(command))
+    
+    if isempty(parts)
+        return true
+    end
+    
+    cmd = lowercase(parts[1])
+    
+    if cmd == "quit" || cmd == "exit"
+        return false
+    elseif cmd == "new"
+        setup_starting_position!(engine.board)
+        println(engine.board)
+    elseif cmd == "move"
+        if length(parts) != 2
+            println("ERROR: Invalid move format")
+            return true
+        end
+        
+        move = parse_move(engine.board, String(parts[2]))
+        if move === nothing
+            println("ERROR: Invalid move format")
+            return true
+        end
+        
+        legal_moves = get_legal_moves(engine.board)
+        legal = false
+        for legal_move in legal_moves
+            if legal_move.from == move.from &amp;&amp; legal_move.to == move.to
+                # For promotion moves, if no piece specified, default to Queen
+                if move.promotion == EMPTY &amp;&amp; legal_move.promotion != EMPTY
+                    if legal_move.promotion == QUEEN
+                        move = legal_move
+                        legal = true
+                        break
+                    end
+                elseif legal_move.promotion == move.promotion
+                    move = legal_move
+                    legal = true
+                    break
+                end
+            end
+        end
+        
+        if !legal
+            piece = get_piece(engine.board, move.from)
+            if piece.type == EMPTY
+                println("ERROR: No piece at source square")
+            elseif piece.color != (engine.board.state.white_to_move ? WHITE : BLACK)
+                println("ERROR: Wrong color piece")
+            else
+                println("ERROR: Illegal move")
+            end
+            return true
+        end
+        
+        make_move!(engine.board, move)
+        println("OK: $(move_to_string(move))")
+        
+        # Check for checkmate/stalemate
+        new_legal_moves = get_legal_moves(engine.board)
+        current_color = engine.board.state.white_to_move ? WHITE : BLACK
+        
+        if isempty(new_legal_moves)
+            if is_in_check(engine.board, current_color)
+                winner = current_color == WHITE ? "Black" : "White"
+                println("CHECKMATE: $winner wins")
+            else
+                println("STALEMATE: Draw")
+            end
+        end
+        
+        println(engine.board)
+    elseif cmd == "undo"
+        if undo_move!(engine.board)
+            println("OK: undo")
+            println(engine.board)
+        else
+            println("ERROR: No move to undo")
+        end
+    elseif cmd == "fen"
+        if length(parts) &lt; 2
+            println("ERROR: FEN string required")
+            return true
+        end
+        
+        fen_string = join(parts[2:end], " ")
+        if parse_fen!(engine.board, fen_string)
+            println("OK: FEN loaded")
+            println(engine.board)
+        else
+            println("ERROR: Invalid FEN string")
+        end
+    elseif cmd == "export"
+        fen = board_to_fen(engine.board)
+        println("FEN: $fen")
+    elseif cmd == "eval"
+        evaluation = evaluate_position(engine.board)
+        println("Evaluation: $evaluation")
+    elseif cmd == "ai"
+        if length(parts) != 2
+            println("ERROR: AI depth required (1-5)")
+            return true
+        end
+        
+        try
+            depth = parse(Int, parts[2])
+            if depth &lt; 1 || depth &gt; 5
+                println("ERROR: AI depth must be 1-5")
+                return true
+            end
+            
+            start_time = time()
+            best_move, eval_score = find_best_move(engine.board, depth)
+            elapsed_ms = round(Int, (time() - start_time) * 1000)
+            
+            if best_move === nothing
+                println("ERROR: No legal moves available")
+                return true
+            end
+            
+            make_move!(engine.board, best_move)
+            move_str = move_to_string(best_move)
+            println("AI: $move_str (depth=$depth, eval=$eval_score, time=$(elapsed_ms)ms)")
+            
+            # Check for checkmate/stalemate
+            new_legal_moves = get_legal_moves(engine.board)
+            current_color = engine.board.state.white_to_move ? WHITE : BLACK
+            
+            if isempty(new_legal_moves)
+                if is_in_check(engine.board, current_color)
+                    winner = current_color == WHITE ? "Black" : "White"
+                    println("CHECKMATE: $winner wins")
+                else
+                    println("STALEMATE: Draw")
+                end
+            end
+            
+            println(engine.board)
+        catch
+            println("ERROR: Invalid depth")
+        end
+    elseif cmd == "perft"
+        if length(parts) != 2
+            println("ERROR: Perft depth required")
+            return true
+        end
+        
+        try
+            depth = parse(Int, parts[2])
+            if depth &lt; 1 || depth &gt; 6
+                println("ERROR: Perft depth must be 1-6")
+                return true
+            end
+            
+            start_time = time()
+            count = perft(engine.board, depth)
+            elapsed_ms = round(Int, (time() - start_time) * 1000)
+            println("Perft($depth): $count ($(elapsed_ms)ms)")
+        catch
+            println("ERROR: Invalid depth")
+        end
+    elseif cmd == "help"
+        println("Available commands:")
+        println("  new           - Start a new game")
+        println("  move &lt;move&gt;   - Make a move (e.g., e2e4)")
+        println("  undo          - Undo the last move")
+        println("  ai &lt;depth&gt;    - AI makes a move (depth 1-5)")
+        println("  fen &lt;string&gt;  - Load position from FEN")
+        println("  export        - Export current position as FEN")
+        println("  eval          - Display position evaluation")
+        println("  perft &lt;depth&gt; - Performance test (move count)")
+        println("  help          - Display this help")
+        println("  quit          - Exit the program")
+    else
+        println("ERROR: Invalid command")
+    end
+    
+    return true
+end
+
+function main()
+    engine = ChessEngine()
+    println(engine.board)
+    
+    while true
+        try
+            line = readline()
+            if !process_command(engine, line)
+                break
+            end
+        catch e
+            if isa(e, InterruptException) || isa(e, EOFError)
+                break
+            else
+                rethrow()
+            end
+        end
+    end
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
+end</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
+<pre id="chess_meta" class="file-content" style="display:none;"><code>{
+  "language": "julia",
+  "version": "1.9",
+  "author": "Julia Implementation",
+  "build": "true",
+  "run": "julia chess.jl",
+  "analyze": "julia --check-bounds=yes chess.jl",
+  "test": "julia -e 'using Pkg; Pkg.test()'",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 1000
+}</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_ai_jl')">📄 src/ai.jl</button>
+<pre id="src_ai_jl" class="file-content" style="display:none;"><code>"""
+Chess AI engine with minimax and alpha-beta pruning
+"""
+
+include("move_generator.jl")
+
+# Piece values for evaluation
+const PIECE_VALUES = Dict(
+    EMPTY =&gt; 0,
+    PAWN =&gt; 100,
+    KNIGHT =&gt; 320,
+    BISHOP =&gt; 330,
+    ROOK =&gt; 500,
+    QUEEN =&gt; 900,
+    KING =&gt; 20000
+)
+
+# Position bonuses for center control
+const CENTER_SQUARES = [27, 28, 35, 36]  # d4, d5, e4, e5
+
+function evaluate_position(board::Board)
+    score = 0
+    
+    # Check for checkmate/stalemate
+    legal_moves = get_legal_moves(board)
+    current_color = board.state.white_to_move ? WHITE : BLACK
+    
+    if isempty(legal_moves)
+        if is_in_check(board, current_color)
+            # Checkmate
+            return current_color == WHITE ? -100000 : 100000
+        else
+            # Stalemate
+            return 0
+        end
+    end
+    
+    # Material evaluation
+    for square in 0:63
+        piece = get_piece(board, square)
+        if piece.type != EMPTY
+            piece_value = PIECE_VALUES[piece.type]
+            
+            # Center control bonus
+            if piece.type == PAWN || piece.type == KNIGHT || piece.type == BISHOP
+                if square in CENTER_SQUARES
+                    piece_value += 10
+                end
+            end
+            
+            # Pawn advancement bonus
+            if piece.type == PAWN
+                rank = square ÷ 8
+                if piece.color == WHITE
+                    piece_value += rank * 5
+                else
+                    piece_value += (7 - rank) * 5
+                end
+            end
+            
+            if piece.color == WHITE
+                score += piece_value
+            else
+                score -= piece_value
+            end
+        end
+    end
+    
+    return score
+end
+
+function minimax(board::Board, depth::Int, alpha::Int, beta::Int, maximizing::Bool)
+    if depth == 0
+        return evaluate_position(board)
+    end
+    
+    moves = get_legal_moves(board)
+    
+    if isempty(moves)
+        return evaluate_position(board)
+    end
+    
+    if maximizing
+        max_eval = -1000000
+        for move in moves
+            make_move!(board, move)
+            eval = minimax(board, depth - 1, alpha, beta, false)
+            undo_move!(board)
+            
+            max_eval = max(max_eval, eval)
+            alpha = max(alpha, eval)
+            
+            if beta &lt;= alpha
+                break  # Beta cutoff
+            end
+        end
+        return max_eval
+    else
+        min_eval = 1000000
+        for move in moves
+            make_move!(board, move)
+            eval = minimax(board, depth - 1, alpha, beta, true)
+            undo_move!(board)
+            
+            min_eval = min(min_eval, eval)
+            beta = min(beta, eval)
+            
+            if beta &lt;= alpha
+                break  # Alpha cutoff
+            end
+        end
+        return min_eval
+    end
+end
+
+function find_best_move(board::Board, depth::Int)
+    moves = get_legal_moves(board)
+    
+    if isempty(moves)
+        return nothing, 0
+    end
+    
+    best_move = moves[1]
+    best_eval = board.state.white_to_move ? -1000000 : 1000000
+    
+    alpha = -1000000
+    beta = 1000000
+    
+    for move in moves
+        make_move!(board, move)
+        eval = minimax(board, depth - 1, alpha, beta, !board.state.white_to_move)
+        undo_move!(board)
+        
+        if board.state.white_to_move
+            if eval &gt; best_eval
+                best_eval = eval
+                best_move = move
+            end
+            alpha = max(alpha, eval)
+        else
+            if eval &lt; best_eval
+                best_eval = eval
+                best_move = move
+            end
+            beta = min(beta, eval)
+        end
+    end
+    
+    return best_move, best_eval
+end</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_board_jl')">📄 src/board.jl</button>
+<pre id="src_board_jl" class="file-content" style="display:none;"><code>"""
+Chess board representation and basic operations
+"""
+
+include("types.jl")
+
+mutable struct Board
+    pieces::Matrix{Piece}
+    state::GameState
+    move_history::Vector{Move}
+    
+    function Board()
+        pieces = Matrix{Piece}(undef, 8, 8)
+        fill!(pieces, EMPTY_PIECE)
+        new(pieces, GameState(), Move[])
+    end
+end
+
+function setup_starting_position!(board::Board)
+    # Clear board
+    fill!(board.pieces, EMPTY_PIECE)
+    
+    # White pieces
+    board.pieces[1, 1] = Piece(ROOK, WHITE)
+    board.pieces[2, 1] = Piece(KNIGHT, WHITE)
+    board.pieces[3, 1] = Piece(BISHOP, WHITE)
+    board.pieces[4, 1] = Piece(QUEEN, WHITE)
+    board.pieces[5, 1] = Piece(KING, WHITE)
+    board.pieces[6, 1] = Piece(BISHOP, WHITE)
+    board.pieces[7, 1] = Piece(KNIGHT, WHITE)
+    board.pieces[8, 1] = Piece(ROOK, WHITE)
+    
+    for i in 1:8
+        board.pieces[i, 2] = Piece(PAWN, WHITE)
+    end
+    
+    # Black pieces
+    board.pieces[1, 8] = Piece(ROOK, BLACK)
+    board.pieces[2, 8] = Piece(KNIGHT, BLACK)
+    board.pieces[3, 8] = Piece(BISHOP, BLACK)
+    board.pieces[4, 8] = Piece(QUEEN, BLACK)
+    board.pieces[5, 8] = Piece(KING, BLACK)
+    board.pieces[6, 8] = Piece(BISHOP, BLACK)
+    board.pieces[7, 8] = Piece(KNIGHT, BLACK)
+    board.pieces[8, 8] = Piece(ROOK, BLACK)
+    
+    for i in 1:8
+        board.pieces[i, 7] = Piece(PAWN, BLACK)
+    end
+    
+    # Reset game state
+    board.state = GameState()
+    empty!(board.move_history)
+end
+
+function get_piece(board::Board, square::Int)
+    file, rank = square_to_coords(square)
+    return board.pieces[file + 1, rank + 1]
+end
+
+function set_piece!(board::Board, square::Int, piece::Piece)
+    file, rank = square_to_coords(square)
+    board.pieces[file + 1, rank + 1] = piece
+end
+
+function is_valid_square(square::Int)
+    return square &gt;= 0 &amp;&amp; square &lt; 64
+end
+
+function is_enemy_piece(board::Board, square::Int, color::Color)
+    if !is_valid_square(square)
+        return false
+    end
+    piece = get_piece(board, square)
+    return piece.type != EMPTY &amp;&amp; piece.color != color
+end
+
+function is_friendly_piece(board::Board, square::Int, color::Color)
+    if !is_valid_square(square)
+        return false
+    end
+    piece = get_piece(board, square)
+    return piece.type != EMPTY &amp;&amp; piece.color == color
+end
+
+function is_empty_square(board::Board, square::Int)
+    if !is_valid_square(square)
+        return false
+    end
+    return get_piece(board, square).type == EMPTY
+end
+
+function find_king(board::Board, color::Color)
+    for square in 0:63
+        piece = get_piece(board, square)
+        if piece.type == KING &amp;&amp; piece.color == color
+            return square
+        end
+    end
+    return -1
+end
+
+function is_square_attacked(board::Board, square::Int, by_color::Color)
+    # Check pawn attacks
+    pawn_direction = by_color == WHITE ? 8 : -8
+    for df in [-1, 1]
+        attack_square = square - pawn_direction + df
+        if is_valid_square(attack_square)
+            file_diff = abs((square % 8) - (attack_square % 8))
+            if file_diff == 1
+                piece = get_piece(board, attack_square)
+                if piece.type == PAWN &amp;&amp; piece.color == by_color
+                    return true
+                end
+            end
+        end
+    end
+    
+    # Check knight attacks
+    knight_moves = [-17, -15, -10, -6, 6, 10, 15, 17]
+    for move in knight_moves
+        attack_square = square + move
+        if is_valid_square(attack_square)
+            file_diff = abs((square % 8) - (attack_square % 8))
+            rank_diff = abs((square ÷ 8) - (attack_square ÷ 8))
+            if (file_diff == 2 &amp;&amp; rank_diff == 1) || (file_diff == 1 &amp;&amp; rank_diff == 2)
+                piece = get_piece(board, attack_square)
+                if piece.type == KNIGHT &amp;&amp; piece.color == by_color
+                    return true
+                end
+            end
+        end
+    end
+    
+    # Check diagonal attacks (bishop/queen)
+    directions = [-9, -7, 7, 9]
+    for direction in directions
+        current = square + direction
+        while is_valid_square(current)
+            file_diff = abs((square % 8) - (current % 8))
+            rank_diff = abs((square ÷ 8) - (current ÷ 8))
+            if file_diff != rank_diff
+                break
+            end
+            
+            piece = get_piece(board, current)
+            if piece.type != EMPTY
+                if piece.color == by_color &amp;&amp; (piece.type == BISHOP || piece.type == QUEEN)
+                    return true
+                end
+                break
+            end
+            current += direction
+        end
+    end
+    
+    # Check straight attacks (rook/queen)
+    directions = [-8, -1, 1, 8]
+    for direction in directions
+        current = square + direction
+        while is_valid_square(current)
+            if direction == -1 || direction == 1
+                if (square ÷ 8) != (current ÷ 8)
+                    break
+                end
+            end
+            
+            piece = get_piece(board, current)
+            if piece.type != EMPTY
+                if piece.color == by_color &amp;&amp; (piece.type == ROOK || piece.type == QUEEN)
+                    return true
+                end
+                break
+            end
+            current += direction
+        end
+    end
+    
+    # Check king attacks
+    for dr in -1:1, df in -1:1
+        if dr == 0 &amp;&amp; df == 0
+            continue
+        end
+        attack_square = square + dr * 8 + df
+        if is_valid_square(attack_square)
+            file_diff = abs((square % 8) - (attack_square % 8))
+            rank_diff = abs((square ÷ 8) - (attack_square ÷ 8))
+            if file_diff &lt;= 1 &amp;&amp; rank_diff &lt;= 1
+                piece = get_piece(board, attack_square)
+                if piece.type == KING &amp;&amp; piece.color == by_color
+                    return true
+                end
+            end
+        end
+    end
+    
+    return false
+end
+
+function is_in_check(board::Board, color::Color)
+    king_square = find_king(board, color)
+    if king_square == -1
+        return false
+    end
+    return is_square_attacked(board, king_square, color == WHITE ? BLACK : WHITE)
+end
+
+function Base.show(io::IO, board::Board)
+    println(io, "  a b c d e f g h")
+    for rank in 8:-1:1
+        print(io, rank, " ")
+        for file in 1:8
+            piece = board.pieces[file, rank]
+            print(io, piece_to_char(piece), " ")
+        end
+        println(io, rank)
+    end
+    println(io, "  a b c d e f g h")
+    println(io)
+    println(io, board.state.white_to_move ? "White to move" : "Black to move")
+end</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_fen_jl')">📄 src/fen.jl</button>
+<pre id="src_fen_jl" class="file-content" style="display:none;"><code>"""
+FEN (Forsyth-Edwards Notation) parser and serializer
+"""
+
+include("board.jl")
+
+function parse_fen!(board::Board, fen::String)
+    parts = split(fen, ' ')
+    if length(parts) != 6
+        return false
+    end
+    
+    try
+        # Parse piece placement
+        fill!(board.pieces, EMPTY_PIECE)
+        ranks = split(parts[1], '/')
+        if length(ranks) != 8
+            return false
+        end
+        
+        for (rank_idx, rank_str) in enumerate(ranks)
+            rank = 9 - rank_idx  # FEN ranks are from 8 to 1
+            file = 1
+            
+            for c in rank_str
+                if isdigit(c)
+                    # Empty squares
+                    empty_count = parse(Int, string(c))
+                    file += empty_count
+                else
+                    # Piece
+                    if file &gt; 8
+                        return false
+                    end
+                    piece = char_to_piece(c)
+                    board.pieces[file, rank] = piece
+                    file += 1
+                end
+            end
+        end
+        
+        # Parse active color
+        board.state.white_to_move = parts[2] == "w"
+        
+        # Parse castling rights
+        castling = parts[3]
+        board.state.white_can_castle_kingside = 'K' in castling
+        board.state.white_can_castle_queenside = 'Q' in castling
+        board.state.black_can_castle_kingside = 'k' in castling
+        board.state.black_can_castle_queenside = 'q' in castling
+        
+        # Parse en passant
+        if parts[4] == "-"
+            board.state.en_passant_square = -1
+        else
+            board.state.en_passant_square = algebraic_to_square(parts[4])
+        end
+        
+        # Parse halfmove clock
+        board.state.halfmove_clock = parse(Int, parts[5])
+        
+        # Parse fullmove number
+        board.state.fullmove_number = parse(Int, parts[6])
+        
+        return true
+        
+    catch
+        return false
+    end
+end
+
+function board_to_fen(board::Board)
+    # Piece placement
+    fen_parts = String[]
+    
+    for rank in 8:-1:1
+        rank_str = ""
+        empty_count = 0
+        
+        for file in 1:8
+            piece = board.pieces[file, rank]
+            
+            if piece.type == EMPTY
+                empty_count += 1
+            else
+                if empty_count &gt; 0
+                    rank_str *= string(empty_count)
+                    empty_count = 0
+                end
+                rank_str *= string(piece_to_char(piece))
+            end
+        end
+        
+        if empty_count &gt; 0
+            rank_str *= string(empty_count)
+        end
+        
+        push!(fen_parts, rank_str)
+    end
+    
+    piece_placement = join(fen_parts, "/")
+    
+    # Active color
+    active_color = board.state.white_to_move ? "w" : "b"
+    
+    # Castling rights
+    castling = ""
+    if board.state.white_can_castle_kingside
+        castling *= "K"
+    end
+    if board.state.white_can_castle_queenside
+        castling *= "Q"
+    end
+    if board.state.black_can_castle_kingside
+        castling *= "k"
+    end
+    if board.state.black_can_castle_queenside
+        castling *= "q"
+    end
+    if castling == ""
+        castling = "-"
+    end
+    
+    # En passant
+    en_passant = board.state.en_passant_square == -1 ? "-" : square_to_algebraic(board.state.en_passant_square)
+    
+    # Halfmove clock and fullmove number
+    halfmove = string(board.state.halfmove_clock)
+    fullmove = string(board.state.fullmove_number)
+    
+    return "$piece_placement $active_color $castling $en_passant $halfmove $fullmove"
+end</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_move_generator_jl')">📄 src/move_generator.jl</button>
+<pre id="src_move_generator_jl" class="file-content" style="display:none;"><code>"""
+Chess move generation and validation
+"""
+
+include("board.jl")
+
+function generate_pawn_moves(board::Board, square::Int, moves::Vector{Move})
+    piece = get_piece(board, square)
+    color = piece.color
+    file, rank = square_to_coords(square)
+    
+    direction = color == WHITE ? 1 : -1
+    start_rank = color == WHITE ? 1 : 6
+    promotion_rank = color == WHITE ? 7 : 0
+    
+    # Forward move
+    forward_square = square + direction * 8
+    if is_valid_square(forward_square) &amp;&amp; is_empty_square(board, forward_square)
+        if rank + direction == promotion_rank
+            # Promotion
+            for promotion_piece in [QUEEN, ROOK, BISHOP, KNIGHT]
+                move = Move(square, forward_square, piece, EMPTY_PIECE)
+                move.promotion = promotion_piece
+                push!(moves, move)
+            end
+        else
+            push!(moves, Move(square, forward_square, piece, EMPTY_PIECE))
+        end
+        
+        # Double forward from starting position
+        if rank == start_rank
+            double_forward = square + direction * 16
+            if is_valid_square(double_forward) &amp;&amp; is_empty_square(board, double_forward)
+                push!(moves, Move(square, double_forward, piece, EMPTY_PIECE))
+            end
+        end
+    end
+    
+    # Captures
+    for df in [-1, 1]
+        capture_square = square + direction * 8 + df
+        if is_valid_square(capture_square) &amp;&amp; abs((square % 8) - (capture_square % 8)) == 1
+            if is_enemy_piece(board, capture_square, color)
+                captured = get_piece(board, capture_square)
+                if rank + direction == promotion_rank
+                    # Promotion with capture
+                    for promotion_piece in [QUEEN, ROOK, BISHOP, KNIGHT]
+                        move = Move(square, capture_square, piece, captured)
+                        move.promotion = promotion_piece
+                        push!(moves, move)
+                    end
+                else
+                    push!(moves, Move(square, capture_square, piece, captured))
+                end
+            elseif capture_square == board.state.en_passant_square
+                # En passant
+                captured_pawn_square = capture_square - direction * 8
+                captured = get_piece(board, captured_pawn_square)
+                move = Move(square, capture_square, piece, captured)
+                move.is_en_passant = true
+                push!(moves, move)
+            end
+        end
+    end
+end
+
+function generate_knight_moves(board::Board, square::Int, moves::Vector{Move})
+    piece = get_piece(board, square)
+    color = piece.color
+    
+    knight_moves = [-17, -15, -10, -6, 6, 10, 15, 17]
+    for move_offset in knight_moves
+        to_square = square + move_offset
+        if is_valid_square(to_square)
+            file_diff = abs((square % 8) - (to_square % 8))
+            rank_diff = abs((square ÷ 8) - (to_square ÷ 8))
+            if (file_diff == 2 &amp;&amp; rank_diff == 1) || (file_diff == 1 &amp;&amp; rank_diff == 2)
+                if is_empty_square(board, to_square)
+                    push!(moves, Move(square, to_square, piece, EMPTY_PIECE))
+                elseif is_enemy_piece(board, to_square, color)
+                    captured = get_piece(board, to_square)
+                    push!(moves, Move(square, to_square, piece, captured))
+                end
+            end
+        end
+    end
+end
+
+function generate_sliding_moves(board::Board, square::Int, moves::Vector{Move}, directions::Vector{Int})
+    piece = get_piece(board, square)
+    color = piece.color
+    
+    for direction in directions
+        current = square + direction
+        while is_valid_square(current)
+            # Check board boundaries for horizontal moves
+            if direction == -1 || direction == 1
+                if (square ÷ 8) != (current ÷ 8)
+                    break
+                end
+            end
+            
+            # Check diagonal moves
+            if abs(direction) == 7 || abs(direction) == 9
+                file_diff = abs((square % 8) - (current % 8))
+                rank_diff = abs((square ÷ 8) - (current ÷ 8))
+                if file_diff != rank_diff
+                    break
+                end
+            end
+            
+            if is_empty_square(board, current)
+                push!(moves, Move(square, current, piece, EMPTY_PIECE))
+            else
+                if is_enemy_piece(board, current, color)
+                    captured = get_piece(board, current)
+                    push!(moves, Move(square, current, piece, captured))
+                end
+                break
+            end
+            current += direction
+        end
+    end
+end
+
+function generate_king_moves(board::Board, square::Int, moves::Vector{Move})
+    piece = get_piece(board, square)
+    color = piece.color
+    
+    # Regular king moves
+    for dr in -1:1, df in -1:1
+        if dr == 0 &amp;&amp; df == 0
+            continue
+        end
+        to_square = square + dr * 8 + df
+        if is_valid_square(to_square)
+            file_diff = abs((square % 8) - (to_square % 8))
+            rank_diff = abs((square ÷ 8) - (to_square ÷ 8))
+            if file_diff &lt;= 1 &amp;&amp; rank_diff &lt;= 1
+                if is_empty_square(board, to_square)
+                    push!(moves, Move(square, to_square, piece, EMPTY_PIECE))
+                elseif is_enemy_piece(board, to_square, color)
+                    captured = get_piece(board, to_square)
+                    push!(moves, Move(square, to_square, piece, captured))
+                end
+            end
+        end
+    end
+    
+    # Castling
+    if !is_in_check(board, color)
+        if color == WHITE
+            if board.state.white_can_castle_kingside &amp;&amp; 
+               is_empty_square(board, 5) &amp;&amp; is_empty_square(board, 6) &amp;&amp;
+               !is_square_attacked(board, 5, BLACK) &amp;&amp; !is_square_attacked(board, 6, BLACK)
+                move = Move(square, 6, piece, EMPTY_PIECE)
+                move.is_castle = true
+                push!(moves, move)
+            end
+            if board.state.white_can_castle_queenside &amp;&amp;
+               is_empty_square(board, 1) &amp;&amp; is_empty_square(board, 2) &amp;&amp; is_empty_square(board, 3) &amp;&amp;
+               !is_square_attacked(board, 2, BLACK) &amp;&amp; !is_square_attacked(board, 3, BLACK)
+                move = Move(square, 2, piece, EMPTY_PIECE)
+                move.is_castle = true
+                push!(moves, move)
+            end
+        else
+            if board.state.black_can_castle_kingside &amp;&amp;
+               is_empty_square(board, 61) &amp;&amp; is_empty_square(board, 62) &amp;&amp;
+               !is_square_attacked(board, 61, WHITE) &amp;&amp; !is_square_attacked(board, 62, WHITE)
+                move = Move(square, 62, piece, EMPTY_PIECE)
+                move.is_castle = true
+                push!(moves, move)
+            end
+            if board.state.black_can_castle_queenside &amp;&amp;
+               is_empty_square(board, 57) &amp;&amp; is_empty_square(board, 58) &amp;&amp; is_empty_square(board, 59) &amp;&amp;
+               !is_square_attacked(board, 58, WHITE) &amp;&amp; !is_square_attacked(board, 59, WHITE)
+                move = Move(square, 58, piece, EMPTY_PIECE)
+                move.is_castle = true
+                push!(moves, move)
+            end
+        end
+    end
+end
+
+function generate_moves(board::Board)
+    moves = Move[]
+    current_color = board.state.white_to_move ? WHITE : BLACK
+    
+    for square in 0:63
+        piece = get_piece(board, square)
+        if piece.type == EMPTY || piece.color != current_color
+            continue
+        end
+        
+        if piece.type == PAWN
+            generate_pawn_moves(board, square, moves)
+        elseif piece.type == KNIGHT
+            generate_knight_moves(board, square, moves)
+        elseif piece.type == BISHOP
+            generate_sliding_moves(board, square, moves, [-9, -7, 7, 9])
+        elseif piece.type == ROOK
+            generate_sliding_moves(board, square, moves, [-8, -1, 1, 8])
+        elseif piece.type == QUEEN
+            generate_sliding_moves(board, square, moves, [-9, -8, -7, -1, 1, 7, 8, 9])
+        elseif piece.type == KING
+            generate_king_moves(board, square, moves)
+        end
+    end
+    
+    return moves
+end
+
+function make_move!(board::Board, move::Move)
+    # Backup current state in the move
+    move.prev_en_passant = board.state.en_passant_square
+    move.prev_white_can_castle_kingside = board.state.white_can_castle_kingside
+    move.prev_white_can_castle_queenside = board.state.white_can_castle_queenside
+    move.prev_black_can_castle_kingside = board.state.black_can_castle_kingside
+    move.prev_black_can_castle_queenside = board.state.black_can_castle_queenside
+    move.prev_halfmove_clock = board.state.halfmove_clock
+    move.prev_fullmove_number = board.state.fullmove_number
+    
+    # Store move in history
+    push!(board.move_history, move)
+    
+    # Update en passant square
+    board.state.en_passant_square = -1
+    
+    # Handle special moves
+    if move.is_castle
+        # Move the rook
+        if move.to == 6  # White kingside
+            rook = get_piece(board, 7)
+            set_piece!(board, 7, EMPTY_PIECE)
+            set_piece!(board, 5, rook)
+        elseif move.to == 2  # White queenside
+            rook = get_piece(board, 0)
+            set_piece!(board, 0, EMPTY_PIECE)
+            set_piece!(board, 3, rook)
+        elseif move.to == 62  # Black kingside
+            rook = get_piece(board, 63)
+            set_piece!(board, 63, EMPTY_PIECE)
+            set_piece!(board, 61, rook)
+        elseif move.to == 58  # Black queenside
+            rook = get_piece(board, 56)
+            set_piece!(board, 56, EMPTY_PIECE)
+            set_piece!(board, 59, rook)
+        end
+    elseif move.is_en_passant
+        # Remove captured pawn
+        direction = move.piece.color == WHITE ? -8 : 8
+        captured_square = move.to + direction
+        set_piece!(board, captured_square, EMPTY_PIECE)
+    end
+    
+    # Check for double pawn move (en passant setup)
+    if move.piece.type == PAWN &amp;&amp; abs(move.to - move.from) == 16
+        board.state.en_passant_square = move.from + (move.to - move.from) ÷ 2
+    end
+    
+    # Move the piece
+    piece_to_place = move.piece
+    if move.promotion != EMPTY
+        piece_to_place = Piece(move.promotion, move.piece.color)
+    end
+    
+    set_piece!(board, move.from, EMPTY_PIECE)
+    set_piece!(board, move.to, piece_to_place)
+    
+    # Update castling rights
+    if move.piece.type == KING
+        if move.piece.color == WHITE
+            board.state.white_can_castle_kingside = false
+            board.state.white_can_castle_queenside = false
+        else
+            board.state.black_can_castle_kingside = false
+            board.state.black_can_castle_queenside = false
+        end
+    elseif move.piece.type == ROOK
+        if move.from == 0  # White queenside rook
+            board.state.white_can_castle_queenside = false
+        elseif move.from == 7  # White kingside rook
+            board.state.white_can_castle_kingside = false
+        elseif move.from == 56  # Black queenside rook
+            board.state.black_can_castle_queenside = false
+        elseif move.from == 63  # Black kingside rook
+            board.state.black_can_castle_kingside = false
+        end
+    end
+    
+    # Update move counters
+    if move.piece.type == PAWN || move.captured.type != EMPTY
+        board.state.halfmove_clock = 0
+    else
+        board.state.halfmove_clock += 1
+    end
+    
+    # Switch turn first
+    board.state.white_to_move = !board.state.white_to_move
+    
+    # Increment fullmove number after black moves (now it's white's turn)
+    if board.state.white_to_move
+        board.state.fullmove_number += 1
+    end
+end
+
+function undo_move!(board::Board)
+    if isempty(board.move_history)
+        return false
+    end
+    
+    move = pop!(board.move_history)
+    
+    # Restore game state
+    board.state.white_to_move = !board.state.white_to_move
+    board.state.en_passant_square = move.prev_en_passant
+    board.state.white_can_castle_kingside = move.prev_white_can_castle_kingside
+    board.state.white_can_castle_queenside = move.prev_white_can_castle_queenside
+    board.state.black_can_castle_kingside = move.prev_black_can_castle_kingside
+    board.state.black_can_castle_queenside = move.prev_black_can_castle_queenside
+    board.state.halfmove_clock = move.prev_halfmove_clock
+    board.state.fullmove_number = move.prev_fullmove_number
+    
+    # Restore piece positions
+    set_piece!(board, move.from, move.piece)
+    set_piece!(board, move.to, move.captured)
+    
+    # Handle special moves
+    if move.is_castle
+        # Move the rook back
+        if move.to == 6  # White kingside
+            rook = get_piece(board, 5)
+            set_piece!(board, 5, EMPTY_PIECE)
+            set_piece!(board, 7, rook)
+        elseif move.to == 2  # White queenside
+            rook = get_piece(board, 3)
+            set_piece!(board, 3, EMPTY_PIECE)
+            set_piece!(board, 0, rook)
+        elseif move.to == 62  # Black kingside
+            rook = get_piece(board, 61)
+            set_piece!(board, 61, EMPTY_PIECE)
+            set_piece!(board, 63, rook)
+        elseif move.to == 58  # Black queenside
+            rook = get_piece(board, 59)
+            set_piece!(board, 59, EMPTY_PIECE)
+            set_piece!(board, 56, rook)
+        end
+    elseif move.is_en_passant
+        # Restore captured pawn
+        direction = move.piece.color == WHITE ? -8 : 8
+        captured_square = move.to + direction
+        set_piece!(board, captured_square, move.captured)
+        set_piece!(board, move.to, EMPTY_PIECE)
+    end
+    
+    return true
+end
+
+function is_legal_move(board::Board, move::Move)
+    # Make move temporarily
+    make_move!(board, move)
+    
+    # Check if king is in check after move
+    color = !board.state.white_to_move ? WHITE : BLACK
+    legal = !is_in_check(board, color)
+    
+    # Undo move
+    undo_move!(board)
+    
+    return legal
+end
+
+function get_legal_moves(board::Board)
+    moves = generate_moves(board)
+    legal_moves = Move[]
+    
+    for move in moves
+        if is_legal_move(board, move)
+            push!(legal_moves, move)
+        end
+    end
+    
+    return legal_moves
+end
+
+function parse_move(board::Board, move_str::AbstractString)
+    if length(move_str) &lt; 4
+        return nothing
+    end
+    
+    from_square = algebraic_to_square(move_str[1:2])
+    to_square = algebraic_to_square(move_str[3:4])
+    
+    if !is_valid_square(from_square) || !is_valid_square(to_square)
+        return nothing
+    end
+    
+    piece = get_piece(board, from_square)
+    captured = get_piece(board, to_square)
+    move = Move(from_square, to_square, piece, captured)
+    
+    # Handle promotion
+    if length(move_str) == 5
+        promotion_char = uppercase(move_str[5])
+        if promotion_char == 'Q'
+            move.promotion = QUEEN
+        elseif promotion_char == 'R'
+            move.promotion = ROOK
+        elseif promotion_char == 'B'
+            move.promotion = BISHOP
+        elseif promotion_char == 'N'
+            move.promotion = KNIGHT
+        end
+    end
+    
+    return move
+end
+
+function move_to_string(move::Move)
+    result = square_to_algebraic(move.from) * square_to_algebraic(move.to)
+    if move.promotion != EMPTY
+        if move.promotion == QUEEN
+            result *= "Q"
+        elseif move.promotion == ROOK
+            result *= "R"
+        elseif move.promotion == BISHOP
+            result *= "B"
+        elseif move.promotion == KNIGHT
+            result *= "N"
+        end
+    end
+    return result
+end</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_perft_jl')">📄 src/perft.jl</button>
+<pre id="src_perft_jl" class="file-content" style="display:none;"><code>"""
+Perft (Performance Test) function for move generation validation
+"""
+
+include("move_generator.jl")
+
+function perft(board::Board, depth::Int)
+    if depth == 0
+        return 1
+    end
+    
+    moves = get_legal_moves(board)
+    count = 0
+    
+    for move in moves
+        make_move!(board, move)
+        count += perft(board, depth - 1)
+        undo_move!(board)
+    end
+    
+    return count
+end
+
+function perft_divide(board::Board, depth::Int)
+    moves = get_legal_moves(board)
+    total_count = 0
+    
+    for move in moves
+        make_move!(board, move)
+        count = perft(board, depth - 1)
+        undo_move!(board)
+        
+        move_str = move_to_string(move)
+        println("$move_str: $count")
+        total_count += count
+    end
+    
+    println("Total: $total_count")
+    return total_count
+end</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_types_jl')">📄 src/types.jl</button>
+<pre id="src_types_jl" class="file-content" style="display:none;"><code>"""
+Chess piece types and utilities
+"""
+
+# Piece types
+@enum PieceType begin
+    EMPTY = 0
+    PAWN = 1
+    KNIGHT = 2
+    BISHOP = 3
+    ROOK = 4
+    QUEEN = 5
+    KING = 6
+end
+
+# Colors
+@enum Color begin
+    WHITE = 0
+    BLACK = 1
+end
+
+# Piece representation: combines type and color
+struct Piece
+    type::PieceType
+    color::Color
+end
+
+# Empty piece
+const EMPTY_PIECE = Piece(EMPTY, WHITE)
+
+# Move representation with state backup
+mutable struct Move
+    from::Int
+    to::Int
+    piece::Piece
+    captured::Piece
+    promotion::PieceType
+    is_castle::Bool
+    is_en_passant::Bool
+    
+    # Backup of game state before move
+    prev_en_passant::Int
+    prev_white_can_castle_kingside::Bool
+    prev_white_can_castle_queenside::Bool
+    prev_black_can_castle_kingside::Bool
+    prev_black_can_castle_queenside::Bool
+    prev_halfmove_clock::Int
+    prev_fullmove_number::Int
+    
+    Move(from, to) = new(from, to, EMPTY_PIECE, EMPTY_PIECE, EMPTY, false, false, -1, true, true, true, true, 0, 1)
+    Move(from, to, piece, captured) = new(from, to, piece, captured, EMPTY, false, false, -1, true, true, true, true, 0, 1)
+end
+
+# Game state
+mutable struct GameState
+    white_to_move::Bool
+    white_can_castle_kingside::Bool
+    white_can_castle_queenside::Bool
+    black_can_castle_kingside::Bool
+    black_can_castle_queenside::Bool
+    en_passant_square::Int
+    halfmove_clock::Int
+    fullmove_number::Int
+    
+    GameState() = new(true, true, true, true, true, -1, 0, 1)
+end
+
+# Board coordinates
+square_to_coords(square) = (square % 8, square ÷ 8)
+coords_to_square(file, rank) = rank * 8 + file
+algebraic_to_square(alg) = coords_to_square(Int(alg[1]) - Int('a'), Int(alg[2]) - Int('1'))
+square_to_algebraic(square) = string(Char(Int('a') + square % 8), Char(Int('1') + square ÷ 8))
+
+# Piece symbols
+function piece_to_char(piece::Piece)
+    if piece.type == EMPTY
+        return '.'
+    end
+    
+    symbol = if piece.type == PAWN
+        'P'
+    elseif piece.type == KNIGHT
+        'N'
+    elseif piece.type == BISHOP
+        'B'
+    elseif piece.type == ROOK
+        'R'
+    elseif piece.type == QUEEN
+        'Q'
+    elseif piece.type == KING
+        'K'
+    else
+        '?'
+    end
+    
+    return piece.color == WHITE ? symbol : lowercase(symbol)
+end
+
+function char_to_piece(c::Char)
+    color = isuppercase(c) ? WHITE : BLACK
+    piece_type = if lowercase(c) == 'p'
+        PAWN
+    elseif lowercase(c) == 'n'
+        KNIGHT
+    elseif lowercase(c) == 'b'
+        BISHOP
+    elseif lowercase(c) == 'r'
+        ROOK
+    elseif lowercase(c) == 'q'
+        QUEEN
+    elseif lowercase(c) == 'k'
+        KING
+    else
+        EMPTY
+    end
+    return Piece(piece_type, color)
+end</code></pre>
+</div>
+</div>
+
+<script>
+function toggleFile(id) {
+    var content = document.getElementById(id);
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+    } else {
+        content.style.display = 'none';
+    }
+}
+</script>
+
+    </main>
+    <footer>
+        <p>Generated from benchmark data. All implementations tested via Docker for consistency.</p>
+        <p><a href="https://github.com/evaisse/the-great-analysis-challenge">View on GitHub</a></p>
+    </footer>
+</body>
+</html>
