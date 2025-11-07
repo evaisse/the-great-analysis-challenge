@@ -61,8 +61,9 @@ python3 test/verify_implementations.py
 - **📊 Weekly Benchmarks**: Performance reports generated every Sunday
 - **🏷️ Automatic Releases**: Semantic versioning based on implementation health
 - **📈 Performance Tracking**: Historical analysis and build time monitoring
+- **🎯 Issue Triage**: Automated label application and clarification requests
 
-**Manual Operations**: [GitHub Actions](../../actions/workflows/bench.yaml) | [Latest Results](../../releases/latest)
+**Manual Operations**: [GitHub Actions](../../actions/workflows/bench.yaml) | [Latest Results](../../releases/latest) | [Issue Triage Docs](./docs/ISSUE_TRIAGE_WORKFLOW.md)
 
 All implementations are tested exclusively via Docker containers to ensure:
 
