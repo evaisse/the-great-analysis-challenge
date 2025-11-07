@@ -1,0 +1,19 @@
+cache dir does not exist - create /app/node_modules/imba/.imba-cache
+Chess Engine in Imba
+Type 'help' for available commands
+
+AI thinking at depth 3...
+AI: d2d4 (depth=3, eval=10, time=466ms)
+  a b c d e f g h
+8 r n b q k b n r 8
+7 p p p p p p p p 7
+6 . . . . . . . . 6
+5 . . . . . . . . 5
+4 . . . P . . . . 4
+3 . . . . . . . . 3
+2 P P P . P P P P 2
+1 R N B Q K B N R 1
+  a b c d e f g h
+
+Black to move
+Goodbye!

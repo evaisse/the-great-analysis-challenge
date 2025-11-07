@@ -687,7 +687,7 @@ class ChessGame
 			else
 				console.log "ERROR: No moves to undo"
 
-		elif command === 'display'
+		elif command === 'display' or command === 'board'
 			board.display!
 
 		elif command === 'export'
@@ -742,6 +742,7 @@ class ChessGame
 			console.log "  new              - Start a new game"
 			console.log "  move <move>      - Make a move (e.g., move e2e4)"
 			console.log "  undo             - Undo the last move"
+			console.log "  board            - Display the board"
 			console.log "  display          - Display the board"
 			console.log "  export           - Export position as FEN"
 			console.log "  fen <string>     - Load position from FEN"
