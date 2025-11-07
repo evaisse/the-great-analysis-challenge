@@ -8,115 +8,101 @@ import json
 import glob
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import shutil
+import yaml
+from datetime import datetime, timedelta
+
+
+def load_language_statistics() -> Dict[str, Any]:
+    """
+    Load language statistics from language_statistics.yaml file.
+    
+    Returns a dictionary containing metadata and language statistics.
+    """
+    stats_file = "language_statistics.yaml"
+    
+    if not os.path.exists(stats_file):
+        print(f"Warning: {stats_file} not found, using empty data")
+        return {'metadata': {}, 'languages': {}}
+    
+    try:
+        with open(stats_file, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+            return data if data else {'metadata': {}, 'languages': {}}
+    except Exception as e:
+        print(f"Error loading {stats_file}: {e}")
+        return {'metadata': {}, 'languages': {}}
+
+
+def check_statistics_freshness(stats_data: Dict[str, Any]) -> bool:
+    """
+    Check if language statistics are older than one month.
+    
+    Returns True if data should be updated, False otherwise.
+    """
+    metadata = stats_data.get('metadata', {})
+    last_updated_str = metadata.get('last_updated')
+    
+    if not last_updated_str:
+        print("Warning: No last_updated date found in statistics")
+        return True
+    
+    try:
+        last_updated = datetime.fromisoformat(last_updated_str)
+        one_month_ago = datetime.now() - timedelta(days=30)
+        
+        if last_updated < one_month_ago:
+            print(f"Statistics are outdated (last updated: {last_updated_str})")
+            return True
+        else:
+            print(f"Statistics are fresh (last updated: {last_updated_str})")
+            return False
+    except Exception as e:
+        print(f"Error parsing date: {e}")
+        return True
 
 
 def get_language_metadata() -> Dict[str, Dict[str, str]]:
-    """Get metadata for each language including emoji, website, and popularity."""
-    return {
-        'rust': {
-            'emoji': '🦀',
-            'website': 'https://www.rust-lang.org/',
-            'tiobe_rank': '14',
-            'github_stars': '4.5M+ repos'
-        },
-        'python': {
-            'emoji': '🐍',
-            'website': 'https://www.python.org/',
-            'tiobe_rank': '1',
-            'github_stars': '10M+ repos'
-        },
-        'go': {
-            'emoji': '🐹',
-            'website': 'https://go.dev/',
-            'tiobe_rank': '8',
-            'github_stars': '3.5M+ repos'
-        },
-        'typescript': {
-            'emoji': '📘',
-            'website': 'https://www.typescriptlang.org/',
-            'tiobe_rank': '20',
-            'github_stars': '5M+ repos'
-        },
-        'ruby': {
-            'emoji': '💎',
-            'website': 'https://www.ruby-lang.org/',
-            'tiobe_rank': '17',
-            'github_stars': '2M+ repos'
-        },
-        'crystal': {
-            'emoji': '💎',
-            'website': 'https://crystal-lang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '60K+ repos'
-        },
-        'julia': {
-            'emoji': '🔴',
-            'website': 'https://julialang.org/',
-            'tiobe_rank': '30',
-            'github_stars': '200K+ repos'
-        },
-        'kotlin': {
-            'emoji': '🟣',
-            'website': 'https://kotlinlang.org/',
-            'tiobe_rank': '24',
-            'github_stars': '1.5M+ repos'
-        },
-        'haskell': {
-            'emoji': '🎓',
-            'website': 'https://www.haskell.org/',
-            'tiobe_rank': '38',
-            'github_stars': '500K+ repos'
-        },
-        'gleam': {
-            'emoji': '⭐',
-            'website': 'https://gleam.run/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '15K+ repos'
-        },
-        'dart': {
-            'emoji': '🎯',
-            'website': 'https://dart.dev/',
-            'tiobe_rank': '25',
-            'github_stars': '1M+ repos'
-        },
-        'elm': {
-            'emoji': '🌳',
-            'website': 'https://elm-lang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '100K+ repos'
-        },
-        'rescript': {
-            'emoji': '🔴',
-            'website': 'https://rescript-lang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '50K+ repos'
-        },
-        'mojo': {
-            'emoji': '🔥',
-            'website': 'https://www.modular.com/mojo',
-            'tiobe_rank': 'N/A',
-            'github_stars': '20K+ repos'
-        },
-        'swift': {
-            'emoji': '🐦',
-            'website': 'https://www.swift.org/',
-            'tiobe_rank': '15',
-            'github_stars': '2.5M+ repos'
-        },
-        'zig': {
-            'emoji': '⚡',
-            'website': 'https://ziglang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '150K+ repos'
-        },
-        'nim': {
-            'emoji': '👑',
-            'website': 'https://nim-lang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '100K+ repos'
+    """
+    Get metadata for each language including emoji, website, and popularity.
+    
+    Loads data from language_statistics.yaml file.
+    """
+    stats_data = load_language_statistics()
+    languages_data = stats_data.get('languages', {})
+    
+    result = {}
+    for lang_name, lang_info in languages_data.items():
+        tiobe_rank = lang_info.get('tiobe_rank')
+        tiobe_rank_str = 'N/A' if tiobe_rank is None else str(tiobe_rank)
+        
+        github_stars = lang_info.get('github_stars', 'N/A')
+        # Keep the format consistent with existing code
+        if github_stars != 'N/A':
+            github_stars_str = f"{github_stars} repos"
+        else:
+            github_stars_str = 'N/A'
+        
+        result[lang_name] = {
+            'emoji': lang_info.get('emoji', '📦'),
+            'website': lang_info.get('website', '#'),
+            'tiobe_rank': tiobe_rank_str,
+            'github_stars': github_stars_str
         }
+    
+    return result
+
+
+def get_statistics_sources() -> Dict[str, str]:
+    """Get the source URLs for statistics data."""
+    stats_data = load_language_statistics()
+    metadata = stats_data.get('metadata', {})
+    
+    return {
+        'tiobe_source': metadata.get('tiobe_source', 'https://www.tiobe.com/tiobe-index/'),
+        'github_source': metadata.get('github_source', 'https://github.com/EvanLi/Github-Ranking'),
+        'last_updated': metadata.get('last_updated', 'Unknown')
     }
 
 
@@ -268,10 +254,17 @@ def generate_html_header(title: str, include_datatable: bool = False) -> str:
 
 def generate_html_footer() -> str:
     """Generate HTML footer."""
-    return """
+    sources = get_statistics_sources()
+    last_updated = sources.get('last_updated', 'Unknown')
+    tiobe_url = sources.get('tiobe_source', 'https://www.tiobe.com/tiobe-index/')
+    github_url = sources.get('github_source', 'https://github.com/EvanLi/Github-Ranking')
+    
+    return f"""
     </main>
     <footer>
         <p>Generated from benchmark data. All implementations tested via Docker for consistency.</p>
+        <p>Language popularity statistics from <a href="{tiobe_url}" target="_blank" rel="noopener">TIOBE Index</a> 
+        and <a href="{github_url}" target="_blank" rel="noopener">GitHub Ranking</a> (last updated: {last_updated})</p>
         <p><a href="https://github.com/evaisse/the-great-analysis-challenge">View on GitHub</a></p>
     </footer>
 </body>
