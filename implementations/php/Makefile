@@ -20,8 +20,8 @@ test:
 # Static analysis and code quality
 analyze:
 	@echo "Running PHP static analysis..."
-	@# Check for syntax errors
-	@find . -name "*.php" -exec php -l {} \; 2>&1 | grep -v "No syntax errors"
+	@php -l chess.php
+	@find lib -name "*.php" -print0 | xargs -0 -n1 php -l
 	@echo "✅ Syntax check complete"
 
 # Clean build artifacts

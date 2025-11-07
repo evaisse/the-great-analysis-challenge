@@ -6,6 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies and PHP
 RUN apt-get update && apt-get install -y \
+    make \
     php8.3-cli \
     php8.3-mbstring \
     php8.3-xml \
