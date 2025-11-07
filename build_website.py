@@ -109,23 +109,25 @@ def get_statistics_sources() -> Dict[str, str]:
 def count_lines_of_code(impl_path: str) -> Dict[str, int]:
     """Count lines of code for an implementation."""
     extensions = {
-        'rust': ['.rs'],
-        'python': ['.py'],
-        'go': ['.go'],
-        'typescript': ['.ts'],
-        'ruby': ['.rb'],
         'crystal': ['.cr'],
-        'julia': ['.jl'],
-        'kotlin': ['.kt'],
-        'haskell': ['.hs'],
-        'gleam': ['.gleam'],
         'dart': ['.dart'],
         'elm': ['.elm'],
-        'rescript': ['.res', '.resi'],
+        'gleam': ['.gleam'],
+        'go': ['.go'],
+        'haskell': ['.hs'],
+        'julia': ['.jl'],
+        'kotlin': ['.kt'],
+        'lua': ['.lua'],
         'mojo': ['.mojo', '.🔥'],
+        'nim': ['.nim'],
+        'php': ['.php'],
+        'python': ['.py'],
+        'rescript': ['.res', '.resi'],
+        'ruby': ['.rb'],
+        'rust': ['.rs'],
         'swift': ['.swift'],
-        'zig': ['.zig'],
-        'nim': ['.nim']
+        'typescript': ['.ts'],
+        'zig': ['.zig']
     }
     
     lang_name = os.path.basename(impl_path)
@@ -379,23 +381,25 @@ def generate_source_explorer(lang: str, impl_path: str) -> str:
     
     # Map language names to highlight.js language identifiers
     lang_map = {
-        'rust': 'rust',
-        'python': 'python',
-        'go': 'go',
-        'typescript': 'typescript',
-        'ruby': 'ruby',
         'crystal': 'crystal',
-        'julia': 'julia',
-        'kotlin': 'kotlin',
-        'haskell': 'haskell',
-        'gleam': 'rust',  # Use rust as fallback for similar syntax
         'dart': 'dart',
         'elm': 'elm',
-        'rescript': 'reasonml',
+        'gleam': 'rust',  # Use rust as fallback for similar syntax
+        'go': 'go',
+        'haskell': 'haskell',
+        'julia': 'julia',
+        'kotlin': 'kotlin',
+        'lua': 'lua',
         'mojo': 'python',  # Use python as fallback
+        'nim': 'nim',
+        'php': 'php',
+        'python': 'python',
+        'rescript': 'reasonml',
+        'ruby': 'ruby',
+        'rust': 'rust',
         'swift': 'swift',
-        'zig': 'zig',
-        'nim': 'nim'
+        'typescript': 'typescript',
+        'zig': 'zig'
     }
     
     highlight_lang = lang_map.get(lang, 'plaintext')

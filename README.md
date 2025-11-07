@@ -27,8 +27,10 @@ All implementations have complete feature parity:
 | Haskell | 🟢 | 42ms | 15ms | - |
 | Julia | 🟢 | 33ms | 25ms | - |
 | Kotlin | 🟢 | 258ms | 128ms | - |
+| Lua | 🟢 | - | - | - |
 | Mojo | 🟢 | 33ms | 33ms | - |
 | Nim | 🟢 | 33ms | 29ms | - |
+| Php | 🟢 | - | - | - |
 | Python | 🟢 | 209ms | 103ms | 597ms |
 | Rescript | 🟢 | 141ms | 3443ms | - |
 | Ruby | 🟢 | 1661ms | 354ms | 1850ms |
