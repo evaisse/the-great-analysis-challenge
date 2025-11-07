@@ -101,8 +101,8 @@ languages:
     website: "https://www.lua.org/"
     tiobe_rank: 26
     tiobe_rating: "0.54%"
-    github_stars: "800K+"
-    github_repos_approx: 800000
+    github_stars: "1M+"
+    github_repos_approx: 1000000
     description: "Lightweight scripting language"
 
   mojo:
@@ -128,8 +128,8 @@ languages:
     website: "https://www.php.net/"
     tiobe_rank: 7
     tiobe_rating: "2.08%"
-    github_stars: "5M+"
-    github_repos_approx: 5000000
+    github_stars: "8M+"
+    github_repos_approx: 8000000
     description: "Popular web scripting language"
 
   rescript:
