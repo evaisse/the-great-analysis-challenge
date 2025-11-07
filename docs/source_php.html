@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Php Source Code - The Great Analysis Challenge</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>🏆 The Great Analysis Challenge</h1>
+        <p class="subtitle">Multi-Language Chess Engine Comparison</p>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="https://github.com/evaisse/the-great-analysis-challenge">GitHub</a>
+        </nav>
+    </header>
+    <main>
+<h2>🐘 <a href="https://www.php.net/" target="_blank" rel="noopener">Php</a> Implementation</h2>
+<div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
+<div class="file-tree">
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile"># Use Ubuntu base image
+FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and PHP
+RUN apt-get update &amp;&amp; apt-get install -y \
+    php8.3-cli \
+    php8.3-mbstring \
+    php8.3-xml \
+    composer \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy composer files first for better caching
+COPY composer.json* composer.lock* ./
+
+# Install PHP dependencies if composer.json exists
+RUN if [ -f composer.json ]; then composer install --no-dev --optimize-autoloader; fi
+
+# Copy source code
+COPY . .
+
+# Create a non-root user
+RUN addgroup --system php &amp;&amp; \
+    adduser --no-create-home --shell /bin/false --disabled-password --system --ingroup php chess
+
+# Change ownership of the app directory
+RUN chown -R chess:php /app
+
+# Switch to non-root user
+USER chess
+
+# Make chess.php executable
+RUN chmod +x chess.php
+
+# Default command to run the chess engine
+CMD ["php", "chess.php"]
+
+# Alternative commands for different use cases:
+# To run static analysis: docker run --rm chess-php ./analyze
+# Interactive mode: docker run -it chess-php
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test help
+
+# Default target - build the chess engine
+all: build
+
+# Build target - check PHP syntax
+build:
+	@echo "Building PHP chess engine..."
+	php -l chess.php
+	@for file in lib/*.php; do \
+		php -l $$file; \
+	done
+	@echo "✅ Build complete"
+
+# Run basic tests
+test:
+	@echo "Running basic functionality test..."
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | php chess.php | grep "FEN:" | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" &amp;&amp; echo "✅ Basic test passed" || echo "❌ Basic test failed"
+
+# Static analysis and code quality
+analyze:
+	@echo "Running PHP static analysis..."
+	@# Check for syntax errors
+	@find . -name "*.php" -exec php -l {} \; 2&gt;&amp;1 | grep -v "No syntax errors"
+	@echo "✅ Syntax check complete"
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning build artifacts..."
+	@# PHP doesn't typically create build artifacts, but clean vendor if exists
+	@rm -rf vendor/
+	@echo "✅ Clean complete"
+
+# Docker targets
+docker-build:
+	docker build -t chess-php .
+
+docker-test: docker-build
+	@echo "Testing PHP implementation in Docker..."
+	docker run --rm -i chess-php sh -c "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | php chess.php"
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  make         - Build the chess engine"
+	@echo "  make test    - Run tests"
+	@echo "  make analyze - Run static analysis"
+	@echo "  make clean   - Clean build artifacts"
+	@echo "  make docker-build - Build Docker image"
+	@echo "  make docker-test  - Test in Docker"
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># PHP Chess Engine Implementation
+
+A complete chess engine implementation in PHP following the Chess Engine Specification v1.0.
+
+## Overview
+
+This implementation demonstrates PHP's object-oriented programming capabilities while maintaining clean, readable code. Built with PHP 8.3, it leverages modern PHP features like typed properties, match expressions, and named arguments.
+
+## Features
+
+✅ **Complete Chess Rules Implementation**
+- All standard piece movements (Pawn, Knight, Bishop, Rook, Queen, King)
+- Special moves: Castling (kingside and queenside), En Passant, Pawn Promotion
+- Check, Checkmate, and Stalemate detection
+- Move validation ensuring no self-checks
+
+✅ **FEN Support**
+- Load positions from Forsyth-Edwards Notation
+- Export current position as FEN string
+- Full support for castling rights and en passant targets
+
+✅ **AI Engine**
+- Minimax algorithm with alpha-beta pruning
+- Configurable search depth (1-5)
+- Material and positional evaluation
+- Center control and pawn advancement bonuses
+
+✅ **Performance Testing**
+- Perft (performance test) for move generation verification
+- Accurately counts positions at various depths
+
+## Requirements
+
+- PHP 8.0 or higher
+- Docker (for containerized testing)
+
+## Quick Start
+
+### Local Usage
+
+```bash
+# Run the chess engine
+php chess.php
+
+# Test basic functionality
+echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | php chess.php
+```
+
+### Using Make
+
+```bash
+# Build (syntax check)
+make build
+
+# Run tests
+make test
+
+# Static analysis
+make analyze
+
+# Clean artifacts
+make clean
+```
+
+### Docker Usage
+
+```bash
+# Build Docker image
+make docker-build
+
+# Test in Docker
+make docker-test
+
+# Run interactively
+docker run -it chess-php
+```
+
+## Project Structure
+
+```
+php/
+├── chess.php           # Main entry point
+├── lib/
+│   ├── Types.php       # Constants and Move class
+│   ├── Board.php       # Board representation and state management
+│   ├── MoveGenerator.php  # Move generation and validation
+│   ├── FenParser.php   # FEN import/export
+│   ├── AI.php          # Minimax AI with alpha-beta pruning
+│   └── Perft.php       # Performance testing
+├── Dockerfile          # Container definition
+├── Makefile           # Build automation
+├── chess.meta         # Implementation metadata
+└── README.md          # This file
+```
+
+## Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `new` | Start a new game | `new` |
+| `move &lt;from&gt;&lt;to&gt;[promotion]` | Make a move | `move e2e4` or `move e7e8Q` |
+| `undo` | Undo the last move | `undo` |
+| `ai &lt;depth&gt;` | Let AI make a move | `ai 3` |
+| `fen &lt;string&gt;` | Load position from FEN | `fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1` |
+| `export` | Export position as FEN | `export` |
+| `eval` | Show position evaluation | `eval` |
+| `perft &lt;depth&gt;` | Run performance test | `perft 4` |
+| `help` | Show available commands | `help` |
+| `quit` | Exit the program | `quit` |
+
+## Implementation Details
+
+### Board Representation
+
+The board is represented as an 8x8 array where each square contains:
+- Piece type (EMPTY, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING)
+- Piece color (WHITE, BLACK)
+
+### Move Generation
+
+Moves are generated for each piece type following chess rules:
+- Pawns: Forward movement, diagonal captures, en passant, promotion
+- Knights: L-shaped moves
+- Bishops: Diagonal sliding
+- Rooks: Horizontal/vertical sliding
+- Queens: Combined rook and bishop movement
+- Kings: One square in any direction, castling
+
+All moves are validated to ensure the king is not left in check.
+
+### AI Evaluation
+
+The evaluation function considers:
+- **Material Value**: Pawn=100, Knight=320, Bishop=330, Rook=500, Queen=900, King=20000
+- **Positional Bonuses**: 
+  - Center control: +10 for pieces on central squares (d4, d5, e4, e5)
+  - Pawn advancement: +5 per rank advanced from starting position
+- **Special Scores**: Checkmate = ±100000, Stalemate = 0
+
+### Performance
+
+Expected performance on modern hardware:
+- **Perft(4)**: ~1500ms (197,281 nodes)
+- **AI Depth 3**: &lt; 2 seconds
+- **AI Depth 5**: &lt; 10 seconds
+
+## PHP-Specific Features
+
+This implementation showcases modern PHP features:
+
+- **Typed Properties**: All class properties use type declarations
+- **Match Expressions**: Clean piece-to-character conversions
+- **Namespaces**: Organized code structure
+- **Array Functions**: Efficient array operations with array_filter, array_merge
+- **Spaceship Operator**: Used in path-clearing logic ($to &lt;=&gt; $from)
+- **Null Coalescing**: Safe handling of optional parameters
+
+## Testing
+
+### Basic Functionality Test
+
+```bash
+make test
+```
+
+Expected output should include:
+- Board display with proper piece placement
+- FEN string matching the position after e2e4, e7e5
+
+### Perft Validation
+
+```bash
+echo -e "new\nperft 4\nquit" | php chess.php
+```
+
+Expected output: `197281 nodes`
+
+### AI Test
+
+```bash
+echo -e "new\nai 3\nquit" | php chess.php
+```
+
+Should output a legal move with evaluation score.
+
+## Development
+
+### Code Style
+
+The implementation follows PSR-12 coding standards:
+- 4-space indentation
+- Opening braces on same line for methods
+- Type declarations for all parameters and return values
+
+### Debugging
+
+Enable error reporting for debugging:
+```php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+```
+
+## Comparison with Other Languages
+
+**Advantages of PHP:**
+- Simple, readable syntax
+- Excellent for rapid development
+- Strong array manipulation capabilities
+- Good for demonstrating OOP concepts
+
+**Considerations:**
+- Slower than compiled languages (C, Rust, Go)
+- No native support for multithreading
+- Type system less strict than TypeScript or Rust
+
+## License
+
+Part of The Great Analysis Challenge multi-language chess engine project.
+
+## Contributing
+
+Follow the implementation guidelines in `CHESS_ENGINE_SPECS.md` and `README_IMPLEMENTATION_GUIDELINES.md` at the project root.
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-php">{
+  "language": "php",
+  "version": "8.3",
+  "author": "PHP Implementation",
+  "build": "php -l chess.php",
+  "run": "php chess.php",
+  "analyze": "find . -name '*.php' -exec php -l {} \\;",
+  "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | php chess.php",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 1500
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_php')">📄 chess.php</button>
+<pre id="chess_php" class="file-content" style="display:none;"><code class="language-php">#!/usr/bin/env php
+&lt;?php
+/**
+ * Chess Engine Implementation in PHP
+ * Follows the Chess Engine Specification v1.0
+ */
+
+namespace Chess;
+
+require_once __DIR__ . '/lib/Types.php';
+require_once __DIR__ . '/lib/Board.php';
+require_once __DIR__ . '/lib/MoveGenerator.php';
+require_once __DIR__ . '/lib/FenParser.php';
+require_once __DIR__ . '/lib/AI.php';
+require_once __DIR__ . '/lib/Perft.php';
+
+/**
+ * Main chess engine class
+ */
+class ChessEngine {
+    private Board $board;
+    private MoveGenerator $move_gen;
+    private FenParser $fen_parser;
+    private AI $ai;
+    private Perft $perft;
+    
+    public function __construct() {
+        $this-&gt;board = new Board();
+        $this-&gt;move_gen = new MoveGenerator($this-&gt;board);
+        $this-&gt;fen_parser = new FenParser($this-&gt;board);
+        $this-&gt;ai = new AI($this-&gt;board, $this-&gt;move_gen);
+        $this-&gt;perft = new Perft($this-&gt;board, $this-&gt;move_gen);
+    }
+    
+    public function start(): void {
+        echo $this-&gt;board-&gt;display();
+        flush();
+        
+        while (true) {
+            $line = fgets(STDIN);
+            
+            if ($line === false) {
+                break;
+            }
+            
+            $command = trim($line);
+            
+            if (empty($command)) {
+                continue;
+            }
+            
+            $this-&gt;process_command($command);
+            flush();
+        }
+    }
+    
+    private function process_command(string $command): void {
+        $parts = preg_split('/\s+/', $command);
+        
+        if (empty($parts)) {
+            return;
+        }
+        
+        $cmd = strtolower($parts[0]);
+        
+        try {
+            switch ($cmd) {
+                case 'move':
+                    $this-&gt;handle_move($parts[1] ?? null);
+                    break;
+                    
+                case 'undo':
+                    $this-&gt;handle_undo();
+                    break;
+                    
+                case 'new':
+                    $this-&gt;handle_new_game();
+                    break;
+                    
+                case 'ai':
+                    $depth = isset($parts[1]) ? intval($parts[1]) : 3;
+                    $this-&gt;handle_ai_move($depth);
+                    break;
+                    
+                case 'fen':
+                    $fen = count($parts) &gt; 1 ? implode(' ', array_slice($parts, 1)) : null;
+                    $this-&gt;handle_fen($fen);
+                    break;
+                    
+                case 'export':
+                    $this-&gt;handle_export();
+                    break;
+                    
+                case 'eval':
+                    $this-&gt;handle_eval();
+                    break;
+                    
+                case 'perft':
+                    $depth = isset($parts[1]) ? intval($parts[1]) : 4;
+                    $this-&gt;handle_perft($depth);
+                    break;
+                    
+                case 'help':
+                    $this-&gt;handle_help();
+                    break;
+                    
+                case 'quit':
+                case 'exit':
+                    echo "Goodbye!\n";
+                    exit(0);
+                    
+                default:
+                    echo "ERROR: Invalid command. Type 'help' for available commands.\n";
+            }
+        } catch (\Exception $e) {
+            echo "ERROR: " . $e-&gt;getMessage() . "\n";
+        }
+    }
+    
+    private function handle_move(?string $move_str): void {
+        if ($move_str === null) {
+            echo "ERROR: Invalid move format\n";
+            return;
+        }
+        
+        $move = $this-&gt;move_gen-&gt;parse_move($move_str);
+        
+        if ($move === null) {
+            echo "ERROR: Invalid move format\n";
+            return;
+        }
+        
+        // Check if piece exists at source
+        [$piece, $color] = $this-&gt;board-&gt;get_piece($move-&gt;from_row, $move-&gt;from_col);
+        
+        if ($piece === CHESS_EMPTY) {
+            echo "ERROR: No piece at source square\n";
+            return;
+        }
+        
+        if ($color !== $this-&gt;board-&gt;current_player) {
+            echo "ERROR: Wrong color piece\n";
+            return;
+        }
+        
+        // Check if move is legal
+        $legal_moves = $this-&gt;move_gen-&gt;generate_moves();
+        $is_legal = false;
+        
+        foreach ($legal_moves as $legal_move) {
+            if ($legal_move-&gt;from_row === $move-&gt;from_row &amp;&amp;
+                $legal_move-&gt;from_col === $move-&gt;from_col &amp;&amp;
+                $legal_move-&gt;to_row === $move-&gt;to_row &amp;&amp;
+                $legal_move-&gt;to_col === $move-&gt;to_col) {
+                $is_legal = true;
+                $move = $legal_move;  // Use the validated move with correct flags
+                break;
+            }
+        }
+        
+        if (!$is_legal) {
+            echo "ERROR: Illegal move\n";
+            return;
+        }
+        
+        $this-&gt;board-&gt;make_move($move);
+        
+        // Check for game end first
+        $is_checkmate = $this-&gt;move_gen-&gt;is_checkmate();
+        $is_stalemate = $this-&gt;move_gen-&gt;is_stalemate();
+        
+        if ($is_checkmate) {
+            $winner = $this-&gt;board-&gt;current_player === CHESS_WHITE ? "Black" : "White";
+            echo "CHECKMATE: $winner wins\n";
+        } elseif ($is_stalemate) {
+            echo "STALEMATE: Draw\n";
+        } else {
+            // Only output OK if game continues
+            echo "OK: " . $move-&gt;to_string() . "\n";
+        }
+        
+        echo $this-&gt;board-&gt;display();
+    }
+    
+    private function handle_undo(): void {
+        if ($this-&gt;board-&gt;undo_move()) {
+            echo "OK: Undo\n";
+            echo $this-&gt;board-&gt;display();
+        } else {
+            echo "ERROR: No moves to undo\n";
+        }
+    }
+    
+    private function handle_new_game(): void {
+        $this-&gt;board-&gt;reset();
+        echo "OK: New game\n";
+        echo $this-&gt;board-&gt;display();
+    }
+    
+    private function handle_ai_move(int $depth): void {
+        if ($depth &lt; 1 || $depth &gt; 5) {
+            echo "ERROR: AI depth must be 1-5\n";
+            return;
+        }
+        
+        $result = $this-&gt;ai-&gt;find_best_move($depth);
+        
+        if ($result === null) {
+            echo "ERROR: No legal moves available\n";
+            return;
+        }
+        
+        [$move, $eval, $time_ms] = $result;
+        
+        $this-&gt;board-&gt;make_move($move);
+        
+        // Check for game end first
+        $is_checkmate = $this-&gt;move_gen-&gt;is_checkmate();
+        $is_stalemate = $this-&gt;move_gen-&gt;is_stalemate();
+        
+        if ($is_checkmate) {
+            $winner = $this-&gt;board-&gt;current_player === CHESS_WHITE ? "Black" : "White";
+            echo "CHECKMATE: $winner wins\n";
+        } elseif ($is_stalemate) {
+            echo "STALEMATE: Draw\n";
+        } else {
+            // Only output AI message if game continues
+            echo "AI: " . $move-&gt;to_string() . " (depth=$depth, eval=$eval, time={$time_ms}ms)\n";
+        }
+        
+        echo $this-&gt;board-&gt;display();
+    }
+    
+    private function handle_fen(?string $fen): void {
+        if ($fen === null) {
+            echo "ERROR: FEN string required\n";
+            return;
+        }
+        
+        if ($this-&gt;fen_parser-&gt;load_fen($fen)) {
+            echo "OK: FEN loaded\n";
+            echo $this-&gt;board-&gt;display();
+        } else {
+            echo "ERROR: Invalid FEN string\n";
+        }
+    }
+    
+    private function handle_export(): void {
+        $fen = $this-&gt;fen_parser-&gt;export_fen();
+        echo "FEN: $fen\n";
+    }
+    
+    private function handle_eval(): void {
+        $eval = $this-&gt;ai-&gt;evaluate();
+        echo "Evaluation: $eval\n";
+    }
+    
+    private function handle_perft(int $depth): void {
+        if ($depth &lt; 1 || $depth &gt; 6) {
+            echo "ERROR: Perft depth must be 1-6\n";
+            return;
+        }
+        
+        $start_time = microtime(true);
+        $nodes = $this-&gt;perft-&gt;perft($depth);
+        $end_time = microtime(true);
+        
+        $time_ms = round(($end_time - $start_time) * 1000);
+        echo "Perft($depth): $nodes nodes (time={$time_ms}ms)\n";
+    }
+    
+    private function handle_help(): void {
+        echo &lt;&lt;&lt;HELP
+Available commands:
+  move &lt;from&gt;&lt;to&gt;[promotion]  - Execute a move (e.g., move e2e4, move e7e8Q)
+  undo                        - Undo the last move
+  new                         - Start a new game
+  ai &lt;depth&gt;                  - AI makes a move (depth 1-5)
+  fen &lt;string&gt;                - Load position from FEN notation
+  export                      - Export current position as FEN
+  eval                        - Display position evaluation
+  perft &lt;depth&gt;               - Performance test (count moves at depth)
+  help                        - Display this help message
+  quit                        - Exit the program
+
+HELP;
+    }
+}
+
+// Start the engine
+$engine = new ChessEngine();
+$engine-&gt;start();
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('composer_json')">📄 composer.json</button>
+<pre id="composer_json" class="file-content" style="display:none;"><code class="language-json">{
+  "name": "chess/php-engine",
+  "description": "Chess Engine Implementation in PHP",
+  "type": "project",
+  "require": {
+    "php": "&gt;=8.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "Chess\\": "lib/"
+    }
+  }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_AI_php')">📄 lib/AI.php</button>
+<pre id="lib_AI_php" class="file-content" style="display:none;"><code class="language-php">&lt;?php
+
+namespace Chess;
+
+require_once __DIR__ . '/Types.php';
+require_once __DIR__ . '/Board.php';
+require_once __DIR__ . '/MoveGenerator.php';
+
+/**
+ * AI with minimax and alpha-beta pruning
+ */
+class AI {
+    private Board $board;
+    private MoveGenerator $move_gen;
+    
+    public function __construct(Board $board, MoveGenerator $move_gen) {
+        $this-&gt;board = $board;
+        $this-&gt;move_gen = $move_gen;
+    }
+    
+    public function find_best_move(int $depth): ?array {
+        $start_time = microtime(true);
+        $moves = $this-&gt;move_gen-&gt;generate_moves();
+        
+        if (empty($moves)) {
+            return null;
+        }
+        
+        $best_move = null;
+        $best_eval = PHP_INT_MIN;
+        $alpha = PHP_INT_MIN;
+        $beta = PHP_INT_MAX;
+        
+        foreach ($moves as $move) {
+            $this-&gt;board-&gt;make_move($move);
+            $eval = -$this-&gt;minimax($depth - 1, -$beta, -$alpha, false);
+            $this-&gt;board-&gt;undo_move();
+            
+            if ($eval &gt; $best_eval) {
+                $best_eval = $eval;
+                $best_move = $move;
+            }
+            
+            $alpha = max($alpha, $eval);
+            if ($beta &lt;= $alpha) {
+                break;
+            }
+        }
+        
+        $end_time = microtime(true);
+        $time_ms = round(($end_time - $start_time) * 1000);
+        
+        return [$best_move, $best_eval, $time_ms];
+    }
+    
+    private function minimax(int $depth, float|int $alpha, float|int $beta, bool $maximizing): float|int {
+        if ($depth === 0) {
+            return $this-&gt;evaluate();
+        }
+        
+        if ($this-&gt;move_gen-&gt;is_checkmate()) {
+            return -100000;
+        }
+        
+        if ($this-&gt;move_gen-&gt;is_stalemate()) {
+            return 0;
+        }
+        
+        $moves = $this-&gt;move_gen-&gt;generate_moves();
+        
+        if ($maximizing) {
+            $max_eval = PHP_INT_MIN;
+            foreach ($moves as $move) {
+                $this-&gt;board-&gt;make_move($move);
+                $eval = $this-&gt;minimax($depth - 1, $alpha, $beta, false);
+                $this-&gt;board-&gt;undo_move();
+                
+                $max_eval = max($max_eval, $eval);
+                $alpha = max($alpha, $eval);
+                if ($beta &lt;= $alpha) {
+                    break;
+                }
+            }
+            return $max_eval;
+        } else {
+            $min_eval = PHP_INT_MAX;
+            foreach ($moves as $move) {
+                $this-&gt;board-&gt;make_move($move);
+                $eval = $this-&gt;minimax($depth - 1, $alpha, $beta, true);
+                $this-&gt;board-&gt;undo_move();
+                
+                $min_eval = min($min_eval, $eval);
+                $beta = min($beta, $eval);
+                if ($beta &lt;= $alpha) {
+                    break;
+                }
+            }
+            return $min_eval;
+        }
+    }
+    
+    public function evaluate(): int {
+        $score = 0;
+        
+        // Material evaluation
+        for ($row = 0; $row &lt; 8; $row++) {
+            for ($col = 0; $col &lt; 8; $col++) {
+                [$piece, $color] = $this-&gt;board-&gt;get_piece($row, $col);
+                
+                if ($piece === CHESS_EMPTY) {
+                    continue;
+                }
+                
+                $value = CHESS_PIECE_VALUES[$piece];
+                
+                // Position bonuses
+                if ($piece === CHESS_PAWN) {
+                    // Pawn advancement bonus
+                    $rank_from_start = $color === CHESS_WHITE ? (6 - $row) : ($row - 1);
+                    $value += $rank_from_start * 5;
+                }
+                
+                // Center control bonus
+                if (($row === 3 || $row === 4) &amp;&amp; ($col === 3 || $col === 4)) {
+                    $value += 10;
+                }
+                
+                // Apply color
+                if ($color === $this-&gt;board-&gt;current_player) {
+                    $score += $value;
+                } else {
+                    $score -= $value;
+                }
+            }
+        }
+        
+        return $score;
+    }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_Board_php')">📄 lib/Board.php</button>
+<pre id="lib_Board_php" class="file-content" style="display:none;"><code class="language-php">&lt;?php
+
+namespace Chess;
+
+require_once __DIR__ . '/Types.php';
+
+/**
+ * Chess board representation
+ */
+class Board {
+    public array $squares;  // 8x8 array of [piece, color]
+    public int $current_player;
+    public array $castling_rights;  // [white_kingside, white_queenside, black_kingside, black_queenside]
+    public ?array $en_passant_target;  // [row, col] or null
+    public int $halfmove_clock;
+    public int $fullmove_number;
+    public array $move_history;
+    
+    public function __construct() {
+        $this-&gt;reset();
+    }
+    
+    public function reset(): void {
+        // Initialize board to starting position
+        $this-&gt;squares = array_fill(0, 8, array_fill(0, 8, [CHESS_EMPTY, CHESS_WHITE]));
+        
+        // Set up pieces
+        // Black pieces (row 0 and 1)
+        $back_rank = [CHESS_ROOK, CHESS_KNIGHT, CHESS_BISHOP, CHESS_QUEEN, CHESS_KING, CHESS_BISHOP, CHESS_KNIGHT, CHESS_ROOK];
+        for ($col = 0; $col &lt; 8; $col++) {
+            $this-&gt;squares[0][$col] = [$back_rank[$col], CHESS_BLACK];
+            $this-&gt;squares[1][$col] = [CHESS_PAWN, CHESS_BLACK];
+            $this-&gt;squares[6][$col] = [CHESS_PAWN, CHESS_WHITE];
+            $this-&gt;squares[7][$col] = [$back_rank[$col], CHESS_WHITE];
+        }
+        
+        $this-&gt;current_player = CHESS_WHITE;
+        $this-&gt;castling_rights = [true, true, true, true];  // KQkq
+        $this-&gt;en_passant_target = null;
+        $this-&gt;halfmove_clock = 0;
+        $this-&gt;fullmove_number = 1;
+        $this-&gt;move_history = [];
+    }
+    
+    public function display(): string {
+        $output = "\n  a b c d e f g h\n";
+        
+        for ($row = 0; $row &lt; 8; $row++) {
+            $output .= (8 - $row) . " ";
+            for ($col = 0; $col &lt; 8; $col++) {
+                [$piece, $color] = $this-&gt;squares[$row][$col];
+                $output .= $this-&gt;piece_to_char($piece, $color) . " ";
+            }
+            $output .= (8 - $row) . "\n";
+        }
+        
+        $output .= "  a b c d e f g h\n\n";
+        $output .= ($this-&gt;current_player === CHESS_WHITE ? "White" : "Black") . " to move\n";
+        
+        return $output;
+    }
+    
+    private function piece_to_char(int $piece, int $color): string {
+        if ($piece === CHESS_EMPTY) {
+            return '.';
+        }
+        
+        $chars = [
+            CHESS_PAWN =&gt; 'P',
+            CHESS_KNIGHT =&gt; 'N',
+            CHESS_BISHOP =&gt; 'B',
+            CHESS_ROOK =&gt; 'R',
+            CHESS_QUEEN =&gt; 'Q',
+            CHESS_KING =&gt; 'K'
+        ];
+        
+        $char = $chars[$piece] ?? '.';
+        return $color === CHESS_BLACK ? strtolower($char) : $char;
+    }
+    
+    public function get_piece(int $row, int $col): array {
+        if ($row &lt; 0 || $row &gt;= 8 || $col &lt; 0 || $col &gt;= 8) {
+            return [CHESS_EMPTY, CHESS_WHITE];
+        }
+        return $this-&gt;squares[$row][$col];
+    }
+    
+    public function set_piece(int $row, int $col, int $piece, int $color): void {
+        if ($row &gt;= 0 &amp;&amp; $row &lt; 8 &amp;&amp; $col &gt;= 0 &amp;&amp; $col &lt; 8) {
+            $this-&gt;squares[$row][$col] = [$piece, $color];
+        }
+    }
+    
+    public function make_move(Move $move): void {
+        // Store state for undo
+        $state = [
+            'move' =&gt; $move,
+            'captured_piece' =&gt; $this-&gt;squares[$move-&gt;to_row][$move-&gt;to_col],
+            'castling_rights' =&gt; $this-&gt;castling_rights,
+            'en_passant_target' =&gt; $this-&gt;en_passant_target,
+            'halfmove_clock' =&gt; $this-&gt;halfmove_clock,
+            'fullmove_number' =&gt; $this-&gt;fullmove_number
+        ];
+        
+        [$piece, $color] = $this-&gt;squares[$move-&gt;from_row][$move-&gt;from_col];
+        
+        // Handle en passant capture
+        if ($move-&gt;is_en_passant) {
+            $captured_row = $move-&gt;from_row;
+            $captured_col = $move-&gt;to_col;
+            $state['en_passant_captured'] = $this-&gt;squares[$captured_row][$captured_col];
+            $this-&gt;squares[$captured_row][$captured_col] = [CHESS_EMPTY, CHESS_WHITE];
+        }
+        
+        // Handle castling
+        if ($move-&gt;is_castling) {
+            $rook_from_col = $move-&gt;to_col &gt; $move-&gt;from_col ? 7 : 0;
+            $rook_to_col = $move-&gt;to_col &gt; $move-&gt;from_col ? 5 : 3;
+            $this-&gt;squares[$move-&gt;from_row][$rook_to_col] = $this-&gt;squares[$move-&gt;from_row][$rook_from_col];
+            $this-&gt;squares[$move-&gt;from_row][$rook_from_col] = [CHESS_EMPTY, CHESS_WHITE];
+        }
+        
+        // Move the piece
+        $this-&gt;squares[$move-&gt;to_row][$move-&gt;to_col] = [$piece, $color];
+        $this-&gt;squares[$move-&gt;from_row][$move-&gt;from_col] = [CHESS_EMPTY, CHESS_WHITE];
+        
+        // Handle promotion
+        if ($move-&gt;promotion !== null) {
+            $this-&gt;squares[$move-&gt;to_row][$move-&gt;to_col] = [$move-&gt;promotion, $color];
+        }
+        
+        // Update castling rights
+        if ($piece === CHESS_KING) {
+            if ($color === CHESS_WHITE) {
+                $this-&gt;castling_rights[0] = false;
+                $this-&gt;castling_rights[1] = false;
+            } else {
+                $this-&gt;castling_rights[2] = false;
+                $this-&gt;castling_rights[3] = false;
+            }
+        } elseif ($piece === CHESS_ROOK) {
+            if ($move-&gt;from_row === 7 &amp;&amp; $move-&gt;from_col === 7) {
+                $this-&gt;castling_rights[0] = false;  // White kingside
+            } elseif ($move-&gt;from_row === 7 &amp;&amp; $move-&gt;from_col === 0) {
+                $this-&gt;castling_rights[1] = false;  // White queenside
+            } elseif ($move-&gt;from_row === 0 &amp;&amp; $move-&gt;from_col === 7) {
+                $this-&gt;castling_rights[2] = false;  // Black kingside
+            } elseif ($move-&gt;from_row === 0 &amp;&amp; $move-&gt;from_col === 0) {
+                $this-&gt;castling_rights[3] = false;  // Black queenside
+            }
+        }
+        
+        // Set en passant target
+        $this-&gt;en_passant_target = null;
+        if ($piece === CHESS_PAWN &amp;&amp; abs($move-&gt;to_row - $move-&gt;from_row) === 2) {
+            $this-&gt;en_passant_target = [
+                intval(($move-&gt;from_row + $move-&gt;to_row) / 2),
+                $move-&gt;from_col
+            ];
+        }
+        
+        // Update clocks
+        if ($piece === CHESS_PAWN || $state['captured_piece'][0] !== CHESS_EMPTY) {
+            $this-&gt;halfmove_clock = 0;
+        } else {
+            $this-&gt;halfmove_clock++;
+        }
+        
+        if ($this-&gt;current_player === CHESS_BLACK) {
+            $this-&gt;fullmove_number++;
+        }
+        
+        $this-&gt;current_player = 1 - $this-&gt;current_player;
+        $this-&gt;move_history[] = $state;
+    }
+    
+    public function undo_move(): bool {
+        if (empty($this-&gt;move_history)) {
+            return false;
+        }
+        
+        $state = array_pop($this-&gt;move_history);
+        $move = $state['move'];
+        
+        // Restore board state
+        [$piece, $color] = $this-&gt;squares[$move-&gt;to_row][$move-&gt;to_col];
+        
+        // Handle promotion - restore pawn
+        if ($move-&gt;promotion !== null) {
+            $piece = CHESS_PAWN;
+        }
+        
+        // Move piece back
+        $this-&gt;squares[$move-&gt;from_row][$move-&gt;from_col] = [$piece, $color];
+        $this-&gt;squares[$move-&gt;to_row][$move-&gt;to_col] = $state['captured_piece'];
+        
+        // Restore en passant captured piece
+        if (isset($state['en_passant_captured'])) {
+            $captured_row = $move-&gt;from_row;
+            $captured_col = $move-&gt;to_col;
+            $this-&gt;squares[$captured_row][$captured_col] = $state['en_passant_captured'];
+        }
+        
+        // Restore castling rook
+        if ($move-&gt;is_castling) {
+            $rook_from_col = $move-&gt;to_col &gt; $move-&gt;from_col ? 7 : 0;
+            $rook_to_col = $move-&gt;to_col &gt; $move-&gt;from_col ? 5 : 3;
+            $this-&gt;squares[$move-&gt;from_row][$rook_from_col] = $this-&gt;squares[$move-&gt;from_row][$rook_to_col];
+            $this-&gt;squares[$move-&gt;from_row][$rook_to_col] = [CHESS_EMPTY, CHESS_WHITE];
+        }
+        
+        // Restore state
+        $this-&gt;castling_rights = $state['castling_rights'];
+        $this-&gt;en_passant_target = $state['en_passant_target'];
+        $this-&gt;halfmove_clock = $state['halfmove_clock'];
+        $this-&gt;fullmove_number = $state['fullmove_number'];
+        $this-&gt;current_player = 1 - $this-&gt;current_player;
+        
+        return true;
+    }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_FenParser_php')">📄 lib/FenParser.php</button>
+<pre id="lib_FenParser_php" class="file-content" style="display:none;"><code class="language-php">&lt;?php
+
+namespace Chess;
+
+require_once __DIR__ . '/Types.php';
+require_once __DIR__ . '/Board.php';
+
+/**
+ * FEN (Forsyth-Edwards Notation) parser and exporter
+ */
+class FenParser {
+    private Board $board;
+    
+    public function __construct(Board $board) {
+        $this-&gt;board = $board;
+    }
+    
+    public function load_fen(string $fen): bool {
+        $parts = preg_split('/\s+/', trim($fen));
+        
+        if (count($parts) &lt; 4) {
+            return false;
+        }
+        
+        // Parse board position
+        $rows = explode('/', $parts[0]);
+        if (count($rows) !== 8) {
+            return false;
+        }
+        
+        for ($row = 0; $row &lt; 8; $row++) {
+            $col = 0;
+            $row_str = $rows[$row];
+            
+            for ($i = 0; $i &lt; strlen($row_str); $i++) {
+                $char = $row_str[$i];
+                
+                if (is_numeric($char)) {
+                    // Empty squares
+                    $empty_count = intval($char);
+                    for ($j = 0; $j &lt; $empty_count; $j++) {
+                        if ($col &lt; 8) {
+                            $this-&gt;board-&gt;set_piece($row, $col, CHESS_EMPTY, CHESS_WHITE);
+                            $col++;
+                        }
+                    }
+                } else {
+                    // Piece
+                    $piece = $this-&gt;char_to_piece($char);
+                    $color = ctype_upper($char) ? CHESS_WHITE : CHESS_BLACK;
+                    if ($col &lt; 8 &amp;&amp; $piece !== null) {
+                        $this-&gt;board-&gt;set_piece($row, $col, $piece, $color);
+                        $col++;
+                    }
+                }
+            }
+        }
+        
+        // Parse active color
+        $this-&gt;board-&gt;current_player = $parts[1] === 'w' ? CHESS_WHITE : CHESS_BLACK;
+        
+        // Parse castling rights
+        $this-&gt;board-&gt;castling_rights = [false, false, false, false];
+        if ($parts[2] !== '-') {
+            for ($i = 0; $i &lt; strlen($parts[2]); $i++) {
+                $char = $parts[2][$i];
+                switch ($char) {
+                    case 'K':
+                        $this-&gt;board-&gt;castling_rights[0] = true;
+                        break;
+                    case 'Q':
+                        $this-&gt;board-&gt;castling_rights[1] = true;
+                        break;
+                    case 'k':
+                        $this-&gt;board-&gt;castling_rights[2] = true;
+                        break;
+                    case 'q':
+                        $this-&gt;board-&gt;castling_rights[3] = true;
+                        break;
+                }
+            }
+        }
+        
+        // Parse en passant target
+        $this-&gt;board-&gt;en_passant_target = null;
+        if ($parts[3] !== '-') {
+            $col = ord(strtolower($parts[3][0])) - ord('a');
+            $row = 8 - intval($parts[3][1]);
+            if ($row &gt;= 0 &amp;&amp; $row &lt; 8 &amp;&amp; $col &gt;= 0 &amp;&amp; $col &lt; 8) {
+                $this-&gt;board-&gt;en_passant_target = [$row, $col];
+            }
+        }
+        
+        // Parse halfmove clock
+        if (count($parts) &gt; 4) {
+            $this-&gt;board-&gt;halfmove_clock = intval($parts[4]);
+        } else {
+            $this-&gt;board-&gt;halfmove_clock = 0;
+        }
+        
+        // Parse fullmove number
+        if (count($parts) &gt; 5) {
+            $this-&gt;board-&gt;fullmove_number = intval($parts[5]);
+        } else {
+            $this-&gt;board-&gt;fullmove_number = 1;
+        }
+        
+        return true;
+    }
+    
+    public function export_fen(): string {
+        $fen = '';
+        
+        // Board position
+        for ($row = 0; $row &lt; 8; $row++) {
+            $empty_count = 0;
+            for ($col = 0; $col &lt; 8; $col++) {
+                [$piece, $color] = $this-&gt;board-&gt;get_piece($row, $col);
+                
+                if ($piece === CHESS_EMPTY) {
+                    $empty_count++;
+                } else {
+                    if ($empty_count &gt; 0) {
+                        $fen .= $empty_count;
+                        $empty_count = 0;
+                    }
+                    $char = $this-&gt;piece_to_char($piece);
+                    $fen .= $color === CHESS_BLACK ? strtolower($char) : $char;
+                }
+            }
+            
+            if ($empty_count &gt; 0) {
+                $fen .= $empty_count;
+            }
+            
+            if ($row &lt; 7) {
+                $fen .= '/';
+            }
+        }
+        
+        // Active color
+        $fen .= ' ' . ($this-&gt;board-&gt;current_player === CHESS_WHITE ? 'w' : 'b');
+        
+        // Castling rights
+        $castling = '';
+        if ($this-&gt;board-&gt;castling_rights[0]) $castling .= 'K';
+        if ($this-&gt;board-&gt;castling_rights[1]) $castling .= 'Q';
+        if ($this-&gt;board-&gt;castling_rights[2]) $castling .= 'k';
+        if ($this-&gt;board-&gt;castling_rights[3]) $castling .= 'q';
+        $fen .= ' ' . ($castling === '' ? '-' : $castling);
+        
+        // En passant target
+        if ($this-&gt;board-&gt;en_passant_target !== null) {
+            [$row, $col] = $this-&gt;board-&gt;en_passant_target;
+            $fen .= ' ' . chr(ord('a') + $col) . (8 - $row);
+        } else {
+            $fen .= ' -';
+        }
+        
+        // Halfmove clock and fullmove number
+        $fen .= ' ' . $this-&gt;board-&gt;halfmove_clock;
+        $fen .= ' ' . $this-&gt;board-&gt;fullmove_number;
+        
+        return $fen;
+    }
+    
+    private function char_to_piece(string $char): ?int {
+        return match(strtoupper($char)) {
+            'P' =&gt; CHESS_PAWN,
+            'N' =&gt; CHESS_KNIGHT,
+            'B' =&gt; CHESS_BISHOP,
+            'R' =&gt; CHESS_ROOK,
+            'Q' =&gt; CHESS_QUEEN,
+            'K' =&gt; CHESS_KING,
+            default =&gt; null
+        };
+    }
+    
+    private function piece_to_char(int $piece): string {
+        return match($piece) {
+            CHESS_PAWN =&gt; 'P',
+            CHESS_KNIGHT =&gt; 'N',
+            CHESS_BISHOP =&gt; 'B',
+            CHESS_ROOK =&gt; 'R',
+            CHESS_QUEEN =&gt; 'Q',
+            CHESS_KING =&gt; 'K',
+            default =&gt; ''
+        };
+    }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_MoveGenerator_php')">📄 lib/MoveGenerator.php</button>
+<pre id="lib_MoveGenerator_php" class="file-content" style="display:none;"><code class="language-php">&lt;?php
+
+namespace Chess;
+
+require_once __DIR__ . '/Types.php';
+require_once __DIR__ . '/Board.php';
+
+/**
+ * Move generation and validation
+ */
+class MoveGenerator {
+    private Board $board;
+    
+    public function __construct(Board $board) {
+        $this-&gt;board = $board;
+    }
+    
+    public function generate_moves(): array {
+        $moves = [];
+        $color = $this-&gt;board-&gt;current_player;
+        
+        for ($row = 0; $row &lt; 8; $row++) {
+            for ($col = 0; $col &lt; 8; $col++) {
+                [$piece, $piece_color] = $this-&gt;board-&gt;get_piece($row, $col);
+                if ($piece !== CHESS_EMPTY &amp;&amp; $piece_color === $color) {
+                    $moves = array_merge($moves, $this-&gt;generate_piece_moves($row, $col, $piece));
+                }
+            }
+        }
+        
+        return array_filter($moves, fn($move) =&gt; $this-&gt;is_legal($move));
+    }
+    
+    private function generate_piece_moves(int $row, int $col, int $piece): array {
+        return match($piece) {
+            CHESS_PAWN =&gt; $this-&gt;generate_pawn_moves($row, $col),
+            CHESS_KNIGHT =&gt; $this-&gt;generate_knight_moves($row, $col),
+            CHESS_BISHOP =&gt; $this-&gt;generate_bishop_moves($row, $col),
+            CHESS_ROOK =&gt; $this-&gt;generate_rook_moves($row, $col),
+            CHESS_QUEEN =&gt; $this-&gt;generate_queen_moves($row, $col),
+            CHESS_KING =&gt; $this-&gt;generate_king_moves($row, $col),
+            default =&gt; []
+        };
+    }
+    
+    private function generate_pawn_moves(int $row, int $col): array {
+        $moves = [];
+        $color = $this-&gt;board-&gt;current_player;
+        $direction = $color === CHESS_WHITE ? -1 : 1;
+        $start_row = $color === CHESS_WHITE ? 6 : 1;
+        $promotion_row = $color === CHESS_WHITE ? 0 : 7;
+        
+        // Forward move
+        $new_row = $row + $direction;
+        if ($new_row &gt;= 0 &amp;&amp; $new_row &lt; 8) {
+            [$target_piece, $_] = $this-&gt;board-&gt;get_piece($new_row, $col);
+            if ($target_piece === CHESS_EMPTY) {
+                if ($new_row === $promotion_row) {
+                    // Promotion
+                    foreach ([CHESS_QUEEN, CHESS_ROOK, CHESS_BISHOP, CHESS_KNIGHT] as $promo) {
+                        $moves[] = new Move($row, $col, $new_row, $col, $promo);
+                    }
+                } else {
+                    $moves[] = new Move($row, $col, $new_row, $col);
+                }
+                
+                // Double move from start
+                if ($row === $start_row) {
+                    $double_row = $row + 2 * $direction;
+                    [$double_piece, $_] = $this-&gt;board-&gt;get_piece($double_row, $col);
+                    if ($double_piece === CHESS_EMPTY) {
+                        $moves[] = new Move($row, $col, $double_row, $col);
+                    }
+                }
+            }
+        }
+        
+        // Captures
+        foreach ([-1, 1] as $dcol) {
+            $new_col = $col + $dcol;
+            if ($new_row &gt;= 0 &amp;&amp; $new_row &lt; 8 &amp;&amp; $new_col &gt;= 0 &amp;&amp; $new_col &lt; 8) {
+                [$target_piece, $target_color] = $this-&gt;board-&gt;get_piece($new_row, $new_col);
+                
+                // Regular capture
+                if ($target_piece !== CHESS_EMPTY &amp;&amp; $target_color !== $color) {
+                    if ($new_row === $promotion_row) {
+                        foreach ([CHESS_QUEEN, CHESS_ROOK, CHESS_BISHOP, CHESS_KNIGHT] as $promo) {
+                            $moves[] = new Move($row, $col, $new_row, $new_col, $promo);
+                        }
+                    } else {
+                        $moves[] = new Move($row, $col, $new_row, $new_col);
+                    }
+                }
+                
+                // En passant
+                if ($this-&gt;board-&gt;en_passant_target !== null) {
+                    [$ep_row, $ep_col] = $this-&gt;board-&gt;en_passant_target;
+                    if ($new_row === $ep_row &amp;&amp; $new_col === $ep_col) {
+                        $moves[] = new Move($row, $col, $new_row, $new_col, null, false, true);
+                    }
+                }
+            }
+        }
+        
+        return $moves;
+    }
+    
+    private function generate_knight_moves(int $row, int $col): array {
+        $moves = [];
+        $deltas = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+        
+        foreach ($deltas as [$drow, $dcol]) {
+            $new_row = $row + $drow;
+            $new_col = $col + $dcol;
+            if ($new_row &gt;= 0 &amp;&amp; $new_row &lt; 8 &amp;&amp; $new_col &gt;= 0 &amp;&amp; $new_col &lt; 8) {
+                [$target_piece, $target_color] = $this-&gt;board-&gt;get_piece($new_row, $new_col);
+                if ($target_piece === CHESS_EMPTY || $target_color !== $this-&gt;board-&gt;current_player) {
+                    $moves[] = new Move($row, $col, $new_row, $new_col);
+                }
+            }
+        }
+        
+        return $moves;
+    }
+    
+    private function generate_sliding_moves(int $row, int $col, array $directions): array {
+        $moves = [];
+        
+        foreach ($directions as [$drow, $dcol]) {
+            $new_row = $row + $drow;
+            $new_col = $col + $dcol;
+            
+            while ($new_row &gt;= 0 &amp;&amp; $new_row &lt; 8 &amp;&amp; $new_col &gt;= 0 &amp;&amp; $new_col &lt; 8) {
+                [$target_piece, $target_color] = $this-&gt;board-&gt;get_piece($new_row, $new_col);
+                
+                if ($target_piece === CHESS_EMPTY) {
+                    $moves[] = new Move($row, $col, $new_row, $new_col);
+                } else {
+                    if ($target_color !== $this-&gt;board-&gt;current_player) {
+                        $moves[] = new Move($row, $col, $new_row, $new_col);
+                    }
+                    break;
+                }
+                
+                $new_row += $drow;
+                $new_col += $dcol;
+            }
+        }
+        
+        return $moves;
+    }
+    
+    private function generate_bishop_moves(int $row, int $col): array {
+        return $this-&gt;generate_sliding_moves($row, $col, [[-1, -1], [-1, 1], [1, -1], [1, 1]]);
+    }
+    
+    private function generate_rook_moves(int $row, int $col): array {
+        return $this-&gt;generate_sliding_moves($row, $col, [[-1, 0], [1, 0], [0, -1], [0, 1]]);
+    }
+    
+    private function generate_queen_moves(int $row, int $col): array {
+        return array_merge(
+            $this-&gt;generate_rook_moves($row, $col),
+            $this-&gt;generate_bishop_moves($row, $col)
+        );
+    }
+    
+    private function generate_king_moves(int $row, int $col): array {
+        $moves = [];
+        $deltas = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+        
+        foreach ($deltas as [$drow, $dcol]) {
+            $new_row = $row + $drow;
+            $new_col = $col + $dcol;
+            if ($new_row &gt;= 0 &amp;&amp; $new_row &lt; 8 &amp;&amp; $new_col &gt;= 0 &amp;&amp; $new_col &lt; 8) {
+                [$target_piece, $target_color] = $this-&gt;board-&gt;get_piece($new_row, $new_col);
+                if ($target_piece === CHESS_EMPTY || $target_color !== $this-&gt;board-&gt;current_player) {
+                    $moves[] = new Move($row, $col, $new_row, $new_col);
+                }
+            }
+        }
+        
+        // Castling
+        $color = $this-&gt;board-&gt;current_player;
+        $base_row = $color === CHESS_WHITE ? 7 : 0;
+        
+        if ($row === $base_row &amp;&amp; $col === 4) {
+            // Kingside castling
+            $can_castle_kingside = $color === CHESS_WHITE ? $this-&gt;board-&gt;castling_rights[0] : $this-&gt;board-&gt;castling_rights[2];
+            if ($can_castle_kingside) {
+                [$r1, $_] = $this-&gt;board-&gt;get_piece($base_row, 5);
+                [$r2, $_] = $this-&gt;board-&gt;get_piece($base_row, 6);
+                if ($r1 === CHESS_EMPTY &amp;&amp; $r2 === CHESS_EMPTY) {
+                    if (!$this-&gt;is_square_attacked($base_row, 4, 1 - $color) &amp;&amp;
+                        !$this-&gt;is_square_attacked($base_row, 5, 1 - $color) &amp;&amp;
+                        !$this-&gt;is_square_attacked($base_row, 6, 1 - $color)) {
+                        $moves[] = new Move($row, $col, $base_row, 6, null, true);
+                    }
+                }
+            }
+            
+            // Queenside castling
+            $can_castle_queenside = $color === CHESS_WHITE ? $this-&gt;board-&gt;castling_rights[1] : $this-&gt;board-&gt;castling_rights[3];
+            if ($can_castle_queenside) {
+                [$r1, $_] = $this-&gt;board-&gt;get_piece($base_row, 1);
+                [$r2, $_] = $this-&gt;board-&gt;get_piece($base_row, 2);
+                [$r3, $_] = $this-&gt;board-&gt;get_piece($base_row, 3);
+                if ($r1 === CHESS_EMPTY &amp;&amp; $r2 === CHESS_EMPTY &amp;&amp; $r3 === CHESS_EMPTY) {
+                    if (!$this-&gt;is_square_attacked($base_row, 4, 1 - $color) &amp;&amp;
+                        !$this-&gt;is_square_attacked($base_row, 3, 1 - $color) &amp;&amp;
+                        !$this-&gt;is_square_attacked($base_row, 2, 1 - $color)) {
+                        $moves[] = new Move($row, $col, $base_row, 2, null, true);
+                    }
+                }
+            }
+        }
+        
+        return $moves;
+    }
+    
+    public function is_square_attacked(int $row, int $col, int $by_color): bool {
+        // Check if square is attacked by any piece of given color
+        for ($r = 0; $r &lt; 8; $r++) {
+            for ($c = 0; $c &lt; 8; $c++) {
+                [$piece, $piece_color] = $this-&gt;board-&gt;get_piece($r, $c);
+                if ($piece !== CHESS_EMPTY &amp;&amp; $piece_color === $by_color) {
+                    if ($this-&gt;can_piece_attack($r, $c, $piece, $row, $col)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    private function can_piece_attack(int $from_row, int $from_col, int $piece, int $to_row, int $to_col): bool {
+        $drow = $to_row - $from_row;
+        $dcol = $to_col - $from_col;
+        
+        if ($piece === CHESS_PAWN) {
+            $direction = $this-&gt;board-&gt;get_piece($from_row, $from_col)[1] === CHESS_WHITE ? -1 : 1;
+            return $drow === $direction &amp;&amp; abs($dcol) === 1;
+        } elseif ($piece === CHESS_KNIGHT) {
+            return (abs($drow) === 2 &amp;&amp; abs($dcol) === 1) || (abs($drow) === 1 &amp;&amp; abs($dcol) === 2);
+        } elseif ($piece === CHESS_KING) {
+            return abs($drow) &lt;= 1 &amp;&amp; abs($dcol) &lt;= 1;
+        }
+        
+        // Sliding pieces
+        if ($piece === CHESS_BISHOP || $piece === CHESS_QUEEN) {
+            if (abs($drow) === abs($dcol) &amp;&amp; $drow !== 0) {
+                return $this-&gt;is_path_clear($from_row, $from_col, $to_row, $to_col);
+            }
+        }
+        
+        if ($piece === CHESS_ROOK || $piece === CHESS_QUEEN) {
+            if (($drow === 0 &amp;&amp; $dcol !== 0) || ($drow !== 0 &amp;&amp; $dcol === 0)) {
+                return $this-&gt;is_path_clear($from_row, $from_col, $to_row, $to_col);
+            }
+        }
+        
+        return false;
+    }
+    
+    private function is_path_clear(int $from_row, int $from_col, int $to_row, int $to_col): bool {
+        $drow = $to_row &lt;=&gt; $from_row;
+        $dcol = $to_col &lt;=&gt; $from_col;
+        
+        $row = $from_row + $drow;
+        $col = $from_col + $dcol;
+        
+        while ($row !== $to_row || $col !== $to_col) {
+            [$piece, $_] = $this-&gt;board-&gt;get_piece($row, $col);
+            if ($piece !== CHESS_EMPTY) {
+                return false;
+            }
+            $row += $drow;
+            $col += $dcol;
+        }
+        
+        return true;
+    }
+    
+    private function is_legal(Move $move): bool {
+        // Make the move temporarily
+        $this-&gt;board-&gt;make_move($move);
+        
+        // Find king position
+        $king_row = -1;
+        $king_col = -1;
+        $king_color = 1 - $this-&gt;board-&gt;current_player;
+        
+        for ($row = 0; $row &lt; 8; $row++) {
+            for ($col = 0; $col &lt; 8; $col++) {
+                [$piece, $color] = $this-&gt;board-&gt;get_piece($row, $col);
+                if ($piece === CHESS_KING &amp;&amp; $color === $king_color) {
+                    $king_row = $row;
+                    $king_col = $col;
+                    break 2;
+                }
+            }
+        }
+        
+        // Check if king is in check
+        $is_legal = !$this-&gt;is_square_attacked($king_row, $king_col, $this-&gt;board-&gt;current_player);
+        
+        // Undo the move
+        $this-&gt;board-&gt;undo_move();
+        
+        return $is_legal;
+    }
+    
+    public function parse_move(string $move_str): ?Move {
+        $move_str = trim($move_str);
+        
+        if (strlen($move_str) &lt; 4) {
+            return null;
+        }
+        
+        $from_col = ord(strtolower($move_str[0])) - ord('a');
+        $from_row = 8 - intval($move_str[1]);
+        $to_col = ord(strtolower($move_str[2])) - ord('a');
+        $to_row = 8 - intval($move_str[3]);
+        
+        if ($from_row &lt; 0 || $from_row &gt;= 8 || $from_col &lt; 0 || $from_col &gt;= 8 ||
+            $to_row &lt; 0 || $to_row &gt;= 8 || $to_col &lt; 0 || $to_col &gt;= 8) {
+            return null;
+        }
+        
+        // Check for promotion
+        $promotion = null;
+        if (strlen($move_str) &gt; 4) {
+            $promo_char = strtoupper($move_str[4]);
+            $promotion = match($promo_char) {
+                'Q' =&gt; CHESS_QUEEN,
+                'R' =&gt; CHESS_ROOK,
+                'B' =&gt; CHESS_BISHOP,
+                'N' =&gt; CHESS_KNIGHT,
+                default =&gt; null
+            };
+        }
+        
+        // Auto-promote to queen if pawn reaches last rank
+        [$piece, $_] = $this-&gt;board-&gt;get_piece($from_row, $from_col);
+        if ($piece === CHESS_PAWN &amp;&amp; ($to_row === 0 || $to_row === 7) &amp;&amp; $promotion === null) {
+            $promotion = CHESS_QUEEN;
+        }
+        
+        // Check for castling
+        $is_castling = false;
+        if ($piece === CHESS_KING &amp;&amp; abs($to_col - $from_col) === 2) {
+            $is_castling = true;
+        }
+        
+        // Check for en passant
+        $is_en_passant = false;
+        if ($piece === CHESS_PAWN &amp;&amp; $this-&gt;board-&gt;en_passant_target !== null) {
+            [$ep_row, $ep_col] = $this-&gt;board-&gt;en_passant_target;
+            if ($to_row === $ep_row &amp;&amp; $to_col === $ep_col) {
+                $is_en_passant = true;
+            }
+        }
+        
+        return new Move($from_row, $from_col, $to_row, $to_col, $promotion, $is_castling, $is_en_passant);
+    }
+    
+    public function is_checkmate(): bool {
+        return $this-&gt;is_in_check() &amp;&amp; empty($this-&gt;generate_moves());
+    }
+    
+    public function is_stalemate(): bool {
+        return !$this-&gt;is_in_check() &amp;&amp; empty($this-&gt;generate_moves());
+    }
+    
+    public function is_in_check(): bool {
+        // Find king position
+        for ($row = 0; $row &lt; 8; $row++) {
+            for ($col = 0; $col &lt; 8; $col++) {
+                [$piece, $color] = $this-&gt;board-&gt;get_piece($row, $col);
+                if ($piece === CHESS_KING &amp;&amp; $color === $this-&gt;board-&gt;current_player) {
+                    return $this-&gt;is_square_attacked($row, $col, 1 - $this-&gt;board-&gt;current_player);
+                }
+            }
+        }
+        return false;
+    }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_Perft_php')">📄 lib/Perft.php</button>
+<pre id="lib_Perft_php" class="file-content" style="display:none;"><code class="language-php">&lt;?php
+
+namespace Chess;
+
+require_once __DIR__ . '/Board.php';
+require_once __DIR__ . '/MoveGenerator.php';
+
+/**
+ * Performance test (perft) - counts leaf nodes at a given depth
+ */
+class Perft {
+    private Board $board;
+    private MoveGenerator $move_gen;
+    
+    public function __construct(Board $board, MoveGenerator $move_gen) {
+        $this-&gt;board = $board;
+        $this-&gt;move_gen = $move_gen;
+    }
+    
+    public function perft(int $depth): int {
+        if ($depth === 0) {
+            return 1;
+        }
+        
+        $moves = $this-&gt;move_gen-&gt;generate_moves();
+        
+        if ($depth === 1) {
+            return count($moves);
+        }
+        
+        $nodes = 0;
+        foreach ($moves as $move) {
+            $this-&gt;board-&gt;make_move($move);
+            $nodes += $this-&gt;perft($depth - 1);
+            $this-&gt;board-&gt;undo_move();
+        }
+        
+        return $nodes;
+    }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_Types_php')">📄 lib/Types.php</button>
+<pre id="lib_Types_php" class="file-content" style="display:none;"><code class="language-php">&lt;?php
+
+namespace Chess;
+
+require_once __DIR__ . '/constants.php';
+
+/**
+ * Move structure
+ */
+class Move {
+    public int $from_row;
+    public int $from_col;
+    public int $to_row;
+    public int $to_col;
+    public ?int $promotion;
+    public bool $is_castling;
+    public bool $is_en_passant;
+    
+    public function __construct(
+        int $from_row,
+        int $from_col,
+        int $to_row,
+        int $to_col,
+        ?int $promotion = null,
+        bool $is_castling = false,
+        bool $is_en_passant = false
+    ) {
+        $this-&gt;from_row = $from_row;
+        $this-&gt;from_col = $from_col;
+        $this-&gt;to_row = $to_row;
+        $this-&gt;to_col = $to_col;
+        $this-&gt;promotion = $promotion;
+        $this-&gt;is_castling = $is_castling;
+        $this-&gt;is_en_passant = $is_en_passant;
+    }
+    
+    public function to_string(): string {
+        $from = chr(ord('a') + $this-&gt;from_col) . (8 - $this-&gt;from_row);
+        $to = chr(ord('a') + $this-&gt;to_col) . (8 - $this-&gt;to_row);
+        $promo = $this-&gt;promotion ? $this-&gt;piece_to_char($this-&gt;promotion) : '';
+        return $from . $to . $promo;
+    }
+    
+    private function piece_to_char(int $piece): string {
+        return match($piece) {
+            CHESS_QUEEN =&gt; 'Q',
+            CHESS_ROOK =&gt; 'R',
+            CHESS_BISHOP =&gt; 'B',
+            CHESS_KNIGHT =&gt; 'N',
+            default =&gt; ''
+        };
+    }
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('lib_constants_php')">📄 lib/constants.php</button>
+<pre id="lib_constants_php" class="file-content" style="display:none;"><code class="language-php">&lt;?php
+
+/**
+ * Global constants for chess engine
+ * These are defined in the global namespace so they can be used everywhere
+ */
+
+/**
+ * Piece types
+ */
+define('CHESS_EMPTY', 0);
+define('CHESS_PAWN', 1);
+define('CHESS_KNIGHT', 2);
+define('CHESS_BISHOP', 3);
+define('CHESS_ROOK', 4);
+define('CHESS_QUEEN', 5);
+define('CHESS_KING', 6);
+
+/**
+ * Colors
+ */
+define('CHESS_WHITE', 0);
+define('CHESS_BLACK', 1);
+
+/**
+ * Piece values for evaluation
+ */
+define('CHESS_PIECE_VALUES', [
+    CHESS_EMPTY =&gt; 0,
+    CHESS_PAWN =&gt; 100,
+    CHESS_KNIGHT =&gt; 320,
+    CHESS_BISHOP =&gt; 330,
+    CHESS_ROOK =&gt; 500,
+    CHESS_QUEEN =&gt; 900,
+    CHESS_KING =&gt; 20000,
+]);
+</code></pre>
+</div>
+</div>
+
+<script>
+function toggleFile(id) {
+    var content = document.getElementById(id);
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
+    } else {
+        content.style.display = 'none';
+    }
+}
+</script>
+
+    </main>
+    <footer>
+        <p>Generated from benchmark data. All implementations tested via Docker for consistency.</p>
+        <p><a href="https://github.com/evaisse/the-great-analysis-challenge">View on GitHub</a></p>
+    </footer>
+</body>
+</html>

@@ -186,10 +186,20 @@ def update_readme() -> bool:
             language = impl_data.get('language', '').lower()
             combined_data[language] = impl_data
         
-        # Add any missing languages from verification
-        all_languages = ['crystal', 'dart', 'elm', 'gleam', 'go', 'haskell', 'julia', 
-                        'kotlin', 'mojo', 'nim', 'python', 'rescript', 'ruby', 'rust', 
-                        'swift', 'typescript', 'zig']
+        # Dynamically discover all implementations from directory
+        import os
+        impl_dir = "implementations"
+        all_languages = []
+        if os.path.exists(impl_dir):
+            all_languages = sorted([
+                name.lower() for name in os.listdir(impl_dir)
+                if os.path.isdir(os.path.join(impl_dir, name))
+            ])
+        else:
+            # Fallback to known languages if implementations directory not found
+            all_languages = ['crystal', 'dart', 'elm', 'gleam', 'go', 'haskell', 'julia', 
+                            'kotlin', 'lua', 'mojo', 'nim', 'python', 'rescript', 'ruby', 'rust', 
+                            'swift', 'typescript', 'zig']
         
         for lang in all_languages:
             if lang not in combined_data:
