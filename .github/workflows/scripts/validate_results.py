@@ -77,11 +77,13 @@ def validate_result_json(result_file: Path, language: str) -> Tuple[bool, List[s
             issues.append("Features list is empty")
         
         # Check for LOC data if available
+        # Note: This is flagged as a potential issue (warning), not a critical error
+        # Validation continues even if LOC is 0, as it may be legitimate
         loc_data = data.get('loc', {})
         if loc_data:
             loc_count = loc_data.get('loc', 0)
             if loc_count == 0:
-                issues.append("Lines of code count is 0 - may indicate counting error")
+                issues.append("Lines of code count is 0 - may indicate counting error (warning)")
         
     except json.JSONDecodeError as e:
         issues.append(f"Invalid JSON format: {e}")
