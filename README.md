@@ -40,6 +40,8 @@ All implementations have complete feature parity:
 
 _All implementations tested via Docker for consistency. Times in milliseconds, measured on the same github actions vm._
 
+**Language Statistics**: Language popularity rankings from [TIOBE Index](https://www.tiobe.com/tiobe-index/) and GitHub repository counts from [GitHub Ranking](https://github.com/EvanLi/Github-Ranking). Data is stored in [`language_statistics.yaml`](./language_statistics.yaml) and updated monthly.
+
 ## 🚀 Quick Start
 
 ```bash
