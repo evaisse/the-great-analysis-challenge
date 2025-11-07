@@ -148,6 +148,13 @@ jobs:
       - name: Combine benchmark results
         run: ./workflow combine-results
 
+      - name: Validate benchmark results
+        run: ./workflow validate-results
+        continue-on-error: true
+
+      - name: Validate website metadata
+        run: ./workflow validate-website-metadata
+
       - name: Update README status table
         id: update
         run: ./workflow update-readme

@@ -11,6 +11,8 @@ Commands:
     generate-matrix         - Generate GitHub matrix for parallel jobs
     run-benchmark          - Run benchmark for a specific implementation
     verify-implementations - Run structure verification and count results
+    validate-results       - Validate benchmark result JSON files
+    validate-website-metadata - Validate website metadata completeness
     combine-results        - Combine benchmark artifacts
     update-readme          - Update README status table
     create-release         - Create and tag a release
@@ -38,6 +40,8 @@ try:
     from generate_matrix import main as generate_matrix_main
     from run_benchmark import main as run_benchmark_main
     from verify_implementations import main as verify_implementations_main
+    from validate_results import main as validate_results_main
+    from validate_website_metadata import main as validate_website_metadata_main
     from combine_results import main as combine_results_main
     from update_readme import main as update_readme_main
     from get_test_config import main as get_test_config_main
@@ -870,6 +874,13 @@ def main():
     # verify-implementations command
     subparsers.add_parser('verify-implementations', help='Run structure verification')
     
+    # validate-results command
+    validate_results_parser = subparsers.add_parser('validate-results', help='Validate benchmark result JSON files')
+    validate_results_parser.add_argument('--benchmark-dir', default='benchmark_reports', help='Benchmark directory')
+    
+    # validate-website-metadata command
+    subparsers.add_parser('validate-website-metadata', help='Validate website metadata completeness')
+    
     # combine-results command
     subparsers.add_parser('combine-results', help='Combine benchmark artifacts')
     
@@ -956,6 +967,20 @@ def main():
                 verify_implementations_main(args)
             except NameError:
                 tool.verify_implementations()
+        
+        elif args.command == 'validate-results':
+            try:
+                return validate_results_main(args)
+            except NameError:
+                print("Error: validate_results module not found")
+                return 1
+        
+        elif args.command == 'validate-website-metadata':
+            try:
+                return validate_website_metadata_main(args)
+            except NameError:
+                print("Error: validate_website_metadata module not found")
+                return 1
         
         elif args.command == 'combine-results':
             try:
