@@ -31,12 +31,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PyGithub openai
+          pip install PyGithub
 
-      - name: Triage issue with Copilot
+      - name: Triage issue with AI assistance
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python3 .github/workflows/scripts/triage_issue.py \
             --repo "${{ github.repository }}" \
