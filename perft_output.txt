@@ -1,7 +1,0 @@
-cache dir does not exist - create /app/node_modules/imba/.imba-cache
-Chess Engine in Imba
-Type 'help' for available commands
-
-Running perft(3)...
-Nodes: 8890 (time: 1297ms)
-Goodbye!
