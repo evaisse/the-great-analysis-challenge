@@ -195,11 +195,13 @@ def update_readme() -> bool:
                 name.lower() for name in os.listdir(impl_dir)
                 if os.path.isdir(os.path.join(impl_dir, name))
             ])
-        else:
-            # Fallback to known languages if implementations directory not found
-            all_languages = ['crystal', 'dart', 'elm', 'gleam', 'go', 'haskell', 'julia', 
-                            'kotlin', 'lua', 'mojo', 'nim', 'python', 'rescript', 'ruby', 'rust', 
-                            'swift', 'typescript', 'zig']
+        
+        # If discovery fails or directory is empty, we have a critical error
+        if not all_languages:
+            print("❌ Error: Could not discover any implementations")
+            print(f"   Check that {impl_dir}/ directory exists and contains implementation subdirectories")
+            # Don't use fallback - this indicates a real problem
+            return False
         
         for lang in all_languages:
             if lang not in combined_data:
