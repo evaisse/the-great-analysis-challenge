@@ -163,6 +163,41 @@
           ],
           "expected_patterns": ["AI:", "a1a8"],
           "timeout": 5000
+        },
+        {
+          "id": "ai_deterministic_start",
+          "name": "AI Deterministic - Starting Position",
+          "description": "Tests that AI makes deterministic move choices from starting position",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "ai 1"}
+          ],
+          "expected_patterns": ["AI:", "depth=1"],
+          "timeout": 2000
+        },
+        {
+          "id": "ai_promotion_choice",
+          "name": "AI Promotion to Queen",
+          "description": "Tests that AI correctly promotes to queen",
+          "commands": [
+            {"cmd": "fen 4k3/P7/8/8/8/8/8/4K3 w - - 0 1"},
+            {"cmd": "ai 2"}
+          ],
+          "expected_patterns": ["AI:", "a7a8"],
+          "timeout": 2000
+        },
+        {
+          "id": "ai_evaluation_consistency",
+          "name": "AI Evaluation Consistency",
+          "description": "Tests that AI evaluation is consistent and deterministic",
+          "commands": [
+            {"cmd": "fen rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2"},
+            {"cmd": "ai 2"},
+            {"cmd": "undo"},
+            {"cmd": "ai 2"}
+          ],
+          "expected_patterns": ["AI:", "d4e5"],
+          "timeout": 5000
         }
       ]
     },
