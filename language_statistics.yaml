@@ -1,0 +1,187 @@
+# Language Statistics - TIOBE Index and GitHub Repository Data
+# Last Updated: 2025-11-07
+# 
+# Sources:
+# - TIOBE Index: https://www.tiobe.com/tiobe-index/
+# - GitHub Ranking: https://github.com/EvanLi/Github-Ranking
+#
+# This file is updated manually when data is older than one month.
+# Data snapshot represents November 2025 rankings.
+
+metadata:
+  last_updated: "2025-11-07"
+  tiobe_source: "https://www.tiobe.com/tiobe-index/"
+  github_source: "https://github.com/EvanLi/Github-Ranking"
+  update_frequency: "monthly"
+
+languages:
+  python:
+    emoji: "🐍"
+    website: "https://www.python.org/"
+    tiobe_rank: 1
+    tiobe_rating: "28.11%"
+    github_stars: "10M+"
+    github_repos_approx: 10000000
+    description: "High-level interpreted language"
+
+  crystal:
+    emoji: "💎"
+    website: "https://crystal-lang.org/"
+    tiobe_rank: null  # Not in TIOBE top 50
+    tiobe_rating: null
+    github_stars: "60K+"
+    github_repos_approx: 60000
+    description: "Fast as C, slick as Ruby"
+
+  dart:
+    emoji: "🎯"
+    website: "https://dart.dev/"
+    tiobe_rank: 25
+    tiobe_rating: "0.55%"
+    github_stars: "1M+"
+    github_repos_approx: 1000000
+    description: "Client-optimized language"
+
+  elm:
+    emoji: "🌳"
+    website: "https://elm-lang.org/"
+    tiobe_rank: null  # Not in TIOBE top 50
+    tiobe_rating: null
+    github_stars: "100K+"
+    github_repos_approx: 100000
+    description: "Functional language for web"
+
+  gleam:
+    emoji: "⭐"
+    website: "https://gleam.run/"
+    tiobe_rank: null  # Not in TIOBE top 50
+    tiobe_rating: null
+    github_stars: "15K+"
+    github_repos_approx: 15000
+    description: "Type safe language for the Erlang VM"
+
+  go:
+    emoji: "🐹"
+    website: "https://go.dev/"
+    tiobe_rank: 8
+    tiobe_rating: "2.04%"
+    github_stars: "3.5M+"
+    github_repos_approx: 3500000
+    description: "Google's systems language"
+
+  haskell:
+    emoji: "🎓"
+    website: "https://www.haskell.org/"
+    tiobe_rank: 38
+    tiobe_rating: "0.24%"
+    github_stars: "500K+"
+    github_repos_approx: 500000
+    description: "Pure functional programming"
+
+  julia:
+    emoji: "🔴"
+    website: "https://julialang.org/"
+    tiobe_rank: 30
+    tiobe_rating: "0.46%"
+    github_stars: "200K+"
+    github_repos_approx: 200000
+    description: "High-performance technical computing"
+
+  kotlin:
+    emoji: "🟣"
+    website: "https://kotlinlang.org/"
+    tiobe_rank: 24
+    tiobe_rating: "0.57%"
+    github_stars: "1.5M+"
+    github_repos_approx: 1500000
+    description: "Modern JVM language"
+
+  lua:
+    emoji: "🌙"
+    website: "https://www.lua.org/"
+    tiobe_rank: 26
+    tiobe_rating: "0.54%"
+    github_stars: "1M+"
+    github_repos_approx: 1000000
+    description: "Lightweight scripting language"
+
+  mojo:
+    emoji: "🔥"
+    website: "https://www.modular.com/mojo"
+    tiobe_rank: null  # Not in TIOBE top 50
+    tiobe_rating: null
+    github_stars: "20K+"
+    github_repos_approx: 20000
+    description: "Programming language for AI developers"
+
+  nim:
+    emoji: "👑"
+    website: "https://nim-lang.org/"
+    tiobe_rank: null  # Not in TIOBE top 50
+    tiobe_rating: null
+    github_stars: "100K+"
+    github_repos_approx: 100000
+    description: "Efficient, expressive, elegant"
+
+  php:
+    emoji: "🐘"
+    website: "https://www.php.net/"
+    tiobe_rank: 7
+    tiobe_rating: "2.08%"
+    github_stars: "8M+"
+    github_repos_approx: 8000000
+    description: "Popular web scripting language"
+
+  rescript:
+    emoji: "🔴"
+    website: "https://rescript-lang.org/"
+    tiobe_rank: null  # Not in TIOBE top 50
+    tiobe_rating: null
+    github_stars: "50K+"
+    github_repos_approx: 50000
+    description: "Fast, simple, fully typed JavaScript alternative"
+
+  ruby:
+    emoji: "💎"
+    website: "https://www.ruby-lang.org/"
+    tiobe_rank: 17
+    tiobe_rating: "0.89%"
+    github_stars: "2M+"
+    github_repos_approx: 2000000
+    description: "Programmer's best friend"
+
+  rust:
+    emoji: "🦀"
+    website: "https://www.rust-lang.org/"
+    tiobe_rank: 14
+    tiobe_rating: "1.10%"
+    github_stars: "4.5M+"
+    github_repos_approx: 4500000
+    description: "Memory-safe systems programming"
+
+  swift:
+    emoji: "🐦"
+    website: "https://www.swift.org/"
+    tiobe_rank: 15
+    tiobe_rating: "1.06%"
+    github_stars: "2.5M+"
+    github_repos_approx: 2500000
+    description: "Apple's modern language"
+
+  typescript:
+    emoji: "📘"
+    website: "https://www.typescriptlang.org/"
+    tiobe_rank: 20
+    tiobe_rating: "0.73%"
+    github_stars: "5M+"
+    github_repos_approx: 5000000
+    description: "Typed superset of JavaScript"
+
+  zig:
+    emoji: "⚡"
+    website: "https://ziglang.org/"
+    tiobe_rank: null  # Not in TIOBE top 50
+    tiobe_rating: null
+    github_stars: "150K+"
+    github_repos_approx: 150000
+    description: "General-purpose programming language"
