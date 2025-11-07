@@ -22,14 +22,23 @@ def get_language_metadata_from_file() -> Dict[str, Dict]:
         print(f"❌ build_website.py not found at {build_website_path}")
         return {}
     
-    # Import the function dynamically
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("build_website", build_website_path)
-    build_website = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(build_website)
-    
-    # Get the metadata
-    return build_website.get_language_metadata()
+    try:
+        # Import the function dynamically
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("build_website", build_website_path)
+        if spec is None or spec.loader is None:
+            print(f"❌ Could not load build_website.py module spec")
+            return {}
+            
+        build_website = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(build_website)
+        
+        # Get the metadata
+        return build_website.get_language_metadata()
+    except Exception as e:
+        print(f"❌ Error importing build_website.py: {e}")
+        print(f"   Make sure the file has valid Python syntax and no missing dependencies")
+        return {}
 
 
 def get_implementations() -> Set[str]:

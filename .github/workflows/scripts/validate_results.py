@@ -56,10 +56,8 @@ def validate_result_json(result_file: Path, language: str) -> Tuple[bool, List[s
                 if field == 'test_seconds':
                     continue
                 issues.append(f"Timing field '{field}' is missing")
-            elif value == 0:
-                # Zero is acceptable for very fast operations
-                # We just warn rather than error
-                pass  # Allow zero values
+            # Note: Zero values are acceptable for very fast operations
+            # that complete in less than 1ms, so we don't flag them as issues
         
         # Check metadata exists and has required fields
         metadata = data.get('metadata', {})
