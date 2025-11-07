@@ -1,6 +1,0 @@
-cache dir does not exist - create /app/node_modules/imba/.imba-cache
-Chess Engine in Imba
-Type 'help' for available commands
-
-ERROR: FEN requires a FEN string
-Goodbye!
