@@ -585,7 +585,54 @@ Implementations may add performance optimizations (transposition tables, iterati
 
 **A**: Use integer arithmetic for evaluation scores to ensure exact reproducibility. Floats may have rounding differences across platforms.
 
-## 9. Version History
+### Q: My implementation currently doesn't follow this spec. How do I update it?
+
+**A**: Start by implementing Level 1 compliance:
+1. Verify your piece values match exactly
+2. Implement the piece-square tables
+3. Run the critical tests to ensure correct move selection
+4. Optionally add alphabetic tie-breaking for Level 2 compliance
+
+### Q: How do I test my implementation?
+
+**A**: Use the test cases in `test/test_suite.json`. The test harness will automatically run all AI tests. You can also run them manually:
+
+```bash
+# From your implementation directory
+echo -e "fen rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2\nai 2\nquit" | ./your_chess_program
+```
+
+Expected output should include: `AI: d4e5`
+
+## 9. Quick Start Guide
+
+### For New Implementations
+
+1. **Implement the evaluation function** exactly as specified in Section 2.3
+2. **Implement minimax** with alpha-beta pruning as shown in Section 1
+3. **Add move ordering** as described in Section 3
+4. **Run the critical tests** from Section 6
+5. **Verify compliance** - all critical tests should pass
+
+### For Existing Implementations
+
+1. **Check current behavior** - run the tests to see which ones pass
+2. **Update evaluation function** - ensure piece values and tables match
+3. **Verify move selection** - critical tests should pass
+4. **Optional: Add tie-breaking** - for Level 2 compliance
+
+### Testing Your Implementation
+
+```bash
+# Test with Python test harness
+cd /path/to/the-great-analysis-challenge
+python3 test/test_harness.py --impl implementations/your_language
+
+# Or use the verification script
+python3 test/verify_implementations.py
+```
+
+## 10. Version History
 
 - **v1.0** (2024-11): Initial specification
 
