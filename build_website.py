@@ -116,6 +116,18 @@ def get_language_metadata() -> Dict[str, Dict[str, str]]:
             'website': 'https://nim-lang.org/',
             'tiobe_rank': 'N/A',
             'github_stars': '100K+ repos'
+        },
+        'lua': {
+            'emoji': '🌙',
+            'website': 'https://www.lua.org/',
+            'tiobe_rank': '26',
+            'github_stars': '1M+ repos'
+        },
+        'php': {
+            'emoji': '🐘',
+            'website': 'https://www.php.net/',
+            'tiobe_rank': '7',
+            'github_stars': '8M+ repos'
         }
     }
 
@@ -139,7 +151,9 @@ def count_lines_of_code(impl_path: str) -> Dict[str, int]:
         'mojo': ['.mojo', '.🔥'],
         'swift': ['.swift'],
         'zig': ['.zig'],
-        'nim': ['.nim']
+        'nim': ['.nim'],
+        'lua': ['.lua'],
+        'php': ['.php']
     }
     
     lang_name = os.path.basename(impl_path)
@@ -402,7 +416,9 @@ def generate_source_explorer(lang: str, impl_path: str) -> str:
         'mojo': 'python',  # Use python as fallback
         'swift': 'swift',
         'zig': 'zig',
-        'nim': 'nim'
+        'nim': 'nim',
+        'lua': 'lua',
+        'php': 'php'
     }
     
     highlight_lang = lang_map.get(lang, 'plaintext')
