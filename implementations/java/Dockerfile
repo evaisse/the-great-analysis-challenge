@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates-java \
     openjdk-17-jdk \
     maven \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Java environment variables
