@@ -54,14 +54,15 @@ When implementing in a specific language:
 - Don't modify other language implementations without approval
 - Don't break the standardized command protocol
 - Don't sacrifice correctness for performance
-- Don't commit build artifacts or dependencies
+- Don't commit build artifacts or compiled binaries (dependency lock files like package-lock.json, Gemfile.lock are acceptable for reproducibility)
 
 ## Build and Test Procedures
 
 ### Standard Makefile Targets
 Every implementation must support:
 ```bash
-make              # Build the chess engine
+make              # Default target (aliases to 'all' which builds the chess engine)
+make all          # Build the chess engine (same as make)
 make test         # Run tests
 make analyze      # Run linters/type checkers
 make clean        # Remove build artifacts
@@ -104,10 +105,10 @@ make docker-test  # Test in Docker container
 
 **Phase 1: Setup (15-30 minutes)**
 1. Create directory: `implementations/<language>/`
-2. Create `Dockerfile` with language runtime and dependencies
-3. Create `chess.meta` with metadata (see existing implementations)
-4. Create `Makefile` with standard targets
-5. Create initial `README.md`
+2. Create `implementations/<language>/Dockerfile` with language runtime and dependencies
+3. Create `implementations/<language>/chess.meta` with metadata (see existing implementations)
+4. Create `implementations/<language>/Makefile` with standard targets
+5. Create initial `implementations/<language>/README.md`
 
 **Phase 2: Core Implementation (2-8 hours)**
 Implement components in this order:
@@ -308,10 +309,14 @@ FEN: rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
 5. Existing implementations - Ruby, TypeScript, Rust are well-documented
 
 ### Reference Implementations
+
+The project has 19+ language implementations. Recommended starting points for study:
 - **Ruby**: Clean OOP design, easy to understand
-- **TypeScript**: Modern JavaScript with types
-- **Rust**: High performance, showcases ownership
-- **Kotlin**: JVM integration, null safety
+- **TypeScript**: Modern JavaScript with types, good structure
+- **Rust**: High performance, showcases ownership system
+- **Kotlin**: JVM integration, null safety features
+
+All implementations can be found in `implementations/` directory including: Crystal, Dart, Elm, Gleam, Go, Haskell, Julia, Lua, Mojo, Nim, PHP, Python, Rescript, Swift, Zig, and more.
 
 ### Debugging Tips
 1. Test incrementally - one feature at a time
