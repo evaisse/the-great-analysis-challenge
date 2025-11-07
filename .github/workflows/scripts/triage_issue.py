@@ -12,6 +12,13 @@ from typing import List, Dict, Any, Optional
 from github import Github, GithubException
 
 
+# Constants for issue analysis
+MIN_TITLE_LENGTH = 10
+VAGUE_TITLES = ['issue', 'bug', 'help', 'question', 'problem']
+MIN_BODY_LENGTH = 20
+IMPLEMENTATION_KEYWORDS = ['which', 'what', 'version', 'language']
+
+
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Triage GitHub issues with AI assistance')
@@ -69,7 +76,7 @@ def analyze_issue_content(title: str, body: str, existing_labels: List[str]) -> 
     if title:
         title_lower = title.lower()
         # Check for vague titles
-        if len(title) < 10 or title_lower.strip() in ['issue', 'bug', 'help', 'question', 'problem']:
+        if len(title) < MIN_TITLE_LENGTH or title_lower.strip() in VAGUE_TITLES:
             analysis['improved_title'] = f"[Needs Detail] {title}"
         # Check if title doesn't start with capital or ends with punctuation
         elif title[0].islower() or title.endswith('.') or title.endswith(','):
@@ -78,7 +85,7 @@ def analyze_issue_content(title: str, body: str, existing_labels: List[str]) -> 
     
     # Check if clarification is needed
     body_text = (body or "").strip()
-    if not body_text or len(body_text) < 20:
+    if not body_text or len(body_text) < MIN_BODY_LENGTH:
         analysis['needs_clarification'] = True
         analysis['clarification_comment'] = (
             "Thank you for opening this issue! 👋\n\n"
@@ -99,7 +106,7 @@ def analyze_issue_content(title: str, body: str, existing_labels: List[str]) -> 
             "- Timeline estimate\n\n"
             "This will help us triage and address your issue more effectively. Thank you!"
         )
-    elif 'implementation' in full_text and not any(kw in full_text for kw in ['which', 'what', 'version', 'language']):
+    elif 'implementation' in full_text and not any(kw in full_text for kw in IMPLEMENTATION_KEYWORDS):
         analysis['needs_clarification'] = True
         analysis['clarification_comment'] = (
             "Thank you for your interest in contributing a new implementation! 🎉\n\n"
@@ -109,9 +116,9 @@ def analyze_issue_content(title: str, body: str, existing_labels: List[str]) -> 
             "3. **Your experience level** with the language\n"
             "4. **Any questions** you have about the specification or process\n\n"
             "Please review the following resources:\n"
-            "- [Chess Engine Specification](https://github.com/evaisse/the-great-analysis-challenge/blob/master/CHESS_ENGINE_SPECS.md)\n"
-            "- [Implementation Guidelines](https://github.com/evaisse/the-great-analysis-challenge/blob/master/README_IMPLEMENTATION_GUIDELINES.md)\n"
-            "- [Contributing Guide](https://github.com/evaisse/the-great-analysis-challenge/blob/master/CONTRIBUTING.md)\n\n"
+            "- [Chess Engine Specification](CHESS_ENGINE_SPECS.md)\n"
+            "- [Implementation Guidelines](README_IMPLEMENTATION_GUIDELINES.md)\n"
+            "- [Contributing Guide](CONTRIBUTING.md)\n\n"
             "Looking forward to your contribution!"
         )
     
