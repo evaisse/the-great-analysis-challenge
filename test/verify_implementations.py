@@ -12,6 +12,12 @@ import sys
 import argparse
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
+from importlib import import_module
+
+# Ensure repository root is importable
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 # Required files for each implementation
 REQUIRED_FILES = {
@@ -483,6 +489,61 @@ def print_summary_report(results: List[Dict]):
             if result['status'] == 'needs_work':
                 print(f"   - {result['name']} ({result['summary']['errors']} errors, {result['summary']['warnings']} warnings)")
 
+def validate_unique_emojis(implementations: List[Path]) -> bool:
+    """Ensure each implementation has a unique emoji in website metadata."""
+    print("\n" + "="*50)
+    print("🎨 EMOJI ASSIGNMENT CHECK")
+    print("="*50)
+    
+    try:
+        build_website = import_module('build_website')
+        language_metadata = build_website.get_language_metadata()
+    except Exception as exc:
+        print(f"❌ Unable to import build_website.get_language_metadata(): {exc}")
+        return False
+    
+    emoji_map: Dict[str, List[str]] = {}
+    missing_languages: List[str] = []
+    missing_emojis: List[str] = []
+    
+    for impl_dir in implementations:
+        lang = impl_dir.name
+        meta = language_metadata.get(lang)
+        if not meta:
+            missing_languages.append(lang)
+            continue
+        emoji = meta.get('emoji')
+        if not emoji:
+            missing_emojis.append(lang)
+            continue
+        emoji_map.setdefault(emoji, []).append(lang)
+    
+    duplicates = {emoji: langs for emoji, langs in emoji_map.items() if len(langs) > 1}
+    check_passed = True
+    
+    if missing_languages:
+        print("❌ Missing emoji metadata for implementations:")
+        for lang in sorted(missing_languages):
+            print(f"   - {lang}")
+        check_passed = False
+    
+    if missing_emojis:
+        print("❌ Emoji value not defined for implementations:")
+        for lang in sorted(missing_emojis):
+            print(f"   - {lang}")
+        check_passed = False
+    
+    if duplicates:
+        print("❌ Emoji collisions detected:")
+        for emoji, langs in duplicates.items():
+            joined = ', '.join(sorted(langs))
+            print(f"   - {emoji} used by {joined}")
+        check_passed = False
+    
+    if check_passed:
+        print("✅ All implementations have unique emojis defined for the website.")
+    return check_passed
+
 def main():
     """Main verification function."""
     parser = argparse.ArgumentParser(
@@ -561,12 +622,19 @@ Exit Codes:
     
     print_summary_report(results)
     
-    # Exit with error code if any implementation needs work
+    emojis_ok = validate_unique_emojis(implementations)
+    
+    exit_code = 0
     if any(r['status'] == 'needs_work' for r in results):
-        sys.exit(1)
+        exit_code = 1
+    if not emojis_ok:
+        exit_code = 1
+    
+    if exit_code == 0:
+        print("\n✅ All implementations passed verification and emoji check!")
     else:
-        print("\n✅ All implementations passed verification!")
-        sys.exit(0)
+        print("\n❌ Some checks failed. See details above.")
+    sys.exit(exit_code)
 
 if __name__ == '__main__':
     main()

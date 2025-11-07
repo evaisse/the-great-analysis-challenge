@@ -1,7 +1,7 @@
 # Makefile for Chess Engine Implementations
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 
-.PHONY: all test build clean help test-all build-all website
+.PHONY: all test build clean help test-all build-all website analyze-tools
 
 # Default target
 all: build-all test-all
@@ -19,6 +19,7 @@ help:
 	@echo "  make build            - Alias for build-all"
 	@echo "  make test-<lang>      - Test specific implementation (e.g., make test-ruby)"
 	@echo "  make build-<lang>     - Build specific implementation (e.g., make build-typescript)"
+	@echo "  make analyze-tools    - Static analysis for Python tooling (outside implementations)"
 	@echo "  make website          - Generate static website in docs/"
 	@echo "  make clean            - Remove Docker images and build artifacts"
 	@echo "  make help             - Show this help message"
@@ -164,6 +165,11 @@ website:
 	@python3 build_website.py
 	@echo "Website generated in docs/"
 	@echo "To preview: cd docs && python3 -m http.server 8080"
+
+# Static analysis for Python tooling outside implementations directory
+analyze-tools:
+	@echo "Running Python tooling static analysis..."
+	@python3 scripts/analyze_python_tools.py
 
 # Docker requirement enforcement
 .DEFAULT:
