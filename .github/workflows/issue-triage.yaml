@@ -1,0 +1,52 @@
+name: Issue Triage with Copilot
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to triage'
+        required: true
+        type: number
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    name: Triage Issue
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub
+
+      - name: Triage issue with AI assistance
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 .github/workflows/scripts/triage_issue.py \
+            --repo "${{ github.repository }}" \
+            --issue "${{ github.event.issue.number || github.event.inputs.issue_number }}"
+
+      - name: Summary
+        run: |
+          echo "# 🎯 Issue Triage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Issue #${{ github.event.issue.number || github.event.inputs.issue_number }} has been triaged." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Labels applied based on content analysis" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Title reviewed for clarity" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Clarification requested if needed" >> $GITHUB_STEP_SUMMARY
