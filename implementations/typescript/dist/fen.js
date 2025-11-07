@@ -6,20 +6,20 @@ class FenParser {
         this.board = board;
     }
     parseFen(fen) {
-        const parts = fen.split(' ');
+        const parts = fen.split(" ");
         if (parts.length < 4) {
-            throw new Error('ERROR: Invalid FEN string');
+            throw new Error("ERROR: Invalid FEN string");
         }
-        const [pieces, turn, castling, enPassant, halfmove = '0', fullmove = '1'] = parts;
+        const [pieces, turn, castling, enPassant, halfmove = "0", fullmove = "1"] = parts;
         for (let i = 0; i < 64; i++) {
             this.board.setPiece(i, null);
         }
         let square = 56;
         for (const char of pieces) {
-            if (char === '/') {
+            if (char === "/") {
                 square -= 16;
             }
-            else if ('12345678'.includes(char)) {
+            else if ("12345678".includes(char)) {
                 square += parseInt(char);
             }
             else {
@@ -30,15 +30,15 @@ class FenParser {
                 }
             }
         }
-        this.board.setTurn(turn === 'w' ? 'white' : 'black');
+        this.board.setTurn(turn === "w" ? "white" : "black");
         const rights = {
-            whiteKingside: castling.includes('K'),
-            whiteQueenside: castling.includes('Q'),
-            blackKingside: castling.includes('k'),
-            blackQueenside: castling.includes('q')
+            whiteKingside: castling.includes("K"),
+            whiteQueenside: castling.includes("Q"),
+            blackKingside: castling.includes("k"),
+            blackQueenside: castling.includes("q"),
         };
         this.board.setCastlingRights(rights);
-        if (enPassant !== '-') {
+        if (enPassant !== "-") {
             try {
                 const epSquare = this.board.algebraicToSquare(enPassant);
                 this.board.setEnPassantTarget(epSquare);
@@ -57,14 +57,14 @@ class FenParser {
     }
     exportFen() {
         const pieces = this.getPiecesString();
-        const turn = this.board.getTurn() === 'white' ? 'w' : 'b';
+        const turn = this.board.getTurn() === "white" ? "w" : "b";
         const castling = this.getCastlingString();
         const enPassant = this.getEnPassantString();
         const state = this.board.getState();
         return `${pieces} ${turn} ${castling} ${enPassant} ${state.halfmoveClock} ${state.fullmoveNumber}`;
     }
     getPiecesString() {
-        let result = '';
+        let result = "";
         for (let rank = 7; rank >= 0; rank--) {
             let emptyCount = 0;
             for (let file = 0; file < 8; file++) {
@@ -85,28 +85,28 @@ class FenParser {
                 result += emptyCount.toString();
             }
             if (rank > 0) {
-                result += '/';
+                result += "/";
             }
         }
         return result;
     }
     getCastlingString() {
         const rights = this.board.getCastlingRights();
-        let result = '';
+        let result = "";
         if (rights.whiteKingside)
-            result += 'K';
+            result += "K";
         if (rights.whiteQueenside)
-            result += 'Q';
+            result += "Q";
         if (rights.blackKingside)
-            result += 'k';
+            result += "k";
         if (rights.blackQueenside)
-            result += 'q';
-        return result || '-';
+            result += "q";
+        return result || "-";
     }
     getEnPassantString() {
         const target = this.board.getEnPassantTarget();
         if (target === null) {
-            return '-';
+            return "-";
         }
         return this.board.squareToAlgebraic(target);
     }
@@ -114,18 +114,25 @@ class FenParser {
         const isWhite = char === char.toUpperCase();
         const type = char.toUpperCase();
         switch (type) {
-            case 'P': return { type: 'P', color: isWhite ? 'white' : 'black' };
-            case 'N': return { type: 'N', color: isWhite ? 'white' : 'black' };
-            case 'B': return { type: 'B', color: isWhite ? 'white' : 'black' };
-            case 'R': return { type: 'R', color: isWhite ? 'white' : 'black' };
-            case 'Q': return { type: 'Q', color: isWhite ? 'white' : 'black' };
-            case 'K': return { type: 'K', color: isWhite ? 'white' : 'black' };
-            default: return null;
+            case "P":
+                return { type: "P", color: isWhite ? "white" : "black" };
+            case "N":
+                return { type: "N", color: isWhite ? "white" : "black" };
+            case "B":
+                return { type: "B", color: isWhite ? "white" : "black" };
+            case "R":
+                return { type: "R", color: isWhite ? "white" : "black" };
+            case "Q":
+                return { type: "Q", color: isWhite ? "white" : "black" };
+            case "K":
+                return { type: "K", color: isWhite ? "white" : "black" };
+            default:
+                return null;
         }
     }
     pieceToChar(piece) {
         const char = piece.type;
-        return piece.color === 'white' ? char : char.toLowerCase();
+        return piece.color === "white" ? char : char.toLowerCase();
     }
 }
 exports.FenParser = FenParser;

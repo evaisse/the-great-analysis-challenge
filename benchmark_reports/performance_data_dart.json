@@ -22,29 +22,26 @@
       "estimated_perft4_ms": 900
     },
     "timings": {
-      "analyze_seconds": 1.0549330711364746,
-      "build_seconds": 0.6388158798217773
+      "build_seconds": 0.4064490795135498,
+      "analyze_seconds": 0.9766099452972412,
+      "test_seconds": 2.4890122413635254
     },
-    "memory": {
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false
-      }
+    "memory": {},
+    "docker": {
+      "build_time": 0.4064490795135498,
+      "build_success": true,
+      "test_time": 2.4890122413635254,
+      "test_success": true
     },
-    "docker": {},
-    "test_results": {},
-    "errors": [
-      "Build failed: bin/main.dart:80:33: Error: String starting with ' must end with '.\n      case 'help':        print('Available commands:\n                                ^^^^^^^^^^^^^^^^^^^^\nbin/main.dart:90:19: Error: String starting with ' must end with '.\n'            'quit');        break;\n                  ^^^^^^^^^^^^^^^^^\nbin/main.dart:80:32: Error: Can't find ')' to match '('.\n      case 'help':        print('Available commands:\n                               ^\nbin/main.dart:81:15: Error: Expected ',' be",
-      "Test failed: Build failed with exit code 2"
-    ],
-    "status": "failed"
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
   }
 ]

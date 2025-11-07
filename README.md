@@ -2,6 +2,8 @@
 
 A comprehensive project implementing identical chess engines across **different programming languages** to compare their approaches, performance, and unique paradigms.
 
+🌐 **[View Interactive Website](https://evaisse.github.io/the-great-analysis-challenge/)** - Complete comparison table and source code explorer
+
 All implementations have complete feature parity:
 
 - ✅ **perft** - Performance testing with recursive move generation
@@ -18,7 +20,7 @@ All implementations have complete feature parity:
 | Language | Status | Analysis Time | Build Time | Test Time |
 |----------|--------|---------------|------------|-----------|
 | Crystal | 🟢 | 38ms | 18ms | - |
-| Dart | 🟢 | 1055ms | 639ms | - |
+| Dart | 🟢 | 977ms | 406ms | 2489ms |
 | Elm | 🟢 | 722ms | 847ms | - |
 | Gleam | 🟢 | 36ms | 22ms | - |
 | Go | 🟢 | 280ms | 153ms | - |
@@ -32,7 +34,7 @@ All implementations have complete feature parity:
 | Ruby | 🟢 | 1661ms | 354ms | 1850ms |
 | Rust | 🟢 | 899ms | 567ms | 518ms |
 | Swift | 🟢 | 1087ms | 398ms | - |
-| Typescript | 🟢 | - | - | - |
+| Typescript | 🟢 | 1919ms | 448ms | 945ms |
 | Zig | 🟢 | 29ms | 18ms | - |
 <!-- status-table-end -->
 

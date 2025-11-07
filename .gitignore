@@ -3,3 +3,5 @@
 *.tmp
 __pycache__*.txt
 __pycache__/
+__pycache__
+*_output.txt

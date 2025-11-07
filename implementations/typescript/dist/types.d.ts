@@ -1,5 +1,5 @@
-export type PieceType = 'K' | 'Q' | 'R' | 'B' | 'N' | 'P';
-export type Color = 'white' | 'black';
+export type PieceType = "K" | "Q" | "R" | "B" | "N" | "P";
+export type Color = "white" | "black";
 export type Square = number;
 export interface Piece {
     type: PieceType;
@@ -11,7 +11,7 @@ export interface Move {
     piece: PieceType;
     captured?: PieceType;
     promotion?: PieceType;
-    castling?: 'K' | 'Q' | 'k' | 'q';
+    castling?: "K" | "Q" | "k" | "q";
     enPassant?: boolean;
 }
 export interface CastlingRights {

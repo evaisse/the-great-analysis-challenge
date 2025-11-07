@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Source Code - The Great Analysis Challenge</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>🏆 The Great Analysis Challenge</h1>
+        <p class="subtitle">Multi-Language Chess Engine Comparison</p>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="https://github.com/evaisse/the-great-analysis-challenge">GitHub</a>
+        </nav>
+    </header>
+    <main>
+<h2>🐹 <a href="https://go.dev/" target="_blank" rel="noopener">Go</a> Implementation</h2>
+<div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>
+<div class="file-tree">
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Dockerfile')">📄 Dockerfile</button>
+<pre id="Dockerfile" class="file-content" style="display:none;"><code class="language-dockerfile">FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and Go
+RUN apt-get update &amp;&amp; apt-get install -y \
+    curl \
+    build-essential \
+    golang-go \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . .
+
+RUN cp src/*.go . &amp;&amp; sed -i '/import "math"/d' ai.go &amp;&amp; go build -ldflags="-s -w" -o chess *.go
+
+CMD ["./chess"]</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('Makefile')">📄 Makefile</button>
+<pre id="Makefile" class="file-content" style="display:none;"><code class="language-makefile">.PHONY: all build test analyze clean docker-build docker-test
+
+# Default target - build the chess engine
+all: build
+
+# Build target - compile Go binary
+build:
+	go build -o chess .
+
+# Run basic tests
+test:
+	go test ./...
+	@echo "Running basic functionality test..."
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ./chess | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" &amp;&amp; echo "✅ Basic test passed" || echo "❌ Basic test failed"
+
+# Static analysis and code quality
+analyze:
+	@echo "Running Go static analysis..."
+	go fmt ./...
+	go vet ./...
+	golint ./... || true
+	go mod tidy
+
+# Clean build artifacts
+clean:
+	go clean
+	rm -f chess
+
+# Docker targets
+docker-build:
+	docker build -t chess-go .
+
+docker-test: docker-build
+	@echo "Testing Go implementation in Docker..."
+	docker run --rm -i chess-go sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ./chess"
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  make         - Build the chess engine"
+	@echo "  make test    - Run tests"
+	@echo "  make analyze - Run static analysis"
+	@echo "  make clean   - Clean build artifacts"
+	@echo "  make docker-build - Build Docker image"
+	@echo "  make docker-test  - Test in Docker"</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('README_md')">📄 README.md</button>
+<pre id="README_md" class="file-content" style="display:none;"><code class="language-markdown"># Go Chess Engine
+
+A complete chess engine implementation in Go, featuring:
+
+- Full chess rules implementation including special moves
+- AI with minimax algorithm and alpha-beta pruning
+- FEN import/export
+- Command-line interface
+- Docker support
+
+## Building and Running
+
+### Local Development
+```bash
+go build -o chess chess.go
+./chess
+```
+
+### Docker
+```bash
+docker build -t chess-go .
+echo -e "new\nmove e2e4\nexport\nquit" | docker run -i chess-go
+```
+
+## Commands
+
+- `new` - Start a new game
+- `move &lt;from&gt;&lt;to&gt;` - Make a move (e.g., `move e2e4`)
+- `undo` - Undo the last move
+- `export` - Export current position as FEN
+- `ai &lt;depth&gt;` - Let AI make a move at specified depth (1-5)
+- `quit` - Exit the program
+
+## Testing
+
+```bash
+make test-go
+```</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_go')">📄 chess.go</button>
+<pre id="chess_go" class="file-content" style="display:none;"><code class="language-go">package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+func main() {
+	engine := NewChessEngine()
+	engine.Run()
+}
+
+type ChessEngine struct {
+	gameState *GameState
+	ai        *AI
+}
+
+func NewChessEngine() *ChessEngine {
+	return &amp;ChessEngine{
+		gameState: NewGameState(),
+		ai:        NewAI(),
+	}
+}
+
+func (engine *ChessEngine) Run() {
+	scanner := bufio.NewScanner(os.Stdin)
+
+	for {
+		fmt.Print("") // Ensure output is flushed
+		if !scanner.Scan() {
+			break
+		}
+
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+
+		command := strings.ToLower(parts[0])
+
+		switch command {
+		case "new":
+			engine.handleNew()
+		case "move":
+			if len(parts) != 2 {
+				fmt.Println("ERROR: Invalid move format")
+			} else {
+				engine.handleMove(parts[1])
+			}
+		case "undo":
+			engine.handleUndo()
+		case "export":
+			engine.handleExport()
+		case "ai":
+			depth := 3 // default depth
+			if len(parts) &gt; 1 {
+				if d, err := strconv.Atoi(parts[1]); err == nil &amp;&amp; d &gt;= 1 &amp;&amp; d &lt;= 5 {
+					depth = d
+				}
+			}
+			engine.handleAI(depth)
+		case "perft":
+			if len(parts) &gt; 1 {
+				if d, err := strconv.Atoi(parts[1]); err == nil &amp;&amp; d &gt;= 1 &amp;&amp; d &lt;= 6 {
+					engine.handlePerft(d)
+				} else {
+					fmt.Println("ERROR: Invalid perft depth")
+				}
+			} else {
+				fmt.Println("ERROR: Perft depth required")
+			}
+		case "display", "show":
+			fmt.Print(engine.gameState.Display())
+		case "quit", "exit":
+			return
+		case "help":
+			engine.showHelp()
+		default:
+			fmt.Println("ERROR: Unknown command")
+		}
+	}
+}
+
+func (engine *ChessEngine) handleNew() {
+	engine.gameState = NewGameState()
+	fmt.Print(engine.gameState.Display())
+}
+
+func (engine *ChessEngine) handleMove(moveStr string) {
+	if len(moveStr) &lt; 4 {
+		fmt.Println("ERROR: Invalid move format")
+		return
+	}
+
+	fromStr := moveStr[0:2]
+	toStr := moveStr[2:4]
+
+	from := AlgebraicToSquare(fromStr)
+	to := AlgebraicToSquare(toStr)
+
+	if !from.IsValid() || !to.IsValid() {
+		fmt.Println("ERROR: Invalid move format")
+		return
+	}
+
+	// Handle promotion
+	var promotionPiece PieceType
+	if len(moveStr) == 5 {
+		switch strings.ToLower(string(moveStr[4])) {
+		case "q":
+			promotionPiece = Queen
+		case "r":
+			promotionPiece = Rook
+		case "b":
+			promotionPiece = Bishop
+		case "n":
+			promotionPiece = Knight
+		default:
+			fmt.Println("ERROR: Invalid promotion piece")
+			return
+		}
+	}
+
+	move, err := engine.gameState.IsValidMove(from, to)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Handle promotion override
+	if move.IsPromotion &amp;&amp; len(moveStr) == 5 {
+		move.PromoteTo = promotionPiece
+	}
+
+	engine.gameState.MakeMove(move)
+	fmt.Print(engine.gameState.Display())
+
+	// Check for game end conditions
+	legalMoves := engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
+			if engine.gameState.ActiveColor == White {
+				fmt.Println("Black wins by checkmate!")
+			} else {
+				fmt.Println("White wins by checkmate!")
+			}
+		} else {
+			fmt.Println("Draw by stalemate!")
+		}
+	}
+}
+
+func (engine *ChessEngine) handleUndo() {
+	if engine.gameState.UndoLastMove() {
+		fmt.Print(engine.gameState.Display())
+	} else {
+		fmt.Println("ERROR: No moves to undo")
+	}
+}
+
+func (engine *ChessEngine) handleExport() {
+	fen := engine.gameState.ToFEN()
+	fmt.Println(fen)
+}
+
+func (engine *ChessEngine) handleAI(depth int) {
+	start := time.Now()
+
+	legalMoves := engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		fmt.Println("ERROR: No legal moves available")
+		return
+	}
+
+	bestMove := engine.ai.FindBestMove(engine.gameState, depth)
+
+	// Validate that we got a legal move
+	validMove := false
+	for _, move := range legalMoves {
+		if move.From == bestMove.From &amp;&amp; move.To == bestMove.To {
+			bestMove = move // Use the complete move with all flags
+			validMove = true
+			break
+		}
+	}
+
+	if !validMove {
+		// Fallback to first legal move
+		bestMove = legalMoves[0]
+	}
+
+	engine.gameState.MakeMove(bestMove)
+
+	elapsed := time.Since(start)
+	fmt.Printf("AI move: %s%s", bestMove.From.ToAlgebraic(), bestMove.To.ToAlgebraic())
+	if bestMove.IsPromotion {
+		switch bestMove.PromoteTo {
+		case Queen:
+			fmt.Print("q")
+		case Rook:
+			fmt.Print("r")
+		case Bishop:
+			fmt.Print("b")
+		case Knight:
+			fmt.Print("n")
+		}
+	}
+	fmt.Printf(" (depth %d, %d nodes, %dms)\n", depth, engine.ai.GetNodesEvaluated(), elapsed.Milliseconds())
+
+	fmt.Print(engine.gameState.Display())
+
+	// Check for game end conditions
+	legalMoves = engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
+			if engine.gameState.ActiveColor == White {
+				fmt.Println("Black wins by checkmate!")
+			} else {
+				fmt.Println("White wins by checkmate!")
+			}
+		} else {
+			fmt.Println("Draw by stalemate!")
+		}
+	}
+}
+
+func (engine *ChessEngine) handlePerft(depth int) {
+	start := time.Now()
+	nodes := engine.perft(engine.gameState, depth)
+	elapsed := time.Since(start)
+
+	fmt.Printf("Perft(%d): %d nodes in %dms\n", depth, nodes, elapsed.Milliseconds())
+}
+
+func (engine *ChessEngine) perft(gs *GameState, depth int) int {
+	if depth == 0 {
+		return 1
+	}
+
+	moves := gs.GenerateLegalMoves()
+	if depth == 1 {
+		return len(moves)
+	}
+
+	nodes := 0
+	for _, move := range moves {
+		testState := gs.Clone()
+		testState.MakeMove(move)
+		nodes += engine.perft(testState, depth-1)
+	}
+
+	return nodes
+}
+
+func (engine *ChessEngine) showHelp() {
+	fmt.Println("Available commands:")
+	fmt.Println("  new          - Start a new game")
+	fmt.Println("  move &lt;move&gt;  - Make a move (e.g., move e2e4, move e7e8q)")
+	fmt.Println("  undo         - Undo the last move")
+	fmt.Println("  export       - Export current position as FEN")
+	fmt.Println("  ai &lt;depth&gt;   - Let AI make a move (depth 1-5, default 3)")
+	fmt.Println("  perft &lt;depth&gt; - Run perft test")
+	fmt.Println("  display      - Show the current board")
+	fmt.Println("  help         - Show this help")
+	fmt.Println("  quit         - Exit the program")
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('chess_meta')">📄 chess.meta</button>
+<pre id="chess_meta" class="file-content" style="display:none;"><code class="language-go">{
+  "language": "go",
+  "version": "1.21",
+  "author": "AI Implementation",
+  "build": "go build -o chess chess.go",
+  "run": "./chess",
+  "analyze": "go vet ./... &amp;&amp; gofmt -d .",
+  "test": "go test ./...",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 800
+}</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('go_mod')">📄 go.mod</button>
+<pre id="go_mod" class="file-content" style="display:none;"><code class="language-go">module chess
+
+go 1.21</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_ai_go')">📄 src/ai.go</button>
+<pre id="src_ai_go" class="file-content" style="display:none;"><code class="language-go">package main
+
+import "math"
+
+const (
+	MATE_VALUE   = 20000
+	DRAW_VALUE   = 0
+	MAX_DEPTH    = 5
+	INFINITY     = 999999
+	NEG_INFINITY = -999999
+)
+
+var pieceValues = map[PieceType]int{
+	Pawn:   100,
+	Knight: 320,
+	Bishop: 330,
+	Rook:   500,
+	Queen:  900,
+	King:   20000,
+}
+
+// Piece-square tables for positional evaluation
+var pawnTable = [8][8]int{
+	{0, 0, 0, 0, 0, 0, 0, 0},
+	{50, 50, 50, 50, 50, 50, 50, 50},
+	{10, 10, 20, 30, 30, 20, 10, 10},
+	{5, 5, 10, 25, 25, 10, 5, 5},
+	{0, 0, 0, 20, 20, 0, 0, 0},
+	{5, -5, -10, 0, 0, -10, -5, 5},
+	{5, 10, 10, -20, -20, 10, 10, 5},
+	{0, 0, 0, 0, 0, 0, 0, 0},
+}
+
+var knightTable = [8][8]int{
+	{-50, -40, -30, -30, -30, -30, -40, -50},
+	{-40, -20, 0, 0, 0, 0, -20, -40},
+	{-30, 0, 10, 15, 15, 10, 0, -30},
+	{-30, 5, 15, 20, 20, 15, 5, -30},
+	{-30, 0, 15, 20, 20, 15, 0, -30},
+	{-30, 5, 10, 15, 15, 10, 5, -30},
+	{-40, -20, 0, 5, 5, 0, -20, -40},
+	{-50, -40, -30, -30, -30, -30, -40, -50},
+}
+
+var bishopTable = [8][8]int{
+	{-20, -10, -10, -10, -10, -10, -10, -20},
+	{-10, 0, 0, 0, 0, 0, 0, -10},
+	{-10, 0, 5, 10, 10, 5, 0, -10},
+	{-10, 5, 5, 10, 10, 5, 5, -10},
+	{-10, 0, 10, 10, 10, 10, 0, -10},
+	{-10, 10, 10, 10, 10, 10, 10, -10},
+	{-10, 5, 0, 0, 0, 0, 5, -10},
+	{-20, -10, -10, -10, -10, -10, -10, -20},
+}
+
+var rookTable = [8][8]int{
+	{0, 0, 0, 0, 0, 0, 0, 0},
+	{5, 10, 10, 10, 10, 10, 10, 5},
+	{-5, 0, 0, 0, 0, 0, 0, -5},
+	{-5, 0, 0, 0, 0, 0, 0, -5},
+	{-5, 0, 0, 0, 0, 0, 0, -5},
+	{-5, 0, 0, 0, 0, 0, 0, -5},
+	{-5, 0, 0, 0, 0, 0, 0, -5},
+	{0, 0, 0, 5, 5, 0, 0, 0},
+}
+
+var queenTable = [8][8]int{
+	{-20, -10, -10, -5, -5, -10, -10, -20},
+	{-10, 0, 0, 0, 0, 0, 0, -10},
+	{-10, 0, 5, 5, 5, 5, 0, -10},
+	{-5, 0, 5, 5, 5, 5, 0, -5},
+	{0, 0, 5, 5, 5, 5, 0, -5},
+	{-10, 5, 5, 5, 5, 5, 0, -10},
+	{-10, 0, 5, 0, 0, 0, 0, -10},
+	{-20, -10, -10, -5, -5, -10, -10, -20},
+}
+
+var kingMiddlegameTable = [8][8]int{
+	{-30, -40, -40, -50, -50, -40, -40, -30},
+	{-30, -40, -40, -50, -50, -40, -40, -30},
+	{-30, -40, -40, -50, -50, -40, -40, -30},
+	{-30, -40, -40, -50, -50, -40, -40, -30},
+	{-20, -30, -30, -40, -40, -30, -30, -20},
+	{-10, -20, -20, -20, -20, -20, -20, -10},
+	{20, 20, 0, 0, 0, 0, 20, 20},
+	{20, 30, 10, 0, 0, 10, 30, 20},
+}
+
+type AI struct {
+	nodesEvaluated int
+}
+
+func NewAI() *AI {
+	return &amp;AI{nodesEvaluated: 0}
+}
+
+func (ai *AI) FindBestMove(gs *GameState, depth int) Move {
+	ai.nodesEvaluated = 0
+
+	if depth &lt; 1 || depth &gt; MAX_DEPTH {
+		depth = 3
+	}
+
+	_, bestMove := ai.minimax(gs, depth, NEG_INFINITY, INFINITY, true)
+	return bestMove
+}
+
+func (ai *AI) minimax(gs *GameState, depth int, alpha, beta int, maximizingPlayer bool) (int, Move) {
+	ai.nodesEvaluated++
+
+	if depth == 0 {
+		return ai.evaluate(gs), Move{}
+	}
+
+	moves := gs.GenerateLegalMoves()
+
+	// Check for terminal positions
+	if len(moves) == 0 {
+		if gs.IsInCheck(gs.ActiveColor) {
+			// Checkmate
+			if maximizingPlayer {
+				return -MATE_VALUE + (MAX_DEPTH - depth), Move{}
+			} else {
+				return MATE_VALUE - (MAX_DEPTH - depth), Move{}
+			}
+		} else {
+			// Stalemate
+			return DRAW_VALUE, Move{}
+		}
+	}
+
+	var bestMove Move
+
+	if maximizingPlayer {
+		maxEval := NEG_INFINITY
+
+		for _, move := range moves {
+			// Make move
+			testState := gs.Clone()
+			testState.MakeMove(move)
+
+			eval, _ := ai.minimax(testState, depth-1, alpha, beta, false)
+
+			if eval &gt; maxEval {
+				maxEval = eval
+				bestMove = move
+			}
+
+			alpha = max(alpha, eval)
+			if beta &lt;= alpha {
+				break // Alpha-beta pruning
+			}
+		}
+
+		return maxEval, bestMove
+	} else {
+		minEval := INFINITY
+
+		for _, move := range moves {
+			// Make move
+			testState := gs.Clone()
+			testState.MakeMove(move)
+
+			eval, _ := ai.minimax(testState, depth-1, alpha, beta, true)
+
+			if eval &lt; minEval {
+				minEval = eval
+				bestMove = move
+			}
+
+			beta = min(beta, eval)
+			if beta &lt;= alpha {
+				break // Alpha-beta pruning
+			}
+		}
+
+		return minEval, bestMove
+	}
+}
+
+func (ai *AI) evaluate(gs *GameState) int {
+	score := 0
+
+	// Material and positional evaluation
+	for rank := 0; rank &lt; 8; rank++ {
+		for file := 0; file &lt; 8; file++ {
+			piece := gs.Board[rank][file]
+			if !piece.IsEmpty() {
+				pieceValue := ai.evaluatePiece(piece, Square{file, rank})
+				if piece.Color == White {
+					score += pieceValue
+				} else {
+					score -= pieceValue
+				}
+			}
+		}
+	}
+
+	// Mobility bonus
+	whiteMoves := 0
+	blackMoves := 0
+
+	// Count white moves
+	if gs.ActiveColor == White {
+		whiteMoves = len(gs.GenerateLegalMoves())
+	} else {
+		// Switch to white temporarily to count moves
+		tempState := gs.Clone()
+		tempState.ActiveColor = White
+		whiteMoves = len(tempState.GenerateLegalMoves())
+	}
+
+	// Count black moves
+	if gs.ActiveColor == Black {
+		blackMoves = len(gs.GenerateLegalMoves())
+	} else {
+		// Switch to black temporarily to count moves
+		tempState := gs.Clone()
+		tempState.ActiveColor = Black
+		blackMoves = len(tempState.GenerateLegalMoves())
+	}
+
+	// Mobility bonus (each legal move is worth a small amount)
+	score += (whiteMoves - blackMoves) * 3
+
+	// Return score from current player's perspective
+	if gs.ActiveColor == White {
+		return score
+	} else {
+		return -score
+	}
+}
+
+func (ai *AI) evaluatePiece(piece Piece, square Square) int {
+	value := pieceValues[piece.Type]
+
+	// Positional bonuses
+	rank := square.Rank
+	file := square.File
+
+	// Flip the board for black pieces
+	if piece.Color == Black {
+		rank = 7 - rank
+	}
+
+	switch piece.Type {
+	case Pawn:
+		value += pawnTable[rank][file]
+		// Bonus for advanced pawns
+		if piece.Color == White {
+			value += square.Rank * 5
+		} else {
+			value += (7 - square.Rank) * 5
+		}
+
+	case Knight:
+		value += knightTable[rank][file]
+		// Central control bonus
+		if (file &gt;= 2 &amp;&amp; file &lt;= 5) &amp;&amp; (rank &gt;= 2 &amp;&amp; rank &lt;= 5) {
+			value += 10
+		}
+
+	case Bishop:
+		value += bishopTable[rank][file]
+		// Central control bonus
+		if (file &gt;= 2 &amp;&amp; file &lt;= 5) &amp;&amp; (rank &gt;= 2 &amp;&amp; rank &lt;= 5) {
+			value += 10
+		}
+
+	case Rook:
+		value += rookTable[rank][file]
+		// Open file bonus (simplified)
+		if ai.isOpenFile(square.File, piece.Color) {
+			value += 15
+		}
+
+	case Queen:
+		value += queenTable[rank][file]
+		// Central control bonus
+		if (file &gt;= 2 &amp;&amp; file &lt;= 5) &amp;&amp; (rank &gt;= 2 &amp;&amp; rank &lt;= 5) {
+			value += 10
+		}
+
+	case King:
+		value += kingMiddlegameTable[rank][file]
+		// Safety evaluation would go here in a more sophisticated engine
+	}
+
+	return value
+}
+
+func (ai *AI) isOpenFile(file int, color Color) bool {
+	// Simplified open file detection
+	// In a real engine, you'd check if there are no pawns on this file
+	return false
+}
+
+func (ai *AI) GetNodesEvaluated() int {
+	return ai.nodesEvaluated
+}
+
+func max(a, b int) int {
+	if a &gt; b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int) int {
+	if a &lt; b {
+		return a
+	}
+	return b
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_board_go')">📄 src/board.go</button>
+<pre id="src_board_go" class="file-content" style="display:none;"><code class="language-go">package main
+
+import (
+	"fmt"
+	"strings"
+)
+
+func NewGameState() *GameState {
+	gs := &amp;GameState{
+		ActiveColor:     White,
+		CastlingRights:  [2][2]bool{{true, true}, {true, true}},
+		EnPassantTarget: nil,
+		HalfmoveClock:   0,
+		FullmoveNumber:  1,
+		MoveHistory:     make([]Move, 0),
+	}
+
+	// Initialize starting position
+	gs.SetupInitialPosition()
+	return gs
+}
+
+func (gs *GameState) SetupInitialPosition() {
+	// Clear board
+	for rank := 0; rank &lt; 8; rank++ {
+		for file := 0; file &lt; 8; file++ {
+			gs.Board[rank][file] = Piece{Type: Empty}
+		}
+	}
+
+	// White pieces (rank 0 and 1)
+	gs.Board[0][0] = NewPiece(Rook, White)
+	gs.Board[0][1] = NewPiece(Knight, White)
+	gs.Board[0][2] = NewPiece(Bishop, White)
+	gs.Board[0][3] = NewPiece(Queen, White)
+	gs.Board[0][4] = NewPiece(King, White)
+	gs.Board[0][5] = NewPiece(Bishop, White)
+	gs.Board[0][6] = NewPiece(Knight, White)
+	gs.Board[0][7] = NewPiece(Rook, White)
+
+	for file := 0; file &lt; 8; file++ {
+		gs.Board[1][file] = NewPiece(Pawn, White)
+	}
+
+	// Black pieces (rank 6 and 7)
+	for file := 0; file &lt; 8; file++ {
+		gs.Board[6][file] = NewPiece(Pawn, Black)
+	}
+
+	gs.Board[7][0] = NewPiece(Rook, Black)
+	gs.Board[7][1] = NewPiece(Knight, Black)
+	gs.Board[7][2] = NewPiece(Bishop, Black)
+	gs.Board[7][3] = NewPiece(Queen, Black)
+	gs.Board[7][4] = NewPiece(King, Black)
+	gs.Board[7][5] = NewPiece(Bishop, Black)
+	gs.Board[7][6] = NewPiece(Knight, Black)
+	gs.Board[7][7] = NewPiece(Rook, Black)
+}
+
+func (gs *GameState) GetPiece(square Square) Piece {
+	if !square.IsValid() {
+		return Piece{Type: Empty}
+	}
+	return gs.Board[square.Rank][square.File]
+}
+
+func (gs *GameState) SetPiece(square Square, piece Piece) {
+	if square.IsValid() {
+		gs.Board[square.Rank][square.File] = piece
+	}
+}
+
+func (gs *GameState) Display() string {
+	var sb strings.Builder
+
+	sb.WriteString("  a b c d e f g h\n")
+
+	for rank := 7; rank &gt;= 0; rank-- {
+		sb.WriteString(fmt.Sprintf("%d ", rank+1))
+		for file := 0; file &lt; 8; file++ {
+			piece := gs.Board[rank][file]
+			sb.WriteRune(piece.Symbol())
+			sb.WriteRune(' ')
+		}
+		sb.WriteString(fmt.Sprintf("%d\n", rank+1))
+	}
+
+	sb.WriteString("  a b c d e f g h\n\n")
+
+	if gs.ActiveColor == White {
+		sb.WriteString("White to move\n")
+	} else {
+		sb.WriteString("Black to move\n")
+	}
+
+	return sb.String()
+}
+
+func (gs *GameState) IsSquareAttacked(square Square, byColor Color) bool {
+	// Check for pawn attacks
+	pawnDirection := 1
+	if byColor == Black {
+		pawnDirection = -1
+	}
+
+	pawnAttackSquares := []Square{
+		{square.File - 1, square.Rank - pawnDirection},
+		{square.File + 1, square.Rank - pawnDirection},
+	}
+
+	for _, attackSquare := range pawnAttackSquares {
+		if attackSquare.IsValid() {
+			piece := gs.GetPiece(attackSquare)
+			if piece.Type == Pawn &amp;&amp; piece.Color == byColor {
+				return true
+			}
+		}
+	}
+
+	// Check for knight attacks
+	knightMoves := [][]int{
+		{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
+		{1, -2}, {1, 2}, {2, -1}, {2, 1},
+	}
+
+	for _, move := range knightMoves {
+		attackSquare := Square{square.File + move[0], square.Rank + move[1]}
+		if attackSquare.IsValid() {
+			piece := gs.GetPiece(attackSquare)
+			if piece.Type == Knight &amp;&amp; piece.Color == byColor {
+				return true
+			}
+		}
+	}
+
+	// Check for king attacks
+	kingMoves := [][]int{
+		{-1, -1}, {-1, 0}, {-1, 1},
+		{0, -1}, {0, 1},
+		{1, -1}, {1, 0}, {1, 1},
+	}
+
+	for _, move := range kingMoves {
+		attackSquare := Square{square.File + move[0], square.Rank + move[1]}
+		if attackSquare.IsValid() {
+			piece := gs.GetPiece(attackSquare)
+			if piece.Type == King &amp;&amp; piece.Color == byColor {
+				return true
+			}
+		}
+	}
+
+	// Check for sliding piece attacks (bishop, rook, queen)
+	directions := [][]int{
+		{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
+		{0, 1}, {1, -1}, {1, 0}, {1, 1},
+	}
+
+	for i, direction := range directions {
+		for distance := 1; distance &lt; 8; distance++ {
+			attackSquare := Square{
+				square.File + direction[0]*distance,
+				square.Rank + direction[1]*distance,
+			}
+
+			if !attackSquare.IsValid() {
+				break
+			}
+
+			piece := gs.GetPiece(attackSquare)
+			if !piece.IsEmpty() {
+				if piece.Color == byColor {
+					// Check if this piece can attack in this direction
+					isDiagonal := i == 0 || i == 2 || i == 5 || i == 7
+					isOrthogonal := i == 1 || i == 3 || i == 4 || i == 6
+
+					if (isDiagonal &amp;&amp; (piece.Type == Bishop || piece.Type == Queen)) ||
+						(isOrthogonal &amp;&amp; (piece.Type == Rook || piece.Type == Queen)) {
+						return true
+					}
+				}
+				break // Piece blocks further attacks in this direction
+			}
+		}
+	}
+
+	return false
+}
+
+func (gs *GameState) IsInCheck(color Color) bool {
+	// Find the king
+	var kingSquare Square
+	found := false
+
+	for rank := 0; rank &lt; 8; rank++ {
+		for file := 0; file &lt; 8; file++ {
+			piece := gs.Board[rank][file]
+			if piece.Type == King &amp;&amp; piece.Color == color {
+				kingSquare = Square{file, rank}
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+
+	if !found {
+		return false // No king found (shouldn't happen in a valid game)
+	}
+
+	opponentColor := White
+	if color == White {
+		opponentColor = Black
+	}
+
+	return gs.IsSquareAttacked(kingSquare, opponentColor)
+}
+
+func (gs *GameState) Clone() *GameState {
+	clone := &amp;GameState{
+		Board:          gs.Board,
+		ActiveColor:    gs.ActiveColor,
+		CastlingRights: gs.CastlingRights,
+		HalfmoveClock:  gs.HalfmoveClock,
+		FullmoveNumber: gs.FullmoveNumber,
+		MoveHistory:    make([]Move, len(gs.MoveHistory)),
+	}
+
+	copy(clone.MoveHistory, gs.MoveHistory)
+
+	if gs.EnPassantTarget != nil {
+		target := *gs.EnPassantTarget
+		clone.EnPassantTarget = &amp;target
+	}
+
+	return clone
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_fen_go')">📄 src/fen.go</button>
+<pre id="src_fen_go" class="file-content" style="display:none;"><code class="language-go">package main
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+func (gs *GameState) ToFEN() string {
+	var fenParts []string
+
+	// Board position
+	var boardStr strings.Builder
+	for rank := 7; rank &gt;= 0; rank-- {
+		emptyCount := 0
+		for file := 0; file &lt; 8; file++ {
+			piece := gs.Board[rank][file]
+			if piece.IsEmpty() {
+				emptyCount++
+			} else {
+				if emptyCount &gt; 0 {
+					boardStr.WriteString(strconv.Itoa(emptyCount))
+					emptyCount = 0
+				}
+				boardStr.WriteRune(piece.Symbol())
+			}
+		}
+		if emptyCount &gt; 0 {
+			boardStr.WriteString(strconv.Itoa(emptyCount))
+		}
+		if rank &gt; 0 {
+			boardStr.WriteRune('/')
+		}
+	}
+	fenParts = append(fenParts, boardStr.String())
+
+	// Active color
+	if gs.ActiveColor == White {
+		fenParts = append(fenParts, "w")
+	} else {
+		fenParts = append(fenParts, "b")
+	}
+
+	// Castling availability
+	var castling strings.Builder
+	if gs.CastlingRights[White][KingsideCastle] {
+		castling.WriteRune('K')
+	}
+	if gs.CastlingRights[White][QueensideCastle] {
+		castling.WriteRune('Q')
+	}
+	if gs.CastlingRights[Black][KingsideCastle] {
+		castling.WriteRune('k')
+	}
+	if gs.CastlingRights[Black][QueensideCastle] {
+		castling.WriteRune('q')
+	}
+	if castling.Len() == 0 {
+		castling.WriteRune('-')
+	}
+	fenParts = append(fenParts, castling.String())
+
+	// En passant target
+	if gs.EnPassantTarget != nil {
+		fenParts = append(fenParts, gs.EnPassantTarget.ToAlgebraic())
+	} else {
+		fenParts = append(fenParts, "-")
+	}
+
+	// Halfmove clock
+	fenParts = append(fenParts, strconv.Itoa(gs.HalfmoveClock))
+
+	// Fullmove number
+	fenParts = append(fenParts, strconv.Itoa(gs.FullmoveNumber))
+
+	return strings.Join(fenParts, " ")
+}
+
+func (gs *GameState) FromFEN(fen string) error {
+	parts := strings.Fields(fen)
+	if len(parts) != 6 {
+		return fmt.Errorf("invalid FEN: expected 6 parts, got %d", len(parts))
+	}
+
+	// Clear the board
+	for rank := 0; rank &lt; 8; rank++ {
+		for file := 0; file &lt; 8; file++ {
+			gs.Board[rank][file] = Piece{Type: Empty}
+		}
+	}
+
+	// Parse board position
+	ranks := strings.Split(parts[0], "/")
+	if len(ranks) != 8 {
+		return fmt.Errorf("invalid FEN: expected 8 ranks, got %d", len(ranks))
+	}
+
+	for rankIdx, rankStr := range ranks {
+		rank := 7 - rankIdx // FEN starts from rank 8 (index 7)
+		file := 0
+
+		for _, char := range rankStr {
+			if char &gt;= '1' &amp;&amp; char &lt;= '8' {
+				// Empty squares
+				emptySquares := int(char - '0')
+				file += emptySquares
+			} else {
+				// Piece
+				piece, err := pieceFromSymbol(char)
+				if err != nil {
+					return fmt.Errorf("invalid piece symbol in FEN: %c", char)
+				}
+				if file &gt;= 8 {
+					return fmt.Errorf("invalid FEN: too many pieces in rank")
+				}
+				gs.Board[rank][file] = piece
+				file++
+			}
+		}
+
+		if file != 8 {
+			return fmt.Errorf("invalid FEN: incomplete rank %d", rankIdx)
+		}
+	}
+
+	// Parse active color
+	switch parts[1] {
+	case "w":
+		gs.ActiveColor = White
+	case "b":
+		gs.ActiveColor = Black
+	default:
+		return fmt.Errorf("invalid active color in FEN: %s", parts[1])
+	}
+
+	// Parse castling rights
+	gs.CastlingRights = [2][2]bool{{false, false}, {false, false}}
+	if parts[2] != "-" {
+		for _, char := range parts[2] {
+			switch char {
+			case 'K':
+				gs.CastlingRights[White][KingsideCastle] = true
+			case 'Q':
+				gs.CastlingRights[White][QueensideCastle] = true
+			case 'k':
+				gs.CastlingRights[Black][KingsideCastle] = true
+			case 'q':
+				gs.CastlingRights[Black][QueensideCastle] = true
+			default:
+				return fmt.Errorf("invalid castling rights in FEN: %c", char)
+			}
+		}
+	}
+
+	// Parse en passant target
+	if parts[3] != "-" {
+		square := AlgebraicToSquare(parts[3])
+		if !square.IsValid() {
+			return fmt.Errorf("invalid en passant target in FEN: %s", parts[3])
+		}
+		gs.EnPassantTarget = &amp;square
+	} else {
+		gs.EnPassantTarget = nil
+	}
+
+	// Parse halfmove clock
+	halfmove, err := strconv.Atoi(parts[4])
+	if err != nil {
+		return fmt.Errorf("invalid halfmove clock in FEN: %s", parts[4])
+	}
+	gs.HalfmoveClock = halfmove
+
+	// Parse fullmove number
+	fullmove, err := strconv.Atoi(parts[5])
+	if err != nil {
+		return fmt.Errorf("invalid fullmove number in FEN: %s", parts[5])
+	}
+	gs.FullmoveNumber = fullmove
+
+	return nil
+}
+
+func pieceFromSymbol(symbol rune) (Piece, error) {
+	var pieceType PieceType
+	var color Color
+
+	// Determine color (uppercase = white, lowercase = black)
+	if symbol &gt;= 'A' &amp;&amp; symbol &lt;= 'Z' {
+		color = White
+		symbol = rune(int(symbol) + 32) // Convert to lowercase
+	} else if symbol &gt;= 'a' &amp;&amp; symbol &lt;= 'z' {
+		color = Black
+	} else {
+		return Piece{}, fmt.Errorf("invalid piece symbol: %c", symbol)
+	}
+
+	// Determine piece type
+	switch symbol {
+	case 'p':
+		pieceType = Pawn
+	case 'n':
+		pieceType = Knight
+	case 'b':
+		pieceType = Bishop
+	case 'r':
+		pieceType = Rook
+	case 'q':
+		pieceType = Queen
+	case 'k':
+		pieceType = King
+	default:
+		return Piece{}, fmt.Errorf("invalid piece symbol: %c", symbol)
+	}
+
+	return NewPiece(pieceType, color), nil
+}
+
+// Standard starting position FEN
+const StartingPositionFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_move_generator_go')">📄 src/move_generator.go</button>
+<pre id="src_move_generator_go" class="file-content" style="display:none;"><code class="language-go">package main
+
+import "fmt"
+
+func (gs *GameState) GenerateLegalMoves() []Move {
+	pseudoLegalMoves := gs.GeneratePseudoLegalMoves()
+	legalMoves := make([]Move, 0, len(pseudoLegalMoves))
+
+	for _, move := range pseudoLegalMoves {
+		if gs.IsLegalMove(move) {
+			legalMoves = append(legalMoves, move)
+		}
+	}
+
+	return legalMoves
+}
+
+func (gs *GameState) GeneratePseudoLegalMoves() []Move {
+	moves := make([]Move, 0, 64)
+
+	for rank := 0; rank &lt; 8; rank++ {
+		for file := 0; file &lt; 8; file++ {
+			square := Square{file, rank}
+			piece := gs.GetPiece(square)
+
+			if piece.IsEmpty() || piece.Color != gs.ActiveColor {
+				continue
+			}
+
+			switch piece.Type {
+			case Pawn:
+				moves = append(moves, gs.GeneratePawnMoves(square)...)
+			case Knight:
+				moves = append(moves, gs.GenerateKnightMoves(square)...)
+			case Bishop:
+				moves = append(moves, gs.GenerateBishopMoves(square)...)
+			case Rook:
+				moves = append(moves, gs.GenerateRookMoves(square)...)
+			case Queen:
+				moves = append(moves, gs.GenerateQueenMoves(square)...)
+			case King:
+				moves = append(moves, gs.GenerateKingMoves(square)...)
+			}
+		}
+	}
+
+	return moves
+}
+
+func (gs *GameState) GeneratePawnMoves(square Square) []Move {
+	moves := make([]Move, 0, 4)
+	piece := gs.GetPiece(square)
+	direction := 1
+	startRank := 1
+	promotionRank := 7
+
+	if piece.Color == Black {
+		direction = -1
+		startRank = 6
+		promotionRank = 0
+	}
+
+	// Forward move
+	oneForward := Square{square.File, square.Rank + direction}
+	if oneForward.IsValid() &amp;&amp; gs.GetPiece(oneForward).IsEmpty() {
+		if oneForward.Rank == promotionRank {
+			// Promotion moves
+			for _, promoteTo := range []PieceType{Queen, Rook, Bishop, Knight} {
+				moves = append(moves, Move{
+					From:        square,
+					To:          oneForward,
+					Piece:       piece,
+					IsPromotion: true,
+					PromoteTo:   promoteTo,
+				})
+			}
+		} else {
+			moves = append(moves, Move{
+				From:  square,
+				To:    oneForward,
+				Piece: piece,
+			})
+
+			// Two-square initial move
+			if square.Rank == startRank {
+				twoForward := Square{square.File, square.Rank + 2*direction}
+				if twoForward.IsValid() &amp;&amp; gs.GetPiece(twoForward).IsEmpty() {
+					moves = append(moves, Move{
+						From:  square,
+						To:    twoForward,
+						Piece: piece,
+					})
+				}
+			}
+		}
+	}
+
+	// Captures
+	for _, fileOffset := range []int{-1, 1} {
+		captureSquare := Square{square.File + fileOffset, square.Rank + direction}
+		if captureSquare.IsValid() {
+			target := gs.GetPiece(captureSquare)
+			if !target.IsEmpty() &amp;&amp; target.Color != piece.Color {
+				captured := target
+				if captureSquare.Rank == promotionRank {
+					// Promotion captures
+					for _, promoteTo := range []PieceType{Queen, Rook, Bishop, Knight} {
+						moves = append(moves, Move{
+							From:        square,
+							To:          captureSquare,
+							Piece:       piece,
+							Captured:    &amp;captured,
+							IsCapture:   true,
+							IsPromotion: true,
+							PromoteTo:   promoteTo,
+						})
+					}
+				} else {
+					moves = append(moves, Move{
+						From:      square,
+						To:        captureSquare,
+						Piece:     piece,
+						Captured:  &amp;captured,
+						IsCapture: true,
+					})
+				}
+			}
+		}
+	}
+
+	// En passant
+	if gs.EnPassantTarget != nil {
+		for _, fileOffset := range []int{-1, 1} {
+			captureSquare := Square{square.File + fileOffset, square.Rank + direction}
+			if captureSquare == *gs.EnPassantTarget {
+				capturedPawnSquare := Square{gs.EnPassantTarget.File, square.Rank}
+				capturedPawn := gs.GetPiece(capturedPawnSquare)
+				moves = append(moves, Move{
+					From:        square,
+					To:          captureSquare,
+					Piece:       piece,
+					Captured:    &amp;capturedPawn,
+					IsCapture:   true,
+					IsEnPassant: true,
+				})
+			}
+		}
+	}
+
+	return moves
+}
+
+func (gs *GameState) GenerateKnightMoves(square Square) []Move {
+	moves := make([]Move, 0, 8)
+	piece := gs.GetPiece(square)
+
+	knightMoves := [][]int{
+		{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
+		{1, -2}, {1, 2}, {2, -1}, {2, 1},
+	}
+
+	for _, move := range knightMoves {
+		toSquare := Square{square.File + move[0], square.Rank + move[1]}
+		if toSquare.IsValid() {
+			target := gs.GetPiece(toSquare)
+			if target.IsEmpty() {
+				moves = append(moves, Move{
+					From:  square,
+					To:    toSquare,
+					Piece: piece,
+				})
+			} else if target.Color != piece.Color {
+				moves = append(moves, Move{
+					From:      square,
+					To:        toSquare,
+					Piece:     piece,
+					Captured:  &amp;target,
+					IsCapture: true,
+				})
+			}
+		}
+	}
+
+	return moves
+}
+
+func (gs *GameState) GenerateSlidingMoves(square Square, directions [][]int) []Move {
+	moves := make([]Move, 0, 14)
+	piece := gs.GetPiece(square)
+
+	for _, direction := range directions {
+		for distance := 1; distance &lt; 8; distance++ {
+			toSquare := Square{
+				square.File + direction[0]*distance,
+				square.Rank + direction[1]*distance,
+			}
+
+			if !toSquare.IsValid() {
+				break
+			}
+
+			target := gs.GetPiece(toSquare)
+			if target.IsEmpty() {
+				moves = append(moves, Move{
+					From:  square,
+					To:    toSquare,
+					Piece: piece,
+				})
+			} else {
+				if target.Color != piece.Color {
+					moves = append(moves, Move{
+						From:      square,
+						To:        toSquare,
+						Piece:     piece,
+						Captured:  &amp;target,
+						IsCapture: true,
+					})
+				}
+				break // Can't move past any piece
+			}
+		}
+	}
+
+	return moves
+}
+
+func (gs *GameState) GenerateBishopMoves(square Square) []Move {
+	directions := [][]int{
+		{-1, -1}, {-1, 1}, {1, -1}, {1, 1},
+	}
+	return gs.GenerateSlidingMoves(square, directions)
+}
+
+func (gs *GameState) GenerateRookMoves(square Square) []Move {
+	directions := [][]int{
+		{-1, 0}, {1, 0}, {0, -1}, {0, 1},
+	}
+	return gs.GenerateSlidingMoves(square, directions)
+}
+
+func (gs *GameState) GenerateQueenMoves(square Square) []Move {
+	directions := [][]int{
+		{-1, -1}, {-1, 0}, {-1, 1},
+		{0, -1}, {0, 1},
+		{1, -1}, {1, 0}, {1, 1},
+	}
+	return gs.GenerateSlidingMoves(square, directions)
+}
+
+func (gs *GameState) GenerateKingMoves(square Square) []Move {
+	moves := make([]Move, 0, 10)
+	piece := gs.GetPiece(square)
+
+	// Regular king moves
+	kingMoves := [][]int{
+		{-1, -1}, {-1, 0}, {-1, 1},
+		{0, -1}, {0, 1},
+		{1, -1}, {1, 0}, {1, 1},
+	}
+
+	for _, move := range kingMoves {
+		toSquare := Square{square.File + move[0], square.Rank + move[1]}
+		if toSquare.IsValid() {
+			target := gs.GetPiece(toSquare)
+			if target.IsEmpty() {
+				moves = append(moves, Move{
+					From:  square,
+					To:    toSquare,
+					Piece: piece,
+				})
+			} else if target.Color != piece.Color {
+				moves = append(moves, Move{
+					From:      square,
+					To:        toSquare,
+					Piece:     piece,
+					Captured:  &amp;target,
+					IsCapture: true,
+				})
+			}
+		}
+	}
+
+	// Castling
+	if !gs.IsInCheck(piece.Color) {
+		rank := 0
+		if piece.Color == Black {
+			rank = 7
+		}
+
+		// Kingside castling
+		if gs.CastlingRights[piece.Color][KingsideCastle] {
+			if gs.GetPiece(Square{5, rank}).IsEmpty() &amp;&amp; gs.GetPiece(Square{6, rank}).IsEmpty() {
+				if !gs.IsSquareAttacked(Square{5, rank}, 1-piece.Color) &amp;&amp; !gs.IsSquareAttacked(Square{6, rank}, 1-piece.Color) {
+					moves = append(moves, Move{
+						From:     square,
+						To:       Square{6, rank},
+						Piece:    piece,
+						IsCastle: true,
+					})
+				}
+			}
+		}
+
+		// Queenside castling
+		if gs.CastlingRights[piece.Color][QueensideCastle] {
+			if gs.GetPiece(Square{1, rank}).IsEmpty() &amp;&amp; gs.GetPiece(Square{2, rank}).IsEmpty() &amp;&amp; gs.GetPiece(Square{3, rank}).IsEmpty() {
+				if !gs.IsSquareAttacked(Square{2, rank}, 1-piece.Color) &amp;&amp; !gs.IsSquareAttacked(Square{3, rank}, 1-piece.Color) {
+					moves = append(moves, Move{
+						From:     square,
+						To:       Square{2, rank},
+						Piece:    piece,
+						IsCastle: true,
+					})
+				}
+			}
+		}
+	}
+
+	return moves
+}
+
+func (gs *GameState) IsLegalMove(move Move) bool {
+	// Make a copy of the game state
+	testState := gs.Clone()
+
+	// Make the move
+	testState.MakeMove(move)
+
+	// Check if the move leaves the king in check
+	return !testState.IsInCheck(gs.ActiveColor)
+}
+
+func (gs *GameState) IsValidMove(from, to Square) (Move, error) {
+	piece := gs.GetPiece(from)
+	if piece.IsEmpty() {
+		return Move{}, fmt.Errorf("ERROR: No piece at source square")
+	}
+
+	if piece.Color != gs.ActiveColor {
+		return Move{}, fmt.Errorf("ERROR: Wrong color piece")
+	}
+
+	legalMoves := gs.GenerateLegalMoves()
+	for _, move := range legalMoves {
+		if move.From == from &amp;&amp; move.To == to {
+			return move, nil
+		}
+	}
+
+	return Move{}, fmt.Errorf("ERROR: Illegal move")
+}
+
+func (gs *GameState) MakeMove(move Move) {
+	// Handle en passant capture
+	if move.IsEnPassant {
+		capturedPawnSquare := Square{move.To.File, move.From.Rank}
+		gs.SetPiece(capturedPawnSquare, Piece{Type: Empty})
+	}
+
+	// Handle castling
+	if move.IsCastle {
+		// Move the rook
+		rank := move.From.Rank
+		if move.To.File == 6 { // Kingside
+			rookFrom := Square{7, rank}
+			rookTo := Square{5, rank}
+			rook := gs.GetPiece(rookFrom)
+			gs.SetPiece(rookFrom, Piece{Type: Empty})
+			gs.SetPiece(rookTo, rook)
+		} else { // Queenside
+			rookFrom := Square{0, rank}
+			rookTo := Square{3, rank}
+			rook := gs.GetPiece(rookFrom)
+			gs.SetPiece(rookFrom, Piece{Type: Empty})
+			gs.SetPiece(rookTo, rook)
+		}
+	}
+
+	// Move the piece
+	gs.SetPiece(move.From, Piece{Type: Empty})
+
+	if move.IsPromotion {
+		gs.SetPiece(move.To, NewPiece(move.PromoteTo, move.Piece.Color))
+	} else {
+		gs.SetPiece(move.To, move.Piece)
+	}
+
+	// Update castling rights
+	if move.Piece.Type == King {
+		gs.CastlingRights[move.Piece.Color][KingsideCastle] = false
+		gs.CastlingRights[move.Piece.Color][QueensideCastle] = false
+	} else if move.Piece.Type == Rook {
+		if move.From.File == 0 {
+			gs.CastlingRights[move.Piece.Color][QueensideCastle] = false
+		} else if move.From.File == 7 {
+			gs.CastlingRights[move.Piece.Color][KingsideCastle] = false
+		}
+	}
+
+	// Update en passant target
+	gs.EnPassantTarget = nil
+	if move.Piece.Type == Pawn &amp;&amp; abs(move.To.Rank-move.From.Rank) == 2 {
+		gs.EnPassantTarget = &amp;Square{move.From.File, (move.From.Rank + move.To.Rank) / 2}
+	}
+
+	// Update counters
+	if move.IsCapture || move.Piece.Type == Pawn {
+		gs.HalfmoveClock = 0
+	} else {
+		gs.HalfmoveClock++
+	}
+
+	if gs.ActiveColor == Black {
+		gs.FullmoveNumber++
+	}
+
+	// Switch active color
+	gs.ActiveColor = 1 - gs.ActiveColor
+
+	// Add to move history
+	gs.MoveHistory = append(gs.MoveHistory, move)
+}
+
+func (gs *GameState) UndoLastMove() bool {
+	if len(gs.MoveHistory) == 0 {
+		return false
+	}
+
+	// This is a simplified undo - in a full implementation,
+	// you'd need to store additional game state information
+	lastMoveIndex := len(gs.MoveHistory) - 1
+	move := gs.MoveHistory[lastMoveIndex]
+	gs.MoveHistory = gs.MoveHistory[:lastMoveIndex]
+
+	// Switch back the active color
+	gs.ActiveColor = 1 - gs.ActiveColor
+
+	// Restore the piece to its original position
+	gs.SetPiece(move.From, move.Piece)
+
+	// Handle captured pieces
+	if move.Captured != nil {
+		if move.IsEnPassant {
+			// Restore the captured pawn to its original square
+			capturedPawnSquare := Square{move.To.File, move.From.Rank}
+			gs.SetPiece(capturedPawnSquare, *move.Captured)
+			gs.SetPiece(move.To, Piece{Type: Empty})
+		} else {
+			gs.SetPiece(move.To, *move.Captured)
+		}
+	} else {
+		gs.SetPiece(move.To, Piece{Type: Empty})
+	}
+
+	// Handle castling undo
+	if move.IsCastle {
+		rank := move.From.Rank
+		if move.To.File == 6 { // Kingside
+			rookFrom := Square{5, rank}
+			rookTo := Square{7, rank}
+			rook := gs.GetPiece(rookFrom)
+			gs.SetPiece(rookFrom, Piece{Type: Empty})
+			gs.SetPiece(rookTo, rook)
+		} else { // Queenside
+			rookFrom := Square{3, rank}
+			rookTo := Square{0, rank}
+			rook := gs.GetPiece(rookFrom)
+			gs.SetPiece(rookFrom, Piece{Type: Empty})
+			gs.SetPiece(rookTo, rook)
+		}
+	}
+
+	return true
+}
+
+func abs(x int) int {
+	if x &lt; 0 {
+		return -x
+	}
+	return x
+}
+</code></pre>
+</div>
+<div class="file-item">
+<button class="file-toggle" onclick="toggleFile('src_types_go')">📄 src/types.go</button>
+<pre id="src_types_go" class="file-content" style="display:none;"><code class="language-go">package main
+
+type PieceType int
+type Color int
+
+const (
+	Empty PieceType = iota
+	Pawn
+	Knight
+	Bishop
+	Rook
+	Queen
+	King
+)
+
+const (
+	White Color = iota
+	Black
+)
+
+type Piece struct {
+	Type  PieceType
+	Color Color
+}
+
+type Square struct {
+	File int // 0-7 (a-h)
+	Rank int // 0-7 (1-8)
+}
+
+type Move struct {
+	From        Square
+	To          Square
+	Piece       Piece
+	Captured    *Piece
+	IsCapture   bool
+	IsCastle    bool
+	IsEnPassant bool
+	IsPromotion bool
+	PromoteTo   PieceType
+}
+
+type GameState struct {
+	Board           [8][8]Piece
+	ActiveColor     Color
+	CastlingRights  [2][2]bool // [color][side] - true if castling is allowed
+	EnPassantTarget *Square    // Target square for en passant capture
+	HalfmoveClock   int        // Moves since last capture or pawn move
+	FullmoveNumber  int        // Move number (increments after black's move)
+	MoveHistory     []Move
+}
+
+const (
+	KingsideCastle  = 0
+	QueensideCastle = 1
+)
+
+func NewPiece(pieceType PieceType, color Color) Piece {
+	return Piece{Type: pieceType, Color: color}
+}
+
+func (p Piece) IsEmpty() bool {
+	return p.Type == Empty
+}
+
+func (p Piece) Symbol() rune {
+	if p.Type == Empty {
+		return '.'
+	}
+
+	var symbol rune
+	switch p.Type {
+	case Pawn:
+		symbol = 'P'
+	case Knight:
+		symbol = 'N'
+	case Bishop:
+		symbol = 'B'
+	case Rook:
+		symbol = 'R'
+	case Queen:
+		symbol = 'Q'
+	case King:
+		symbol = 'K'
+	}
+
+	if p.Color == Black {
+		symbol = rune(int(symbol) + 32) // Convert to lowercase
+	}
+
+	return symbol
+}
+
+func NewSquare(file, rank int) Square {
+	return Square{File: file, Rank: rank}
+}
+
+func (s Square) ToAlgebraic() string {
+	return string(rune('a'+s.File)) + string(rune('1'+s.Rank))
+}
+
+func AlgebraicToSquare(algebraic string) Square {
+	if len(algebraic) != 2 {
+		return Square{-1, -1}
+	}
+	file := int(algebraic[0] - 'a')
+	rank := int(algebraic[1] - '1')
+	return Square{File: file, Rank: rank}
+}
+
+func (s Square) IsValid() bool {
+	return s.File &gt;= 0 &amp;&amp; s.File &lt; 8 &amp;&amp; s.Rank &gt;= 0 &amp;&amp; s.Rank &lt; 8
+}
+</code></pre>
+</div>
+</div>
+
+<script>
+function toggleFile(id) {
+    var content = document.getElementById(id);
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        // Highlight the code when first shown
+        var codeBlock = content.querySelector('code');
+        if (codeBlock && !codeBlock.classList.contains('hljs')) {
+            hljs.highlightElement(codeBlock);
+        }
+    } else {
+        content.style.display = 'none';
+    }
+}
+</script>
+
+    </main>
+    <footer>
+        <p>Generated from benchmark data. All implementations tested via Docker for consistency.</p>
+        <p><a href="https://github.com/evaisse/the-great-analysis-challenge">View on GitHub</a></p>
+    </footer>
+</body>
+</html>

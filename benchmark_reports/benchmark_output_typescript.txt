@@ -1,31 +1,56 @@
-Running TypeScript static analysis...
-npm install
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
 
-added 4 packages, and audited 5 packages in 469ms
+============================================================
+Testing typescript implementation
+Path: implementations/typescript
+============================================================
+🧹 Clearing build cache...
+🔧 Running: make clean
+✅ Local cache cleared with make clean
+✅ Cache clearing completed
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (includes analysis and build)...
+  🔧 Running: docker build -t chess-typescript .
+  ✅ Docker build completed in 0.45s
+  🔍 Running static analysis...
+    🔧 Running: make analyze
+  ♟️  Running chess engine tests...
+    🔧 Running: make test
+  ✅ All Docker tests passed (build: 0.4s, analyze: 1.9s, test: 0.9s)
 
-1 package is looking for funding
-  run `npm fund` for details
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-11-06 19:42:46
+================================================================================
 
-found 0 vulnerabilities
-npm run lint || true
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+typescript   completed      1.9s     0.4s     0.9s        0MB 3/3     
 
-> typescript@1.0.0 lint
-> echo "No linter configured yet" && exit 0
+============================================================
+DETAILED RESULTS: TYPESCRIPT
+============================================================
 
-No linter configured yet
-npx tsc --noEmit || true
-npx prettier --check src/*.ts || true
-Checking formatting...
-npm install
+TIMING BREAKDOWN:
+  Build Seconds: 0.45s
+  Analyze Seconds: 1.92s
+  Test Seconds: 0.95s
 
-up to date, audited 5 packages in 480ms
+CHESS ENGINE TESTS: 3 passed, 0 failed
 
-1 package is looking for funding
-  run `npm fund` for details
+DOCKER TESTS:
+  Build: ✅ (0.45s)
+  Test: ✅ (0.95s)
 
-found 0 vulnerabilities
-npm run build
+================================================================================
 
-> typescript@1.0.0 build
-> tsc
+📄 Text report saved to benchmark_reports/performance_report_typescript.txt
+📄 JSON results saved to benchmark_reports/performance_data_typescript.json
 
+✅ All 1 implementation(s) completed successfully
