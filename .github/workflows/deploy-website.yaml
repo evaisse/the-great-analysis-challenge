@@ -30,6 +30,9 @@ jobs:
         with:
           python-version: '3.11'
       
+      - name: Validate website metadata
+        run: ./workflow validate-website-metadata
+      
       - name: Build website
         run: |
           python3 build_website.py
