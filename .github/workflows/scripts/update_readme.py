@@ -25,18 +25,21 @@ def load_performance_data():
     """Load performance benchmark data from individual files"""
     project_root = find_project_root()
     if project_root:
-        benchmark_dir = os.path.join(project_root, 'benchmark_reports')
+        benchmark_dir = os.path.join(project_root, 'reports')
     else:
-        benchmark_dir = 'benchmark_reports'
+        benchmark_dir = 'reports'
     performance_data = []
     
     if not os.path.exists(benchmark_dir):
-        print("⚠️ Benchmark reports directory not found")
+        print("⚠️ Reports directory not found")
         return []
     
     # Load individual performance data files
     import glob
-    data_files = glob.glob(os.path.join(benchmark_dir, 'performance_data_*.json'))
+    data_files = [
+        path for path in glob.glob(os.path.join(benchmark_dir, '*.json'))
+        if not path.endswith('performance_data.json')
+    ]
     
     for data_file in data_files:
         try:

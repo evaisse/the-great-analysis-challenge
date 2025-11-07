@@ -6,6 +6,7 @@ This ensures each language has an emoji, website URL, and other display metadata
 
 import os
 import sys
+import types
 from pathlib import Path
 from typing import Dict, List, Tuple, Set
 
@@ -29,7 +30,25 @@ def get_language_metadata_from_file() -> Dict[str, Dict]:
         if spec is None or spec.loader is None:
             print(f"❌ Could not load build_website.py module spec")
             return {}
-            
+
+        # Provide a stub yaml module if PyYAML is unavailable so imports succeed
+        if 'yaml' not in sys.modules:
+            try:
+                import yaml  # type: ignore
+            except ModuleNotFoundError:
+                stub = types.ModuleType("yaml")
+
+                def _missing_yaml(*args, **kwargs):
+                    raise ModuleNotFoundError(
+                        "PyYAML is required to use yaml functions in build_website.py. "
+                        "Install PyYAML or avoid calling yaml helpers."
+                    )
+
+                stub.safe_load = _missing_yaml  # type: ignore[attr-defined]
+                stub.load = _missing_yaml       # type: ignore[attr-defined]
+                stub.dump = _missing_yaml       # type: ignore[attr-defined]
+                sys.modules['yaml'] = stub
+
         build_website = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(build_website)
         

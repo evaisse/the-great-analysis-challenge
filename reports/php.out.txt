@@ -1,0 +1,54 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing php implementation
+Path: implementations/php
+============================================================
+🧹 Clearing build cache...
+🔧 Running: make clean
+✅ Local cache cleared with make clean
+✅ Cache clearing completed
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (includes analysis and build)...
+  🔧 Running: docker build -t chess-php .
+  ✅ Docker build completed in 0.71s
+  🔍 Running static analysis...
+    🔧 Running: make analyze
+  ♟️  Running chess engine tests...
+    🔧 Running: make test
+  ✅ All Docker tests passed (build: 0.7s, analyze: 0.5s, test: 0.2s)
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-11-07 22:37:35
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+php          completed      0.5s     0.7s     0.2s        0MB 3/3     
+
+============================================================
+DETAILED RESULTS: PHP
+============================================================
+
+TIMING BREAKDOWN:
+  Build Seconds: 0.71s
+  Analyze Seconds: 0.46s
+  Test Seconds: 0.24s
+
+CHESS ENGINE TESTS: 3 passed, 0 failed
+
+DOCKER TESTS:
+  Build: ✅ (0.71s)
+  Test: ✅ (0.24s)
+
+================================================================================
+📄 JSON results saved to reports/php.json
+
+✅ All 1 implementation(s) completed successfully

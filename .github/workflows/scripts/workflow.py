@@ -294,15 +294,17 @@ class WorkflowTool:
             return False
         
         # Create reports directory
-        os.makedirs("benchmark_reports", exist_ok=True)
+        reports_dir = Path("reports")
+        reports_dir.mkdir(exist_ok=True)
+        text_output = reports_dir / f"{impl_name}.out.txt"
+        json_output = reports_dir / f"{impl_name}.json"
         
         # Run performance test
         cmd = [
             "python3", "test/performance_test.py",
             "--impl", impl_dir,
             "--timeout", str(timeout),
-            "--output", f"benchmark_reports/performance_report_{impl_name}.txt",
-            "--json", f"benchmark_reports/performance_data_{impl_name}.json"
+            "--json", str(json_output)
         ]
         
         try:
@@ -312,7 +314,7 @@ class WorkflowTool:
                 timeout=timeout+60,
                 check=False,
                 stream_output=True,
-                output_file=f"benchmark_reports/benchmark_output_{impl_name}.txt"
+                output_file=str(text_output)
             )
             
             if result.returncode == 0:
@@ -327,6 +329,22 @@ class WorkflowTool:
             return False
         except Exception as e:
             print(f"❌ Benchmark failed for {impl_name}: {e}")
+            return False
+    
+    def analyze_python_tools(self) -> bool:
+        """Run static analysis over Python tooling outside implementations."""
+        print("=== Running Python tooling static analysis ===")
+        result = self.run_command(
+            ["python3", "scripts/analyze_python_tools.py"],
+            timeout=180,
+            check=False,
+            show_output=True,
+        )
+        if result.returncode == 0:
+            print("✅ Python tooling static analysis passed")
+            return True
+        else:
+            print("❌ Python tooling static analysis failed")
             return False
     
     def verify_implementations(self) -> Dict:
@@ -389,13 +407,13 @@ class WorkflowTool:
         print("=== Combining Benchmark Results ===")
         
         # Create combined reports directory
-        os.makedirs("benchmark_reports", exist_ok=True)
+        os.makedirs("reports", exist_ok=True)
         
         # Copy all individual reports
         try:
             for pattern in ["*.txt", "*.json"]:
                 for file_path in glob.glob(f"benchmark_artifacts/**/{pattern}", recursive=True):
-                    dest_path = os.path.join("benchmark_reports", os.path.basename(file_path))
+                    dest_path = os.path.join("reports", os.path.basename(file_path))
                     with open(file_path, "r") as src, open(dest_path, "w") as dst:
                         dst.write(src.read())
         except Exception as e:
@@ -403,7 +421,9 @@ class WorkflowTool:
         
         # Combine JSON reports
         all_results = []
-        for json_file in glob.glob('benchmark_reports/performance_data_*.json'):
+        for json_file in glob.glob('reports/*.json'):
+            if json_file.endswith('performance_data.json'):
+                continue
             try:
                 with open(json_file, 'r') as f:
                     data = json.load(f)
@@ -416,7 +436,7 @@ class WorkflowTool:
         
         # Save combined results
         if all_results:
-            with open('benchmark_reports/performance_data.json', 'w') as f:
+            with open('reports/performance_data.json', 'w') as f:
                 json.dump(all_results, f, indent=2)
             print(f'Combined {len(all_results)} implementation results')
         
@@ -430,7 +450,7 @@ class WorkflowTool:
         def load_performance_data():
             """Load performance benchmark data"""
             try:
-                with open('benchmark_reports/performance_data.json', 'r') as f:
+                with open('reports/performance_data.json', 'r') as f:
                     return json.load(f)
             except FileNotFoundError:
                 print("⚠️ Performance data not found")
@@ -584,17 +604,17 @@ class WorkflowTool:
             self.run_command(["git", "config", "--local", "user.name", "GitHub Action"], show_output=True)
             
             # Copy benchmark reports to repo
-            os.makedirs("benchmark_reports", exist_ok=True)
+            os.makedirs("reports", exist_ok=True)
             for pattern in ["*.txt", "*.json"]:
                 for file_path in glob.glob(f"benchmark_artifacts/**/{pattern}", recursive=True):
-                    dest_path = os.path.join("benchmark_reports", os.path.basename(file_path))
+                    dest_path = os.path.join("reports", os.path.basename(file_path))
                     try:
                         with open(file_path, "r") as src, open(dest_path, "w") as dst:
                             dst.write(src.read())
                     except Exception:
                         pass
             
-            self.run_command(["git", "add", "benchmark_reports/", "README.md"], show_output=True)
+            self.run_command(["git", "add", "reports/", "README.md"], show_output=True)
             
             commit_message = f"""chore: update implementation status from benchmark suite
 
@@ -871,12 +891,15 @@ def main():
     benchmark_parser.add_argument('--timeout', type=int, default=60, help='Timeout in seconds')
     benchmark_parser.add_argument('--all', action='store_true', help='Run benchmarks on all implementations')
     
+    # analyze-python-tools command
+    subparsers.add_parser('analyze-python-tools', help='Static analysis for repository Python tooling')
+    
     # verify-implementations command
     subparsers.add_parser('verify-implementations', help='Run structure verification')
     
     # validate-results command
     validate_results_parser = subparsers.add_parser('validate-results', help='Validate benchmark result JSON files')
-    validate_results_parser.add_argument('--benchmark-dir', default='benchmark_reports', help='Benchmark directory')
+    validate_results_parser.add_argument('--benchmark-dir', default='reports', help='Benchmark directory')
     
     # validate-website-metadata command
     subparsers.add_parser('validate-website-metadata', help='Validate website metadata completeness')
@@ -961,6 +984,10 @@ def main():
             except NameError:
                 success = tool.run_benchmark(args.impl_name, args.timeout)
                 return 0 if success else 1
+        
+        elif args.command == 'analyze-python-tools':
+            success = tool.analyze_python_tools()
+            return 0 if success else 1
         
         elif args.command == 'verify-implementations':
             try:

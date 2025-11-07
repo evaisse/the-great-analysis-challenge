@@ -5,14 +5,14 @@ This directory contains the generated static website for [The Great Analysis Cha
 ## Overview
 
 The website provides:
-- **Comprehensive Comparison Table**: All implementations with metrics (LOC, build times, features)
-- **Interactive Source Code Explorer**: Browse source code for each implementation
-- **Modern Responsive Design**: Works on desktop and mobile devices
+- **Plain Comparison Ledger**: A single table listing every implementation with latest major release date, LOC, build/test/analyze timings, and declared features.
+- **Direct Repository Links**: Each row points straight to the implementation directory on GitHub for deeper inspection.
+- **Lo-fi Presentation**: Monospace typography, muted palette, and zero JavaScript for a low-tech reading experience.
 
 ## Generation
 
 The website is automatically generated from:
-- Benchmark data in `../benchmark_reports/`
+- Benchmark data in `../reports/`
 - Implementation metadata from `chess.meta` files
 - Source code analysis (line counting)
 
@@ -49,17 +49,18 @@ python3 -m http.server 8080
 
 ```
 docs/
-├── index.html              # Main comparison page
-├── source_*.html           # Source explorer for each language
-├── style.css               # Stylesheet
-└── .nojekyll              # Disable Jekyll processing
+├── index.html    # Main comparison page
+├── style.css     # Monospace lo-fi stylesheet
+├── favicon.svg   # Retro favicon used by the site
+├── README.md     # This file
+└── .nojekyll     # Disable Jekyll processing on GitHub Pages
 ```
 
 ## Files
 
-- **index.html**: Main landing page with comparison table
-- **source_<language>.html**: Source code explorer for each implementation
-- **style.css**: Responsive CSS styling
+- **index.html**: Main landing page with the comparison ledger
+- **style.css**: Lo-fi styling for the site
+- **favicon.svg**: Site icon bundled with the pages
 - **.nojekyll**: Tells GitHub Pages not to process with Jekyll
 
 ## Maintenance

@@ -1,133 +1,156 @@
 #!/usr/bin/env python3
-"""
-Generate static website for GitHub Pages with implementation comparison and source code explorer.
-"""
+"""Generate a lo-fi static website summarising implementation metrics."""
 
-import os
-import json
 import glob
-import subprocess
-from pathlib import Path
+import json
+import os
 from typing import Dict, List, Any
-import shutil
 
+FAVICON_SVG = """<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#111827"/>
+  <path fill="#fef3c7" d="M12 16h40v4H12zM12 30h40v4H12zM12 44h40v4H12z"/>
+  <circle cx="20" cy="18" r="3" fill="#facc15"/>
+  <circle cx="32" cy="32" r="3" fill="#facc15"/>
+  <circle cx="44" cy="46" r="3" fill="#facc15"/>
+</svg>
+"""
 
 def get_language_metadata() -> Dict[str, Dict[str, str]]:
     """Get metadata for each language including emoji, website, and popularity."""
     return {
-        'rust': {
-            'emoji': '🦀',
-            'website': 'https://www.rust-lang.org/',
-            'tiobe_rank': '14',
-            'github_stars': '4.5M+ repos'
-        },
         'python': {
             'emoji': '🐍',
             'website': 'https://www.python.org/',
             'tiobe_rank': '1',
-            'github_stars': '10M+ repos'
+            'github_stars': '10M+ repos',
+            'latest_major_release': '2023-10-02'
         },
         'go': {
             'emoji': '🐹',
             'website': 'https://go.dev/',
             'tiobe_rank': '8',
-            'github_stars': '3.5M+ repos'
+            'github_stars': '3.5M+ repos',
+            'latest_major_release': '2024-02-06'
         },
         'typescript': {
             'emoji': '📘',
             'website': 'https://www.typescriptlang.org/',
             'tiobe_rank': '20',
-            'github_stars': '5M+ repos'
+            'github_stars': '5M+ repos',
+            'latest_major_release': '2024-05-21'
         },
         'ruby': {
-            'emoji': '💎',
+            'emoji': '❤️',
             'website': 'https://www.ruby-lang.org/',
             'tiobe_rank': '17',
-            'github_stars': '2M+ repos'
+            'github_stars': '2M+ repos',
+            'latest_major_release': '2023-12-25'
         },
         'crystal': {
-            'emoji': '💎',
+            'emoji': '💠',
             'website': 'https://crystal-lang.org/',
             'tiobe_rank': 'N/A',
-            'github_stars': '60K+ repos'
+            'github_stars': '60K+ repos',
+            'latest_major_release': '2024-07-18'
         },
         'julia': {
-            'emoji': '🔴',
+            'emoji': '🔮',
             'website': 'https://julialang.org/',
             'tiobe_rank': '30',
-            'github_stars': '200K+ repos'
+            'github_stars': '200K+ repos',
+            'latest_major_release': '2024-06-13'
         },
         'kotlin': {
-            'emoji': '🟣',
+            'emoji': '🧡',
             'website': 'https://kotlinlang.org/',
             'tiobe_rank': '24',
-            'github_stars': '1.5M+ repos'
+            'github_stars': '1.5M+ repos',
+            'latest_major_release': '2024-05-21'
         },
         'haskell': {
-            'emoji': '🎓',
+            'emoji': '📐',
             'website': 'https://www.haskell.org/',
             'tiobe_rank': '38',
-            'github_stars': '500K+ repos'
+            'github_stars': '500K+ repos',
+            'latest_major_release': '2024-03-01'
         },
         'gleam': {
-            'emoji': '⭐',
+            'emoji': '✨',
             'website': 'https://gleam.run/',
             'tiobe_rank': 'N/A',
-            'github_stars': '15K+ repos'
+            'github_stars': '15K+ repos',
+            'latest_major_release': '2024-06-06'
+        },
+        'rust': {
+            'emoji': '🦀',
+            'website': 'https://www.rust-lang.org/',
+            'tiobe_rank': '14',
+            'github_stars': '4.5M+ repos',
+            'latest_major_release': '2024-07-25'
         },
         'dart': {
             'emoji': '🎯',
             'website': 'https://dart.dev/',
             'tiobe_rank': '25',
-            'github_stars': '1M+ repos'
+            'github_stars': '1M+ repos',
+            'latest_major_release': '2024-06-20'
         },
         'elm': {
             'emoji': '🌳',
             'website': 'https://elm-lang.org/',
             'tiobe_rank': 'N/A',
-            'github_stars': '100K+ repos'
+            'github_stars': '100K+ repos',
+            'latest_major_release': '2019-10-21'
         },
         'rescript': {
-            'emoji': '🔴',
+            'emoji': '🧠',
             'website': 'https://rescript-lang.org/',
             'tiobe_rank': 'N/A',
-            'github_stars': '50K+ repos'
+            'github_stars': '50K+ repos',
+            'latest_major_release': '2024-02-19'
         },
         'mojo': {
             'emoji': '🔥',
             'website': 'https://www.modular.com/mojo',
             'tiobe_rank': 'N/A',
-            'github_stars': '20K+ repos'
+            'github_stars': '20K+ repos',
+            'latest_major_release': '2024-08-30'
         },
         'swift': {
             'emoji': '🐦',
             'website': 'https://www.swift.org/',
             'tiobe_rank': '15',
-            'github_stars': '2.5M+ repos'
+            'github_stars': '2.5M+ repos',
+            'latest_major_release': '2024-03-07'
         },
         'zig': {
             'emoji': '⚡',
             'website': 'https://ziglang.org/',
             'tiobe_rank': 'N/A',
-            'github_stars': '150K+ repos'
+            'github_stars': '150K+ repos',
+            'latest_major_release': '2024-06-21'
         },
         'nim': {
-            'emoji': '👑',
+            'emoji': '🦊',
             'website': 'https://nim-lang.org/',
             'tiobe_rank': 'N/A',
-            'github_stars': '100K+ repos'
+            'github_stars': '100K+ repos',
+            'latest_major_release': '2023-11-16'
         },
         'lua': {
-            'emoji': '🌙',
+            'emoji': '🪐',
             'website': 'https://www.lua.org/',
             'tiobe_rank': '26',
-            'github_stars': '1M+ repos'
+            'github_stars': '1M+ repos',
+            'latest_major_release': '2023-09-15'
         },
         'php': {
             'emoji': '🐘',
             'website': 'https://www.php.net/',
             'tiobe_rank': '7',
-            'github_stars': '8M+ repos'
+            'github_stars': '8M+ repos',
+            'latest_major_release': '2023-11-23'
         }
     }
 
@@ -185,7 +208,7 @@ def count_lines_of_code(impl_path: str) -> Dict[str, int]:
 
 def load_performance_data(lang: str) -> Dict[str, Any]:
     """Load performance data for a language."""
-    perf_file = f"benchmark_reports/performance_data_{lang}.json"
+    perf_file = f"reports/{lang}.json"
     if os.path.exists(perf_file):
         try:
             with open(perf_file, 'r') as f:
@@ -250,31 +273,21 @@ def gather_all_data() -> List[Dict[str, Any]]:
 
 def generate_html_header(title: str, include_datatable: bool = False) -> str:
     """Generate HTML header."""
-    datatable_includes = ""
-    if include_datatable:
-        datatable_includes = """
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>"""
-    
+    _ = include_datatable  # Parameter preserved for compatibility
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title} - The Great Analysis Challenge</title>
-    <link rel="stylesheet" href="style.css">{datatable_includes}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <title>{title} · The Great Analysis Challenge</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
-        <h1>🏆 The Great Analysis Challenge</h1>
-        <p class="subtitle">Multi-Language Chess Engine Comparison</p>
-        <nav>
-            <a href="index.html">Home</a>
-            <a href="https://github.com/evaisse/the-great-analysis-challenge">GitHub</a>
-        </nav>
+        <h1>The Great Analysis Challenge</h1>
+        <p class="subtitle">polyglot chess engine benchmarking logbook</p>
+        <p class="links"><a href="https://github.com/evaisse/the-great-analysis-challenge">github.com/evaisse/the-great-analysis-challenge</a></p>
     </header>
     <main>
 """
@@ -285,464 +298,268 @@ def generate_html_footer() -> str:
     return """
     </main>
     <footer>
-        <p>Generated from benchmark data. All implementations tested via Docker for consistency.</p>
-        <p><a href="https://github.com/evaisse/the-great-analysis-challenge">View on GitHub</a></p>
+        <p>benchmarks, docs, and tooling live together in the repo.</p>
+        <p><a href="https://github.com/evaisse/the-great-analysis-challenge">github.com/evaisse/the-great-analysis-challenge</a></p>
     </footer>
+    <script>
+    (function() {
+        const table = document.querySelector('.comparison-table');
+        if (!table) return;
+        const headers = Array.from(table.querySelectorAll('th'));
+        const tbody = table.tBodies[0];
+        headers.forEach((header, index) => {
+            header.addEventListener('click', () => {
+                const ascending = !header.classList.contains('sort-asc');
+                headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+                header.classList.add(ascending ? 'sort-asc' : 'sort-desc');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                rows.sort((a, b) => {
+                    const cellA = a.cells[index];
+                    const cellB = b.cells[index];
+                    const rawA = cellA ? (cellA.dataset.sort ?? cellA.textContent.trim()) : '';
+                    const rawB = cellB ? (cellB.dataset.sort ?? cellB.textContent.trim()) : '';
+
+                    const valueA = rawA.toLowerCase() === 'infinity' ? Infinity : rawA;
+                    const valueB = rawB.toLowerCase() === 'infinity' ? Infinity : rawB;
+
+                    const numA = Number(valueA);
+                    const numB = Number(valueB);
+                    const bothNumeric = !Number.isNaN(numA) && !Number.isNaN(numB);
+
+                    let comparison;
+                    if (bothNumeric) {
+                        comparison = numA - numB;
+                    } else {
+                        comparison = String(valueA).localeCompare(String(valueB), undefined, { numeric: true });
+                    }
+
+                    return ascending ? comparison : -comparison;
+                });
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    })();
+    </script>
 </body>
 </html>
 """
 
 
-def format_time(seconds: float) -> str:
-    """Format time in ms."""
-    if seconds == 0:
-        return "0ms"
-    return f"{int(seconds * 1000)}ms"
-
-
 def generate_comparison_table(all_data: List[Dict[str, Any]]) -> str:
     """Generate the comparison table HTML."""
     lang_metadata = get_language_metadata()
-    
-    html = '<h2>📊 Implementation Comparison</h2>\n'
-    html += '<div class="table-container">\n'
-    html += '<table id="comparison-table" class="comparison-table">\n'
+    repo_base = "https://github.com/evaisse/the-great-analysis-challenge/tree/master/implementations"
+
+    html = '<h2>implementation ledger</h2>\n'
+    html += '<p class="note">times are rough milliseconds from Docker runs; latest major is recorded as ISO dates; features reflect the `chess.meta` declarations.</p>\n'
+    html += '<table class="comparison-table">\n'
     html += '<thead>\n<tr>\n'
-    html += '<th>Language</th>\n'
-    html += '<th>Version</th>\n'
-    html += '<th>LOC</th>\n'
-    html += '<th>Files</th>\n'
-    html += '<th>Build Time (ms)</th>\n'
-    html += '<th>Test Time (ms)</th>\n'
-    html += '<th>Analyze Time (ms)</th>\n'
-    html += '<th>TIOBE Rank</th>\n'
-    html += '<th>GitHub Repos</th>\n'
-    html += '<th>Features</th>\n'
-    html += '<th>Source</th>\n'
+    html += '<th>language</th>\n'
+    html += '<th>latest major</th>\n'
+    html += '<th>loc</th>\n'
+    html += '<th>files</th>\n'
+    html += '<th>build (ms)</th>\n'
+    html += '<th>test (ms)</th>\n'
+    html += '<th>analyze (ms)</th>\n'
+    html += '<th>features</th>\n'
+    html += '<th>source</th>\n'
     html += '</tr>\n</thead>\n<tbody>\n'
-    
+
     for data in all_data:
         lang = data['language']
         metadata = data.get('metadata', {})
         perf = data.get('performance', {})
         loc = data.get('loc', {})
         timings = perf.get('timings', {})
-        lang_meta = lang_metadata.get(lang, {'emoji': '📦', 'website': '#', 'tiobe_rank': 'N/A', 'github_stars': 'N/A'})
-        
-        # Get values
-        version = metadata.get('version', 'N/A')
+        lang_meta = lang_metadata.get(
+            lang,
+            {'emoji': '□', 'website': '#', 'latest_major_release': 'n/a'}
+        )
+
         loc_count = loc.get('loc', 0)
         file_count = loc.get('files', 0)
-        build_time = int(timings.get('build_seconds', 0) * 1000)
-        test_time = int(timings.get('test_seconds', 0) * 1000)
-        analyze_time = int(timings.get('analyze_seconds', 0) * 1000)
+
+        def fmt_time(value):
+            if value is None:
+                return '—', 'Infinity'
+            millis = int(round(value * 1000))
+            return str(millis), str(millis)
+
+        build_time_disp, build_time_sort = fmt_time(timings.get('build_seconds'))
+        test_time_disp, test_time_sort = fmt_time(timings.get('test_seconds'))
+        analyze_time_disp, analyze_time_sort = fmt_time(timings.get('analyze_seconds'))
+
         features = metadata.get('features', [])
-        feature_icons = ''.join(['✅' if f in features else '❌' for f in ['perft', 'fen', 'ai']])
-        
-        # Parse TIOBE rank for sorting (N/A = 999 for sorting to bottom)
-        tiobe_rank_str = lang_meta["tiobe_rank"]
-        tiobe_rank_num = 999 if tiobe_rank_str == 'N/A' else int(tiobe_rank_str)
-        
-        # Parse GitHub repos for sorting
-        github_str = lang_meta["github_stars"]
-        # Extract numeric value: "10M+ repos" -> 10000000, "60K+ repos" -> 60000
-        github_num = 0
-        if github_str != 'N/A':
-            try:
-                if 'M+' in github_str:
-                    github_num = int(float(github_str.split('M+')[0]) * 1000000)
-                elif 'K+' in github_str:
-                    github_num = int(float(github_str.split('K+')[0]) * 1000)
-            except:
-                github_num = 0
-        
+        feature_summary = ', '.join(features) if features else 'n/a'
+        feature_sort = ' '.join(sorted(features)) if features else ''
+
+        repo_url = f"{repo_base}/{lang}"
+        latest_release = lang_meta.get('latest_major_release', 'n/a')
+        latest_sort = latest_release if latest_release != 'n/a' else '0000-00-00'
+
         html += '<tr>\n'
-        html += f'<td><a href="{lang_meta["website"]}" target="_blank" rel="noopener">{lang_meta["emoji"]} <strong>{lang.capitalize()}</strong></a></td>\n'
-        html += f'<td>{version}</td>\n'
-        html += f'<td data-order="{loc_count}">{loc_count}</td>\n'
-        html += f'<td data-order="{file_count}">{file_count}</td>\n'
-        html += f'<td data-order="{build_time}">{build_time}</td>\n'
-        html += f'<td data-order="{test_time}">{test_time}</td>\n'
-        html += f'<td data-order="{analyze_time}">{analyze_time}</td>\n'
-        html += f'<td data-order="{tiobe_rank_num}">{tiobe_rank_str}</td>\n'
-        html += f'<td data-order="{github_num}">{github_str}</td>\n'
-        html += f'<td>{feature_icons}</td>\n'
-        html += f'<td><a href="source_{lang}.html">View Source</a></td>\n'
+        html += (
+            f'<td data-sort="{lang.lower()}"><span class="emoji">{lang_meta["emoji"]}</span> '
+            f'<a href="{lang_meta["website"]}" target="_blank" rel="noopener">{lang.capitalize()}</a></td>\n'
+        )
+        html += f'<td data-sort="{latest_sort}">{latest_release}</td>\n'
+        html += f'<td class="numeric" data-sort="{loc_count}">{loc_count}</td>\n'
+        html += f'<td class="numeric" data-sort="{file_count}">{file_count}</td>\n'
+        html += f'<td class="numeric" data-sort="{build_time_sort}">{build_time_disp}</td>\n'
+        html += f'<td class="numeric" data-sort="{test_time_sort}">{test_time_disp}</td>\n'
+        html += f'<td class="numeric" data-sort="{analyze_time_sort}">{analyze_time_disp}</td>\n'
+        html += f'<td data-sort="{feature_sort}">{feature_summary}</td>\n'
+        html += f'<td data-sort="{repo_url}"><a href="{repo_url}" target="_blank" rel="noopener">view repo</a></td>\n'
         html += '</tr>\n'
-    
-    html += '</tbody>\n</table>\n</div>\n'
-    
-    # Add DataTables initialization script
-    html += """
-<script>
-$(document).ready(function() {
-    $('#comparison-table').DataTable({
-        "paging": false,
-        "info": false,
-        "order": [[2, "asc"]]  // Default sort by LOC
-    });
-});
-</script>
-"""
-    
-    return html
 
-
-def generate_source_explorer(lang: str, impl_path: str) -> str:
-    """Generate source code explorer page for an implementation."""
-    lang_metadata = get_language_metadata()
-    lang_meta = lang_metadata.get(lang, {'emoji': '📦', 'website': '#'})
-    
-    html = generate_html_header(f"{lang.capitalize()} Source Code", include_datatable=False)
-    
-    html += f'<h2>{lang_meta["emoji"]} <a href="{lang_meta["website"]}" target="_blank" rel="noopener">{lang.capitalize()}</a> Implementation</h2>\n'
-    html += '<div class="breadcrumb"><a href="index.html">← Back to Comparison</a></div>\n'
-    
-    # Map language names to highlight.js language identifiers
-    lang_map = {
-        'crystal': 'crystal',
-        'dart': 'dart',
-        'elm': 'elm',
-        'gleam': 'rust',  # Use rust as fallback for similar syntax
-        'go': 'go',
-        'haskell': 'haskell',
-        'julia': 'julia',
-        'kotlin': 'kotlin',
-        'lua': 'lua',
-        'mojo': 'python',  # Use python as fallback
-        'nim': 'nim',
-        'php': 'php',
-        'python': 'python',
-        'rescript': 'reasonml',
-        'ruby': 'ruby',
-        'rust': 'rust',
-        'swift': 'swift',
-        'typescript': 'typescript',
-        'zig': 'zig'
-    }
-    
-    highlight_lang = lang_map.get(lang, 'plaintext')
-    
-    # List all source files
-    source_files = []
-    for root, dirs, files in os.walk(impl_path):
-        # Skip hidden and common directories
-        dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', 'target', 'build', 'dist', '__pycache__']]
-        
-        for file in files:
-            if not file.startswith('.'):
-                full_path = os.path.join(root, file)
-                rel_path = os.path.relpath(full_path, impl_path)
-                source_files.append((rel_path, full_path))
-    
-    source_files.sort()
-    
-    html += '<div class="file-tree">\n'
-    for rel_path, full_path in source_files:
-        file_id = rel_path.replace('/', '_').replace('.', '_')
-        
-        # Determine language for syntax highlighting based on file extension
-        ext = os.path.splitext(rel_path)[1]
-        file_lang = highlight_lang
-        ext_map = {
-            '.rs': 'rust', '.py': 'python', '.go': 'go', '.ts': 'typescript',
-            '.rb': 'ruby', '.cr': 'crystal', '.jl': 'julia', '.kt': 'kotlin',
-            '.hs': 'haskell', '.gleam': 'rust', '.dart': 'dart', '.elm': 'elm',
-            '.res': 'reasonml', '.mojo': 'python', '.swift': 'swift', '.zig': 'zig',
-            '.nim': 'nim', '.toml': 'toml', '.json': 'json', '.yml': 'yaml',
-            '.yaml': 'yaml', '.md': 'markdown', '.sh': 'bash', '.Dockerfile': 'dockerfile'
-        }
-        if ext in ext_map:
-            file_lang = ext_map[ext]
-        elif 'Dockerfile' in rel_path:
-            file_lang = 'dockerfile'
-        elif 'Makefile' in rel_path:
-            file_lang = 'makefile'
-        
-        html += f'<div class="file-item">\n'
-        html += f'<button class="file-toggle" onclick="toggleFile(\'{file_id}\')">📄 {rel_path}</button>\n'
-        html += f'<pre id="{file_id}" class="file-content" style="display:none;"><code class="language-{file_lang}">'
-        
-        try:
-            with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-                # Escape HTML
-                content = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                html += content
-        except Exception as e:
-            html += f"Error reading file: {e}"
-        
-        html += '</code></pre>\n</div>\n'
-    
-    html += '</div>\n'
-    
-    # Add JavaScript for toggling and syntax highlighting
-    html += """
-<script>
-function toggleFile(id) {
-    var content = document.getElementById(id);
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
-        // Highlight the code when first shown
-        var codeBlock = content.querySelector('code');
-        if (codeBlock && !codeBlock.classList.contains('hljs')) {
-            hljs.highlightElement(codeBlock);
-        }
-    } else {
-        content.style.display = 'none';
-    }
-}
-</script>
-"""
-    
-    html += generate_html_footer()
+    html += '</tbody>\n</table>\n'
     return html
 
 
 def generate_css() -> str:
     """Generate CSS stylesheet."""
     return """
+:root {
+    color-scheme: light;
+}
+
 * {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    line-height: 1.6;
-    color: #333;
-    background: #f5f5f5;
+    margin: 0;
+    font-family: 'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+    background: #fdf6e3;
+    color: #1f2933;
+    line-height: 1.7;
 }
 
 header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2rem 1rem;
+    background: #111827;
+    color: #fef3c7;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 2.8rem 1rem 2.2rem;
+    border-bottom: 4px solid #facc15;
 }
 
 header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
+    margin: 0 0 0.5rem;
+    font-size: 2.25rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .subtitle {
-    font-size: 1.2rem;
-    opacity: 0.9;
-    margin-bottom: 1rem;
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: #fcd34d;
+    letter-spacing: 0.12em;
 }
 
-nav {
-    margin-top: 1rem;
+.links {
+    font-size: 0.95rem;
 }
 
-nav a {
-    color: white;
-    text-decoration: none;
-    margin: 0 1rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 4px;
-    transition: all 0.3s;
-}
-
-nav a:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: white;
-}
-
-main {
-    max-width: 1400px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-}
-
-h2 {
-    color: #667eea;
-    margin: 2rem 0 1rem;
-    font-size: 2rem;
-}
-
-h2 a {
-    color: #667eea;
+.links a {
+    color: #facc15;
     text-decoration: none;
 }
 
-h2 a:hover {
+.links a:hover {
     text-decoration: underline;
 }
 
-.intro {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-bottom: 2rem;
+main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 4rem;
 }
 
-.table-container {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    overflow-x: auto;
-    margin: 2rem 0;
-    padding: 1rem;
+h2 {
+    font-size: 1.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 2rem 0 0.5rem;
+}
+
+p {
+    margin: 0 0 1.1rem;
+}
+
+.note {
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 1.4rem;
 }
 
 .comparison-table {
     width: 100%;
     border-collapse: collapse;
+    background: #fffdf7;
+    border: 2px solid #d1c89f;
+    box-shadow: 0 4px 0 #d1c89f;
 }
 
 .comparison-table th,
 .comparison-table td {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid #d1c89f;
 }
 
 .comparison-table th {
-    background: #f8f9fa;
+    background: #f5edd5;
     font-weight: 600;
-    color: #667eea;
-    position: sticky;
-    top: 0;
+    text-transform: lowercase;
+    letter-spacing: 0.05em;
     cursor: pointer;
 }
 
-.comparison-table th:hover {
-    background: #e9ecef;
+.comparison-table tbody tr:nth-child(even) {
+    background: #fdf1d6;
 }
 
-.comparison-table tr:hover {
-    background: #f8f9fa;
+.comparison-table tbody tr:hover {
+    background: #fbeac0;
 }
 
 .comparison-table a {
-    color: #667eea;
+    color: #2563eb;
     text-decoration: none;
-    font-weight: 500;
 }
 
 .comparison-table a:hover {
     text-decoration: underline;
 }
 
-/* DataTables styling overrides */
-.dataTables_wrapper .dataTables_filter {
-    margin-bottom: 1rem;
+.numeric {
+    text-align: right;
 }
 
-.dataTables_wrapper .dataTables_filter input {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 0.5rem;
-    margin-left: 0.5rem;
+.emoji {
+    margin-right: 0.35rem;
 }
 
-.dataTables_wrapper .dataTables_length select {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 0.5rem;
-    margin: 0 0.5rem;
+.comparison-table th.sort-asc::after {
+    content: " ▲";
+    font-size: 0.75rem;
 }
 
-table.dataTable thead .sorting:before,
-table.dataTable thead .sorting_asc:before,
-table.dataTable thead .sorting_desc:before,
-table.dataTable thead .sorting_asc_disabled:before,
-table.dataTable thead .sorting_desc_disabled:before {
-    right: 0.5em;
-    content: "↕";
-}
-
-table.dataTable thead .sorting:after,
-table.dataTable thead .sorting_asc:after,
-table.dataTable thead .sorting_desc:after,
-table.dataTable thead .sorting_asc_disabled:after,
-table.dataTable thead .sorting_desc_disabled:after {
-    right: 0.5em;
-    content: "";
-}
-
-.breadcrumb {
-    margin: 1rem 0;
-}
-
-.breadcrumb a {
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.breadcrumb a:hover {
-    text-decoration: underline;
-}
-
-.file-tree {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    padding: 1rem;
-}
-
-.file-item {
-    margin: 0.5rem 0;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.file-toggle {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    background: #f8f9fa;
-    border: none;
-    text-align: left;
-    cursor: pointer;
-    font-size: 1rem;
-    font-family: inherit;
-    transition: background 0.2s;
-}
-
-.file-toggle:hover {
-    background: #e9ecef;
-}
-
-.file-content {
-    padding: 0;
-    background: #282c34;
-    color: #abb2bf;
-    overflow-x: auto;
-    font-size: 0.9rem;
-    line-height: 1.5;
-    margin: 0;
-}
-
-.file-content code {
-    font-family: 'Courier New', Courier, monospace;
-    display: block;
-    padding: 1rem;
-}
-
-/* Highlight.js styling overrides */
-.hljs {
-    background: #282c34;
-    color: #abb2bf;
+.comparison-table th.sort-desc::after {
+    content: " ▼";
+    font-size: 0.75rem;
 }
 
 footer {
-    background: #333;
-    color: white;
-    text-align: center;
-    padding: 2rem 1rem;
-    margin-top: 4rem;
+    margin-top: 3rem;
+    padding: 1.5rem 1rem;
+    border-top: 2px solid #d1c89f;
+    font-size: 0.9rem;
+    color: #4b5563;
 }
 
 footer a {
-    color: #667eea;
+    color: #2563eb;
     text-decoration: none;
 }
 
@@ -750,18 +567,18 @@ footer a:hover {
     text-decoration: underline;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 720px) {
     header h1 {
-        font-size: 1.8rem;
+        font-size: 1.65rem;
     }
-    
+
     .comparison-table {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
-    
+
     .comparison-table th,
     .comparison-table td {
-        padding: 0.5rem;
+        padding: 0.45rem 0.6rem;
     }
 }
 """
@@ -780,32 +597,31 @@ def main():
     
     # Generate main comparison page
     print("📄 Generating comparison page...")
-    index_html = generate_html_header("Implementation Comparison", include_datatable=True)
-    index_html += '<section class="intro">\n'
-    index_html += '<p>Welcome to The Great Analysis Challenge! This project implements identical chess engines across different programming languages to compare their approaches, performance, and unique paradigms.</p>\n'
-    index_html += '<p>Below you\'ll find a comprehensive comparison of all implementations, including lines of code, build times, and feature support. Click on column headers to sort the table.</p>\n'
-    index_html += '</section>\n'
+    index_html = generate_html_header("Implementation Comparison", include_datatable=False)
+    index_html += '<p>This sheet captures every chess engine build in the experiment. Each row is an implementation living in its own Dockerized world. Keep it simple, verify the numbers, adjust when benchmarks drift.</p>\n'
+    index_html += '<p>Times are gathered from the automated workflow; all commands execute inside Docker for parity. Explore the repository links to inspect the code directly.</p>\n'
     index_html += generate_comparison_table(all_data)
     index_html += generate_html_footer()
     
     with open(os.path.join(docs_dir, 'index.html'), 'w') as f:
         f.write(index_html)
-    
-    # Generate source explorer pages
-    print("📁 Generating source explorer pages...")
-    for data in all_data:
-        lang = data['language']
-        impl_path = data['path']
-        print(f"  - {lang}")
-        
-        source_html = generate_source_explorer(lang, impl_path)
-        with open(os.path.join(docs_dir, f'source_{lang}.html'), 'w') as f:
-            f.write(source_html)
+
+    # Remove legacy source explorer pages if they remain
+    removed_sources = 0
+    for legacy in glob.glob(os.path.join(docs_dir, 'source_*.html')):
+        os.remove(legacy)
+        removed_sources += 1
+    if removed_sources:
+        print(f"🧹 Removed {removed_sources} legacy source explorer page(s)")
     
     # Generate CSS
     print("🎨 Generating CSS...")
     with open(os.path.join(docs_dir, 'style.css'), 'w') as f:
         f.write(generate_css())
+    
+    # Write favicon
+    with open(os.path.join(docs_dir, 'favicon.svg'), 'w') as f:
+        f.write(FAVICON_SVG.strip() + "\n")
     
     # Create .nojekyll file to disable Jekyll processing
     with open(os.path.join(docs_dir, '.nojekyll'), 'w') as f:
@@ -813,7 +629,7 @@ def main():
     
     print(f"✅ Website built successfully in {docs_dir}/")
     print(f"   - Main page: {docs_dir}/index.html")
-    print(f"   - Source explorers: {len(all_data)} pages")
+    print(f"   - Implementations tracked: {len(all_data)}")
 
 
 if __name__ == '__main__':

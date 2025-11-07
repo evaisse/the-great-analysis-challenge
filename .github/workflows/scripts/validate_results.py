@@ -97,7 +97,7 @@ def validate_result_json(result_file: Path, language: str) -> Tuple[bool, List[s
     return is_valid, issues
 
 
-def validate_all_results(benchmark_dir: str = "benchmark_reports") -> int:
+def validate_all_results(benchmark_dir: str = "reports") -> int:
     """
     Validate all result JSON files in the benchmark directory.
     
@@ -113,12 +113,15 @@ def validate_all_results(benchmark_dir: str = "benchmark_reports") -> int:
         print("   This is acceptable if no benchmarks have been run yet.")
         return 0  # Don't fail if no benchmarks exist
     
-    # Find all performance_data_*.json files
+    # Find all implementation JSON files
     import glob
-    result_files = glob.glob(os.path.join(benchmark_dir, "performance_data_*.json"))
+    result_files = [
+        path for path in glob.glob(os.path.join(benchmark_dir, "*.json"))
+        if not path.endswith("performance_data.json")
+    ]
     
     if not result_files:
-        print("⚠️  No result files found in benchmark_reports/")
+        print("⚠️  No result files found in reports/")
         print("   This is acceptable if no benchmarks have been run yet.")
         return 0
     
@@ -130,7 +133,7 @@ def validate_all_results(benchmark_dir: str = "benchmark_reports") -> int:
     for result_file in sorted(result_files):
         # Extract language name from filename
         filename = os.path.basename(result_file)
-        language = filename.replace("performance_data_", "").replace(".json", "")
+        language = filename.replace(".json", "")
         
         print(f"Validating {language}...")
         is_valid, issues = validate_result_json(Path(result_file), language)
@@ -168,7 +171,7 @@ def validate_all_results(benchmark_dir: str = "benchmark_reports") -> int:
 
 def main(args):
     """Main function for validate-results command."""
-    benchmark_dir = args.benchmark_dir if hasattr(args, 'benchmark_dir') else "benchmark_reports"
+    benchmark_dir = args.benchmark_dir if hasattr(args, 'benchmark_dir') else "reports"
     return validate_all_results(benchmark_dir)
 
 
@@ -176,7 +179,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='Validate benchmark result JSON files')
-    parser.add_argument('--benchmark-dir', default='benchmark_reports',
+    parser.add_argument('--benchmark-dir', default='reports',
                        help='Directory containing benchmark results')
     args = parser.parse_args()
     
