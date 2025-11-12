@@ -75,8 +75,10 @@ All implementations are tested exclusively via Docker containers to ensure:
 
 ## 📋 Architecture
 
-Each implementation follows identical specifications defined in [CHESS_ENGINE_SPECS.md](./CHESS_ENGINE_SPECS.md):
+Each implementation follows identical specifications:
 
+- **Chess Rules & Interface**: [CHESS_ENGINE_SPECS.md](./CHESS_ENGINE_SPECS.md) - Core engine requirements
+- **AI Algorithm**: [AI_ALGORITHM_SPEC.md](./AI_ALGORITHM_SPEC.md) - Deterministic move selection algorithm
 - **Standardized Commands**: Identical interface across all languages
 - **Docker Support**: Containerized testing and deployment
 - **Makefile Targets**: `build`, `test`, `analyze`, `docker-test`
