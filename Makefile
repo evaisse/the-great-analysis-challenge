@@ -31,7 +31,7 @@ test: test-all
 build: build-all
 
 # Define list of languages
-LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo
+LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo java
 
 # Run all tests using Docker - pure Makefile implementation
 test-all:
@@ -114,6 +114,11 @@ test-mojo:
 	@docker build -t chess-mojo -f implementations/mojo/Dockerfile implementations/mojo
 	@docker run --rm chess-mojo sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | ./run_chess.sh"
 
+test-java:
+	@echo "Testing Java implementation in Docker..."
+	@docker build -t chess-java -f implementations/java/Dockerfile implementations/java
+	@docker run --rm chess-java sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | java -jar target/chess-1.0.0.jar"
+
 # Build individual implementations
 build-typescript:
 	@docker build -t chess-typescript -f implementations/typescript/Dockerfile implementations/typescript
@@ -150,6 +155,9 @@ build-rescript:
 
 build-mojo:
 	@docker build -t chess-mojo -f implementations/mojo/Dockerfile implementations/mojo
+
+build-java:
+	@docker build -t chess-java -f implementations/java/Dockerfile implementations/java
 
 # Clean up Docker images and containers
 clean:
