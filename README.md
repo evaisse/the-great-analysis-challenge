@@ -42,6 +42,8 @@ All implementations have complete feature parity:
 
 _All implementations tested via Docker for consistency. Times in milliseconds, measured on the same github actions vm._
 
+**Language Statistics**: Language popularity rankings from [TIOBE Index](https://www.tiobe.com/tiobe-index/) and GitHub repository counts from [GitHub Ranking](https://github.com/EvanLi/Github-Ranking). Data is stored in [`language_statistics.yaml`](./language_statistics.yaml) and updated monthly.
+
 ## 🚀 Quick Start
 
 ```bash
@@ -61,8 +63,9 @@ python3 test/verify_implementations.py
 - **📊 Weekly Benchmarks**: Performance reports generated every Sunday
 - **🏷️ Automatic Releases**: Semantic versioning based on implementation health
 - **📈 Performance Tracking**: Historical analysis and build time monitoring
+- **🎯 Issue Triage**: Automated label application and clarification requests
 
-**Manual Operations**: [GitHub Actions](../../actions/workflows/bench.yaml) | [Latest Results](../../releases/latest)
+**Manual Operations**: [GitHub Actions](../../actions/workflows/bench.yaml) | [Latest Results](../../releases/latest) | [Issue Triage Docs](./docs/ISSUE_TRIAGE_WORKFLOW.md)
 
 All implementations are tested exclusively via Docker containers to ensure:
 
