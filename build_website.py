@@ -4,7 +4,13 @@
 import glob
 import json
 import os
+from datetime import datetime, timedelta
 from typing import Dict, List, Any
+
+try:
+    import yaml  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    yaml = None
 
 FAVICON_SVG = """<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
@@ -16,142 +22,155 @@ FAVICON_SVG = """<?xml version="1.0" encoding="UTF-8"?>
 </svg>
 """
 
-def get_language_metadata() -> Dict[str, Dict[str, str]]:
-    """Get metadata for each language including emoji, website, and popularity."""
-    return {
-        'python': {
-            'emoji': '🐍',
-            'website': 'https://www.python.org/',
-            'tiobe_rank': '1',
-            'github_stars': '10M+ repos',
-            'latest_major_release': '2023-10-02'
-        },
-        'go': {
-            'emoji': '🐹',
-            'website': 'https://go.dev/',
-            'tiobe_rank': '8',
-            'github_stars': '3.5M+ repos',
-            'latest_major_release': '2024-02-06'
-        },
-        'typescript': {
-            'emoji': '📘',
-            'website': 'https://www.typescriptlang.org/',
-            'tiobe_rank': '20',
-            'github_stars': '5M+ repos',
-            'latest_major_release': '2024-05-21'
-        },
-        'ruby': {
-            'emoji': '❤️',
-            'website': 'https://www.ruby-lang.org/',
-            'tiobe_rank': '17',
-            'github_stars': '2M+ repos',
-            'latest_major_release': '2023-12-25'
-        },
-        'crystal': {
-            'emoji': '💠',
-            'website': 'https://crystal-lang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '60K+ repos',
-            'latest_major_release': '2024-07-18'
-        },
-        'julia': {
-            'emoji': '🔮',
-            'website': 'https://julialang.org/',
-            'tiobe_rank': '30',
-            'github_stars': '200K+ repos',
-            'latest_major_release': '2024-06-13'
-        },
-        'kotlin': {
-            'emoji': '🧡',
-            'website': 'https://kotlinlang.org/',
-            'tiobe_rank': '24',
-            'github_stars': '1.5M+ repos',
-            'latest_major_release': '2024-05-21'
-        },
-        'haskell': {
-            'emoji': '📐',
-            'website': 'https://www.haskell.org/',
-            'tiobe_rank': '38',
-            'github_stars': '500K+ repos',
-            'latest_major_release': '2024-03-01'
-        },
-        'gleam': {
-            'emoji': '✨',
-            'website': 'https://gleam.run/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '15K+ repos',
-            'latest_major_release': '2024-06-06'
-        },
-        'rust': {
-            'emoji': '🦀',
-            'website': 'https://www.rust-lang.org/',
-            'tiobe_rank': '14',
-            'github_stars': '4.5M+ repos',
-            'latest_major_release': '2024-07-25'
-        },
-        'dart': {
-            'emoji': '🎯',
-            'website': 'https://dart.dev/',
-            'tiobe_rank': '25',
-            'github_stars': '1M+ repos',
-            'latest_major_release': '2024-06-20'
-        },
-        'elm': {
-            'emoji': '🌳',
-            'website': 'https://elm-lang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '100K+ repos',
-            'latest_major_release': '2019-10-21'
-        },
-        'rescript': {
-            'emoji': '🧠',
-            'website': 'https://rescript-lang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '50K+ repos',
-            'latest_major_release': '2024-02-19'
-        },
-        'mojo': {
-            'emoji': '🔥',
-            'website': 'https://www.modular.com/mojo',
-            'tiobe_rank': 'N/A',
-            'github_stars': '20K+ repos',
-            'latest_major_release': '2024-08-30'
-        },
-        'swift': {
-            'emoji': '🐦',
-            'website': 'https://www.swift.org/',
-            'tiobe_rank': '15',
-            'github_stars': '2.5M+ repos',
-            'latest_major_release': '2024-03-07'
-        },
-        'zig': {
-            'emoji': '⚡',
-            'website': 'https://ziglang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '150K+ repos',
-            'latest_major_release': '2024-06-21'
-        },
-        'nim': {
-            'emoji': '🦊',
-            'website': 'https://nim-lang.org/',
-            'tiobe_rank': 'N/A',
-            'github_stars': '100K+ repos',
-            'latest_major_release': '2023-11-16'
-        },
-        'lua': {
-            'emoji': '🪐',
-            'website': 'https://www.lua.org/',
-            'tiobe_rank': '26',
-            'github_stars': '1M+ repos',
-            'latest_major_release': '2023-09-15'
-        },
-        'php': {
-            'emoji': '🐘',
-            'website': 'https://www.php.net/',
-            'tiobe_rank': '7',
-            'github_stars': '8M+ repos',
-            'latest_major_release': '2023-11-23'
+CUSTOM_EMOJIS: Dict[str, str] = {
+    'python': '🐍',
+    'crystal': '💠',
+    'dart': '🎯',
+    'elm': '🌳',
+    'gleam': '✨',
+    'go': '🐹',
+    'haskell': '📐',
+    'julia': '🔮',
+    'kotlin': '🧡',
+    'lua': '🪐',
+    'mojo': '🔥',
+    'nim': '🦊',
+    'php': '🐘',
+    'rescript': '🧠',
+    'ruby': '❤️',
+    'rust': '🦀',
+    'swift': '🐦',
+    'typescript': '📘',
+    'zig': '⚡'
+}
+
+LATEST_MAJOR_RELEASES: Dict[str, str] = {
+    'python': '2023-10-02',
+    'crystal': '2024-07-18',
+    'dart': '2024-06-20',
+    'elm': '2019-10-21',
+    'gleam': '2024-06-06',
+    'go': '2024-02-06',
+    'haskell': '2024-03-01',
+    'julia': '2024-06-13',
+    'kotlin': '2024-05-21',
+    'lua': '2023-09-15',
+    'mojo': '2024-08-30',
+    'nim': '2023-11-16',
+    'php': '2023-11-23',
+    'rescript': '2024-02-19',
+    'ruby': '2023-12-25',
+    'rust': '2024-07-25',
+    'swift': '2024-03-07',
+    'typescript': '2024-05-21',
+    'zig': '2024-06-21'
+}
+
+FALLBACK_METADATA: Dict[str, Dict[str, str]] = {
+    lang: {
+        'emoji': emoji,
+        'website': url,
+        'tiobe_rank': rank,
+        'github_stars': stars,
+        'latest_major_release': LATEST_MAJOR_RELEASES.get(lang, 'n/a')
+    }
+    for lang, emoji, url, rank, stars in [
+        ('python', '🐍', 'https://www.python.org/', '1', '10M+ repos'),
+        ('crystal', '💠', 'https://crystal-lang.org/', 'N/A', '60K+ repos'),
+        ('dart', '🎯', 'https://dart.dev/', '25', '1M+ repos'),
+        ('elm', '🌳', 'https://elm-lang.org/', 'N/A', '100K+ repos'),
+        ('gleam', '✨', 'https://gleam.run/', 'N/A', '15K+ repos'),
+        ('go', '🐹', 'https://go.dev/', '8', '3.5M+ repos'),
+        ('haskell', '📐', 'https://www.haskell.org/', '38', '500K+ repos'),
+        ('julia', '🔮', 'https://julialang.org/', '30', '200K+ repos'),
+        ('kotlin', '🧡', 'https://kotlinlang.org/', '24', '1.5M+ repos'),
+        ('lua', '🪐', 'https://www.lua.org/', '26', '1M+ repos'),
+        ('mojo', '🔥', 'https://www.modular.com/mojo', 'N/A', '20K+ repos'),
+        ('nim', '🦊', 'https://nim-lang.org/', 'N/A', '100K+ repos'),
+        ('php', '🐘', 'https://www.php.net/', '7', '8M+ repos'),
+        ('rescript', '🧠', 'https://rescript-lang.org/', 'N/A', '50K+ repos'),
+        ('ruby', '❤️', 'https://www.ruby-lang.org/', '17', '2M+ repos'),
+        ('rust', '🦀', 'https://www.rust-lang.org/', '14', '4.5M+ repos'),
+        ('swift', '🐦', 'https://www.swift.org/', '15', '2.5M+ repos'),
+        ('typescript', '📘', 'https://www.typescriptlang.org/', '20', '5M+ repos'),
+        ('zig', '⚡', 'https://ziglang.org/', 'N/A', '150K+ repos'),
+    ]
+}
+
+
+def load_language_statistics() -> Dict[str, Any]:
+    """Load language statistics from language_statistics.yaml."""
+    stats_file = "language_statistics.yaml"
+
+    if yaml is None:
+        print("Warning: PyYAML not available; skipping language statistics")
+        return {'metadata': {}, 'languages': {}}
+
+    if not os.path.exists(stats_file):
+        print(f"Warning: {stats_file} not found, using empty data")
+        return {'metadata': {}, 'languages': {}}
+
+    try:
+        with open(stats_file, 'r', encoding='utf-8') as handle:
+            data = yaml.safe_load(handle)
+            return data if data else {'metadata': {}, 'languages': {}}
+    except Exception as exc:
+        print(f"Error loading {stats_file}: {exc}")
+        return {'metadata': {}, 'languages': {}}
+
+
+def check_statistics_freshness(stats_data: Dict[str, Any]) -> bool:
+    """Return True when statistics are older than ~30 days."""
+    metadata = stats_data.get('metadata', {})
+    last_updated_str = metadata.get('last_updated')
+
+    if not last_updated_str:
+        print("Warning: No last_updated date found in statistics")
+        return True
+
+    try:
+        last_updated = datetime.fromisoformat(last_updated_str)
+        if last_updated < datetime.now() - timedelta(days=30):
+            print(f"Statistics are outdated (last updated: {last_updated_str})")
+            return True
+        print(f"Statistics are fresh (last updated: {last_updated_str})")
+        return False
+    except Exception as exc:
+        print(f"Error parsing statistics date: {exc}")
+        return True
+
+
+def get_language_metadata(stats_data: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+    """Transform statistics into the metadata used by the website."""
+    languages_data = stats_data.get('languages', {})
+    result: Dict[str, Dict[str, str]] = {}
+
+    for lang_name, lang_info in languages_data.items():
+        tiobe_rank = lang_info.get('tiobe_rank')
+        github_stars = lang_info.get('github_stars', 'N/A')
+        emoji = CUSTOM_EMOJIS.get(lang_name, lang_info.get('emoji', '📦'))
+        latest_release = LATEST_MAJOR_RELEASES.get(lang_name, 'n/a')
+
+        result[lang_name] = {
+            'emoji': emoji,
+            'website': lang_info.get('website', FALLBACK_METADATA.get(lang_name, {}).get('website', '#')),
+            'tiobe_rank': 'N/A' if tiobe_rank is None else str(tiobe_rank),
+            'github_stars': f"{github_stars} repos" if github_stars != 'N/A' else 'N/A',
+            'latest_major_release': latest_release
         }
+
+    for lang_name, fallback in FALLBACK_METADATA.items():
+        result.setdefault(lang_name, fallback)
+
+    return result
+
+
+def get_statistics_sources(stats_data: Dict[str, Any]) -> Dict[str, str]:
+    metadata = stats_data.get('metadata', {})
+    return {
+        'tiobe_source': metadata.get('tiobe_source', 'https://www.tiobe.com/tiobe-index/'),
+        'github_source': metadata.get('github_source', 'https://github.com/EvanLi/Github-Ranking'),
+        'last_updated': metadata.get('last_updated', 'Unknown')
     }
 
 
@@ -178,31 +197,26 @@ def count_lines_of_code(impl_path: str) -> Dict[str, int]:
         'typescript': ['.ts'],
         'zig': ['.zig']
     }
-    
+
     lang_name = os.path.basename(impl_path)
     exts = extensions.get(lang_name, [])
-    
     total_loc = 0
     file_count = 0
-    
-    # Find source files
+
     src_dir = os.path.join(impl_path, 'src')
     if not os.path.exists(src_dir):
-        # Try root directory
         src_dir = impl_path
-    
+
     for ext in exts:
         pattern = f"{src_dir}/**/*{ext}"
-        files = glob.glob(pattern, recursive=True)
-        for file in files:
+        for file in glob.glob(pattern, recursive=True):
             try:
-                with open(file, 'r', encoding='utf-8', errors='ignore') as f:
-                    lines = len(f.readlines())
-                    total_loc += lines
+                with open(file, 'r', encoding='utf-8', errors='ignore') as handle:
+                    total_loc += len(handle.readlines())
                     file_count += 1
             except Exception:
-                pass
-    
+                continue
+
     return {'loc': total_loc, 'files': file_count}
 
 
@@ -211,12 +225,12 @@ def load_performance_data(lang: str) -> Dict[str, Any]:
     perf_file = f"reports/{lang}.json"
     if os.path.exists(perf_file):
         try:
-            with open(perf_file, 'r') as f:
-                data = json.load(f)
-                if isinstance(data, list) and len(data) > 0:
+            with open(perf_file, 'r', encoding='utf-8') as handle:
+                data = json.load(handle)
+                if isinstance(data, list) and data:
                     return data[0]
-        except Exception as e:
-            print(f"Error loading {perf_file}: {e}")
+        except Exception as exc:
+            print(f"Error loading {perf_file}: {exc}")
     return {}
 
 
@@ -225,55 +239,43 @@ def load_metadata(impl_path: str) -> Dict[str, Any]:
     meta_file = os.path.join(impl_path, 'chess.meta')
     if os.path.exists(meta_file):
         try:
-            with open(meta_file, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"Error loading {meta_file}: {e}")
+            with open(meta_file, 'r', encoding='utf-8') as handle:
+                return json.load(handle)
+        except Exception as exc:
+            print(f"Error loading {meta_file}: {exc}")
     return {}
 
 
 def discover_implementations() -> List[str]:
-    """Discover all implementations."""
     impl_dir = "implementations"
-    implementations = []
-    
     if not os.path.exists(impl_dir):
-        return implementations
-    
-    for name in sorted(os.listdir(impl_dir)):
-        impl_path = os.path.join(impl_dir, name)
-        if os.path.isdir(impl_path):
-            implementations.append(name)
-    
-    return implementations
+        return []
+    return sorted([name for name in os.listdir(impl_dir) if os.path.isdir(os.path.join(impl_dir, name))])
 
 
-def gather_all_data() -> List[Dict[str, Any]]:
-    """Gather all data for all implementations."""
+def gather_all_data(language_metadata: Dict[str, Dict[str, str]]) -> List[Dict[str, Any]]:
     implementations = discover_implementations()
-    all_data = []
-    
+    all_data: List[Dict[str, Any]] = []
+
     for lang in implementations:
         impl_path = f"implementations/{lang}"
-        
-        print(f"Gathering data for {lang}...")
-        
+        meta = load_metadata(impl_path)
+        language_info = language_metadata.get(lang, {})
+
         data = {
             'language': lang,
             'path': impl_path,
-            'metadata': load_metadata(impl_path),
+            'metadata': meta,
+            'language_metadata': language_info,
             'performance': load_performance_data(lang),
             'loc': count_lines_of_code(impl_path)
         }
-        
         all_data.append(data)
-    
+
     return all_data
 
 
-def generate_html_header(title: str, include_datatable: bool = False) -> str:
-    """Generate HTML header."""
-    _ = include_datatable  # Parameter preserved for compatibility
+def generate_html_header(title: str) -> str:
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -294,7 +296,6 @@ def generate_html_header(title: str, include_datatable: bool = False) -> str:
 
 
 def generate_html_footer() -> str:
-    """Generate HTML footer."""
     return """
     </main>
     <footer>
@@ -318,21 +319,17 @@ def generate_html_footer() -> str:
                     const cellB = b.cells[index];
                     const rawA = cellA ? (cellA.dataset.sort ?? cellA.textContent.trim()) : '';
                     const rawB = cellB ? (cellB.dataset.sort ?? cellB.textContent.trim()) : '';
-
                     const valueA = rawA.toLowerCase() === 'infinity' ? Infinity : rawA;
                     const valueB = rawB.toLowerCase() === 'infinity' ? Infinity : rawB;
-
                     const numA = Number(valueA);
                     const numB = Number(valueB);
                     const bothNumeric = !Number.isNaN(numA) && !Number.isNaN(numB);
-
                     let comparison;
                     if (bothNumeric) {
                         comparison = numA - numB;
                     } else {
                         comparison = String(valueA).localeCompare(String(valueB), undefined, { numeric: true });
                     }
-
                     return ascending ? comparison : -comparison;
                 });
                 rows.forEach(row => tbody.appendChild(row));
@@ -345,13 +342,18 @@ def generate_html_footer() -> str:
 """
 
 
-def generate_comparison_table(all_data: List[Dict[str, Any]]) -> str:
-    """Generate the comparison table HTML."""
-    lang_metadata = get_language_metadata()
-    repo_base = "https://github.com/evaisse/the-great-analysis-challenge/tree/master/implementations"
+def generate_comparison_table(all_data: List[Dict[str, Any]], stats_context: Dict[str, str]) -> str:
+    last_updated = stats_context.get('last_updated', 'Unknown')
+    tiobe_source = stats_context.get('tiobe_source', 'https://www.tiobe.com/tiobe-index/')
+    github_source = stats_context.get('github_source', 'https://github.com/EvanLi/Github-Ranking')
 
     html = '<h2>implementation ledger</h2>\n'
-    html += '<p class="note">times are rough milliseconds from Docker runs; latest major is recorded as ISO dates; features reflect the `chess.meta` declarations.</p>\n'
+    html += (
+        f'<p class="note">stats last refreshed: {last_updated} · '
+        f'sources: <a href="{tiobe_source}">TIOBE</a>, '
+        f'<a href="{github_source}">GitHub trends</a>. '
+        'times are rough milliseconds from Docker runs; features follow `chess.meta` declarations.</p>\n'
+    )
     html += '<table class="comparison-table">\n'
     html += '<thead>\n<tr>\n'
     html += '<th>language</th>\n'
@@ -365,49 +367,48 @@ def generate_comparison_table(all_data: List[Dict[str, Any]]) -> str:
     html += '<th>source</th>\n'
     html += '</tr>\n</thead>\n<tbody>\n'
 
+    repo_base = "https://github.com/evaisse/the-great-analysis-challenge/tree/master/implementations"
+
     for data in all_data:
         lang = data['language']
-        metadata = data.get('metadata', {})
-        perf = data.get('performance', {})
+        meta = data.get('metadata', {})
+        language_info = data.get('language_metadata', {})
+        performance = data.get('performance', {})
         loc = data.get('loc', {})
-        timings = perf.get('timings', {})
-        lang_meta = lang_metadata.get(
-            lang,
-            {'emoji': '□', 'website': '#', 'latest_major_release': 'n/a'}
-        )
+        timings = performance.get('timings', {})
 
-        loc_count = loc.get('loc', 0)
-        file_count = loc.get('files', 0)
-
-        def fmt_time(value):
+        def fmt_time(value: Any) -> (str, str):
             if value is None:
                 return '—', 'Infinity'
             millis = int(round(value * 1000))
             return str(millis), str(millis)
 
-        build_time_disp, build_time_sort = fmt_time(timings.get('build_seconds'))
-        test_time_disp, test_time_sort = fmt_time(timings.get('test_seconds'))
-        analyze_time_disp, analyze_time_sort = fmt_time(timings.get('analyze_seconds'))
+        build_disp, build_sort = fmt_time(timings.get('build_seconds'))
+        test_disp, test_sort = fmt_time(timings.get('test_seconds'))
+        analyze_disp, analyze_sort = fmt_time(timings.get('analyze_seconds'))
 
-        features = metadata.get('features', [])
+        features = meta.get('features', []) if isinstance(meta.get('features'), list) else []
         feature_summary = ', '.join(features) if features else 'n/a'
         feature_sort = ' '.join(sorted(features)) if features else ''
 
         repo_url = f"{repo_base}/{lang}"
-        latest_release = lang_meta.get('latest_major_release', 'n/a')
+        latest_release = language_info.get('latest_major_release', 'n/a')
         latest_sort = latest_release if latest_release != 'n/a' else '0000-00-00'
+
+        emoji = language_info.get('emoji', '□')
+        website = language_info.get('website', '#')
 
         html += '<tr>\n'
         html += (
-            f'<td data-sort="{lang.lower()}"><span class="emoji">{lang_meta["emoji"]}</span> '
-            f'<a href="{lang_meta["website"]}" target="_blank" rel="noopener">{lang.capitalize()}</a></td>\n'
+            f'<td data-sort="{lang.lower()}"><span class="emoji">{emoji}</span> '
+            f'<a href="{website}" target="_blank" rel="noopener">{lang.capitalize()}</a></td>\n'
         )
         html += f'<td data-sort="{latest_sort}">{latest_release}</td>\n'
-        html += f'<td class="numeric" data-sort="{loc_count}">{loc_count}</td>\n'
-        html += f'<td class="numeric" data-sort="{file_count}">{file_count}</td>\n'
-        html += f'<td class="numeric" data-sort="{build_time_sort}">{build_time_disp}</td>\n'
-        html += f'<td class="numeric" data-sort="{test_time_sort}">{test_time_disp}</td>\n'
-        html += f'<td class="numeric" data-sort="{analyze_time_sort}">{analyze_time_disp}</td>\n'
+        html += f'<td class="numeric" data-sort="{loc.get("loc", 0)}">{loc.get("loc", 0)}</td>\n'
+        html += f'<td class="numeric" data-sort="{loc.get("files", 0)}">{loc.get("files", 0)}</td>\n'
+        html += f'<td class="numeric" data-sort="{build_sort}">{build_disp}</td>\n'
+        html += f'<td class="numeric" data-sort="{test_sort}">{test_disp}</td>\n'
+        html += f'<td class="numeric" data-sort="{analyze_sort}">{analyze_disp}</td>\n'
         html += f'<td data-sort="{feature_sort}">{feature_summary}</td>\n'
         html += f'<td data-sort="{repo_url}"><a href="{repo_url}" target="_blank" rel="noopener">view repo</a></td>\n'
         html += '</tr>\n'
@@ -417,7 +418,6 @@ def generate_comparison_table(all_data: List[Dict[str, Any]]) -> str:
 
 
 def generate_css() -> str:
-    """Generate CSS stylesheet."""
     return """
 :root {
     color-scheme: light;
@@ -584,49 +584,45 @@ footer a:hover {
 """
 
 
-def main():
-    """Main function to build the website."""
+def main() -> None:
     print("🚀 Building static website...")
-    
-    # Create docs directory
     docs_dir = "docs"
     os.makedirs(docs_dir, exist_ok=True)
-    
-    # Gather all data
-    all_data = gather_all_data()
-    
-    # Generate main comparison page
+
+    stats_data = load_language_statistics()
+    check_statistics_freshness(stats_data)
+    language_metadata = get_language_metadata(stats_data)
+    stats_context = get_statistics_sources(stats_data)
+
+    all_data = gather_all_data(language_metadata)
+
     print("📄 Generating comparison page...")
-    index_html = generate_html_header("Implementation Comparison", include_datatable=False)
+    index_html = generate_html_header("Implementation Comparison")
     index_html += '<p>This sheet captures every chess engine build in the experiment. Each row is an implementation living in its own Dockerized world. Keep it simple, verify the numbers, adjust when benchmarks drift.</p>\n'
     index_html += '<p>Times are gathered from the automated workflow; all commands execute inside Docker for parity. Explore the repository links to inspect the code directly.</p>\n'
-    index_html += generate_comparison_table(all_data)
+    index_html += generate_comparison_table(all_data, stats_context)
     index_html += generate_html_footer()
-    
-    with open(os.path.join(docs_dir, 'index.html'), 'w') as f:
-        f.write(index_html)
 
-    # Remove legacy source explorer pages if they remain
+    with open(os.path.join(docs_dir, 'index.html'), 'w', encoding='utf-8') as handle:
+        handle.write(index_html)
+
     removed_sources = 0
     for legacy in glob.glob(os.path.join(docs_dir, 'source_*.html')):
         os.remove(legacy)
         removed_sources += 1
     if removed_sources:
         print(f"🧹 Removed {removed_sources} legacy source explorer page(s)")
-    
-    # Generate CSS
+
     print("🎨 Generating CSS...")
-    with open(os.path.join(docs_dir, 'style.css'), 'w') as f:
-        f.write(generate_css())
-    
-    # Write favicon
-    with open(os.path.join(docs_dir, 'favicon.svg'), 'w') as f:
-        f.write(FAVICON_SVG.strip() + "\n")
-    
-    # Create .nojekyll file to disable Jekyll processing
-    with open(os.path.join(docs_dir, '.nojekyll'), 'w') as f:
-        f.write('')
-    
+    with open(os.path.join(docs_dir, 'style.css'), 'w', encoding='utf-8') as handle:
+        handle.write(generate_css())
+
+    with open(os.path.join(docs_dir, 'favicon.svg'), 'w', encoding='utf-8') as handle:
+        handle.write(FAVICON_SVG.strip() + "\n")
+
+    with open(os.path.join(docs_dir, '.nojekyll'), 'w', encoding='utf-8') as handle:
+        handle.write('')
+
     print(f"✅ Website built successfully in {docs_dir}/")
     print(f"   - Main page: {docs_dir}/index.html")
     print(f"   - Implementations tracked: {len(all_data)}")
