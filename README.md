@@ -44,6 +44,26 @@ _All implementations tested via Docker for consistency. Times in milliseconds, m
 
 **Language Statistics**: Language popularity rankings from [TIOBE Index](https://www.tiobe.com/tiobe-index/) and GitHub repository counts from [GitHub Ranking](https://github.com/EvanLi/Github-Ranking). Data is stored in [`language_statistics.yaml`](./language_statistics.yaml) and updated monthly.
 
+## 🛠 Implementation Status
+
+### ✅ Fully Functional
+These implementations pass all basic tests and implement core features:
+- **Go**
+- **Lua**
+- **Nim**
+- **PHP**
+- **Python**
+- **Ruby**
+- **Rust**
+- **Swift** (Note: `undo` command currently unavailable)
+- **TypeScript**
+
+### ⚠️ Partial / In Progress
+These implementations have build or runtime issues:
+- **Crystal**: Runtime error (Stack overflow)
+- **Zig**: Build environment issues
+- **Others** (Julia, Kotlin, Haskell, etc.): Pending build environment configuration
+
 ## 🚀 Quick Start
 
 ```bash
