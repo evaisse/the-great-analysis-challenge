@@ -47,7 +47,23 @@ _All implementations tested via Docker for consistency. Times in milliseconds, m
 ## 🚀 Quick Start
 
 ```bash
-# Test any implementation
+# List all available implementations
+make list-implementations
+
+# Build a specific implementation
+make build DIR=go
+
+# Test a specific implementation
+make test DIR=ruby
+
+# Analyze a specific implementation
+make analyze DIR=python
+
+# Build and test all implementations
+make build-all
+make test-all
+
+# Test from within an implementation directory
 cd implementations/<language> && make docker-test
 
 # Run performance benchmarks
@@ -56,6 +72,8 @@ cd implementations/<language> && make docker-test
 # Verify all implementations
 python3 test/verify_implementations.py
 ```
+
+**New Convention-Based Approach**: All root Makefile commands now use the `DIR` parameter (e.g., `make build DIR=go`) instead of language-specific targets. This makes the infrastructure 100% implementation-agnostic!
 
 ## CI/CD
 
