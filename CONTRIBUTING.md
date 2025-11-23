@@ -2,6 +2,19 @@
 
 Thank you for your interest in contributing to The Great Analysis Challenge! This document provides guidelines and instructions for contributing to this polyglot chess engine project.
 
+## 🏆 Golden Rule: Convention Over Configuration
+
+**This is the foundational principle for all contributions to this project.**
+
+All implementations, scripts, and tooling in this project MUST follow a standardized convention-based approach. The infrastructure is designed to be 100% implementation language-agnostic, meaning:
+
+- **No hardcoded language-specific logic** in root-level Makefiles or scripts
+- **Self-describing implementations** using `chess.meta` files that contain build/run/test/analyze commands
+- **Standardized directory structure** where each implementation follows the same layout
+- **Generic tooling** that discovers and works with any implementation without modification
+
+This approach ensures that adding a new language implementation requires zero changes to the infrastructure - just follow the conventions, and everything works automatically.
+
 ## 📋 Table of Contents
 
 - [Project Overview](#project-overview)
