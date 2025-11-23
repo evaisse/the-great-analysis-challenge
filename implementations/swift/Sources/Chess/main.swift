@@ -706,11 +706,13 @@ func main() {
                 return
             case "new":
                 board = Board()
+                print(board)
             case "move":
                 if components.count > 1 {
                     let moveString = String(components[1])
                     if let move = parseMove(moveString) {
                         board.makeMove(move)
+                        print(board)
                     } else {
                         print("ERROR: Invalid move format")
                     }
@@ -718,14 +720,17 @@ func main() {
             case "ai":
                 if let bestMove = findBestMove(board: &board, depth: 3) {
                     board.makeMove(bestMove)
+                    print(board)
                 } else {
-                    print("No legal moves available.")
+                    print("ERROR: No legal moves available")
                 }
             case "fen":
                 let fen = components.dropFirst().joined(separator: " ")
                 board.loadFen(fen)
             case "export":
-                print("FEN: \(board.toFen())")
+                print(board.toFen())
+            case "display":
+                print(board)
             case "perft":
                 if components.count > 1, let depth = Int(String(components[1])) {
                     let count = perft(board: &board, depth: depth)
