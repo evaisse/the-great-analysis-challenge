@@ -31,8 +31,8 @@ COPY src/ ./src/
 RUN npm run build
 
 # Create a non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S chess -u 1001
+RUN groupadd -g 1001 nodejs && \
+    useradd -u 1001 -g nodejs -m -s /bin/bash chess
 
 # Change ownership of the app directory
 RUN chown -R chess:nodejs /app

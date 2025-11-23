@@ -155,8 +155,7 @@ class GameState
   end
 
   def dup
-    new_board = @board.dup
-    new_history = @move_history.dup
+    new_board = @board.map { |piece| piece }  # Deep copy the board array
     GameState.new(
       new_board,
       @turn,
@@ -164,7 +163,7 @@ class GameState
       @en_passant_target,
       @halfmove_clock,
       @fullmove_number,
-      new_history
+      [] of Move  # Don't copy history to avoid circular references
     )
   end
 end

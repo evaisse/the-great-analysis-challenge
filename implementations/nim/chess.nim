@@ -870,9 +870,14 @@ when isMainModule:
     stdout.write("> ")
     stdout.flushFile()
     
-    let input = stdin.readLine()
-    if input == "":
+    var input = ""
+    try:
+      input = stdin.readLine()
+    except EOFError:
       break
+
+    if input == "":
+      continue
     
     let response = processCommand(game, input)
     

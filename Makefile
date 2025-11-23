@@ -31,7 +31,7 @@ test: test-all
 build: build-all
 
 # Define list of languages
-LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo
+LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo lua nim php python swift zig go
 
 # Run all tests using Docker - pure Makefile implementation
 test-all:
@@ -57,62 +57,97 @@ build-all:
 test-typescript:
 	@echo "Testing TypeScript implementation in Docker..."
 	@docker build -t chess-typescript -f implementations/typescript/Dockerfile implementations/typescript
-	@docker run --rm chess-typescript sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | node dist/chess.js"
+	@docker run --rm chess-typescript sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | node dist/chess.js"
 
 test-ruby:
 	@echo "Testing Ruby implementation in Docker..."
 	@docker build -t chess-ruby -f implementations/ruby/Dockerfile implementations/ruby
-	@docker run --rm chess-ruby sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | ruby chess.rb"
+	@docker run --rm chess-ruby sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ruby chess.rb"
 
 test-crystal:
 	@echo "Testing Crystal implementation in Docker..."
 	@docker build -t chess-crystal -f implementations/crystal/Dockerfile implementations/crystal
-	@docker run --rm chess-crystal sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | ./chess_engine"
+	@docker run --rm chess-crystal sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./chess_engine"
 
 test-rust:
 	@echo "Testing Rust implementation in Docker..."
 	@docker build -t chess-rust -f implementations/rust/Dockerfile implementations/rust
-	@docker run --rm chess-rust sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | ./target/release/chess-engine"
+	@docker run --rm chess-rust sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./target/release/chess"
 
 test-julia:
 	@echo "Testing Julia implementation in Docker..."
 	@docker build -t chess-julia -f implementations/julia/Dockerfile implementations/julia
-	@docker run --rm chess-julia sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | julia chess.jl"
+	@docker run --rm chess-julia sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | julia chess.jl"
 
 test-kotlin:
 	@echo "Testing Kotlin implementation in Docker..."
 	@docker build -t chess-kotlin -f implementations/kotlin/Dockerfile implementations/kotlin
-	@docker run --rm chess-kotlin sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | java -jar build/libs/chess.jar"
+	@docker run --rm chess-kotlin sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | java -jar build/libs/chess.jar"
 
 test-haskell:
 	@echo "Testing Haskell implementation in Docker..."
 	@docker build -t chess-haskell -f implementations/haskell/Dockerfile implementations/haskell
-	@docker run --rm chess-haskell sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | ./chess"
+	@docker run --rm chess-haskell sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./chess"
 
 test-gleam:
 	@echo "Testing Gleam implementation in Docker..."
 	@docker build -t chess-gleam -f implementations/gleam/Dockerfile implementations/gleam
-	@docker run --rm chess-gleam sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | gleam run"
+	@docker run --rm chess-gleam sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | gleam run"
 
 test-dart:
 	@echo "Testing Dart implementation in Docker..."
 	@docker build -t chess-dart -f implementations/dart/Dockerfile implementations/dart
-	@docker run --rm chess-dart sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | dart run"
+	@docker run --rm chess-dart sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | dart run"
 
 test-elm:
 	@echo "Testing Elm implementation in Docker..."
 	@docker build -t chess-elm -f implementations/elm/Dockerfile implementations/elm
-	@docker run --rm chess-elm sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | node src/cli.js"
+	@docker run --rm chess-elm sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | node src/cli.js"
 
 test-rescript:
 	@echo "Testing ReScript implementation in Docker..."
 	@docker build -t chess-rescript -f implementations/rescript/Dockerfile implementations/rescript
-	@docker run --rm chess-rescript sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | node lib/js/src/Chess.js"
+	@docker run --rm chess-rescript sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | node lib/js/src/Chess.js"
 
 test-mojo:
 	@echo "Testing Mojo implementation in Docker..."
 	@docker build -t chess-mojo -f implementations/mojo/Dockerfile implementations/mojo
-	@docker run --rm chess-mojo sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | ./run_chess.sh"
+	@docker run --rm chess-mojo sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./run_chess.sh"
+
+test-lua:
+	@echo "Testing Lua implementation in Docker..."
+	@docker build -t chess-lua -f implementations/lua/Dockerfile implementations/lua
+	@docker run --rm chess-lua sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | lua5.4 chess.lua"
+
+test-nim:
+	@echo "Testing Nim implementation in Docker..."
+	@docker build -t chess-nim -f implementations/nim/Dockerfile implementations/nim
+	@docker run --rm chess-nim sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./chess"
+
+test-php:
+	@echo "Testing PHP implementation in Docker..."
+	@docker build -t chess-php -f implementations/php/Dockerfile implementations/php
+	@docker run --rm chess-php sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | php chess.php"
+
+test-python:
+	@echo "Testing Python implementation in Docker..."
+	@docker build -t chess-python -f implementations/python/Dockerfile implementations/python
+	@docker run --rm chess-python sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | python3 chess.py"
+
+test-swift:
+	@echo "Testing Swift implementation in Docker..."
+	@docker build -t chess-swift -f implementations/swift/Dockerfile implementations/swift
+	@docker run --rm chess-swift sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | .build/release/Chess"
+
+test-zig:
+	@echo "Testing Zig implementation in Docker..."
+	@docker build -t chess-zig -f implementations/zig/Dockerfile implementations/zig
+	@docker run --rm chess-zig sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./zig-out/bin/chess"
+
+test-go:
+	@echo "Testing Go implementation in Docker..."
+	@docker build -t chess-go -f implementations/go/Dockerfile implementations/go
+	@docker run --rm chess-go sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./chess"
 
 # Build individual implementations
 build-typescript:
@@ -150,6 +185,27 @@ build-rescript:
 
 build-mojo:
 	@docker build -t chess-mojo -f implementations/mojo/Dockerfile implementations/mojo
+
+build-lua:
+	@docker build -t chess-lua -f implementations/lua/Dockerfile implementations/lua
+
+build-nim:
+	@docker build -t chess-nim -f implementations/nim/Dockerfile implementations/nim
+
+build-php:
+	@docker build -t chess-php -f implementations/php/Dockerfile implementations/php
+
+build-python:
+	@docker build -t chess-python -f implementations/python/Dockerfile implementations/python
+
+build-swift:
+	@docker build -t chess-swift -f implementations/swift/Dockerfile implementations/swift
+
+build-zig:
+	@docker build -t chess-zig -f implementations/zig/Dockerfile implementations/zig
+
+build-go:
+	@docker build -t chess-go -f implementations/go/Dockerfile implementations/go
 
 # Clean up Docker images and containers
 clean:

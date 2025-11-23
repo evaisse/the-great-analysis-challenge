@@ -8,14 +8,13 @@ require "./fen"
 require "./perft"
 
 class ChessEngine
-  @game_state : GameState
-  @move_generator : MoveGenerator
-  @ai : ChessAI
+  @history : Array(GameState)
 
   def initialize
     @game_state = FEN.starting_position
     @move_generator = MoveGenerator.new
     @ai = ChessAI.new
+    @history = [] of GameState
   end
 
   def run
@@ -37,11 +36,21 @@ class ChessEngine
         puts Board.display(@game_state)
       when "moves"
         show_legal_moves
-      when "fen"
+      when "fen", "export"
         puts FEN.export(@game_state)
-      when "reset"
+      when "reset", "new"
         @game_state = FEN.starting_position
+        @history.clear
         puts "Board reset to starting position"
+        puts Board.display(@game_state)
+      when "undo"
+        if @history.empty?
+          puts "No moves to undo"
+        else
+          @game_state = @history.pop
+          puts "Move undone"
+          puts Board.display(@game_state)
+        end
       when "ai", "computer"
         make_ai_move
       when "demo"
@@ -166,6 +175,7 @@ class ChessEngine
                   end
     
     if chosen_move
+      @history.push(@game_state)
       @game_state = Board.make_move(@game_state, chosen_move)
       puts Board.display(@game_state)
       
@@ -184,6 +194,7 @@ class ChessEngine
     result = @ai.search(@game_state, 4, @game_state.turn.white?)
     
     if best_move = result.best_move
+      @history.push(@game_state)
       @game_state = Board.make_move(@game_state, best_move)
       
       time_taken = Time.monotonic - start_time

@@ -37,38 +37,26 @@ class Board
 
   def self.display(game_state : GameState) : String
     result = String.build do |io|
-      io << "\n  +---+---+---+---+---+---+---+---+\n"
+      io << "  a b c d e f g h\n"
       
       7.downto(0) do |rank|
-        io << "#{rank + 1} |"
+        io << "#{rank + 1} "
         
         8.times do |file|
           square = rank * 8 + file
           piece = game_state.board[square]
           
-          char = piece ? piece.to_char : ' '
-          io << " #{char} |"
+          char = piece ? piece.to_char : '.'
+          io << "#{char} "
         end
         
-        io << "\n  +---+---+---+---+---+---+---+---+\n"
+        io << "#{rank + 1}\n"
       end
       
-      io << "    a   b   c   d   e   f   g   h\n\n"
+      io << "  a b c d e f g h\n\n"
       
-      io << "Turn: #{game_state.turn}\n"
-      io << "Castling: "
-      io << (game_state.castling_rights.white_kingside ? "K" : "-")
-      io << (game_state.castling_rights.white_queenside ? "Q" : "-")
-      io << (game_state.castling_rights.black_kingside ? "k" : "-")
-      io << (game_state.castling_rights.black_queenside ? "q" : "-")
-      io << "\n"
-      
-      if target = game_state.en_passant_target
-        io << "En passant: #{square_to_algebraic(target)}\n"
-      end
-      
-      io << "Halfmove: #{game_state.halfmove_clock}\n"
-      io << "Fullmove: #{game_state.fullmove_number}\n"
+      turn_name = game_state.turn.white? ? "White" : "Black"
+      io << "#{turn_name} to move"
     end
     
     result
