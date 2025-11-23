@@ -75,8 +75,9 @@ All implementations are tested exclusively via Docker containers to ensure:
 Each implementation follows identical specifications:
 
 - **Chess Rules & Interface**: [CHESS_ENGINE_SPECS.md](./CHESS_ENGINE_SPECS.md) - Core engine requirements
+- **Project Conventions**: [CONVENTIONS.md](./CONVENTIONS.md) - The "Golden Rule" for infrastructure
 - **AI Algorithm**: [AI_ALGORITHM_SPEC.md](./AI_ALGORITHM_SPEC.md) - Deterministic move selection algorithm
 - **Standardized Commands**: Identical interface across all languages
 - **Docker Support**: Containerized testing and deployment
-- **Makefile Targets**: `build`, `test`, `analyze`, `docker-test`
+- **Makefile Targets**: `build`, `test`, `analyze` (agnostic of implementation)
 - **Metadata**: Structured information in `chess.meta` files

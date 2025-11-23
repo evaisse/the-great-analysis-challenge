@@ -9,27 +9,6 @@ all: build test
 # Define list of languages
 LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo lua nim php python swift zig go
 
-# Execution commands for each language
-CMD_typescript := node dist/chess.js
-CMD_ruby       := ruby chess.rb
-CMD_crystal    := ./chess_engine
-CMD_rust       := ./target/release/chess
-CMD_julia      := julia chess.jl
-CMD_kotlin     := java -jar build/libs/chess.jar
-CMD_haskell    := ./chess
-CMD_gleam      := gleam run
-CMD_dart       := dart run
-CMD_elm        := node src/cli.js
-CMD_rescript   := node lib/js/src/Chess.js
-CMD_mojo       := ./run_chess.sh
-CMD_lua        := lua5.4 chess.lua
-CMD_nim        := ./chess
-CMD_php        := php chess.php
-CMD_python     := python3 chess.py
-CMD_swift      := .build/release/Chess
-CMD_zig        := ./zig-out/bin/chess
-CMD_go         := ./chess
-
 # Macros for build, test, and analyze logic
 define BUILD_IMPL
 	@echo "Building $(1) implementation in Docker..."
@@ -39,7 +18,32 @@ endef
 define TEST_IMPL
 	@echo "Testing $(1) implementation in Docker..."
 	@$(MAKE) build DIR=$(1)
-	@docker run --rm chess-$(1) sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | $(CMD_$(1))"
+	@# We rely on the Dockerfile to define the correct CMD/ENTRYPOINT
+	@# We pipe the test commands to stdin
+	@docker run -i --rm chess-$(1) sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | /bin/sh -c \"\$$(grep -E '^(CMD|ENTRYPOINT)' implementations/$(1)/Dockerfile | sed 's/.*\[//;s/\].*//;s/\"//g;s/,/ /g')\"" || \
+	 docker run -i --rm chess-$(1)
+endef
+
+# Wait, the previous TEST_IMPL logic in the plan was simpler:
+# @docker run -i --rm chess-$(1)
+# But wait, if the ENTRYPOINT is set, `docker run -i` works.
+# If CMD is set, `docker run -i` works.
+# The only issue is if the Dockerfile has NO CMD/ENTRYPOINT (which I verified they do).
+# AND if the CMD requires arguments that are not in the Dockerfile (e.g. `node dist/chess.js` vs just `node`).
+# But I verified that the Dockerfiles contain the full command.
+
+# However, there is a catch: `docker run -i` connects stdin.
+# The previous command was: `docker run ... sh -c "printf ... | <CMD>"`
+# If I just do `printf ... | docker run -i ...`, it pipes to the container's PID 1 stdin.
+# This is EXACTLY what we want if the container runs the engine directly.
+# So `printf ... | docker run -i --rm chess-$(1)` should work.
+
+# Let's stick to the simple plan.
+
+define TEST_IMPL
+	@echo "Testing $(1) implementation in Docker..."
+	@$(MAKE) build DIR=$(1)
+	@printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | docker run -i --rm chess-$(1)
 endef
 
 define ANALYZE_IMPL
