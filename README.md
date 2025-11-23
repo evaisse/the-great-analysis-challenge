@@ -15,32 +15,9 @@ All implementations have complete feature parity:
 
 ## 📊 Performance Overview
 
-<!-- status-table-start -->
+Detailed performance benchmarks, build times, and analysis results are available on the interactive website:
 
-| Language | Status | Analysis Time | Build Time | Test Time |
-|----------|--------|---------------|------------|-----------|
-| Crystal | 🟢 | 38ms | 18ms | - |
-| Dart | 🟢 | 977ms | 406ms | 2489ms |
-| Elm | 🟢 | 722ms | 847ms | - |
-| Gleam | 🟢 | 36ms | 22ms | - |
-| Go | 🟢 | 280ms | 153ms | - |
-| Haskell | 🟢 | 42ms | 15ms | - |
-| Julia | 🟢 | 33ms | 25ms | - |
-| Kotlin | 🟢 | 258ms | 128ms | - |
-| Lua | 🟢 | - | - | - |
-| Mojo | 🟢 | 33ms | 33ms | - |
-| Nim | 🟢 | 33ms | 29ms | - |
-| Php | 🟢 | - | - | - |
-| Python | 🟢 | 209ms | 103ms | 597ms |
-| Rescript | 🟢 | 141ms | 3443ms | - |
-| Ruby | 🟢 | 1661ms | 354ms | 1850ms |
-| Rust | 🟢 | 899ms | 567ms | 518ms |
-| Swift | 🟢 | 1087ms | 398ms | - |
-| Typescript | 🟢 | 1919ms | 448ms | 945ms |
-| Zig | 🟢 | 29ms | 18ms | - |
-<!-- status-table-end -->
-
-_All implementations tested via Docker for consistency. Times in milliseconds, measured on the same github actions vm._
+👉 **[View Performance Benchmarks](https://evaisse.github.io/the-great-analysis-challenge/)**
 
 **Language Statistics**: Language popularity rankings from [TIOBE Index](https://www.tiobe.com/tiobe-index/) and GitHub repository counts from [GitHub Ranking](https://github.com/EvanLi/Github-Ranking). Data is stored in [`language_statistics.yaml`](./language_statistics.yaml) and updated monthly.
 
