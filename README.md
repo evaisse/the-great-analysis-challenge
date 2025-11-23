@@ -4,7 +4,9 @@ A comprehensive project implementing identical chess engines across **different 
 
 🌐 **[View Interactive Website](https://evaisse.github.io/the-great-analysis-challenge/)** - Complete comparison table and source code explorer
 
-All implementations have complete feature parity:
+## 📚 Available Implementations
+
+All implementations have complete feature parity with the following features:
 
 - ✅ **perft** - Performance testing with recursive move generation
 - ✅ **fen** - Forsyth-Edwards Notation support
@@ -13,36 +15,31 @@ All implementations have complete feature parity:
 - ✅ **en_passant** - Special pawn capture rules
 - ✅ **promotion** - Pawn advancement to other pieces
 
-## 📊 Performance Overview
+### Working Implementations (19 languages)
 
-<!-- status-table-start -->
+All implementations are fully working with complete feature support:
 
-| Language | Status | Analysis Time | Build Time | Test Time |
-|----------|--------|---------------|------------|-----------|
-| Crystal | 🟢 | 38ms | 18ms | - |
-| Dart | 🟢 | 977ms | 406ms | 2489ms |
-| Elm | 🟢 | 722ms | 847ms | - |
-| Gleam | 🟢 | 36ms | 22ms | - |
-| Go | 🟢 | 280ms | 153ms | - |
-| Haskell | 🟢 | 42ms | 15ms | - |
-| Julia | 🟢 | 33ms | 25ms | - |
-| Kotlin | 🟢 | 258ms | 128ms | - |
-| Lua | 🟢 | - | - | - |
-| Mojo | 🟢 | 33ms | 33ms | - |
-| Nim | 🟢 | 33ms | 29ms | - |
-| Php | 🟢 | - | - | - |
-| Python | 🟢 | 209ms | 103ms | 597ms |
-| Rescript | 🟢 | 141ms | 3443ms | - |
-| Ruby | 🟢 | 1661ms | 354ms | 1850ms |
-| Rust | 🟢 | 899ms | 567ms | 518ms |
-| Swift | 🟢 | 1087ms | 398ms | - |
-| Typescript | 🟢 | 1919ms | 448ms | 945ms |
-| Zig | 🟢 | 29ms | 18ms | - |
-<!-- status-table-end -->
+- Crystal
+- Dart
+- Elm
+- Gleam
+- Go
+- Haskell
+- Julia
+- Kotlin
+- Lua
+- Mojo
+- Nim
+- PHP
+- Python
+- ReScript
+- Ruby
+- Rust
+- Swift
+- TypeScript
+- Zig
 
-_All implementations tested via Docker for consistency. Times in milliseconds, measured on the same github actions vm._
-
-**Language Statistics**: Language popularity rankings from [TIOBE Index](https://www.tiobe.com/tiobe-index/) and GitHub repository counts from [GitHub Ranking](https://github.com/EvanLi/Github-Ranking). Data is stored in [`language_statistics.yaml`](./language_statistics.yaml) and updated monthly.
+📊 **For detailed performance metrics, build times, and comprehensive comparisons**, visit the [Interactive Website](https://evaisse.github.io/the-great-analysis-challenge/).
 
 ## 🚀 Quick Start
 
