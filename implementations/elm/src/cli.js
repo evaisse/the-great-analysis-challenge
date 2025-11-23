@@ -1,5 +1,5 @@
 const readline = require('readline');
-const { Elm } = require('./chess.js');
+const { Elm } = require('../dist/chess.js');
 
 // Initialize Elm app
 const app = Elm.ChessEngine.init({ flags: process.argv.slice(2) || [] });

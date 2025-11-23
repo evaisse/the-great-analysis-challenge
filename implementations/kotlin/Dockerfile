@@ -4,7 +4,7 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies and Java
-RUN apt-get update && apt-get install -y \
+RUN env http_proxy="" https_proxy="" apt-get update && env http_proxy="" https_proxy="" apt-get install -y \
     curl \
     wget \
     unzip \
@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Gradle
-RUN GRADLE_VERSION="8.0" \
+RUN env http_proxy="" https_proxy="" GRADLE_VERSION="8.0" \
     && wget "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
     && unzip "gradle-${GRADLE_VERSION}-bin.zip" \
     && mv "gradle-${GRADLE_VERSION}" /opt/gradle \

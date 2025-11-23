@@ -4,7 +4,7 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies and Haskell
-RUN apt-get update && apt-get install -y \
+RUN env http_proxy="" https_proxy="" apt-get update && env http_proxy="" https_proxy="" apt-get install -y \
     curl \
     build-essential \
     libffi-dev \
@@ -22,7 +22,7 @@ COPY chess.cabal ./
 COPY src/ src/
 
 # Install dependencies and build
-RUN cabal update && cabal build
+RUN env http_proxy="" https_proxy="" cabal update && cabal build
 
 # Run the chess engine
 CMD ["cabal", "run", "chess"]

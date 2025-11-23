@@ -1,20 +1,15 @@
 module Process = {
   @val external exit: int => unit = "process.exit"
-  @val external stdin: Stream.readable = "process.stdin"
-  @val external stdout: Stream.writable = "process.stdout"
-}
-
-module Stream = {
-  type readable
-  type writable
+  @val external stdin: Node.Stream.readable = "process.stdin"
+  @val external stdout: Node.Stream.writable = "process.stdout"
 }
 
 module Readline = {
   type readlineInterface
 
   type createInterfaceOptions = {
-    input: Stream.readable,
-    output: Stream.writable,
+    input: Node.Stream.readable,
+    output: Node.Stream.writable,
     prompt: string,
   }
 

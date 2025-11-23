@@ -4,14 +4,14 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN env http_proxy="" https_proxy="" apt-get update && env http_proxy="" https_proxy="" apt-get install -y \
     curl \
     wget \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Julia
-RUN JULIA_VERSION="1.9.4" \
+RUN env http_proxy="" https_proxy="" JULIA_VERSION="1.9.4" \
     && wget "https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
     && tar -xzf "julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
     && mv "julia-${JULIA_VERSION}" /opt/julia \
