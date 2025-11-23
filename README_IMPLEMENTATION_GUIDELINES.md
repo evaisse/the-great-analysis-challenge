@@ -1,5 +1,16 @@
 # Chess Engine Implementation Guidelines
 
+## Convention Over Configuration
+
+**IMPORTANT:** This project follows a strict "convention over configuration" approach. The infrastructure tooling is 100% implementation-agnostic, meaning:
+
+- No language-specific logic in root Makefile or scripts
+- Each implementation is self-describing via `chess.meta` and `Makefile`
+- All implementations discovered automatically by directory structure
+- Root Makefile uses generic `DIR` parameter: `make build DIR=<language>`
+
+This ensures zero infrastructure changes are needed when adding new implementations—just follow the conventions!
+
 ## Quick Start
 
 This document provides essential guidelines for implementing a chess engine according to the project specifications. Each implementation must be a **command-line interface (CLI)** chess engine that follows a consistent protocol across all languages.
