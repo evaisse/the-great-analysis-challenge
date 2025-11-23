@@ -497,9 +497,10 @@ def validate_unique_emojis(implementations: List[Path]) -> bool:
     
     try:
         build_website = import_module('build_website')
-        language_metadata = build_website.get_language_metadata()
+        stats_data = build_website.load_language_statistics()
+        language_metadata = build_website.get_language_metadata(stats_data)
     except Exception as exc:
-        print(f"❌ Unable to import build_website.get_language_metadata(): {exc}")
+        print(f"❌ Unable to load language metadata: {exc}")
         return False
     
     emoji_map: Dict[str, List[str]] = {}
