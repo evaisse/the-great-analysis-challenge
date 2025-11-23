@@ -7,7 +7,7 @@
 all: build test
 
 # Define list of languages
-LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo lua nim php python swift zig go
+LANGUAGES := $(shell find implementations -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | xargs)
 
 # Macros for build, test, and analyze logic
 define BUILD_IMPL
