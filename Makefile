@@ -1,10 +1,52 @@
 # Makefile for Chess Engine Implementations
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 
-.PHONY: all test build clean help test-all build-all website analyze-tools
+.PHONY: all test build clean help website analyze analyze-tools
 
 # Default target
-all: build-all test-all
+all: build test
+
+# Define list of languages
+LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo lua nim php python swift zig go
+
+# Execution commands for each language
+CMD_typescript := node dist/chess.js
+CMD_ruby       := ruby chess.rb
+CMD_crystal    := ./chess_engine
+CMD_rust       := ./target/release/chess
+CMD_julia      := julia chess.jl
+CMD_kotlin     := java -jar build/libs/chess.jar
+CMD_haskell    := ./chess
+CMD_gleam      := gleam run
+CMD_dart       := dart run
+CMD_elm        := node src/cli.js
+CMD_rescript   := node lib/js/src/Chess.js
+CMD_mojo       := ./run_chess.sh
+CMD_lua        := lua5.4 chess.lua
+CMD_nim        := ./chess
+CMD_php        := php chess.php
+CMD_python     := python3 chess.py
+CMD_swift      := .build/release/Chess
+CMD_zig        := ./zig-out/bin/chess
+CMD_go         := ./chess
+
+# Macros for build, test, and analyze logic
+define BUILD_IMPL
+	@echo "Building $(1) implementation in Docker..."
+	@docker build -t chess-$(1) -f implementations/$(1)/Dockerfile implementations/$(1)
+endef
+
+define TEST_IMPL
+	@echo "Testing $(1) implementation in Docker..."
+	@$(MAKE) build DIR=$(1)
+	@docker run --rm chess-$(1) sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | $(CMD_$(1))"
+endef
+
+define ANALYZE_IMPL
+	@echo "Analyzing $(1) implementation..."
+	@# Placeholder for future language-specific analysis tools
+	@echo "No specific analysis tool configured for $(1) yet."
+endef
 
 # Help command
 help:
@@ -12,202 +54,58 @@ help:
 	@echo "============================"
 	@echo "ALL COMMANDS RUN INSIDE DOCKER CONTAINERS"
 	@echo ""
-	@echo "Available targets:"
-	@echo "  make test-all         - Run all tests in Docker containers"
-	@echo "  make build-all        - Build all implementations in Docker"
-	@echo "  make test             - Alias for test-all"
-	@echo "  make build            - Alias for build-all"
-	@echo "  make test-<lang>      - Test specific implementation (e.g., make test-ruby)"
-	@echo "  make build-<lang>     - Build specific implementation (e.g., make build-typescript)"
-	@echo "  make analyze-tools    - Static analysis for Python tooling (outside implementations)"
-	@echo "  make website          - Generate static website in docs/"
-	@echo "  make clean            - Remove Docker images and build artifacts"
-	@echo "  make help             - Show this help message"
+	@echo "Usage:"
+	@echo "  make test [DIR=<lang>]    - Run tests (all or specific language)"
+	@echo "  make build [DIR=<lang>]   - Build images (all or specific language)"
+	@echo "  make analyze [DIR=<lang>] - Run static analysis (all or specific language)"
+	@echo "  make clean                - Remove Docker images"
+	@echo "  make website              - Generate static website"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make test                 - Test all languages"
+	@echo "  make test DIR=go          - Test only Go implementation"
+	@echo "  make build DIR=rust       - Build only Rust implementation"
 
-# Main test target - runs all tests in Docker
-test: test-all
-
-# Main build target - builds all implementations in Docker
-build: build-all
-
-# Define list of languages
-LANGUAGES := typescript ruby crystal rust julia kotlin haskell gleam dart elm rescript mojo lua nim php python swift zig go
-
-# Run all tests using Docker - pure Makefile implementation
-test-all:
+# Main test target
+test:
+ifdef DIR
+	$(call TEST_IMPL,$(DIR))
+else
 	@echo "Running all tests in Docker containers..."
 	@for lang in $(LANGUAGES); do \
 		if [ -d "implementations/$$lang" ] && [ -f "implementations/$$lang/Dockerfile" ]; then \
-			echo "Testing $$lang implementation..."; \
-			$(MAKE) test-$$lang || true; \
+			$(MAKE) test DIR=$$lang || true; \
 		fi; \
 	done
+endif
 
-# Build all Docker images - pure Makefile implementation
-build-all:
+# Main build target
+build:
+ifdef DIR
+	$(call BUILD_IMPL,$(DIR))
+else
 	@echo "Building all Docker images..."
 	@for lang in $(LANGUAGES); do \
 		if [ -d "implementations/$$lang" ] && [ -f "implementations/$$lang/Dockerfile" ]; then \
-			echo "Building $$lang Docker image..."; \
-			$(MAKE) build-$$lang || true; \
+			$(MAKE) build DIR=$$lang || true; \
 		fi; \
 	done
+endif
 
-# Individual language targets
-test-typescript:
-	@echo "Testing TypeScript implementation in Docker..."
-	@docker build -t chess-typescript -f implementations/typescript/Dockerfile implementations/typescript
-	@docker run --rm chess-typescript sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | node dist/chess.js"
+# Main analyze target
+analyze:
+ifdef DIR
+	$(call ANALYZE_IMPL,$(DIR))
+else
+	@echo "Analyzing all implementations..."
+	@for lang in $(LANGUAGES); do \
+		if [ -d "implementations/$$lang" ]; then \
+			$(MAKE) analyze DIR=$$lang || true; \
+		fi; \
+	done
+endif
 
-test-ruby:
-	@echo "Testing Ruby implementation in Docker..."
-	@docker build -t chess-ruby -f implementations/ruby/Dockerfile implementations/ruby
-	@docker run --rm chess-ruby sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ruby chess.rb"
-
-test-crystal:
-	@echo "Testing Crystal implementation in Docker..."
-	@docker build -t chess-crystal -f implementations/crystal/Dockerfile implementations/crystal
-	@docker run --rm chess-crystal sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./chess_engine"
-
-test-rust:
-	@echo "Testing Rust implementation in Docker..."
-	@docker build -t chess-rust -f implementations/rust/Dockerfile implementations/rust
-	@docker run --rm chess-rust sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./target/release/chess"
-
-test-julia:
-	@echo "Testing Julia implementation in Docker..."
-	@docker build -t chess-julia -f implementations/julia/Dockerfile implementations/julia
-	@docker run --rm chess-julia sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | julia chess.jl"
-
-test-kotlin:
-	@echo "Testing Kotlin implementation in Docker..."
-	@docker build -t chess-kotlin -f implementations/kotlin/Dockerfile implementations/kotlin
-	@docker run --rm chess-kotlin sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | java -jar build/libs/chess.jar"
-
-test-haskell:
-	@echo "Testing Haskell implementation in Docker..."
-	@docker build -t chess-haskell -f implementations/haskell/Dockerfile implementations/haskell
-	@docker run --rm chess-haskell sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./chess"
-
-test-gleam:
-	@echo "Testing Gleam implementation in Docker..."
-	@docker build -t chess-gleam -f implementations/gleam/Dockerfile implementations/gleam
-	@docker run --rm chess-gleam sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | gleam run"
-
-test-dart:
-	@echo "Testing Dart implementation in Docker..."
-	@docker build -t chess-dart -f implementations/dart/Dockerfile implementations/dart
-	@docker run --rm chess-dart sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | dart run"
-
-test-elm:
-	@echo "Testing Elm implementation in Docker..."
-	@docker build -t chess-elm -f implementations/elm/Dockerfile implementations/elm
-	@docker run --rm chess-elm sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | node src/cli.js"
-
-test-rescript:
-	@echo "Testing ReScript implementation in Docker..."
-	@docker build -t chess-rescript -f implementations/rescript/Dockerfile implementations/rescript
-	@docker run --rm chess-rescript sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | node lib/js/src/Chess.js"
-
-test-mojo:
-	@echo "Testing Mojo implementation in Docker..."
-	@docker build -t chess-mojo -f implementations/mojo/Dockerfile implementations/mojo
-	@docker run --rm chess-mojo sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./run_chess.sh"
-
-test-lua:
-	@echo "Testing Lua implementation in Docker..."
-	@docker build -t chess-lua -f implementations/lua/Dockerfile implementations/lua
-	@docker run --rm chess-lua sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | lua5.4 chess.lua"
-
-test-nim:
-	@echo "Testing Nim implementation in Docker..."
-	@docker build -t chess-nim -f implementations/nim/Dockerfile implementations/nim
-	@docker run --rm chess-nim sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./chess"
-
-test-php:
-	@echo "Testing PHP implementation in Docker..."
-	@docker build -t chess-php -f implementations/php/Dockerfile implementations/php
-	@docker run --rm chess-php sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | php chess.php"
-
-test-python:
-	@echo "Testing Python implementation in Docker..."
-	@docker build -t chess-python -f implementations/python/Dockerfile implementations/python
-	@docker run --rm chess-python sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | python3 chess.py"
-
-test-swift:
-	@echo "Testing Swift implementation in Docker..."
-	@docker build -t chess-swift -f implementations/swift/Dockerfile implementations/swift
-	@docker run --rm chess-swift sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | .build/release/Chess"
-
-test-zig:
-	@echo "Testing Zig implementation in Docker..."
-	@docker build -t chess-zig -f implementations/zig/Dockerfile implementations/zig
-	@docker run --rm chess-zig sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./zig-out/bin/chess"
-
-test-go:
-	@echo "Testing Go implementation in Docker..."
-	@docker build -t chess-go -f implementations/go/Dockerfile implementations/go
-	@docker run --rm chess-go sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | ./chess"
-
-# Build individual implementations
-build-typescript:
-	@docker build -t chess-typescript -f implementations/typescript/Dockerfile implementations/typescript
-
-build-ruby:
-	@docker build -t chess-ruby -f implementations/ruby/Dockerfile implementations/ruby
-
-build-crystal:
-	@docker build -t chess-crystal -f implementations/crystal/Dockerfile implementations/crystal
-
-build-rust:
-	@docker build -t chess-rust -f implementations/rust/Dockerfile implementations/rust
-
-build-julia:
-	@docker build -t chess-julia -f implementations/julia/Dockerfile implementations/julia
-
-build-kotlin:
-	@docker build -t chess-kotlin -f implementations/kotlin/Dockerfile implementations/kotlin
-
-build-haskell:
-	@docker build -t chess-haskell -f implementations/haskell/Dockerfile implementations/haskell
-
-build-gleam:
-	@docker build -t chess-gleam -f implementations/gleam/Dockerfile implementations/gleam
-
-build-dart:
-	@docker build -t chess-dart -f implementations/dart/Dockerfile implementations/dart
-
-build-elm:
-	@docker build -t chess-elm -f implementations/elm/Dockerfile implementations/elm
-
-build-rescript:
-	@docker build -t chess-rescript -f implementations/rescript/Dockerfile implementations/rescript
-
-build-mojo:
-	@docker build -t chess-mojo -f implementations/mojo/Dockerfile implementations/mojo
-
-build-lua:
-	@docker build -t chess-lua -f implementations/lua/Dockerfile implementations/lua
-
-build-nim:
-	@docker build -t chess-nim -f implementations/nim/Dockerfile implementations/nim
-
-build-php:
-	@docker build -t chess-php -f implementations/php/Dockerfile implementations/php
-
-build-python:
-	@docker build -t chess-python -f implementations/python/Dockerfile implementations/python
-
-build-swift:
-	@docker build -t chess-swift -f implementations/swift/Dockerfile implementations/swift
-
-build-zig:
-	@docker build -t chess-zig -f implementations/zig/Dockerfile implementations/zig
-
-build-go:
-	@docker build -t chess-go -f implementations/go/Dockerfile implementations/go
-
-# Clean up Docker images and containers
+# Clean up Docker images
 clean:
 	@echo "Cleaning up Docker images..."
 	@for lang in $(LANGUAGES); do \
@@ -222,7 +120,7 @@ website:
 	@echo "Website generated in docs/"
 	@echo "To preview: cd docs && python3 -m http.server 8080"
 
-# Static analysis for Python tooling outside implementations directory
+# Static analysis for Python tooling
 analyze-tools:
 	@echo "Running Python tooling static analysis..."
 	@python3 scripts/analyze_python_tools.py
