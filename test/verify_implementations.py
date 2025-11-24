@@ -597,6 +597,11 @@ Exit Codes:
         help="Base directory containing implementations (default: project root)"
     )
     
+    parser.add_argument(
+        "--implementation", "-i",
+        help="Verify only a specific implementation"
+    )
+
     args = parser.parse_args()
     
     if args.base_dir:
@@ -609,6 +614,13 @@ Exit Codes:
     print(f"Base directory: {base_dir}")
     
     implementations = find_implementations(base_dir)
+
+    if args.implementation:
+        implementations = [i for i in implementations if i.name == args.implementation]
+        if not implementations:
+            print(f"❌ Implementation '{args.implementation}' not found!")
+            sys.exit(1)
+
     if not implementations:
         print("❌ No implementations found!")
         sys.exit(1)
