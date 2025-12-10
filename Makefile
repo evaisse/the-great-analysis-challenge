@@ -59,7 +59,10 @@ else
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
 		echo "==================== Building $$impl ===================="; \
-		$(MAKE) build DIR=$$impl || true; \
+		if ! $(MAKE) build DIR=$$impl; then \
+			echo "Build failed for $$impl. Stopping."; \
+			exit 1; \
+		fi; \
 	done
 	@echo ""
 	@echo "Build complete for all implementations"
@@ -91,7 +94,10 @@ else
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
 		echo "==================== Testing $$impl ===================="; \
-		$(MAKE) test DIR=$$impl || true; \
+		if ! $(MAKE) test DIR=$$impl; then \
+			echo "Tests failed for $$impl. Stopping."; \
+			exit 1; \
+		fi; \
 	done
 	@echo ""
 	@echo "Tests complete for all implementations"
@@ -115,7 +121,10 @@ else
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
 		echo "==================== Analyzing $$impl ===================="; \
-		$(MAKE) analyze DIR=$$impl || true; \
+		if ! $(MAKE) analyze DIR=$$impl; then \
+			echo "Analysis failed for $$impl. Stopping."; \
+			exit 1; \
+		fi; \
 	done
 	@echo ""
 	@echo "Analysis complete for all implementations"
@@ -156,7 +165,10 @@ else
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
 		echo "==================== Workflow $$impl ===================="; \
-		$(MAKE) workflow DIR=$$impl || true; \
+		if ! $(MAKE) workflow DIR=$$impl; then \
+			echo "Workflow failed for $$impl. Stopping."; \
+			exit 1; \
+		fi; \
 	done
 	@echo ""
 	@echo "Workflow complete for all implementations"

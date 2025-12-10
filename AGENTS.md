@@ -1,5 +1,7 @@
 # AGENTS.md - AI Agent Instructions
 
+**ALWAYS** read `./README.md`, `CONTRIBUTING.md` and `llms.txt` before making any edit.
+
 ## Project Overview
 
 **The Great Analysis Challenge** is a polyglot chess engine implementation project. The goal is to implement the same chess engine specification across multiple programming languages to compare their approaches, paradigms, performance characteristics, and developer experiences.
@@ -39,12 +41,14 @@
 ### Phase 1: Setup (15-30 minutes)
 
 1. **Create Language Directory**
+
    ```bash
    mkdir <language>
    cd <language>
    ```
 
 2. **Create Dockerfile**
+
    - Base image for the language (official images preferred)
    - Install language runtime/compiler and dependencies
    - Copy source files to `/app`
@@ -69,58 +73,66 @@
 ### Phase 2: Core Implementation (2-8 hours)
 
 4. **Implement Core Components** (in order of priority)
-   
+
    a. **Board Representation** (30-60 min)
-      - 8x8 board structure
-      - Piece representation (K/Q/R/B/N/P and k/q/r/b/n/p)
-      - Position state (whose turn, castling rights, en passant)
-   
+
+   - 8x8 board structure
+   - Piece representation (K/Q/R/B/N/P and k/q/r/b/n/p)
+   - Position state (whose turn, castling rights, en passant)
+
    b. **Move Generator** (60-120 min)
-      - Generate all pseudo-legal moves for each piece type
-      - Validate moves don't leave king in check
-      - Special moves: castling, en passant, promotion
-   
+
+   - Generate all pseudo-legal moves for each piece type
+   - Validate moves don't leave king in check
+   - Special moves: castling, en passant, promotion
+
    c. **FEN Parser** (30-45 min)
-      - Parse FEN string to board state
-      - Serialize board state to FEN string
-      - Test with standard positions from `CHESS_ENGINE_SPECS.md`
-   
+
+   - Parse FEN string to board state
+   - Serialize board state to FEN string
+   - Test with standard positions from `CHESS_ENGINE_SPECS.md`
+
    d. **Game State Manager** (45-90 min)
-      - Execute/undo moves
-      - Track game history
-      - Detect checkmate, stalemate
-      - Handle turn order
-   
+
+   - Execute/undo moves
+   - Track game history
+   - Detect checkmate, stalemate
+   - Handle turn order
+
    e. **Command Interface** (30-45 min)
-      - Read commands from stdin
-      - Parse and dispatch commands
-      - Display board in ASCII format (with coordinates)
-      - Output status messages in spec format
-   
+
+   - Read commands from stdin
+   - Parse and dispatch commands
+   - Display board in ASCII format (with coordinates)
+   - Output status messages in spec format
+
    f. **AI Engine** (90-180 min)
-      - Minimax algorithm with alpha-beta pruning
-      - Position evaluation function (material + positional bonuses)
-      - Depth-limited search (1-5 ply)
-      - Move ordering for better pruning
+
+   - Minimax algorithm with alpha-beta pruning
+   - Position evaluation function (material + positional bonuses)
+   - Depth-limited search (1-5 ply)
+   - Move ordering for better pruning
 
 ### Phase 3: Testing & Validation (1-2 hours)
 
 5. **Test Locally with Docker**
+
    ```bash
    # Build image
    docker build -t chess-<language> .
-   
+
    # Basic test
    echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | docker run -i chess-<language>
-   
+
    # AI test
    echo -e "new\nai 3\nquit" | docker run -i chess-<language>
-   
+
    # Perft test
    echo -e "new\nperft 4\nquit" | docker run -i chess-<language>
    ```
 
 6. **Verify Test Suite Compliance**
+
    - Run automated tests: `make test-<language>`
    - Check all test categories pass (basic, special_moves, game_end, ai, fen)
    - Validate perft(4) returns 197281
@@ -135,6 +147,7 @@
 ### Phase 4: Documentation (30-45 minutes)
 
 8. **Write README.md**
+
    - Overview of implementation
    - Language features showcased
    - Build and run instructions
@@ -144,6 +157,7 @@
    - Example usage
 
 9. **Add to Main README**
+
    - Add language section to root `README.md`
    - Include paradigm description
    - Note key features
@@ -159,6 +173,7 @@
 ### Phase 5: Integration (15-30 minutes)
 
 11. **CI/CD Integration** (optional but recommended)
+
     - Workflow files in `.github/workflows/` should auto-detect
     - Verify build runs in CI
     - Check test results
@@ -172,6 +187,7 @@
 ## Common Pitfalls to Avoid
 
 ### Chess Logic Errors
+
 - **Castling**: Verify ALL conditions (no prior moves, no pieces between, king not in/through check)
 - **En Passant**: Only valid immediately after opponent's two-square pawn move
 - **Promotion**: Handle auto-promotion to Queen if not specified
@@ -179,6 +195,7 @@
 - **Coordinates**: a1 is bottom-left for White (row 0/7 depending on indexing)
 
 ### Implementation Issues
+
 - **Input Buffering**: Flush stdout after each output (critical for stdin/stdout protocol)
 - **FEN Parsing**: Handle all 6 FEN fields correctly (especially castling rights and en passant)
 - **Move Notation**: Use algebraic notation (e2e4, not e4 or Nf3)
@@ -186,6 +203,7 @@
 - **Case Sensitivity**: White pieces uppercase, black lowercase
 
 ### Docker/Testing Issues
+
 - **Working Directory**: Ensure commands run in correct directory (`/app`)
 - **Executable Permissions**: Make scripts executable in Dockerfile
 - **Build Artifacts**: Don't commit build artifacts (use .dockerignore)
@@ -236,6 +254,7 @@ All implementations must pass tests in `test/test_suite.json`:
 ### Manual Testing
 
 Test interactively:
+
 ```bash
 docker run -it chess-<language>
 
