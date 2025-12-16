@@ -5,19 +5,40 @@ all: build
 
 # Build target - install dependencies
 build:
-	bundle install
+	@echo "⏱️  Build started..."
+	@START_TIME=$$(date +%s); \
+	bundle install; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Build duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Run basic tests
 test:
-	ruby -c chess.rb
-	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ruby chess.rb | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@echo "⏱️  Test started..."
+	@START_TIME=$$(date +%s); \
+	ruby -c chess.rb && \
+	echo "Running basic functionality test..." && \
+	echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ruby chess.rb | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Test duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Static analysis and code quality
 analyze:
-	@echo "Running Ruby static analysis..."
-	bundle exec rubocop chess.rb lib/*.rb || true
-	ruby -w chess.rb -c 2>/dev/null || true
+	@echo "⏱️  Analyze started..."
+	@START_TIME=$$(date +%s); \
+	echo "Running Ruby static analysis..." && \
+	bundle exec rubocop chess.rb lib/*.rb || true && \
+	ruby -w chess.rb -c 2>/dev/null || true; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Analyze duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Clean build artifacts
 clean:

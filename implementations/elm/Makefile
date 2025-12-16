@@ -5,20 +5,41 @@ all: build
 
 # Build target - install dependencies and compile Elm project
 build:
-	npm install
-	elm make src/ChessEngine.elm --output=src/chess.js
+	@echo "⏱️  Build started..."
+	@START_TIME=$$(date +%s); \
+	npm install && \
+	elm make src/ChessEngine.elm --output=src/chess.js; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Build duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Run basic tests
 test:
-	@echo "Running basic functionality test..."
-	@printf "help\ndisplay\nquit\n" | node chess-bridge.js > /tmp/elm_test_output 2>&1
-	@grep -q "Available commands:" /tmp/elm_test_output && grep -q "Chess Engine - Elm Implementation" /tmp/elm_test_output && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@echo "⏱️  Test started..."
+	@START_TIME=$$(date +%s); \
+	echo "Running basic functionality test..." && \
+	printf "help\ndisplay\nquit\n" | node chess-bridge.js > /tmp/elm_test_output 2>&1 && \
+	grep -q "Available commands:" /tmp/elm_test_output && grep -q "Chess Engine - Elm Implementation" /tmp/elm_test_output && echo "✅ Basic test passed" || echo "❌ Basic test failed"; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Test duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Static analysis and code quality
 analyze:
-	@echo "Running Elm static analysis..."
-	elm make src/ChessEngine.elm --output=/dev/null
-	@echo "Elm compilation check complete"
+	@echo "⏱️  Analyze started..."
+	@START_TIME=$$(date +%s); \
+	echo "Running Elm static analysis..." && \
+	elm make src/ChessEngine.elm --output=/dev/null && \
+	echo "Elm compilation check complete"; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Analyze duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Clean build artifacts
 clean:

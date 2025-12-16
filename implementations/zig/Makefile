@@ -5,19 +5,40 @@ all: build
 
 # Build target - compile Zig project
 build:
-	zig build
+	@echo "⏱️  Build started..."
+	@START_TIME=$$(date +%s); \
+	zig build; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Build duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Run basic tests
 test:
-	zig build test
-	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ./zig-out/bin/chess | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@echo "⏱️  Test started..."
+	@START_TIME=$$(date +%s); \
+	zig build test && \
+	echo "Running basic functionality test..." && \
+	echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ./zig-out/bin/chess | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Test duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Static analysis and code quality
 analyze:
-	@echo "Running Zig static analysis..."
-	zig fmt --check src/
-	zig build --summary all
+	@echo "⏱️  Analyze started..."
+	@START_TIME=$$(date +%s); \
+	echo "Running Zig static analysis..." && \
+	zig fmt --check src/ && \
+	zig build --summary all; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Analyze duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Clean build artifacts
 clean:

@@ -5,20 +5,41 @@ all: build
 
 # Build target - compile Haskell with Cabal
 build:
-	cabal update
-	cabal build
+	@echo "⏱️  Build started..."
+	@START_TIME=$$(date +%s); \
+	cabal update && \
+	cabal build; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Build duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Run basic tests
 test:
-	cabal test || true
-	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | cabal run chess | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@echo "⏱️  Test started..."
+	@START_TIME=$$(date +%s); \
+	cabal test || true && \
+	echo "Running basic functionality test..." && \
+	echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | cabal run chess | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Test duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Static analysis and code quality
 analyze:
-	@echo "Running Haskell static analysis..."
-	hlint src/ || true
-	cabal check || true
+	@echo "⏱️  Analyze started..."
+	@START_TIME=$$(date +%s); \
+	echo "Running Haskell static analysis..." && \
+	hlint src/ || true && \
+	cabal check || true; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Analyze duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Clean build artifacts
 clean:
