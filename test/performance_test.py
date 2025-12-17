@@ -689,7 +689,11 @@ Requirements:
         test_seconds = timings.get("test_seconds")
         
         # Check if benchmark is complete and has valid timing data
-        if status == "completed" and build_seconds is not None and test_seconds is not None:
+        # Timing values must be non-None and non-negative
+        has_valid_build = build_seconds is not None and build_seconds >= 0
+        has_valid_test = test_seconds is not None and test_seconds >= 0
+        
+        if status == "completed" and has_valid_build and has_valid_test:
             valid_results.append(result)
         else:
             lang = result.get("language", "unknown")
