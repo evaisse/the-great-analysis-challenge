@@ -28,6 +28,7 @@ WORKDIR /app
 # Copy source files
 COPY shard.yml ./
 COPY src/ ./src/
+COPY Makefile ./
 
 # Build the application
 RUN crystal build src/chess_engine.cr --release -o chess_engine

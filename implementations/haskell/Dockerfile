@@ -20,6 +20,7 @@ WORKDIR /app
 # Copy project files
 COPY chess.cabal ./
 COPY src/ src/
+COPY Makefile ./
 
 # Install dependencies and build
 RUN cabal update && cabal build

@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     ca-certificates \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Julia
@@ -24,6 +25,7 @@ WORKDIR /app
 COPY Project.toml .
 COPY src/ src/
 COPY chess.jl .
+COPY Makefile ./
 
 # Install dependencies (if any)
 RUN julia --project=. -e "using Pkg; Pkg.instantiate()"

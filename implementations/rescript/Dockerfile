@@ -26,6 +26,7 @@ RUN npm install
 
 # Copy source code
 COPY src/ ./src/
+COPY Makefile ./
 
 # Build the ReScript project
 RUN npm run build
