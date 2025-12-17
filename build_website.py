@@ -261,13 +261,19 @@ def gather_all_data(language_metadata: Dict[str, Dict[str, str]]) -> List[Dict[s
         impl_path = f"implementations/{lang}"
         meta = load_metadata(impl_path)
         language_info = language_metadata.get(lang, {})
+        performance = load_performance_data(lang)
+
+        # Skip implementations without performance data
+        # The CI process ensures only valid benchmarks produce JSON files
+        if not performance:
+            continue
 
         data = {
             'language': lang,
             'path': impl_path,
             'metadata': meta,
             'language_metadata': language_info,
-            'performance': load_performance_data(lang),
+            'performance': performance,
             'loc': count_lines_of_code(impl_path)
         }
         all_data.append(data)
