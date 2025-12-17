@@ -253,6 +253,36 @@ def discover_implementations() -> List[str]:
     return sorted([name for name in os.listdir(impl_dir) if os.path.isdir(os.path.join(impl_dir, name))])
 
 
+def is_valid_performance_data(performance: Dict[str, Any]) -> bool:
+    """Check if performance data meets benchmark output constraints.
+    
+    Valid performance data must have:
+    - status = "completed"
+    - build_seconds is not None
+    - test_seconds is not None
+    
+    This ensures only implementations with complete, successful benchmarks are displayed.
+    """
+    if not performance:
+        return False
+    
+    # Check status
+    status = performance.get('status')
+    if status != 'completed':
+        return False
+    
+    # Check required timing data
+    timings = performance.get('timings', {})
+    build_seconds = timings.get('build_seconds')
+    test_seconds = timings.get('test_seconds')
+    
+    # Both build and test times must be present (not None)
+    if build_seconds is None or test_seconds is None:
+        return False
+    
+    return True
+
+
 def gather_all_data(language_metadata: Dict[str, Dict[str, str]]) -> List[Dict[str, Any]]:
     implementations = discover_implementations()
     all_data: List[Dict[str, Any]] = []
@@ -261,13 +291,19 @@ def gather_all_data(language_metadata: Dict[str, Dict[str, str]]) -> List[Dict[s
         impl_path = f"implementations/{lang}"
         meta = load_metadata(impl_path)
         language_info = language_metadata.get(lang, {})
+        performance = load_performance_data(lang)
+
+        # Only include implementations with valid performance data
+        if not is_valid_performance_data(performance):
+            print(f"⚠️  Skipping {lang}: incomplete or failed benchmark (status={performance.get('status', 'missing')})")
+            continue
 
         data = {
             'language': lang,
             'path': impl_path,
             'metadata': meta,
             'language_metadata': language_info,
-            'performance': load_performance_data(lang),
+            'performance': performance,
             'loc': count_lines_of_code(impl_path)
         }
         all_data.append(data)
