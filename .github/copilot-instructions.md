@@ -1,5 +1,44 @@
 # GitHub Copilot Instructions
 
+## Quick Reference
+
+**Project Type**: Polyglot chess engine benchmark project  
+**Working Directory**: `/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge`  
+**Core Principle**: Convention over Configuration  
+**Primary Workflow**: Docker-first development  
+**Key Files**: `CHESS_ENGINE_SPECS.md`, `AI_ALGORITHM_SPEC.md`, `implementations/*/chess.meta`
+
+### Most Common Tasks
+- Add new language implementation → See [Implementation Workflow](#implementation-workflow)
+- Debug failing test → See [Troubleshooting](#troubleshooting)
+- Fix performance issue → See [Performance Optimization](#performance-expectations)
+- Update documentation → Keep consistent with existing implementations
+
+### Essential Commands
+```bash
+# List all implementations
+make list-implementations
+
+# Build specific implementation
+make build DIR=<language>
+
+# Test specific implementation
+make test DIR=<language>
+
+# Run analysis (linters, type checkers)
+make analyze DIR=<language>
+
+# Test inside implementation directory
+cd implementations/<language>
+make docker-build
+make docker-test
+
+# Validate all implementations
+python3 test/verify_implementations.py
+```
+
+---
+
 ## Project Overview
 
 **The Great Analysis Challenge** is a polyglot chess engine implementation project that implements identical chess engines across multiple programming languages to compare their approaches, performance, and paradigms.
@@ -10,6 +49,15 @@
 - Showcase language-specific features and paradigms
 - Analyze compilation times, execution speed, and resource usage
 - Document developer experience across different ecosystems
+
+### Convention Over Configuration
+**CRITICAL**: This project is 100% implementation-agnostic. All tooling discovers and works with implementations automatically through:
+- Self-describing `chess.meta` files
+- Standardized directory structure under `implementations/<language>/`
+- Generic Makefile commands: `make build DIR=<language>`, `make test DIR=<language>`
+- No hardcoded language-specific logic in root infrastructure
+
+When adding a new language, you NEVER modify the root Makefile or CI scripts—just follow the conventions!
 
 ## Project Constraints
 
@@ -104,11 +152,66 @@ make docker-test  # Test in Docker container
 ### Adding a New Language Implementation
 
 **Phase 1: Setup (15-30 minutes)**
-1. Create directory: `implementations/<language>/`
-2. Create `implementations/<language>/Dockerfile` with language runtime and dependencies
-3. Create `implementations/<language>/chess.meta` with metadata (see existing implementations)
-4. Create `implementations/<language>/Makefile` with standard targets
-5. Create initial `implementations/<language>/README.md`
+
+1. **Create directory structure:**
+   ```bash
+   cd implementations
+   mkdir <language>
+   cd <language>
+   ```
+
+2. **Create Dockerfile** with language runtime:
+   ```dockerfile
+   FROM <official-base-image>
+   WORKDIR /app
+   COPY . .
+   # Build commands here (if compiled language)
+   CMD ["<command>", "<main-file>"]
+   ```
+
+3. **Create chess.meta** (self-describing metadata):
+   ```json
+   {
+     "language": "<language>",
+     "version": "<version>",
+     "author": "Your Name",
+     "build": "<build_command>",
+     "run": "<run_command>",
+     "analyze": "<linter_command>",
+     "test": "<test_command>",
+     "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+     "max_ai_depth": 5,
+     "estimated_perft4_ms": 1000
+   }
+   ```
+
+4. **Create Makefile** with standard targets:
+   ```makefile
+   .PHONY: all build test analyze clean docker-build docker-test
+   
+   all: build
+   
+   build:
+       # Language-specific build
+   
+   test:
+       # Run tests
+   
+   analyze:
+       # Run linters/type checkers
+   
+   clean:
+       # Remove build artifacts
+   
+   docker-build:
+       docker build -t chess-$(shell basename $(PWD)) .
+   
+   docker-test: docker-build
+       docker run --rm -i chess-$(shell basename $(PWD)) sh -c \
+         "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | <run_command>"
+   ```
+
+5. **Create README.md** following template from existing implementations
 
 **Phase 2: Core Implementation (2-8 hours)**
 Implement components in this order:
@@ -121,11 +224,56 @@ Implement components in this order:
 7. AI engine (minimax with alpha-beta pruning, depth 1-5)
 
 **Phase 3: Testing (1-2 hours)**
-1. Test locally with Docker
-2. Verify all commands work correctly
-3. Validate special moves (castling, en passant, promotion)
-4. Run automated test suite
-5. Verify performance targets
+
+1. **Test locally with Docker:**
+   ```bash
+   cd implementations/<language>
+   make docker-build
+   
+   # Basic movement test
+   echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | docker run -i chess-<language>
+   
+   # AI test
+   echo -e "new\nai 3\nquit" | docker run -i chess-<language>
+   
+   # Perft test (MUST return 197281)
+   echo -e "new\nperft 4\nquit" | docker run -i chess-<language>
+   ```
+
+2. **Verify all commands work:**
+   - `new` - Start new game
+   - `move <from><to>` - Execute moves
+   - `undo` - Undo moves
+   - `ai <depth>` - AI makes move
+   - `fen <string>` - Load position
+   - `export` - Export FEN
+   - `help` - Show help
+   - `quit` - Exit
+
+3. **Validate special moves:**
+   ```bash
+   # Castling
+   echo -e "fen r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1\nmove e1g1\nexport\nquit"
+   
+   # En passant
+   echo -e "fen rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3\nmove e5f6\nexport\nquit"
+   
+   # Promotion
+   echo -e "fen 8/P7/8/8/8/8/8/8 w - - 0 1\nmove a7a8\nexport\nquit"
+   ```
+
+4. **Run automated test suite:**
+   ```bash
+   make docker-test  # From implementation directory
+   # OR
+   cd /path/to/project/root
+   make test DIR=<language>
+   ```
+
+5. **Verify performance targets:**
+   - AI depth 3: < 2 seconds
+   - AI depth 5: < 10 seconds
+   - perft(4): < 1 second (optional, but nice to have)
 
 **Phase 4: Documentation (30-45 minutes)**
 1. Complete implementation README.md
@@ -299,14 +447,92 @@ FEN: rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
 - Profile before optimizing
 - Balance readability vs performance
 
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### Build Failures
+1. **Docker image won't build**
+   - Check Dockerfile base image is accessible
+   - Verify all COPY paths exist
+   - Ensure dependencies are available
+   - Test locally: `cd implementations/<language> && docker build .`
+
+2. **Compilation errors in container**
+   - Check language version matches chess.meta
+   - Verify all source files are copied
+   - Review dependencies and build tools
+
+#### Test Failures
+1. **perft(4) returns wrong count (not 197281)**
+   - **This is the ultimate correctness test!**
+   - Check move generation for all piece types
+   - Verify special moves: castling, en passant, promotion
+   - Ensure moves leaving king in check are filtered out
+   - Test with: `echo -e "new\nperft 4\nquit" | docker run -i chess-<language>`
+
+2. **AI makes illegal moves**
+   - Review move validation logic
+   - Check check detection
+   - Verify move generator filters pseudo-legal moves
+
+3. **Board display wrong**
+   - Coordinates: a1 is bottom-left (row 0 or 7 depending on indexing)
+   - White pieces uppercase, black lowercase
+   - Include coordinate labels on all sides
+
+4. **FEN import/export broken**
+   - Parse all 6 FEN fields correctly
+   - Handle castling rights (KQkq)
+   - Track en passant target square
+   - Test with provided FEN positions
+
+#### Docker Issues
+1. **Container exits immediately**
+   - Check CMD in Dockerfile points to correct executable
+   - Verify executable has proper permissions
+   - Test interactively: `docker run -it chess-<language> sh`
+
+2. **stdin/stdout protocol not working**
+   - **CRITICAL**: Flush stdout after each output
+   - Use unbuffered I/O or explicit flush calls
+   - Test: `echo -e "new\nquit" | docker run -i chess-<language>`
+
+#### CI/CD Issues
+1. **Workflow fails but local tests pass**
+   - Ensure Docker build is reproducible
+   - Check for host-specific dependencies
+   - Review GitHub Actions logs for specific errors
+   - Verify chess.meta commands work in container
+
+### Debugging Workflow
+```bash
+# 1. Build and enter container
+docker build -t chess-debug .
+docker run -it chess-debug sh
+
+# 2. Test commands manually
+echo "new" | <run_command>
+echo -e "new\nmove e2e4\nquit" | <run_command>
+
+# 3. Check specific features
+echo -e "new\nperft 4\nquit" | <run_command>  # Should show 197281
+echo -e "new\nai 3\nquit" | <run_command>     # Should make legal move
+
+# 4. Use FEN to test specific positions
+echo -e "fen r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1\nmove e1g1\nexport\nquit" | <run_command>
+```
+
 ## Getting Help
 
 ### Documentation Resources
-1. `CHESS_ENGINE_SPECS.md` - Complete technical specification
-2. `README_IMPLEMENTATION_GUIDELINES.md` - Quick reference
-3. `AGENTS.md` - Detailed workflow for implementations
-4. `CONTRIBUTING.md` - Contribution process
-5. Existing implementations - Ruby, TypeScript, Rust are well-documented
+1. `CHESS_ENGINE_SPECS.md` - Complete technical specification (READ THIS FIRST!)
+2. `AI_ALGORITHM_SPEC.md` - Exact AI requirements for deterministic behavior
+3. `README_IMPLEMENTATION_GUIDELINES.md` - Quick reference guide
+4. `AGENTS.md` - Detailed workflow for implementations
+5. `CONTRIBUTING.md` - Contribution process
+6. `llms.txt` - Project file map for LLMs
+7. Existing implementations - Ruby, TypeScript, Rust are well-documented
 
 ### Reference Implementations
 
@@ -319,24 +545,93 @@ The project has 19+ language implementations. Recommended starting points for st
 All implementations can be found in `implementations/` directory including: Crystal, Dart, Elm, Gleam, Go, Haskell, Julia, Lua, Mojo, Nim, PHP, Python, Rescript, Swift, Zig, and more.
 
 ### Debugging Tips
-1. Test incrementally - one feature at a time
-2. Use FEN positions to test specific scenarios
-3. Print board state to visualize positions
-4. Validate moves manually with online chess tools
-5. Compare output format exactly with specification
-6. Log AI decisions to debug evaluation
+1. **Test incrementally** - Implement and test one feature at a time
+2. **Use FEN positions** - Test specific scenarios without playing full games
+3. **Print board state** - Visualize positions to debug issues
+4. **Validate moves manually** - Use online chess validators to verify correctness
+5. **Compare output format** - Must match specification exactly
+6. **Log AI decisions** - Output evaluation scores to debug AI behavior
+7. **Always run perft(4)** - The ultimate correctness check (must return 197281)
+
+## Working with GitHub Copilot
+
+### Best Practices for This Project
+
+1. **Always start by reading specifications**
+   - Don't assume chess rules—read `CHESS_ENGINE_SPECS.md`
+   - Check `AI_ALGORITHM_SPEC.md` for exact AI requirements
+   - Review existing implementations for patterns
+
+2. **Use Docker-first workflow**
+   - All builds MUST work in Docker
+   - Test locally before pushing
+   - Don't rely on host-installed tools
+
+3. **Test early and often**
+   - Build after each major component
+   - Run perft(4) frequently to catch bugs early
+   - Validate output format matches spec
+
+4. **Follow language idioms**
+   - Use language-standard formatting tools
+   - Showcase unique language features
+   - Don't copy patterns from other languages blindly
+
+5. **Make minimal changes**
+   - Fix only what's broken
+   - Don't refactor working code unnecessarily
+   - Keep changes focused and testable
+
+### When Adding a New Language
+
+**DO:**
+- Create `implementations/<language>/` directory structure
+- Follow existing implementation patterns
+- Test thoroughly with Docker
+- Document language-specific design decisions
+- Use `chess.meta` to describe build/test commands
+
+**DON'T:**
+- Modify root Makefile (uses generic `DIR` parameter)
+- Change other language implementations
+- Add language-specific logic to CI scripts
+- Use external chess libraries
+- Skip perft validation
+
+### Example Copilot Prompts
+
+**Good prompts:**
+- "Implement a chess move validator following CHESS_ENGINE_SPECS.md"
+- "Add castling validation checking all FIDE rules"
+- "Debug why perft(4) returns wrong count"
+- "Optimize move generation while maintaining correctness"
+
+**Avoid:**
+- "Make a chess engine" (too vague, might miss requirements)
+- "Copy the Python implementation" (ignores language idioms)
+- "Make it faster" (without profiling first)
 
 ## Success Criteria
 
 An implementation is successful when it:
 1. ✅ Builds in Docker without errors
 2. ✅ Passes all automated tests
-3. ✅ Meets performance targets
-4. ✅ Demonstrates language features effectively
-5. ✅ Has clear, comprehensive documentation
-6. ✅ Follows project conventions
-7. ✅ Can be maintained by others
+3. ✅ **Returns exactly 197281 for perft(4)** (ultimate correctness test)
+4. ✅ Meets performance targets (AI depth 3 < 2s, depth 5 < 10s)
+5. ✅ Demonstrates language features effectively
+6. ✅ Has clear, comprehensive documentation
+7. ✅ Follows project conventions (chess.meta, Makefile, Dockerfile)
+8. ✅ Can be maintained by others
 
 ---
 
+## Summary
+
 **Remember**: The goal is not just a working chess engine, but to showcase how each programming language approaches the same problem differently. Code quality, documentation, and adherence to language idioms are as important as functionality.
+
+**Key Success Factors:**
+- ✅ Specification compliance (CHESS_ENGINE_SPECS.md is law)
+- ✅ Docker-first development (no exceptions)
+- ✅ Convention over configuration (zero infrastructure changes needed)
+- ✅ Correctness first (perft validation is non-negotiable)
+- ✅ Language idioms (showcase what makes each language unique)
