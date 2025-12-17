@@ -55,10 +55,9 @@ def validate_result_json(result_file: Path, language: str) -> Tuple[bool, List[s
             if value is None:
                 issues.append(f"Required timing field '{field}' is missing")
         
-        # analyze_seconds is optional but should be checked if present
-        analyze_value = timings.get('analyze_seconds')
         # Note: Zero values are acceptable for very fast operations
         # that complete in less than 1ms, so we don't flag them as issues
+        # analyze_seconds is optional and not validated here
         
         # Check metadata exists and has required fields
         metadata = data.get('metadata', {})
