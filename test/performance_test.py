@@ -700,10 +700,11 @@ Requirements:
             reason = []
             if status != "completed":
                 reason.append(f"status={status}")
-            if build_seconds is None:
-                reason.append("missing build_seconds")
-            if test_seconds is None:
-                reason.append("missing test_seconds")
+            if status == "completed":
+                if build_seconds is None:
+                    reason.append("missing build_seconds")
+                if test_seconds is None:
+                    reason.append("missing test_seconds")
             skipped_results.append((lang, ", ".join(reason)))
     
     if args.json:
