@@ -45,19 +45,19 @@ def validate_result_json(result_file: Path, language: str) -> Tuple[bool, List[s
         if data.get('status') != 'completed':
             issues.append(f"Status is not 'completed': {data.get('status')}")
         
-        # Check timings - ensure they are not zero or missing
+        # Check timings - ensure they are not missing
+        # This enforces benchmark output constraints at the CI level
         timings = data.get('timings', {})
-        timing_fields = ['analyze_seconds', 'build_seconds', 'test_seconds']
+        required_timing_fields = ['build_seconds', 'test_seconds']
         
-        for field in timing_fields:
+        for field in required_timing_fields:
             value = timings.get(field)
             if value is None:
-                # test_seconds can be None if no tests defined
-                if field == 'test_seconds':
-                    continue
-                issues.append(f"Timing field '{field}' is missing")
-            # Note: Zero values are acceptable for very fast operations
-            # that complete in less than 1ms, so we don't flag them as issues
+                issues.append(f"Required timing field '{field}' is missing")
+        
+        # Note: Zero values are acceptable for very fast operations
+        # that complete in less than 1ms, so we don't flag them as issues
+        # analyze_seconds is optional and not validated here
         
         # Check metadata exists and has required fields
         metadata = data.get('metadata', {})

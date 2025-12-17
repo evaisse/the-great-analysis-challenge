@@ -677,10 +677,53 @@ Requirements:
             f.write(text_report)
         print(f"\n📄 Text report saved to {args.output}")
     
+    # Filter results: Only save JSON for completed benchmarks with valid timing data
+    # This enforces benchmark output constraints at the CI level
+    valid_results = []
+    skipped_results = []
+    
+    for result in all_results:
+        status = result.get("status")
+        timings = result.get("timings", {})
+        build_seconds = timings.get("build_seconds")
+        test_seconds = timings.get("test_seconds")
+        
+        # Check if benchmark is complete and has valid timing data
+        # Timing values must be non-None and non-negative
+        has_valid_build = build_seconds is not None and build_seconds >= 0
+        has_valid_test = test_seconds is not None and test_seconds >= 0
+        
+        if status == "completed" and has_valid_build and has_valid_test:
+            valid_results.append(result)
+        else:
+            lang = result.get("language", "unknown")
+            reason = []
+            if status != "completed":
+                reason.append(f"status={status}")
+            # Only check timing data validity when status is completed
+            if status == "completed":
+                if build_seconds is None:
+                    reason.append("missing build_seconds")
+                elif build_seconds < 0:
+                    reason.append("build_seconds is negative")
+                if test_seconds is None:
+                    reason.append("missing test_seconds")
+                elif test_seconds < 0:
+                    reason.append("test_seconds is negative")
+            skipped_results.append((lang, ", ".join(reason)))
+    
     if args.json:
-        with open(args.json, 'w') as f:
-            json.dump(all_results, f, indent=2)
-        print(f"📄 JSON results saved to {args.json}")
+        if valid_results:
+            with open(args.json, 'w') as f:
+                json.dump(valid_results, f, indent=2)
+            print(f"📄 JSON results saved to {args.json} ({len(valid_results)} valid benchmark(s))")
+        else:
+            print(f"⚠️  No valid benchmarks to save to JSON")
+        
+        if skipped_results:
+            print(f"\n⚠️  Skipped {len(skipped_results)} incomplete/failed benchmark(s):")
+            for lang, reason in skipped_results:
+                print(f"   - {lang}: {reason}")
     
     # Exit with error code if any tests failed
     failed_count = sum(1 for r in all_results if r.get("status") != "completed")
