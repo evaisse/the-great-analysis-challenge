@@ -700,11 +700,16 @@ Requirements:
             reason = []
             if status != "completed":
                 reason.append(f"status={status}")
+            # Only check timing data validity when status is completed
             if status == "completed":
                 if build_seconds is None:
                     reason.append("missing build_seconds")
+                elif build_seconds < 0:
+                    reason.append("build_seconds is negative")
                 if test_seconds is None:
                     reason.append("missing test_seconds")
+                elif test_seconds < 0:
+                    reason.append("test_seconds is negative")
             skipped_results.append((lang, ", ".join(reason)))
     
     if args.json:
