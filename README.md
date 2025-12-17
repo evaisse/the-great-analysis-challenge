@@ -15,29 +15,34 @@ All implementations have complete feature parity with the following features:
 - ✅ **en_passant** - Special pawn capture rules
 - ✅ **promotion** - Pawn advancement to other pieces
 
-### Working Implementations (19 languages)
+### Working Implementations (7 languages)
 
-All implementations are fully working with complete feature support:
+All implementations are fully working with complete feature support and produce benchmark timing results:
 
-- Crystal
 - Dart
-- Elm
-- Gleam
-- Go
-- Haskell
-- Julia
-- Kotlin
 - Lua
-- Mojo
-- Nim
 - PHP
 - Python
-- ReScript
 - Ruby
 - Rust
-- Swift
 - TypeScript
-- Zig
+
+### Work In Progress (12 languages)
+
+These implementations are available in the `implementations-wip/` directory and have various issues preventing them from producing benchmark results. See [implementations-wip/README.md](./implementations-wip/README.md) for details:
+
+- Crystal (no compiler on test host)
+- Elm (no compiler + type errors)
+- Gleam (no compiler on test host)
+- Go (build structure mismatch)
+- Haskell (network issues)
+- Julia (slow package installation)
+- Kotlin (Gradle wrapper issue)
+- Mojo (no compiler + Docker issues)
+- Nim (no compiler on test host)
+- ReScript (no compiler + deprecated config)
+- Swift (folder structure mismatch)
+- Zig (no compiler on test host)
 
 📊 **For detailed performance metrics, build times, and comprehensive comparisons**, visit the [Interactive Website](https://evaisse.github.io/the-great-analysis-challenge/).
 
