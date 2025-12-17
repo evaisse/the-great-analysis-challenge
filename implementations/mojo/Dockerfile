@@ -3,6 +3,11 @@ FROM ubuntu:24.04
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Install make
+RUN apt-get update && apt-get install -y \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy the chess engine source code

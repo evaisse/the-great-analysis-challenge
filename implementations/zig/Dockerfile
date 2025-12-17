@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     xz-utils \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Zig
@@ -23,6 +24,7 @@ WORKDIR /app
 # Copy source files
 COPY build.zig ./
 COPY src/ ./src/
+COPY Makefile ./
 
 # Build the application
 RUN zig build

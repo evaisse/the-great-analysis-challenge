@@ -59,6 +59,8 @@ RUN npm install
 
 # Copy source files
 COPY src ./src
+COPY Makefile ./
+COPY chess-bridge.js ./
 
 # Build the Elm application
 RUN mkdir -p dist && elm make src/ChessEngine.elm --output=dist/chess.js
