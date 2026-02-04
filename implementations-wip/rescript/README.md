@@ -21,7 +21,7 @@ A complete chess engine implementation in ReScript following the Chess Engine Sp
 ```bash
 npm install
 npm run build
-node lib/js/src/Chess.js
+node lib/es6/src/Chess.js
 ```
 
 ## Docker Usage

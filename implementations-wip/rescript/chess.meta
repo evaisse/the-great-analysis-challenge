@@ -3,10 +3,10 @@
   "version": "10.0",
   "author": "ReScript Implementation",
   "build": "npm install && npm run build",
-  "run": "node lib/js/src/Chess.js",
+  "run": "node lib/es6/src/Chess.js",
   "analyze": "npx rescript build",
-  "test": "node lib/js/src/Chess.js",
+  "test": "node lib/es6/src/Chess.js",
   "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
-  "max_ai_depth": 4,
+  "max_ai_depth": 5,
   "estimated_perft4_ms": 1500
 }
