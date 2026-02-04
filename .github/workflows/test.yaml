@@ -101,7 +101,7 @@ jobs:
         run: |
           cd implementations/${{ matrix.engine }}
           echo "🏗️ Building ${{ matrix.engine }} chess engine..."
-          docker build -t chess-${{ matrix.engine }}-test .
+          docker build -t chess-${{ matrix.engine }} .
       
       - name: Verify analyze target
         run: ./workflow verify-make-target ${{ matrix.engine }} analyze
@@ -109,16 +109,8 @@ jobs:
       - name: Verify test target
         run: ./workflow verify-make-target ${{ matrix.engine }} test
 
-      - name: Test basic commands
-        run: ./workflow test-basic-commands ${{ matrix.engine }}
-
-      - name: Test advanced features
-        if: steps.config.outputs.test_mode == 'full'
-        run: ./workflow test-advanced-features ${{ matrix.engine }} --supports-perft ${{ steps.config.outputs.supports_perft }} --supports-ai ${{ steps.config.outputs.supports_ai }}
-
-      - name: Test demo mode
-        if: steps.config.outputs.test_mode == 'demo'
-        run: ./workflow test-demo-mode ${{ matrix.engine }}
+      - name: Run test suite (Advanced)
+        run: python3 test/test_suite_runner.py --impl implementations/${{ matrix.engine }} --level advanced
 
       - name: Ensure workspace clean for ${{ matrix.engine }}
         run: |

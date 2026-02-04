@@ -2,7 +2,7 @@
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 # Convention over Configuration: This Makefile is 100% implementation-agnostic
 
-.PHONY: all test build analyze clean help website analyze-tools list-implementations verify workflow
+.PHONY: all test build analyze clean help website analyze-tools list-implementations verify workflow test-suite
 
 # Auto-discover all implementations with Dockerfiles
 IMPLEMENTATIONS := $(shell find implementations -mindepth 1 -maxdepth 1 -type d -exec test -f {}/Dockerfile \; -exec basename {} \; 2>/dev/null | sort)
@@ -23,6 +23,7 @@ help:
 	@echo "  make verify [DIR=<impl>]   - Verify implementation structure"
 	@echo "  make workflow [DIR=<impl>] - Run full workflow (verify, build, analyze, test)"
 	@echo "  make clean [DIR=<impl>]    - Clean implementation(s)"
+	@echo "  make test-suite [DIR=<impl>] - Run test/test_suite.json (Advanced, Docker-first)"
 	@echo ""
 	@echo "If DIR is omitted, the command runs for ALL implementations."
 	@echo ""
@@ -101,6 +102,30 @@ else
 	done
 	@echo ""
 	@echo "Tests complete for all implementations"
+endif
+
+# Test suite target (test/test_suite.json, Docker-first)
+test-suite:
+ifdef DIR
+	@if [ ! -d "implementations/$(DIR)" ]; then \
+		echo "ERROR: Implementation '$(DIR)' not found"; \
+		exit 1; \
+	fi
+	@echo "Running test suite for $(DIR) implementation..."
+	@$(MAKE) build DIR=$(DIR)
+	@python3 test/test_suite_runner.py --impl implementations/$(DIR) --level advanced
+else
+	@echo "Running test suite for all implementations..."
+	@for impl in $(IMPLEMENTATIONS); do \
+		echo ""; \
+		echo "==================== Test Suite $$impl ===================="; \
+		if ! $(MAKE) test-suite DIR=$$impl; then \
+			echo "Test suite failed for $$impl. Stopping."; \
+			exit 1; \
+		fi; \
+	done
+	@echo ""
+	@echo "Test suite complete for all implementations"
 endif
 
 # Analyze target

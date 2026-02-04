@@ -58,6 +58,9 @@ make build DIR=go
 # Test a specific implementation
 make test DIR=ruby
 
+# Run official test suite (Advanced, Docker-first)
+make test-suite DIR=python
+
 # Analyze a specific implementation
 make analyze DIR=python
 

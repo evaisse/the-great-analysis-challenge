@@ -146,8 +146,9 @@ def cleanup_docker(engine: str) -> bool:
     print(f"🧹 Cleaning up {engine}...")
     
     try:
-        # Remove Docker image
+        # Remove Docker images (legacy and current tags)
         run_command(["docker", "rmi", f"chess-{engine}-test"])
+        run_command(["docker", "rmi", f"chess-{engine}"])
         
         # Remove temporary files
         import glob

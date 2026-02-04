@@ -10,6 +10,7 @@ test/
 ├── README_PERFORMANCE_TESTING.md   # Detailed performance testing guide
 ├── performance_test.py             # 🚀 Main performance testing script
 ├── test_harness.py                 # ♟️ Chess protocol compliance testing
+├── test_suite_runner.py            # ✅ Official test_suite.json runner
 ├── verify_implementations.py       # 🔍 Structure and compliance verification
 ├── test_local.sh                   # 💻 Local testing without Docker
 ├── test_suite.json                 # 📋 Test case definitions (if exists)
@@ -132,7 +133,34 @@ python3 test/test_harness.py --help
 7. **Pawn Promotion**: Promotion to queen
 8. **Perft Accuracy**: Move generation validation (optional)
 
-### 3. `verify_implementations.py` - Structure Verification
+### 3. `test_suite_runner.py` - Official Test Suite Runner
+
+**Purpose**: Execute the authoritative `test/test_suite.json` definitions (Docker-first).
+
+**Key Features**:
+- 📋 **Exact suite parity** with `test/test_suite.json`
+- 🐳 **Docker-first** execution (runs engine inside container)
+- ⏱️ **Per-test timeouts** and optional performance limits
+- 🧾 **JSON report output** per implementation
+
+**Command Line Usage**:
+```bash
+# Run Advanced compliance (includes performance) for all implementations
+python3 test/test_suite_runner.py --level advanced
+
+# Run only one implementation
+python3 test/test_suite_runner.py --impl implementations/python --level advanced
+```
+
+**Command Line Options**:
+```
+--impl PATH       Test specific implementation directory
+--dir DIR         Base directory (default: implementations)
+--level LEVEL     Compliance level: basic|standard|advanced
+--output-dir DIR  Output directory for JSON reports (default: reports/test_suite)
+```
+
+### 4. `verify_implementations.py` - Structure Verification
 
 **Purpose**: Verifies that implementations follow required project structure and standards.
 
@@ -180,7 +208,7 @@ BASE_DIR          Base directory containing implementations (optional)
 - 🟡 **Good**: Minor warnings or missing optional fields  
 - 🔴 **Needs Work**: Missing required files or significant issues
 
-### 4. `test_local.sh` - Local Testing Script
+### 5. `test_local.sh` - Local Testing Script
 
 **Purpose**: Simple bash script for testing implementations locally without Docker.
 
@@ -206,19 +234,28 @@ chmod +x test/test_local.sh
 python3 test/verify_implementations.py
 ```
 
-### 2. Test Chess Protocol Compliance
+### 2. Run Official Test Suite (Advanced)
+```bash
+# Run test/test_suite.json for all implementations
+python3 test/test_suite_runner.py --level advanced
+
+# Or for one implementation
+python3 test/test_suite_runner.py --impl implementations/python --level advanced
+```
+
+### 3. Test Chess Protocol Compliance
 ```bash
 # Test all implementations for chess protocol compliance
 python3 test/test_harness.py --performance
 ```
 
-### 3. Run Performance Benchmarks
+### 4. Run Performance Benchmarks
 ```bash
 # Run comprehensive performance tests
 python3 test/performance_test.py --output benchmark_report.txt --json benchmark_data.json
 ```
 
-### 4. Test Specific Implementation
+### 5. Test Specific Implementation
 ```bash
 # Test only Rust implementation
 python3 test/performance_test.py --impl implementations/rust
