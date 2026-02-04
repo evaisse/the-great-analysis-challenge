@@ -44,7 +44,7 @@ USER chess
 EXPOSE 3000
 
 # Default command to run the chess engine
-CMD ["node", "lib/js/src/Chess.js"]
+CMD ["node", "lib/es6/src/Chess.js"]
 
 # Alternative commands for different use cases:
 # To build only: docker run --rm chess-engine npm run build
