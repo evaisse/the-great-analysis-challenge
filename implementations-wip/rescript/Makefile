@@ -11,7 +11,7 @@ build:
 # Run basic tests
 test:
 	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | node lib/js/src/Chess.js | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | node lib/es6/src/Chess.js | grep -q "FEN: rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
 
 # Static analysis and code quality
 analyze:
@@ -30,7 +30,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing ReScript implementation in Docker..."
-	docker run --rm -i chess-rescript sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | node lib/js/src/Chess.js"
+	docker run --rm -i chess-rescript sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | node lib/es6/src/Chess.js"
 
 # Help target
 help:
