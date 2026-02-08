@@ -7,7 +7,7 @@
     "build": "rescript",
     "clean": "rescript clean",
     "watch": "rescript -w",
-    "start": "node src/Chess.bs.js",
+    "start": "node lib/es6/src/Chess.js",
     "chess": "npm run build && npm start"
   },
   "dependencies": {

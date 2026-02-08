@@ -24,7 +24,7 @@ let parseMove = (moveStr: string): option<(int, int, option<pieceType>)> => {
     switch (Utils.parseSquare(fromStr), Utils.parseSquare(toStr)) {
     | (Some(from), Some(to)) =>
       let promotion = if len == 5 {
-        switch Js.String.toLowerCase(Js.String.charAt(moveStr, 4)) {
+        switch Js.String.toLowerCase(Js.String.charAt(4, moveStr)) {
         | "q" => Some(Queen)
         | "r" => Some(Rook)
         | "b" => Some(Bishop)
@@ -180,7 +180,11 @@ let processCommand = (engine: gameEngine, input: string): unit => {
       if Belt.Array.length(parts) < 2 {
         Js.log("ERROR: Invalid FEN command")
       } else {
-        let fenStr = Belt.Array.sliceToEnd(parts, 1)->Js.Array.joinWith(" ")
+        let fenParts = Belt.Array.sliceToEnd(parts, 1)
+        let fenStr =
+          Belt.Array.reduce(fenParts, "", (acc, item) =>
+            if acc == "" { item } else { acc ++ " " ++ item }
+          )
         switch Board.parseFen(fenStr) {
         | Ok(newState) =>
           engine.state = newState

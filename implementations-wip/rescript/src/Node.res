@@ -1,12 +1,12 @@
+module Stream = {
+  type readable
+  type writable
+}
+
 module Process = {
   @val external exit: int => unit = "process.exit"
   @val external stdin: Stream.readable = "process.stdin"
   @val external stdout: Stream.writable = "process.stdout"
-}
-
-module Stream = {
-  type readable
-  type writable
 }
 
 module Readline = {
@@ -24,7 +24,7 @@ module Readline = {
   module Interface = {
     @send external prompt: readlineInterface => unit = "prompt"
     
-    @send external on: (readlineInterface, @string [#line | #close], 'a) => unit = "on"
+    @send external on: (readlineInterface, [#line | #close], 'a) => unit = "on"
     
     @send external question: (readlineInterface, string, string => unit) => unit = "question"
     
