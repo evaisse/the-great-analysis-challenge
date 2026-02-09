@@ -17,13 +17,14 @@ from lib.types import Move
 class ChessEngine:
     """Main chess engine class that handles user commands and game flow."""
     
-    def __init__(self):
+    def __init__(self, use_rich_eval: bool = False):
         self.board = Board()
         self.move_generator = MoveGenerator(self.board)
         self.fen_parser = FenParser(self.board)
-        self.ai = AI(self.board, self.move_generator)
+        self.ai = AI(self.board, self.move_generator, use_rich_eval)
         self.perft = Perft(self.board, self.move_generator)
         self.move_history = []
+        self.use_rich_eval = use_rich_eval
     
     def start(self):
         """Start the chess engine and begin accepting commands."""
@@ -159,7 +160,7 @@ class ChessEngine:
         self.board = Board()
         self.move_generator = MoveGenerator(self.board)
         self.fen_parser = FenParser(self.board)
-        self.ai = AI(self.board, self.move_generator)
+        self.ai = AI(self.board, self.move_generator, self.use_rich_eval)
         self.perft = Perft(self.board, self.move_generator)
         self.move_history = []
         print('OK: New game started')
@@ -260,7 +261,8 @@ Available commands:
 
 def main():
     """Main entry point."""
-    engine = ChessEngine()
+    use_rich_eval = '--rich-eval' in sys.argv
+    engine = ChessEngine(use_rich_eval)
     engine.start()
 
 

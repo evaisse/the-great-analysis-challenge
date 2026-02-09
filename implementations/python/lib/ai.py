@@ -88,9 +88,15 @@ class AI:
         [20, 30, 10,  0,  0, 10, 30, 20]
     ]
     
-    def __init__(self, board: Board, move_generator: MoveGenerator):
+    def __init__(self, board: Board, move_generator: MoveGenerator, use_rich_eval: bool = False):
         self.board = board
         self.move_generator = move_generator
+        self.use_rich_eval = use_rich_eval
+        self.rich_evaluator = None
+        
+        if use_rich_eval:
+            from lib.eval import RichEvaluator
+            self.rich_evaluator = RichEvaluator()
     
     def get_best_move(self, depth: int) -> Tuple[Optional[Move], int]:
         """Get the best move using minimax with alpha-beta pruning."""
@@ -206,6 +212,9 @@ class AI:
     
     def evaluate_position(self) -> int:
         """Evaluate the current position."""
+        if self.use_rich_eval and self.rich_evaluator:
+            return self.rich_evaluator.evaluate(self.board)
+        
         score = 0
         
         for row in range(8):
