@@ -4,14 +4,25 @@ class Board {
   late List<List<Piece?>> squares;
   late String turn;
   ({int row, int col})? _enPassantTarget;
-  String _castlingRights;
+  late String _castlingRights;
+  late int _halfmoveClock;
+  late int _fullmoveNumber;
 
-  Board._(this.squares, this.turn, this._enPassantTarget, this._castlingRights);
+  Board._(
+    this.squares,
+    this.turn,
+    this._enPassantTarget,
+    this._castlingRights,
+    this._halfmoveClock,
+    this._fullmoveNumber,
+  );
 
   Board.empty() {
     squares = List.generate(8, (_) => List.filled(8, null));
     turn = 'w';
     _castlingRights = 'KQkq';
+    _halfmoveClock = 0;
+    _fullmoveNumber = 1;
   }
 
   Board.fromFen(String fen) {
@@ -20,12 +31,13 @@ class Board {
     final piecePlacement = parts[0];
     turn = parts[1];
     _castlingRights = parts[2];
-    // TODO: parse castling rights
     if (parts[3] != '-') {
       _enPassantTarget = _parseSquare(parts[3]);
     } else {
       _enPassantTarget = null;
     }
+    _halfmoveClock = parts.length > 4 ? int.tryParse(parts[4]) ?? 0 : 0;
+    _fullmoveNumber = parts.length > 5 ? int.tryParse(parts[5]) ?? 1 : 1;
 
     int row = 0;
     int col = 0;
@@ -69,6 +81,9 @@ class Board {
     }
 
     final piece = squares[from.row][from.col]!;
+    final targetPiece = squares[to.row][to.col];
+    final isPawnMove = piece.type == PieceType.pawn;
+    bool isCapture = targetPiece != null;
 
     // Handle castling
     if (piece.type == PieceType.king && (from.col - to.col).abs() == 2) {
@@ -92,12 +107,19 @@ class Board {
         to.row == _enPassantTarget?.row &&
         to.col == _enPassantTarget?.col) {
       squares[from.row][to.col] = null;
+      isCapture = true;
     }
 
     if (promotion != null) {
       squares[to.row][to.col] = Piece(promotion, piece.color);
     } else {
       squares[to.row][to.col] = piece;
+    }
+
+    if (isPawnMove || isCapture) {
+      _halfmoveClock = 0;
+    } else {
+      _halfmoveClock += 1;
     }
 
     // Set en passant target
@@ -135,6 +157,9 @@ class Board {
     }
 
     turn = turn == 'w' ? 'b' : 'w';
+    if (turn == 'w') {
+      _fullmoveNumber += 1;
+    }
   }
 
   ({int row, int col}) _parseSquare(String square) {
@@ -145,7 +170,14 @@ class Board {
 
   Board clone() {
     final newSquares = List.generate(8, (i) => List.of(squares[i]));
-    return Board._(newSquares, turn, _enPassantTarget, _castlingRights);
+    return Board._(
+      newSquares,
+      turn,
+      _enPassantTarget,
+      _castlingRights,
+      _halfmoveClock,
+      _fullmoveNumber,
+    );
   }
 
   String toFen() {
@@ -171,7 +203,10 @@ class Board {
         buffer.write('/');
       }
     }
-    buffer.write(' $turn $_castlingRights ');
+    final castling = (_castlingRights.isEmpty || _castlingRights == '-')
+        ? '-'
+        : _castlingRights;
+    buffer.write(' $turn $castling ');
     if (_enPassantTarget != null) {
       buffer.write(
         '${String.fromCharCode('a'.codeUnitAt(0) + _enPassantTarget!.col)}${8 - _enPassantTarget!.row}',
@@ -179,7 +214,7 @@ class Board {
     } else {
       buffer.write('-');
     }
-    buffer.write(' 0 1');
+    buffer.write(' $_halfmoveClock $_fullmoveNumber');
     return buffer.toString();
   }
 
