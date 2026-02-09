@@ -5,6 +5,8 @@ import { FenParser } from "./fen";
 import { AI } from "./ai";
 import { Perft } from "./perft";
 import { Move, PieceType } from "./types";
+import { TimeManager, TimeControl } from "./timeManager";
+import { iterativeDeepening } from "./iterativeDeepening";
 
 export class ChessEngine {
   private board: Board;
@@ -56,6 +58,9 @@ export class ChessEngine {
           break;
         case "ai":
           this.handleAI(parts[1]);
+          break;
+        case "go":
+          this.handleGo(parts.slice(1));
           break;
         case "fen":
           this.handleFen(parts.slice(1).join(" "));
@@ -188,6 +193,98 @@ export class ChessEngine {
     this.checkGameEnd();
   }
 
+  private handleGo(args: string[]): void {
+    let timeControl: TimeControl;
+    let maxDepth = 50;
+
+    if (args.length === 0 || args[0] === "infinite") {
+      timeControl = { mode: "infinite" };
+    } else if (args[0] === "movetime" && args.length >= 2) {
+      const timeMs = parseInt(args[1]);
+      if (isNaN(timeMs) || timeMs < 0) {
+        console.log("ERROR: Invalid movetime");
+        return;
+      }
+      timeControl = { mode: "movetime", timeMs };
+    } else if (args[0] === "wtime" || args[0] === "btime") {
+      // Parse time control with wtime, btime, winc, binc
+      let whiteTime = 0;
+      let blackTime = 0;
+      let whiteInc = 0;
+      let blackInc = 0;
+
+      for (let i = 0; i < args.length; i += 2) {
+        const key = args[i];
+        const value = parseInt(args[i + 1]);
+        if (isNaN(value)) continue;
+
+        switch (key) {
+          case "wtime":
+            whiteTime = value;
+            break;
+          case "btime":
+            blackTime = value;
+            break;
+          case "winc":
+            whiteInc = value;
+            break;
+          case "binc":
+            blackInc = value;
+            break;
+          case "depth":
+            maxDepth = value;
+            break;
+        }
+      }
+
+      timeControl = {
+        mode: "timeincrement",
+        whiteTime,
+        blackTime,
+        whiteInc,
+        blackInc,
+      };
+    } else if (args[0] === "depth" && args.length >= 2) {
+      const depth = parseInt(args[1]);
+      if (isNaN(depth) || depth < 1 || depth > 50) {
+        console.log("ERROR: Invalid depth");
+        return;
+      }
+      maxDepth = depth;
+      timeControl = { mode: "depth", maxDepth: depth };
+    } else {
+      console.log("ERROR: Invalid go command");
+      return;
+    }
+
+    const moveNumber = this.board.getState().fullmoveNumber;
+    const isWhite = this.board.getTurn() === "white";
+    const timeManager = new TimeManager(timeControl, moveNumber, isWhite);
+
+    const result = iterativeDeepening(
+      this.board,
+      maxDepth,
+      timeManager,
+      this.ai
+    );
+
+    if (!result.bestMove) {
+      console.log("ERROR: No legal moves available");
+      return;
+    }
+
+    const moveStr =
+      this.board.squareToAlgebraic(result.bestMove.from) +
+      this.board.squareToAlgebraic(result.bestMove.to) +
+      (result.bestMove.promotion || "");
+
+    this.board.makeMove(result.bestMove);
+    console.log(`bestmove ${moveStr}`);
+    console.log(this.board.display());
+
+    this.checkGameEnd();
+  }
+
   private handleFen(fenString: string): void {
     try {
       this.fenParser.parseFen(fenString);
@@ -249,6 +346,10 @@ export class ChessEngine {
     console.log("  undo - Undo the last move");
     console.log("  new - Start a new game");
     console.log("  ai <depth> - Let AI make a move (depth 1-5)");
+    console.log("  go movetime <ms> - Search with fixed time per move");
+    console.log("  go wtime <ms> btime <ms> [winc <ms>] [binc <ms>] - Time control search");
+    console.log("  go depth <n> - Search to fixed depth");
+    console.log("  go infinite - Search indefinitely");
     console.log("  fen <string> - Load position from FEN");
     console.log("  export - Export current position as FEN");
     console.log("  eval - Evaluate current position");

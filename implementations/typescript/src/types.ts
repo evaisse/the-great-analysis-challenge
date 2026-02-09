@@ -32,6 +32,7 @@ export interface GameState {
   halfmoveClock: number;
   fullmoveNumber: number;
   moveHistory: Move[];
+  hash: bigint;
 }
 
 export const PIECE_VALUES: Record<PieceType, number> = {
