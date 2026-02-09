@@ -54,10 +54,20 @@ class Board {
         this.state = this.createInitialState();
     }
     getState() {
-        return { ...this.state };
+        return {
+            ...this.state,
+            board: [...this.state.board], // Deep copy the board array
+            castlingRights: { ...this.state.castlingRights },
+            moveHistory: [...this.state.moveHistory],
+        };
     }
     setState(state) {
-        this.state = { ...state };
+        this.state = {
+            ...state,
+            board: [...state.board], // Deep copy the board array
+            castlingRights: { ...state.castlingRights },
+            moveHistory: [...state.moveHistory],
+        };
     }
     getPiece(square) {
         return this.state.board[square];
