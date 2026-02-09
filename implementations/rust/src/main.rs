@@ -4,6 +4,7 @@ mod move_generator;
 mod fen;
 mod ai;
 mod perft;
+mod eval;
 
 use crate::board::Board;
 use crate::move_generator::MoveGenerator;
@@ -20,16 +21,18 @@ struct ChessEngine {
     fen_parser: FenParser,
     ai: AI,
     perft: Perft,
+    use_rich_eval: bool,
 }
 
 impl ChessEngine {
-    fn new() -> Self {
+    fn new(use_rich_eval: bool) -> Self {
         Self {
             board: Board::new(),
             move_generator: MoveGenerator::new(),
             fen_parser: FenParser::new(),
-            ai: AI::new(),
+            ai: AI::new(use_rich_eval),
             perft: Perft::new(),
+            use_rich_eval,
         }
     }
 
@@ -250,7 +253,7 @@ impl ChessEngine {
     }
 
     fn handle_eval(&self) {
-        let mut ai_copy = AI::new();
+        let mut ai_copy = AI::new(self.use_rich_eval);
         let evaluation = ai_copy.find_best_move(&self.board, 1).evaluation;
         println!("Position evaluation: {}", evaluation);
     }
@@ -301,6 +304,13 @@ impl ChessEngine {
 }
 
 fn main() {
-    let mut engine = ChessEngine::new();
+    let args: Vec<String> = std::env::args().collect();
+    let use_rich_eval = args.contains(&"--rich-eval".to_string());
+    
+    if use_rich_eval {
+        eprintln!("Using rich evaluation");
+    }
+    
+    let mut engine = ChessEngine::new(use_rich_eval);
     engine.run();
 }

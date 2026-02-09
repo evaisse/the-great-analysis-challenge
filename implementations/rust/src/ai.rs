@@ -1,11 +1,14 @@
 use crate::types::*;
 use crate::board::Board;
 use crate::move_generator::MoveGenerator;
+use crate::eval::RichEvaluator;
 use std::time::Instant;
 
 pub struct AI {
     move_generator: MoveGenerator,
     nodes_evaluated: u64,
+    use_rich_eval: bool,
+    rich_evaluator: Option<RichEvaluator>,
 }
 
 #[derive(Debug)]
@@ -17,10 +20,16 @@ pub struct SearchResult {
 }
 
 impl AI {
-    pub fn new() -> Self {
+    pub fn new(use_rich_eval: bool) -> Self {
         Self {
             move_generator: MoveGenerator::new(),
             nodes_evaluated: 0,
+            use_rich_eval,
+            rich_evaluator: if use_rich_eval {
+                Some(RichEvaluator::new())
+            } else {
+                None
+            },
         }
     }
 
@@ -131,6 +140,13 @@ impl AI {
     }
 
     fn evaluate(&self, board: &Board) -> i32 {
+        if self.use_rich_eval {
+            if let Some(ref evaluator) = self.rich_evaluator {
+                return evaluator.evaluate(board);
+            }
+        }
+        
+        // Simple evaluation (fallback or default)
         let mut score = 0;
 
         for square in 0..64 {
