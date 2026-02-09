@@ -2,7 +2,7 @@
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 # Convention over Configuration: This Makefile is 100% implementation-agnostic
 
-.PHONY: all test build analyze clean help website analyze-tools list-implementations verify workflow
+.PHONY: all test build analyze clean help website analyze-tools list-implementations verify workflow bugit fix analyze-with-bug
 
 # Auto-discover all implementations with Dockerfiles
 IMPLEMENTATIONS := $(shell find implementations -mindepth 1 -maxdepth 1 -type d -exec test -f {}/Dockerfile \; -exec basename {} \; 2>/dev/null | sort)
@@ -17,12 +17,15 @@ help:
 	@echo "ALL COMMANDS RUN INSIDE DOCKER CONTAINERS"
 	@echo ""
 	@echo "Convention-based commands (use DIR parameter):"
-	@echo "  make build [DIR=<impl>]    - Build implementation(s)"
-	@echo "  make test [DIR=<impl>]     - Test implementation(s)"
-	@echo "  make analyze [DIR=<impl>]  - Analyze implementation(s)"
-	@echo "  make verify [DIR=<impl>]   - Verify implementation structure"
-	@echo "  make workflow [DIR=<impl>] - Run full workflow (verify, build, analyze, test)"
-	@echo "  make clean [DIR=<impl>]    - Clean implementation(s)"
+	@echo "  make build [DIR=<impl>]            - Build implementation(s)"
+	@echo "  make test [DIR=<impl>]             - Test implementation(s)"
+	@echo "  make analyze [DIR=<impl>]          - Analyze implementation(s)"
+	@echo "  make bugit [DIR=<impl>]            - Inject bug for static analysis testing"
+	@echo "  make fix [DIR=<impl>]              - Fix injected bug"
+	@echo "  make analyze-with-bug [DIR=<impl>] - Run static analysis with bug"
+	@echo "  make verify [DIR=<impl>]           - Verify implementation structure"
+	@echo "  make workflow [DIR=<impl>]         - Run full workflow (verify, build, analyze, test)"
+	@echo "  make clean [DIR=<impl>]            - Clean implementation(s)"
 	@echo ""
 	@echo "If DIR is omitted, the command runs for ALL implementations."
 	@echo ""
@@ -128,6 +131,75 @@ else
 	done
 	@echo ""
 	@echo "Analysis complete for all implementations"
+endif
+
+# Bug injection target
+bugit:
+ifdef DIR
+	@echo "Injecting bug in $(DIR)..."
+	@if [ -f "implementations/$(DIR)/Makefile" ]; then \
+		cd implementations/$(DIR) && make bugit || true; \
+	else \
+		echo "No Makefile found in $(DIR), skipping bug injection"; \
+	fi
+else
+	@echo "Injecting bugs in all implementations..."
+	@for impl in $(IMPLEMENTATIONS); do \
+		echo ""; \
+		echo "==================== Injecting bug in $$impl ===================="; \
+		$(MAKE) bugit DIR=$$impl; \
+	done
+	@echo "✅ All bugs injected"
+endif
+
+# Bug fix target
+fix:
+ifdef DIR
+	@echo "Fixing bug in $(DIR)..."
+	@if [ -f "implementations/$(DIR)/Makefile" ]; then \
+		cd implementations/$(DIR) && make fix || true; \
+	else \
+		echo "No Makefile found in $(DIR), skipping bug fix"; \
+	fi
+else
+	@echo "Fixing bugs in all implementations..."
+	@for impl in $(IMPLEMENTATIONS); do \
+		echo ""; \
+		echo "==================== Fixing bug in $$impl ===================="; \
+		$(MAKE) fix DIR=$$impl; \
+	done
+	@echo "✅ All bugs fixed"
+endif
+
+# Analyze with bug target
+analyze-with-bug:
+ifdef DIR
+	@echo "Analyzing $(DIR) with injected bug..."
+	@if [ -f "implementations/$(DIR)/Makefile" ]; then \
+		cd implementations/$(DIR) && make analyze-with-bug || true; \
+	else \
+		echo "No Makefile found in $(DIR), skipping analysis with bug"; \
+	fi
+else
+	@echo "Running static analysis with bugs on all implementations..."
+	@mkdir -p analysis_reports
+	@echo "# Static Analysis Bug Detection Report" > analysis_reports/bug_analysis_summary.md
+	@echo "Generated: $$(date)" >> analysis_reports/bug_analysis_summary.md
+	@echo "" >> analysis_reports/bug_analysis_summary.md
+	@for impl in $(IMPLEMENTATIONS); do \
+		echo ""; \
+		echo "==================== Analyzing $$impl with injected bug ===================="; \
+		$(MAKE) analyze-with-bug DIR=$$impl; \
+		if [ -f "implementations/$$impl/.bugit/analysis_results.txt" ]; then \
+			echo "## $$impl" >> analysis_reports/bug_analysis_summary.md; \
+			echo "" >> analysis_reports/bug_analysis_summary.md; \
+			echo '```' >> analysis_reports/bug_analysis_summary.md; \
+			grep -i "unused\|error\|warning" implementations/$$impl/.bugit/analysis_results.txt | head -5 >> analysis_reports/bug_analysis_summary.md || echo "No issues detected" >> analysis_reports/bug_analysis_summary.md; \
+			echo '```' >> analysis_reports/bug_analysis_summary.md; \
+			echo "" >> analysis_reports/bug_analysis_summary.md; \
+		fi; \
+	done
+	@echo "✅ Analysis complete. Summary saved to analysis_reports/bug_analysis_summary.md"
 endif
 
 # Verify target

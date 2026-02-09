@@ -13,3 +13,4 @@ shard.lock
 *.a
 *.so
 *.dylib
+.bugit/

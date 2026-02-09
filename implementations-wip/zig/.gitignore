@@ -16,3 +16,4 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+.bugit/
