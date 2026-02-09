@@ -7,6 +7,7 @@ import {
   GameState,
   FILES,
   RANKS,
+  unsafeSquare,
 } from "./types";
 
 export class Board {
@@ -20,30 +21,30 @@ export class Board {
     const board: (Piece | null)[] = new Array(64).fill(null);
 
     const pieces: [Square, Piece][] = [
-      [0, { type: "R", color: "white" }],
-      [1, { type: "N", color: "white" }],
-      [2, { type: "B", color: "white" }],
-      [3, { type: "Q", color: "white" }],
-      [4, { type: "K", color: "white" }],
-      [5, { type: "B", color: "white" }],
-      [6, { type: "N", color: "white" }],
-      [7, { type: "R", color: "white" }],
+      [unsafeSquare(0), { type: "R", color: "white" }],
+      [unsafeSquare(1), { type: "N", color: "white" }],
+      [unsafeSquare(2), { type: "B", color: "white" }],
+      [unsafeSquare(3), { type: "Q", color: "white" }],
+      [unsafeSquare(4), { type: "K", color: "white" }],
+      [unsafeSquare(5), { type: "B", color: "white" }],
+      [unsafeSquare(6), { type: "N", color: "white" }],
+      [unsafeSquare(7), { type: "R", color: "white" }],
 
-      [56, { type: "R", color: "black" }],
-      [57, { type: "N", color: "black" }],
-      [58, { type: "B", color: "black" }],
-      [59, { type: "Q", color: "black" }],
-      [60, { type: "K", color: "black" }],
-      [61, { type: "B", color: "black" }],
-      [62, { type: "N", color: "black" }],
-      [63, { type: "R", color: "black" }],
+      [unsafeSquare(56), { type: "R", color: "black" }],
+      [unsafeSquare(57), { type: "N", color: "black" }],
+      [unsafeSquare(58), { type: "B", color: "black" }],
+      [unsafeSquare(59), { type: "Q", color: "black" }],
+      [unsafeSquare(60), { type: "K", color: "black" }],
+      [unsafeSquare(61), { type: "B", color: "black" }],
+      [unsafeSquare(62), { type: "N", color: "black" }],
+      [unsafeSquare(63), { type: "R", color: "black" }],
     ];
 
     for (let i = 8; i < 16; i++) {
-      pieces.push([i, { type: "P", color: "white" }]);
+      pieces.push([unsafeSquare(i), { type: "P", color: "white" }]);
     }
     for (let i = 48; i < 56; i++) {
-      pieces.push([i, { type: "P", color: "black" }]);
+      pieces.push([unsafeSquare(i), { type: "P", color: "black" }]);
     }
 
     for (const [square, piece] of pieces) {
@@ -71,11 +72,21 @@ export class Board {
   }
 
   public getState(): GameState {
-    return { ...this.state };
+    return {
+      ...this.state,
+      board: [...this.state.board],  // Deep copy the board array
+      castlingRights: { ...this.state.castlingRights },
+      moveHistory: [...this.state.moveHistory],
+    };
   }
 
   public setState(state: GameState): void {
-    this.state = { ...state };
+    this.state = {
+      ...state,
+      board: [...state.board],  // Deep copy the board array
+      castlingRights: { ...state.castlingRights },
+      moveHistory: [...state.moveHistory],
+    };
   }
 
   public getPiece(square: Square): Piece | null {
@@ -117,12 +128,12 @@ export class Board {
   }
 
   public algebraicToSquare(algebraic: string): Square {
-    const file = FILES.indexOf(algebraic[0]);
-    const rank = RANKS.indexOf(algebraic[1]);
+    const file = FILES.indexOf(algebraic[0] as any);
+    const rank = RANKS.indexOf(algebraic[1] as any);
     if (file === -1 || rank === -1) {
       throw new Error(`Invalid algebraic notation: ${algebraic}`);
     }
-    return rank * 8 + file;
+    return unsafeSquare(rank * 8 + file);
   }
 
   public makeMove(move: Move): void {
@@ -135,16 +146,16 @@ export class Board {
     if (move.castling) {
       const rank = piece.color === "white" ? 0 : 7;
       if (move.castling === "K" || move.castling === "k") {
-        const rookFrom = rank * 8 + 7;
-        const rookTo = rank * 8 + 5;
+        const rookFrom = unsafeSquare(rank * 8 + 7);
+        const rookTo = unsafeSquare(rank * 8 + 5);
         const rook = this.getPiece(rookFrom);
         if (rook) {
           this.setPiece(rookTo, rook);
           this.setPiece(rookFrom, null);
         }
       } else {
-        const rookFrom = rank * 8;
-        const rookTo = rank * 8 + 3;
+        const rookFrom = unsafeSquare(rank * 8);
+        const rookTo = unsafeSquare(rank * 8 + 3);
         const rook = this.getPiece(rookFrom);
         if (rook) {
           this.setPiece(rookTo, rook);
@@ -154,7 +165,7 @@ export class Board {
     }
 
     if (move.enPassant) {
-      const capturedPawnSquare = move.to + (piece.color === "white" ? -8 : 8);
+      const capturedPawnSquare = unsafeSquare(move.to + (piece.color === "white" ? -8 : 8));
       this.setPiece(capturedPawnSquare, null);
     }
 
@@ -183,7 +194,7 @@ export class Board {
     this.setCastlingRights(rights);
 
     if (piece.type === "P" && Math.abs(move.to - move.from) === 16) {
-      const enPassantSquare = (move.from + move.to) / 2;
+      const enPassantSquare = unsafeSquare((move.from + move.to) / 2);
       this.setEnPassantTarget(enPassantSquare);
     } else {
       this.setEnPassantTarget(null);
@@ -200,7 +211,7 @@ export class Board {
     }
 
     this.setTurn(piece.color === "white" ? "black" : "white");
-    this.state.moveHistory.push(move);
+    this.state.moveHistory.push(move as any);
   }
 
   public undoMove(): Move | null {
@@ -226,16 +237,16 @@ export class Board {
     if (move.castling) {
       const rank = piece.color === "white" ? 0 : 7;
       if (move.castling === "K" || move.castling === "k") {
-        const rookFrom = rank * 8 + 5;
-        const rookTo = rank * 8 + 7;
+        const rookFrom = unsafeSquare(rank * 8 + 5);
+        const rookTo = unsafeSquare(rank * 8 + 7);
         const rook = this.getPiece(rookFrom);
         if (rook) {
           this.setPiece(rookTo, rook);
           this.setPiece(rookFrom, null);
         }
       } else {
-        const rookFrom = rank * 8 + 3;
-        const rookTo = rank * 8;
+        const rookFrom = unsafeSquare(rank * 8 + 3);
+        const rookTo = unsafeSquare(rank * 8);
         const rook = this.getPiece(rookFrom);
         if (rook) {
           this.setPiece(rookTo, rook);
@@ -245,7 +256,7 @@ export class Board {
     }
 
     if (move.enPassant) {
-      const capturedPawnSquare = move.to + (piece.color === "white" ? -8 : 8);
+      const capturedPawnSquare = unsafeSquare(move.to + (piece.color === "white" ? -8 : 8));
       const capturedColor = piece.color === "white" ? "black" : "white";
       this.setPiece(capturedPawnSquare, { type: "P", color: capturedColor });
     }
@@ -261,7 +272,7 @@ export class Board {
     for (let rank = 7; rank >= 0; rank--) {
       output += `${rank + 1} `;
       for (let file = 0; file < 8; file++) {
-        const square = rank * 8 + file;
+        const square = unsafeSquare(rank * 8 + file);
         const piece = this.getPiece(square);
         if (piece) {
           const char =

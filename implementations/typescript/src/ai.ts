@@ -1,6 +1,6 @@
 import { Board } from "./board";
 import { MoveGenerator } from "./moveGenerator";
-import { Move, Color, Square, PIECE_VALUES } from "./types";
+import { Move, Color, Square, PIECE_VALUES, unsafeSquare } from "./types";
 
 export class AI {
   private board: Board;
@@ -133,11 +133,11 @@ export class AI {
     let score = 0;
 
     for (let square = 0; square < 64; square++) {
-      const piece = this.board.getPiece(square);
+      const piece = this.board.getPiece(unsafeSquare(square));
       if (piece) {
         const value = PIECE_VALUES[piece.type];
         const positionBonus = this.getPositionBonus(
-          square,
+          unsafeSquare(square),
           piece.type,
           piece.color,
         );
@@ -189,7 +189,7 @@ export class AI {
     let queenCount = 0;
 
     for (let square = 0; square < 64; square++) {
-      const piece = this.board.getPiece(square);
+      const piece = this.board.getPiece(unsafeSquare(square));
       if (piece) {
         if (piece.type !== "K" && piece.type !== "P") {
           pieceCount++;

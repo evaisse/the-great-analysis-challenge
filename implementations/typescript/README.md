@@ -72,13 +72,45 @@ docker-compose up --build chess-engine
 
 ## Architecture
 
-- `src/types.ts` - Type definitions and constants
+### Core Modules
+- `src/types.ts` - Legacy type definitions (re-exports from src/types/)
+- `src/types/` - **Type-safe modeling system (PRD-04)**
+  - `square.ts` - Branded Square, Rank, File types
+  - `piece.ts` - Color, PieceType, Piece types
+  - `move.ts` - Move<Legal> / Move<Unchecked> validation states
+  - `castling.ts` - Type-safe castling rights
+  - `boardState.ts` - Board<WhiteToMove> / Board<BlackToMove> phantom types
 - `src/board.ts` - Board representation and game state
 - `src/moveGenerator.ts` - Move generation and validation  
 - `src/fen.ts` - FEN parsing and serialization
 - `src/ai.ts` - AI engine with minimax/alpha-beta
 - `src/perft.ts` - Performance testing utilities
 - `src/chess.ts` - Main engine and command interface
+
+### Type System
+
+The engine uses advanced TypeScript features for compile-time safety:
+
+**Branded Types** - Prevent mixing incompatible values:
+```typescript
+type Square = number;  // 0-63 only (branded in strict mode)
+type Rank = number;    // 0-7 only
+type File = number;    // 0-7 only
+```
+
+**Validation States** - Track move validation at type level:
+```typescript
+Move<Unchecked>  // Raw, unvalidated move
+Move<Legal>      // Validated, legal move
+```
+
+**Phantom Types** - Encode board state in types:
+```typescript
+BoardState<WhiteToMove>  // White's turn
+BoardState<BlackToMove>  // Black's turn
+```
+
+See `TYPE_SAFE_MODELING.md` for full documentation.
 
 ## Testing
 

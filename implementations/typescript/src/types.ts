@@ -1,47 +1,39 @@
-export type PieceType = "K" | "Q" | "R" | "B" | "N" | "P";
-export type Color = "white" | "black";
-export type Square = number;
+// Re-export type-safe types for backward compatibility
+export type {
+  PieceType,
+  Color,
+  Piece,
+  Square,
+  CastlingRights,
+  Legal,
+  Unchecked,
+  MoveBase,
+} from "./types/index";
 
-export interface Piece {
-  type: PieceType;
-  color: Color;
-}
+// For backward compatibility, export Move without type parameter (defaults to Unchecked)
+export type { Move } from "./types/index";
 
-export interface Move {
-  from: Square;
-  to: Square;
-  piece: PieceType;
-  captured?: PieceType;
-  promotion?: PieceType;
-  castling?: "K" | "Q" | "k" | "q";
-  enPassant?: boolean;
-}
+// Re-export all constructors and utilities
+export {
+  PIECE_VALUES,
+  FILES,
+  RANKS,
+  createSquare,
+  unsafeSquare,
+  isValidSquare,
+  squareToAlgebraic,
+  algebraicToSquare,
+  createPiece,
+  createCastlingRights,
+  allCastlingRights,
+  noCastlingRights,
+  createUncheckedMove,
+  validateMove,
+  moveToAlgebraic,
+  parseMove,
+  moveToBase,
+  oppositeColor,
+} from "./types/index";
 
-export interface CastlingRights {
-  whiteKingside: boolean;
-  whiteQueenside: boolean;
-  blackKingside: boolean;
-  blackQueenside: boolean;
-}
-
-export interface GameState {
-  board: (Piece | null)[];
-  turn: Color;
-  castlingRights: CastlingRights;
-  enPassantTarget: Square | null;
-  halfmoveClock: number;
-  fullmoveNumber: number;
-  moveHistory: Move[];
-}
-
-export const PIECE_VALUES: Record<PieceType, number> = {
-  P: 100,
-  N: 320,
-  B: 330,
-  R: 500,
-  Q: 900,
-  K: 20000,
-};
-
-export const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
-export const RANKS = ["1", "2", "3", "4", "5", "6", "7", "8"];
+// GameState type alias for backward compatibility
+export type { BoardStateData as GameState } from "./types/index";
