@@ -59,7 +59,7 @@ def test_basic_commands(engine: str) -> bool:
             print(f"📋 Testing {cmd} command")
             result = run_command([
                 "docker", "run", "--rm", "-i", f"chess-{engine}-test"
-            ], input_text=f"{cmd}\nquit\n", timeout=30, show_output=True)
+            ], input=f"{cmd}\nquit\n", timeout=30, show_output=True)
             
             with open(f"{cmd}_output.txt", "w") as f:
                 f.write(result.stdout)
@@ -88,7 +88,7 @@ def test_advanced_features(engine: str, supports_perft: bool = True, supports_ai
             print("🔍 Testing perft (move generation)")
             result = run_command([
                 "docker", "run", "--rm", "-i", f"chess-{engine}-test"
-            ], input_text="perft 3\nquit\n", timeout=120, show_output=True)
+            ], input="perft 3\nquit\n", timeout=120, show_output=True)
             
             with open("perft_output.txt", "w") as f:
                 f.write(result.stdout)
@@ -105,7 +105,7 @@ def test_advanced_features(engine: str, supports_perft: bool = True, supports_ai
             print("🤖 Testing AI move generation")
             result = run_command([
                 "docker", "run", "--rm", "-i", f"chess-{engine}-test"
-            ], input_text="ai\nquit\n", timeout=60, show_output=True)
+            ], input="ai\nquit\n", timeout=60, show_output=True)
             
             with open("ai_output.txt", "w") as f:
                 f.write(result.stdout)
