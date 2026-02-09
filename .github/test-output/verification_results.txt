@@ -1,19 +1,7 @@
 🔍 Chess Engine Implementation Verification
 ==================================================
-Base directory: /Users/evaisse/Sites/projects/the-great-analysis-challenge/.github/test-output/../..
-Found 17 implementations
-
-🟢 **crystal** (excellent)
-===========================
-✅ Found files:
-   - Dockerfile
-   - Makefile
-   - chess.meta
-   - README.md
-
-📝 Chess.meta info:
-   - Language: crystal
-   - Version: 1.14.0
+Base directory: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge
+Found 7 implementations
 
 🟢 **dart** (excellent)
 ========================
@@ -27,7 +15,10 @@ Found 17 implementations
    - Language: dart
    - Version: 3.0
 
-🟢 **elm** (excellent)
+📦 Dependency info:
+   - No dependency checks implemented for dart
+
+🟢 **lua** (excellent)
 =======================
 ✅ Found files:
    - Dockerfile
@@ -36,111 +27,13 @@ Found 17 implementations
    - README.md
 
 📝 Chess.meta info:
-   - Language: elm
-   - Version: 0.19.1
+   - Language: lua
+   - Version: 5.4
 
-🟡 **gleam** (good)
-=========================
-✅ Found files:
-   - Dockerfile
-   - Makefile
-   - chess.meta
-   - README.md
+📦 Dependency info:
+   - No dependency checks implemented for lua
 
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
-
-📝 Chess.meta info:
-   - Language: gleam
-   - Version: 1.2.1
-
-🟡 **go** (good)
-======================
-✅ Found files:
-   - Dockerfile
-   - Makefile
-   - chess.meta
-   - README.md
-
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
-
-📝 Chess.meta info:
-   - Language: go
-   - Version: 1.21
-
-🟡 **haskell** (good)
-===========================
-✅ Found files:
-   - Dockerfile
-   - Makefile
-   - chess.meta
-   - README.md
-
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
-
-📝 Chess.meta info:
-   - Language: haskell
-   - Version: 9.0
-
-🟡 **julia** (good)
-=========================
-✅ Found files:
-   - Dockerfile
-   - Makefile
-   - chess.meta
-   - README.md
-
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
-
-📝 Chess.meta info:
-   - Language: julia
-   - Version: 1.9
-
-🟡 **kotlin** (good)
-==========================
-✅ Found files:
-   - Dockerfile
-   - Makefile
-   - chess.meta
-   - README.md
-
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
-
-📝 Chess.meta info:
-   - Language: kotlin
-   - Version: 1.9.10
-
-🟡 **mojo** (good)
-========================
-✅ Found files:
-   - Dockerfile
-   - Makefile
-   - chess.meta
-   - README.md
-
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
-   - Missing feature: promotion
-   - Missing feature: perft
-   - Missing feature: castling
-   - Missing feature: en_passant
-
-📝 Chess.meta info:
-   - Extra feature: move_validation
-   - Language: mojo
-   - Version: 0.6.0
-
-🟡 **nim** (good)
+🟢 **php** (excellent)
 =======================
 ✅ Found files:
    - Dockerfile
@@ -148,50 +41,29 @@ Found 17 implementations
    - chess.meta
    - README.md
 
-⚠️  Chess.meta warnings:
-   - Missing recommended field: test
-   - Missing feature: en_passant
-   - Missing feature: promotion
-   - Missing feature: ai
-   - Missing feature: castling
-   - Missing feature: perft
-   - max_ai_depth should be between 1-10, got: 0
-
 📝 Chess.meta info:
-   - Extra feature: basic_moves
-   - Extra feature: move_validation
-   - Language: nim
-   - Version: 1.6.14
+   - Language: php
+   - Version: 8.3
 
-🟡 **python** (good)
+📦 Dependency info:
+   - No dependency checks implemented for php
+
+🟢 **python** (excellent)
 ==========================
 ✅ Found files:
    - Dockerfile
    - Makefile
    - chess.meta
    - README.md
-
-⚠️  Chess.meta warnings:
-   - Missing recommended field: test
 
 📝 Chess.meta info:
    - Language: python
    - Version: 3.11
 
-🔴 **rescript** (needs_work)
-============================
-❌ Missing files:
-   - Dockerfile (Docker container definition)
-   - README.md (Implementation documentation)
-✅ Found files:
-   - Makefile
-   - chess.meta
+📦 Dependency info:
+   - Found requirements.txt
 
-📝 Chess.meta info:
-   - Language: rescript
-   - Version: 10.0
-
-🟡 **ruby** (good)
+🟢 **ruby** (excellent)
 ========================
 ✅ Found files:
    - Dockerfile
@@ -199,48 +71,30 @@ Found 17 implementations
    - chess.meta
    - README.md
 
-⚠️  Chess.meta warnings:
-   - Missing recommended field: test
-
 📝 Chess.meta info:
    - Language: ruby
    - Version: 3.2
 
-🔴 **rust** (needs_work)
+📦 Dependency info:
+   - Consider adding 'bundler' gem for development
+   - Found Gemfile
+
+🟢 **rust** (excellent)
 ========================
-❌ Missing files:
-   - README.md (Implementation documentation)
 ✅ Found files:
    - Dockerfile
    - Makefile
    - chess.meta
-
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
+   - README.md
 
 📝 Chess.meta info:
    - Language: rust
    - Version: 1.70
 
-🔴 **swift** (needs_work)
-=========================
-❌ Missing files:
-   - README.md (Implementation documentation)
-✅ Found files:
-   - Dockerfile
-   - Makefile
-   - chess.meta
+📦 Dependency info:
+   - No dependency checks implemented for rust
 
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
-
-📝 Chess.meta info:
-   - Language: swift
-   - Version: 5.5
-
-🟡 **typescript** (good)
+🟢 **typescript** (excellent)
 ==============================
 ✅ Found files:
    - Dockerfile
@@ -248,39 +102,25 @@ Found 17 implementations
    - chess.meta
    - README.md
 
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
-
 📝 Chess.meta info:
    - Language: typescript
    - Version: 5.0
 
-🟡 **zig** (good)
-=======================
-✅ Found files:
-   - Dockerfile
-   - Makefile
-   - chess.meta
-   - README.md
-
-⚠️  Chess.meta warnings:
-   - Missing recommended field: analyze
-   - Missing recommended field: test
-
-📝 Chess.meta info:
-   - Language: zig
-   - Version: 0.13.0
+📦 Dependency info:
+   - Found 6 npm scripts
+   - Dependencies: 0, DevDependencies: 3
 
 ==================================================
 📊 OVERALL SUMMARY
 ==================================================
-Total implementations: 17
-🟢 Excellent: 3
-🟡 Good: 11
-🔴 Needs work: 3
+Total implementations: 7
+🟢 Excellent: 7
+🟡 Good: 0
+🔴 Needs work: 0
 
-🔧 Implementations needing attention:
-   - rescript (2 errors, 0 warnings)
-   - rust (1 errors, 2 warnings)
-   - swift (1 errors, 2 warnings)
+==================================================
+🎨 EMOJI ASSIGNMENT CHECK
+==================================================
+✅ All implementations have unique emojis defined for the website.
+
+✅ All implementations passed verification and emoji check!
