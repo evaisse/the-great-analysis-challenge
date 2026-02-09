@@ -1,11 +1,13 @@
 use crate::types::*;
 use crate::board::Board;
 use crate::move_generator::MoveGenerator;
+use crate::transposition_table::{TranspositionTable, BoundType, encode_move};
 use std::time::Instant;
 
 pub struct AI {
     move_generator: MoveGenerator,
     nodes_evaluated: u64,
+    tt: TranspositionTable,
 }
 
 #[derive(Debug)]
@@ -21,7 +23,16 @@ impl AI {
         Self {
             move_generator: MoveGenerator::new(),
             nodes_evaluated: 0,
+            tt: TranspositionTable::new(16),
         }
+    }
+
+    pub fn get_tt(&self) -> &TranspositionTable {
+        &self.tt
+    }
+
+    pub fn get_tt_mut(&mut self) -> &mut TranspositionTable {
+        &mut self.tt
     }
 
     pub fn find_best_move(&mut self, board: &Board, depth: u8) -> SearchResult {
@@ -67,29 +78,56 @@ impl AI {
         }
     }
 
-    fn minimax(&mut self, board: &Board, depth: u8, alpha: i32, beta: i32, maximizing: bool) -> i32 {
+    fn minimax(&mut self, board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizing: bool) -> i32 {
         self.nodes_evaluated += 1;
 
+        // Probe transposition table
+        let hash = board.get_state().hash;
+        let original_alpha = alpha;
+
+        if let Some(tt_entry) = self.tt.probe(hash) {
+            if tt_entry.depth >= depth {
+                match tt_entry.bound {
+                    BoundType::Exact => {
+                        return tt_entry.score;
+                    }
+                    BoundType::LowerBound => {
+                        alpha = alpha.max(tt_entry.score);
+                    }
+                    BoundType::UpperBound => {
+                        beta = beta.min(tt_entry.score);
+                    }
+                }
+                if alpha >= beta {
+                    return tt_entry.score;
+                }
+            }
+        }
+
         if depth == 0 {
-            return self.evaluate(board);
+            let score = self.evaluate(board);
+            self.tt.store(hash, 0, score, BoundType::Exact, None);
+            return score;
         }
 
         let color = board.get_turn();
         let moves = self.move_generator.get_legal_moves(board, color);
 
         if moves.is_empty() {
-            if self.move_generator.is_in_check(board, color) {
+            let score = if self.move_generator.is_in_check(board, color) {
                 // Checkmate
-                return if maximizing { -100000 } else { 100000 };
+                if maximizing { -100000 } else { 100000 }
             } else {
                 // Stalemate
-                return 0;
-            }
+                0
+            };
+            self.tt.store(hash, depth, score, BoundType::Exact, None);
+            return score;
         }
 
         if maximizing {
             let mut max_eval = i32::MIN;
-            let mut current_alpha = alpha;
+            let mut best_move: Option<u16> = None;
             
             for chess_move in &moves {
                 let mut board_copy = board.get_state().clone();
@@ -97,19 +135,33 @@ impl AI {
                 test_board.set_state(board_copy);
                 test_board.make_move(chess_move);
                 
-                let evaluation = self.minimax(&test_board, depth - 1, current_alpha, beta, false);
-                max_eval = max_eval.max(evaluation);
-                current_alpha = current_alpha.max(evaluation);
+                let evaluation = self.minimax(&test_board, depth - 1, alpha, beta, false);
                 
-                if beta <= current_alpha {
+                if evaluation > max_eval {
+                    max_eval = evaluation;
+                    best_move = Some(encode_move(chess_move.from, chess_move.to));
+                }
+                alpha = alpha.max(evaluation);
+                
+                if beta <= alpha {
                     break; // Beta cutoff
                 }
             }
             
+            // Determine bound type
+            let bound = if max_eval <= original_alpha {
+                BoundType::UpperBound
+            } else if max_eval >= beta {
+                BoundType::LowerBound
+            } else {
+                BoundType::Exact
+            };
+            
+            self.tt.store(hash, depth, max_eval, bound, best_move);
             max_eval
         } else {
             let mut min_eval = i32::MAX;
-            let mut current_beta = beta;
+            let mut best_move: Option<u16> = None;
             
             for chess_move in &moves {
                 let mut board_copy = board.get_state().clone();
@@ -117,15 +169,29 @@ impl AI {
                 test_board.set_state(board_copy);
                 test_board.make_move(chess_move);
                 
-                let evaluation = self.minimax(&test_board, depth - 1, alpha, current_beta, true);
-                min_eval = min_eval.min(evaluation);
-                current_beta = current_beta.min(evaluation);
+                let evaluation = self.minimax(&test_board, depth - 1, alpha, beta, true);
                 
-                if current_beta <= alpha {
+                if evaluation < min_eval {
+                    min_eval = evaluation;
+                    best_move = Some(encode_move(chess_move.from, chess_move.to));
+                }
+                beta = beta.min(evaluation);
+                
+                if beta <= alpha {
                     break; // Alpha cutoff
                 }
             }
             
+            // Determine bound type
+            let bound = if min_eval <= alpha {
+                BoundType::LowerBound
+            } else if min_eval >= beta {
+                BoundType::UpperBound
+            } else {
+                BoundType::Exact
+            };
+            
+            self.tt.store(hash, depth, min_eval, bound, best_move);
             min_eval
         }
     }

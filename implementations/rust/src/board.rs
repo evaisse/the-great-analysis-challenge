@@ -1,19 +1,27 @@
 use crate::types::*;
+use crate::zobrist::{ZobristTable, compute_hash, update_hash_after_move};
 use std::fmt;
 
 pub struct Board {
     state: GameState,
+    zobrist: ZobristTable,
 }
 
 impl Board {
     pub fn new() -> Self {
+        let zobrist = ZobristTable::new();
+        let mut state = GameState::new();
+        state.hash = compute_hash(&state, &zobrist);
+        
         Self {
-            state: GameState::new(),
+            state,
+            zobrist,
         }
     }
 
     pub fn reset(&mut self) {
         self.state = GameState::new();
+        self.state.hash = compute_hash(&self.state, &self.zobrist);
     }
 
     pub fn get_piece(&self, square: Square) -> Option<Piece> {
@@ -52,7 +60,9 @@ impl Board {
         &self.state
     }
 
-    pub fn set_state(&mut self, state: GameState) {
+    pub fn set_state(&mut self, mut state: GameState) {
+        // Recompute hash for the new state
+        state.hash = compute_hash(&state, &self.zobrist);
         self.state = state;
     }
 
@@ -62,6 +72,15 @@ impl Board {
             return;
         }
         let piece = piece.unwrap();
+
+        // Store old state for hash update
+        let old_ep = self.state.en_passant_target;
+        let old_castling = self.state.castling_rights;
+        let captured_piece = if chess_move.is_en_passant {
+            Some(Piece::new(PieceType::Pawn, piece.color.opposite()))
+        } else {
+            self.get_piece(chess_move.to)
+        };
 
         // Move piece
         self.set_piece(chess_move.to, Some(piece));
@@ -95,9 +114,13 @@ impl Board {
         }
 
         // Handle promotion
-        if let Some(promotion) = chess_move.promotion {
-            self.set_piece(chess_move.to, Some(Piece::new(promotion, piece.color)));
-        }
+        let final_piece = if let Some(promotion) = chess_move.promotion {
+            let promoted = Piece::new(promotion, piece.color);
+            self.set_piece(chess_move.to, Some(promoted));
+            promoted
+        } else {
+            piece
+        };
 
         // Update castling rights
         let mut rights = self.get_castling_rights();
@@ -121,12 +144,57 @@ impl Board {
         self.set_castling_rights(rights);
 
         // Update en passant target
-        if piece.piece_type == PieceType::Pawn && 
+        let new_ep = if piece.piece_type == PieceType::Pawn && 
            (chess_move.to as i32 - chess_move.from as i32).abs() == 16 {
-            let en_passant_square = (chess_move.from + chess_move.to) / 2;
-            self.set_en_passant_target(Some(en_passant_square));
+            Some((chess_move.from + chess_move.to) / 2)
         } else {
-            self.set_en_passant_target(None);
+            None
+        };
+        self.set_en_passant_target(new_ep);
+
+        // Update hash incrementally
+        self.state.hash = update_hash_after_move(
+            self.state.hash,
+            chess_move.from,
+            chess_move.to,
+            piece,
+            captured_piece,
+            old_ep,
+            new_ep,
+            old_castling,
+            rights,
+            &self.zobrist,
+        );
+
+        // Handle promotion hash update
+        if chess_move.promotion.is_some() {
+            // Remove pawn hash and add promoted piece hash
+            self.state.hash ^= self.zobrist.piece_key(piece, chess_move.to);
+            self.state.hash ^= self.zobrist.piece_key(final_piece, chess_move.to);
+        }
+
+        // Handle castling rook move in hash
+        if chess_move.is_castling {
+            let rank = if piece.color == Color::White { 0 } else { 7 };
+            let (rook_from, rook_to) = if chess_move.to == rank * 8 + 6 {
+                (rank * 8 + 7, rank * 8 + 5)
+            } else {
+                (rank * 8, rank * 8 + 3)
+            };
+            let rook = Piece::new(PieceType::Rook, piece.color);
+            self.state.hash ^= self.zobrist.piece_key(rook, rook_from);
+            self.state.hash ^= self.zobrist.piece_key(rook, rook_to);
+        }
+
+        // Handle en passant captured pawn in hash
+        if chess_move.is_en_passant {
+            let captured_pawn_square = if piece.color == Color::White {
+                chess_move.to - 8
+            } else {
+                chess_move.to + 8
+            };
+            let captured_pawn = Piece::new(PieceType::Pawn, piece.color.opposite());
+            self.state.hash ^= self.zobrist.piece_key(captured_pawn, captured_pawn_square);
         }
 
         // Update halfmove clock
@@ -200,6 +268,9 @@ impl Board {
 
         // Restore turn
         self.state.turn = moved_piece.color;
+
+        // Recompute hash (simplest approach for undo)
+        self.state.hash = compute_hash(&self.state, &self.zobrist);
 
         Some(chess_move)
     }

@@ -4,6 +4,10 @@ mod move_generator;
 mod fen;
 mod ai;
 mod perft;
+mod zobrist;
+mod transposition_table;
+mod time_manager;
+mod iterative_deepening;
 
 use crate::board::Board;
 use crate::move_generator::MoveGenerator;
@@ -11,6 +15,8 @@ use crate::fen::FenParser;
 use crate::ai::AI;
 use crate::perft::Perft;
 use crate::types::*;
+use crate::time_manager::{TimeManager, TimeControl};
+use crate::iterative_deepening::iterative_deepening;
 use std::io::{self, Write};
 use std::time::Instant;
 
@@ -77,6 +83,13 @@ impl ChessEngine {
                     self.handle_ai(parts[1]);
                 } else {
                     println!("ERROR: AI depth must be 1-5");
+                }
+            },
+            "go" => {
+                if parts.len() > 1 {
+                    self.handle_go(&parts[1..]);
+                } else {
+                    println!("ERROR: Invalid go command");
                 }
             },
             "fen" => {
@@ -205,6 +218,114 @@ impl ChessEngine {
         println!("{}", self.board);
     }
 
+    fn handle_go(&mut self, parts: &[&str]) {
+        if parts.is_empty() {
+            println!("ERROR: Invalid go command");
+            return;
+        }
+
+        let time_control = match parts[0] {
+            "movetime" => {
+                if parts.len() < 2 {
+                    println!("ERROR: movetime requires milliseconds argument");
+                    return;
+                }
+                match parts[1].parse::<u64>() {
+                    Ok(ms) => TimeControl::MoveTime(ms),
+                    Err(_) => {
+                        println!("ERROR: Invalid movetime value");
+                        return;
+                    }
+                }
+            }
+            "wtime" => {
+                // Parse wtime btime winc binc
+                let mut wtime = 0u64;
+                let mut btime = 0u64;
+                let mut winc = 0u64;
+                let mut binc = 0u64;
+
+                let mut i = 0;
+                while i < parts.len() {
+                    match parts[i] {
+                        "wtime" => {
+                            if i + 1 < parts.len() {
+                                wtime = parts[i + 1].parse().unwrap_or(0);
+                                i += 2;
+                            } else {
+                                i += 1;
+                            }
+                        }
+                        "btime" => {
+                            if i + 1 < parts.len() {
+                                btime = parts[i + 1].parse().unwrap_or(0);
+                                i += 2;
+                            } else {
+                                i += 1;
+                            }
+                        }
+                        "winc" => {
+                            if i + 1 < parts.len() {
+                                winc = parts[i + 1].parse().unwrap_or(0);
+                                i += 2;
+                            } else {
+                                i += 1;
+                            }
+                        }
+                        "binc" => {
+                            if i + 1 < parts.len() {
+                                binc = parts[i + 1].parse().unwrap_or(0);
+                                i += 2;
+                            } else {
+                                i += 1;
+                            }
+                        }
+                        _ => i += 1,
+                    }
+                }
+
+                TimeControl::TimeIncrement {
+                    white_time: wtime,
+                    black_time: btime,
+                    white_inc: winc,
+                    black_inc: binc,
+                }
+            }
+            "infinite" => TimeControl::Infinite,
+            _ => {
+                println!("ERROR: Unknown go subcommand");
+                return;
+            }
+        };
+
+        let move_number = self.board.get_state().fullmove_number as usize;
+        let is_white = self.board.get_turn() == Color::White;
+
+        let mut time_manager = TimeManager::new(time_control, move_number, is_white);
+
+        // Use iterative deepening up to depth 50
+        let result = iterative_deepening(&self.board, 50, &mut time_manager, &mut self.ai);
+
+        match result.best_move {
+            Some(chess_move) => {
+                let move_str = format!(
+                    "{}{}{}",
+                    square_to_algebraic(chess_move.from),
+                    square_to_algebraic(chess_move.to),
+                    chess_move
+                        .promotion
+                        .map_or(String::new(), |p| p.to_string())
+                );
+
+                self.board.make_move(&chess_move);
+                println!("bestmove {}", move_str);
+                println!("{}", self.board);
+                self.check_game_end();
+            }
+            None => println!("ERROR: No legal moves available"),
+        }
+    }
+
     fn handle_ai(&mut self, depth_str: &str) {
         let depth = match depth_str.parse::<u8>() {
             Ok(d) if d >= 1 && d <= 5 => d,
@@ -277,6 +398,9 @@ impl ChessEngine {
         println!("  undo - Undo the last move");
         println!("  new - Start a new game");
         println!("  ai <depth> - Let AI make a move (depth 1-5)");
+        println!("  go movetime <ms> - AI with fixed time per move");
+        println!("  go wtime <wt> btime <bt> winc <wi> binc <bi> - AI with time control");
+        println!("  go infinite - AI with unlimited time");
         println!("  fen <string> - Load position from FEN");
         println!("  export - Export current position as FEN");
         println!("  eval - Evaluate current position");
