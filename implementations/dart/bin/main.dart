@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:chess_engine/chess_engine.dart';
 
-void main() {
+void main(List<String> args) {
+  final useRichEval = args.contains('--rich-eval');
   final game = Game();
-  final ai = AI();
+  final ai = AI(useRichEval: useRichEval);
   while (true) {
     final line = stdin.readLineSync();
     if (line == null) {

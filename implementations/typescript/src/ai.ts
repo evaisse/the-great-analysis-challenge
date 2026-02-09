@@ -1,15 +1,22 @@
 import { Board } from "./board";
 import { MoveGenerator } from "./moveGenerator";
 import { Move, Color, Square, PIECE_VALUES } from "./types";
+import { RichEvaluator } from "./eval";
 
 export class AI {
   private board: Board;
   private moveGenerator: MoveGenerator;
   private nodesEvaluated: number = 0;
+  private useRichEval: boolean;
+  private richEvaluator?: RichEvaluator;
 
-  constructor(board: Board, moveGenerator: MoveGenerator) {
+  constructor(board: Board, moveGenerator: MoveGenerator, useRichEval: boolean = false) {
     this.board = board;
     this.moveGenerator = moveGenerator;
+    this.useRichEval = useRichEval;
+    if (useRichEval) {
+      this.richEvaluator = new RichEvaluator();
+    }
   }
 
   public findBestMove(depth: number): {
@@ -130,6 +137,10 @@ export class AI {
   }
 
   private evaluate(): number {
+    if (this.useRichEval && this.richEvaluator) {
+      return this.richEvaluator.evaluate(this.board);
+    }
+
     let score = 0;
 
     for (let square = 0; square < 64; square++) {

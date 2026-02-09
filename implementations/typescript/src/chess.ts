@@ -14,11 +14,11 @@ export class ChessEngine {
   private perft: Perft;
   private rl: readline.Interface;
 
-  constructor() {
+  constructor(useRichEval: boolean = false) {
     this.board = new Board();
     this.moveGenerator = new MoveGenerator(this.board);
     this.fenParser = new FenParser(this.board);
-    this.ai = new AI(this.board, this.moveGenerator);
+    this.ai = new AI(this.board, this.moveGenerator, useRichEval);
     this.perft = new Perft(this.board, this.moveGenerator);
 
     this.rl = readline.createInterface({
@@ -272,5 +272,6 @@ export class ChessEngine {
   }
 }
 
-const engine = new ChessEngine();
+const useRichEval = process.argv.includes("--rich-eval");
+const engine = new ChessEngine(useRichEval);
 engine.start();
