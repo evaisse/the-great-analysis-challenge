@@ -3,11 +3,17 @@
 module Chess
   module AttackTables
     # Convert row, col to square index (0-63, where 0 = a1, 63 = h8)
+    # Note: The Ruby chess engine uses row 0 = rank 8 (black's back rank)
+    # and row 7 = rank 1 (white's back rank), so we convert:
+    # square_index = (7 - row) * 8 + col
+    # This maps: row=7, col=0 (a1) -> square 0
+    #            row=0, col=7 (h8) -> square 63
     def self.square_index(row, col)
       (7 - row) * 8 + col
     end
 
     # Convert square index to row, col
+    # Inverse of square_index: converts back from 0-63 to row/col coordinates
     def self.row_col(square)
       row = 7 - (square / 8)
       col = square % 8
