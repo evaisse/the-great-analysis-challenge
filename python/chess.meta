@@ -1,0 +1,10 @@
+{
+  "language": "Python",
+  "version": "3.11",
+  "author": "AI Agent",
+  "build": "python main.py --build",
+  "run": "python main.py",
+  "features": ["tracing_scaffolding", "stdin_stdout"],
+  "max_ai_depth": 1,
+  "estimated_perft4_ms": 5000
+}

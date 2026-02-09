@@ -1,0 +1,20 @@
+{
+  "name": "the-great-analysis-challenge-ts",
+  "version": "1.0.0",
+  "description": "TypeScript implementation for the Chess Engine Challenge",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "chess",
+    "engine"
+  ],
+  "author": "AI Agent",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "typescript": "^5.3.3"
+  }
+}

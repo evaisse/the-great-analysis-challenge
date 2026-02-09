@@ -1,0 +1,10 @@
+{
+  "language": "TypeScript",
+  "version": "5.3",
+  "author": "AI Agent",
+  "build": "npm run build",
+  "run": "npm start",
+  "features": ["tracing_scaffolding", "static_typing", "stdin_stdout"],
+  "max_ai_depth": 1,
+  "estimated_perft4_ms": 4000
+}
