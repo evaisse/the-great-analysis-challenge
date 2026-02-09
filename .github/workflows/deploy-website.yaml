@@ -3,7 +3,7 @@ name: Deploy Website to GitHub Pages
 on:
   push:
     branches:
-      - master
+      - main
   workflow_dispatch:
   schedule:
     # Run weekly on Sunday at midnight UTC (after benchmark workflow)
@@ -29,6 +29,9 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+      
+      - name: Validate website metadata
+        run: ./workflow validate-website-metadata
       
       - name: Build website
         run: |
