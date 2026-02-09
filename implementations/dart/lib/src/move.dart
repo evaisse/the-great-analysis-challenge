@@ -6,6 +6,9 @@ class Move {
   final int toRow;
   final int toCol;
   final PieceType? promotion;
+  Piece? capturedPiece;
+  bool isCastling = false;
+  bool isEnPassant = false;
 
   Move(this.fromRow, this.fromCol, this.toRow, this.toCol, {this.promotion});
 
