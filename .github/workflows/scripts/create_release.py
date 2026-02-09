@@ -50,17 +50,17 @@ def create_release(version_type: str = "patch", readme_changed: str = "false",
     if readme_changed == "true":
         
         # Copy benchmark reports to repo
-        os.makedirs("benchmark_reports", exist_ok=True)
+        os.makedirs("reports", exist_ok=True)
         for pattern in ["*.txt", "*.json"]:
             for file_path in glob.glob(f"benchmark_artifacts/**/{pattern}", recursive=True):
-                dest_path = os.path.join("benchmark_reports", os.path.basename(file_path))
+                dest_path = os.path.join("reports", os.path.basename(file_path))
                 try:
                     with open(file_path, "r") as src, open(dest_path, "w") as dst:
                         dst.write(src.read())
                 except Exception:
                     pass
         
-        cmd = ["git", "add", "benchmark_reports/", "README.md"]
+        cmd = ["git", "add", "reports/", "README.md"]
         print(f"🔧 Running: {' '.join(cmd)}")
         subprocess.run(cmd, check=True)
         

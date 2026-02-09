@@ -106,40 +106,26 @@ All piece types must move according to FIDE chess rules:
 
 ## 3. AI Specification
 
-### 3.1 Algorithm Requirements
+⚠️ **For complete, deterministic AI algorithm specification, see [AI_ALGORITHM_SPEC.md](./AI_ALGORITHM_SPEC.md)**
 
-Minimax with Alpha-Beta pruning:
+The AI specification has been moved to a dedicated document that provides:
+- Exact minimax algorithm with alpha-beta pruning
+- Precise evaluation function with piece-square tables
+- Deterministic move ordering rules
+- Test positions for verification
+- Compliance requirements
 
-```pseudocode
-function minimax(position, depth, alpha, beta, maximizing):
-    if depth == 0 or game_over:
-        return evaluate(position)
-    
-    if maximizing:
-        max_eval = -INFINITY
-        for each legal_move:
-            make_move(move)
-            eval = minimax(position, depth-1, alpha, beta, false)
-            undo_move()
-            max_eval = max(max_eval, eval)
-            alpha = max(alpha, eval)
-            if beta <= alpha:
-                break  // Beta cutoff
-        return max_eval
-    else:
-        min_eval = INFINITY
-        for each legal_move:
-            make_move(move)
-            eval = minimax(position, depth-1, alpha, beta, true)
-            undo_move()
-            min_eval = min(min_eval, eval)
-            beta = min(beta, eval)
-            if beta <= alpha:
-                break  // Alpha cutoff
-        return min_eval
-```
+### 3.1 Algorithm Requirements (Summary)
 
-### 3.2 Evaluation Function
+All implementations must use **Minimax with Alpha-Beta pruning** as defined in [AI_ALGORITHM_SPEC.md](./AI_ALGORITHM_SPEC.md).
+
+Key points:
+- Exact piece values and evaluation function
+- Deterministic move ordering (score descending, algebraic notation ascending)
+- Integer arithmetic (no floating-point evaluation)
+- Piece-square tables for positional bonuses
+
+### 3.2 Evaluation Function (Summary)
 
 ```
 Material Values:
@@ -151,14 +137,14 @@ Material Values:
 - King = 20000
 
 Position Bonuses:
-- Center control (d4,d5,e4,e5): +10 per piece/pawn
-- Pawn advancement: +5 per rank advanced
-- King safety: -20 if exposed (optional)
+- Piece-square tables (see AI_ALGORITHM_SPEC.md for exact values)
 
 Special Scores:
 - Checkmate = ±100000
 - Stalemate = 0
 ```
+
+**Note**: The evaluation function must be implemented exactly as specified in AI_ALGORITHM_SPEC.md to ensure deterministic, reproducible behavior across all implementations.
 
 ### 3.3 Performance Requirements
 

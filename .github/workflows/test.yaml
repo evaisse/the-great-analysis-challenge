@@ -2,7 +2,7 @@ name: Test Chess Engines
 
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
     inputs:
       test_all:
@@ -102,6 +102,12 @@ jobs:
           cd implementations/${{ matrix.engine }}
           echo "🏗️ Building ${{ matrix.engine }} chess engine..."
           docker build -t chess-${{ matrix.engine }}-test .
+      
+      - name: Verify analyze target
+        run: ./workflow verify-make-target ${{ matrix.engine }} analyze
+
+      - name: Verify test target
+        run: ./workflow verify-make-target ${{ matrix.engine }} test
 
       - name: Test basic commands
         run: ./workflow test-basic-commands ${{ matrix.engine }}
@@ -113,6 +119,15 @@ jobs:
       - name: Test demo mode
         if: steps.config.outputs.test_mode == 'demo'
         run: ./workflow test-demo-mode ${{ matrix.engine }}
+
+      - name: Ensure workspace clean for ${{ matrix.engine }}
+        run: |
+          ENGINE=${{ matrix.engine }}
+          if [[ -n "$(git status --porcelain implementations/${ENGINE})" ]]; then
+            echo "Uncommitted changes detected after testing ${ENGINE}" >&2
+            git status --short implementations/${ENGINE}
+            exit 1
+          fi
 
       - name: Cleanup
         if: always()

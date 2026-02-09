@@ -1,0 +1,47 @@
+[
+  {
+    "language": "dart",
+    "path": "implementations/dart",
+    "metadata": {
+      "language": "dart",
+      "version": "3.0",
+      "author": "Dart Implementation",
+      "build": "dart pub get && dart compile exe bin/main.dart -o bin/chess_engine",
+      "run": "./bin/chess_engine",
+      "analyze": "dart analyze && dart format --set-exit-if-changed .",
+      "test": "dart test",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 900
+    },
+    "timings": {
+      "build_seconds": 0.4064490795135498,
+      "analyze_seconds": 0.9766099452972412,
+      "test_seconds": 2.4890122413635254
+    },
+    "memory": {},
+    "docker": {
+      "build_time": 0.4064490795135498,
+      "build_success": true,
+      "test_time": 2.4890122413635254,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  }
+]

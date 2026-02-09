@@ -25,18 +25,21 @@ def load_performance_data():
     """Load performance benchmark data from individual files"""
     project_root = find_project_root()
     if project_root:
-        benchmark_dir = os.path.join(project_root, 'benchmark_reports')
+        benchmark_dir = os.path.join(project_root, 'reports')
     else:
-        benchmark_dir = 'benchmark_reports'
+        benchmark_dir = 'reports'
     performance_data = []
     
     if not os.path.exists(benchmark_dir):
-        print("⚠️ Benchmark reports directory not found")
+        print("⚠️ Reports directory not found")
         return []
     
     # Load individual performance data files
     import glob
-    data_files = glob.glob(os.path.join(benchmark_dir, 'performance_data_*.json'))
+    data_files = [
+        path for path in glob.glob(os.path.join(benchmark_dir, '*.json'))
+        if not path.endswith('performance_data.json')
+    ]
     
     for data_file in data_files:
         try:
@@ -186,10 +189,22 @@ def update_readme() -> bool:
             language = impl_data.get('language', '').lower()
             combined_data[language] = impl_data
         
-        # Add any missing languages from verification
-        all_languages = ['crystal', 'dart', 'elm', 'gleam', 'go', 'haskell', 'julia', 
-                        'kotlin', 'mojo', 'nim', 'python', 'rescript', 'ruby', 'rust', 
-                        'swift', 'typescript', 'zig']
+        # Dynamically discover all implementations from directory
+        import os
+        impl_dir = "implementations"
+        all_languages = []
+        if os.path.exists(impl_dir):
+            all_languages = sorted([
+                name.lower() for name in os.listdir(impl_dir)
+                if os.path.isdir(os.path.join(impl_dir, name))
+            ])
+        
+        # If discovery fails or directory is empty, we have a critical error
+        if not all_languages:
+            print("❌ Error: Could not discover any implementations")
+            print(f"   Check that {impl_dir}/ directory exists and contains implementation subdirectories")
+            # Don't use fallback - this indicates a real problem
+            return False
         
         for lang in all_languages:
             if lang not in combined_data:
