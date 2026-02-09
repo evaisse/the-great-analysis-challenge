@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chess_engine/chess_engine.dart';
+import '../eval/rich_evaluator.dart';
 
 class AI {
   static const _materialValues = {
@@ -11,6 +12,12 @@ class AI {
     PieceType.queen: 900,
     PieceType.king: 20000,
   };
+
+  final bool useRichEval;
+  final RichEvaluator? _richEvaluator;
+
+  AI({this.useRichEval = false}) 
+    : _richEvaluator = useRichEval ? RichEvaluator() : null;
 
   Move findBestMove(Board board, int depth) {
     double bestValue = double.negativeInfinity;
@@ -81,6 +88,10 @@ class AI {
   }
 
   double evaluate(Board board) {
+    if (useRichEval && _richEvaluator != null) {
+      return _richEvaluator!.evaluate(board).toDouble();
+    }
+    
     double score = 0;
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
