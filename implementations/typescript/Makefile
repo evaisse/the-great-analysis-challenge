@@ -5,20 +5,41 @@ all: build
 
 # Build target - compile TypeScript to JavaScript
 build:
-	npm install
-	npm run build
+	@echo "⏱️  Build started..."
+	@START_TIME=$$(date +%s); \
+	npm install && \
+	npm run build; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Build duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Run basic tests
 test:
-	npm test
+	@echo "⏱️  Test started..."
+	@START_TIME=$$(date +%s); \
+	npm test; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Test duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Static analysis and code quality
 analyze:
-	@echo "Running TypeScript static analysis..."
-	npm install
-	npm run lint
-	npx tsc --noEmit
-	npx prettier --check src/*.ts
+	@echo "⏱️  Analyze started..."
+	@START_TIME=$$(date +%s); \
+	echo "Running TypeScript static analysis..." && \
+	npm install && \
+	npm run lint && \
+	npx tsc --noEmit && \
+	npx prettier --check src/*.ts; \
+	EXIT_CODE=$$?; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo "⏱️  Analyze duration: $${DURATION}s"; \
+	exit $$EXIT_CODE
 
 # Clean build artifacts
 clean:
