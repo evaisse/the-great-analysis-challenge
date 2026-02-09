@@ -5,6 +5,7 @@ namespace Chess;
 require_once __DIR__ . '/Types.php';
 require_once __DIR__ . '/Board.php';
 require_once __DIR__ . '/MoveGenerator.php';
+require_once __DIR__ . '/Eval/RichEvaluator.php';
 
 /**
  * AI with minimax and alpha-beta pruning
@@ -12,10 +13,14 @@ require_once __DIR__ . '/MoveGenerator.php';
 class AI {
     private Board $board;
     private MoveGenerator $move_gen;
+    private bool $use_rich_eval;
+    private ?\Chess\Eval\RichEvaluator $rich_evaluator;
     
-    public function __construct(Board $board, MoveGenerator $move_gen) {
+    public function __construct(Board $board, MoveGenerator $move_gen, bool $use_rich_eval = false) {
         $this->board = $board;
         $this->move_gen = $move_gen;
+        $this->use_rich_eval = $use_rich_eval;
+        $this->rich_evaluator = $use_rich_eval ? new \Chess\Eval\RichEvaluator() : null;
     }
     
     public function find_best_move(int $depth): ?array {
@@ -100,6 +105,10 @@ class AI {
     }
     
     public function evaluate(): int {
+        if ($this->use_rich_eval && $this->rich_evaluator !== null) {
+            return $this->rich_evaluator->evaluate($this->board);
+        }
+        
         $score = 0;
         
         // Material evaluation

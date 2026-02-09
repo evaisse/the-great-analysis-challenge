@@ -23,12 +23,14 @@ class ChessEngine {
     private FenParser $fen_parser;
     private AI $ai;
     private Perft $perft;
+    private bool $use_rich_eval;
     
-    public function __construct() {
+    public function __construct(bool $use_rich_eval = false) {
+        $this->use_rich_eval = $use_rich_eval;
         $this->board = new Board();
         $this->move_gen = new MoveGenerator($this->board);
         $this->fen_parser = new FenParser($this->board);
-        $this->ai = new AI($this->board, $this->move_gen);
+        $this->ai = new AI($this->board, $this->move_gen, $use_rich_eval);
         $this->perft = new Perft($this->board, $this->move_gen);
     }
     
@@ -287,6 +289,15 @@ HELP;
     }
 }
 
+// Parse command line arguments
+$use_rich_eval = false;
+foreach ($argv as $arg) {
+    if ($arg === '--rich-eval') {
+        $use_rich_eval = true;
+        break;
+    }
+}
+
 // Start the engine
-$engine = new ChessEngine();
+$engine = new ChessEngine($use_rich_eval);
 $engine->start();
