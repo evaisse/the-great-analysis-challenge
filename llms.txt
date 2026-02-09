@@ -1,37 +1,51 @@
-# llms.txt - LLM Context Files
-# This file lists the essential documentation files that LLMs and AI agents should read
-# to understand this project. Files are listed in order of importance.
+# The Great Analysis Challenge
 
-# Core Specification (REQUIRED - Read First)
-CHESS_ENGINE_SPECS.md
+> Polyglot chess engine benchmark comparing languages under a single spec with Docker-first builds, standardized CLI, and automated tests.
 
-# Agent Instructions (REQUIRED for AI agents)
-AGENTS.md
+This repository hosts parallel chess engines implemented per-language to compare paradigms, performance, and developer experience. Every implementation must:
+- Follow `CHESS_ENGINE_SPECS.md` for board state, CLI protocol, AI search (minimax + alpha-beta), and perft targets
+- Ship its own `Dockerfile`, `chess.meta`, and README under `implementations/<language>/`
+- Build, run, and test exclusively through the Docker targets defined in the root `Makefile` and the shared test harness in `test/`
 
-# Quick Reference Guide
-README_IMPLEMENTATION_GUIDELINES.md
+## Core Specs
 
-# Project Overview
-README.md
+- [CHESS_ENGINE_SPECS.md](CHESS_ENGINE_SPECS.md): Authoritative rules for board representation, commands, AI depth limits, and performance benchmarks.
+- [AI_ALGORITHM_SPEC.md](AI_ALGORITHM_SPEC.md): Detailed minimax + alpha-beta requirements and evaluation guidelines referenced by all languages.
 
-# Test Suite Definition
-test/test_suite.json
+## Implementation & Agent Guides
 
-# Build and Test Automation
-Makefile
+- [AGENTS.md](AGENTS.md): Operational instructions and guardrails for AI agents contributing to the project.
+- [README_IMPLEMENTATION_GUIDELINES.md](README_IMPLEMENTATION_GUIDELINES.md): Step-by-step workflow for building a compliant language implementation.
+- [CONTRIBUTING.md](CONTRIBUTING.md): Contribution process, coding standards, and review expectations.
 
-# CI/CD Workflows Documentation
-.github/workflows/README.md
+## Project Overview & Status
 
-# Example Implementation (for reference)
-ruby/README.md
-ruby/chess.meta
+- [README.md](README.md): High-level project overview, goals, and language matrix.
+- [LANGUAGE_STATISTICS_README.md](LANGUAGE_STATISTICS_README.md): Explanation of the language metrics pipeline.
+- [language_statistics.yaml](language_statistics.yaml): Current per-language statistics consumed by dashboards and reports.
 
-# Alternative Example (TypeScript)
-typescript/README.md
-typescript/chess.meta
+## Build, Test, and Automation
 
-# Additional Context (optional but helpful)
-# - Review any <language>/README.md for language-specific implementation details
-# - Check test/test_summary.md for test results across implementations
-# - See .github/workflows/*.yml for CI/CD pipeline details
+- [Makefile](Makefile): Canonical Docker build/test targets (e.g., `make build-<lang>`, `make test-<lang>`).
+- [test/test_suite.json](test/test_suite.json): Declarative test definitions covering movement, special rules, AI, and FEN requirements.
+- [test/test_harness.py](test/test_harness.py): Runner invoked by the Make targets and CI workflows.
+- [.github/workflows/bench.yaml](.github/workflows/bench.yaml): CI entry point for benchmarking and regression checks.
+- [.github/workflows/test.yaml](.github/workflows/test.yaml): CI pipeline executing the shared test harness across implementations.
+
+## Implementation References
+
+- [implementations/](implementations): Production-ready language directories, each containing its Dockerfile, `chess.meta`, README, and source.
+- [implementations-wip/](implementations-wip): Experimental or in-progress language ports awaiting graduation to `implementations/`.
+- [docs/](docs): Additional language-specific or architectural notes referenced by some implementations.
+
+## Verification & Reporting
+
+- [verification_results.txt](verification_results.txt): Latest summarized verification run outcomes.
+- [build_results.log](build_results.log): Historical build logs useful for diagnosing CI or Docker regressions.
+- [reports/](reports): Generated analysis artifacts and benchmarking summaries.
+
+## Optional
+
+- [scripts/](scripts): Helper utilities (stats refresh, doc builders, automation aides).
+- [workflow](workflow): CLI helper for orchestrating multi-language workflows during local development.
+- [build-local.sh](build-local.sh): Convenience wrapper for executing Docker builds outside the Make targets.

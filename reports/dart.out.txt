@@ -1,0 +1,56 @@
+⚠️  psutil not available - memory monitoring disabled
+🚀 Chess Engine Performance Testing Suite
+============================================================
+Found 1 implementation(s) to test
+
+============================================================
+Testing dart implementation
+Path: implementations/dart
+============================================================
+🧹 Clearing build cache...
+🔧 Running: make clean
+✅ Local cache cleared with make clean
+✅ Cache clearing completed
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (includes analysis and build)...
+  🔧 Running: docker build -t chess-dart .
+  ✅ Docker build completed in 0.41s
+  🔍 Running static analysis...
+    🔧 Running: make analyze
+  ♟️  Running chess engine tests...
+    🔧 Running: make test
+  ✅ All Docker tests passed (build: 0.4s, analyze: 1.0s, test: 2.5s)
+
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2025-11-06 19:42:59
+================================================================================
+
+PERFORMANCE SUMMARY
+--------------------------------------------------------------------------------
+Language     Status     Analyze  Build    Test     Memory     Tests   
+--------------------------------------------------------------------------------
+dart         completed      1.0s     0.4s     2.5s        0MB 3/3     
+
+============================================================
+DETAILED RESULTS: DART
+============================================================
+
+TIMING BREAKDOWN:
+  Build Seconds: 0.41s
+  Analyze Seconds: 0.98s
+  Test Seconds: 2.49s
+
+CHESS ENGINE TESTS: 3 passed, 0 failed
+
+DOCKER TESTS:
+  Build: ✅ (0.41s)
+  Test: ✅ (2.49s)
+
+================================================================================
+
+📄 Text report saved to benchmark_reports/performance_report_dart.txt
+📄 JSON results saved to benchmark_reports/performance_data_dart.json
+
+✅ All 1 implementation(s) completed successfully
