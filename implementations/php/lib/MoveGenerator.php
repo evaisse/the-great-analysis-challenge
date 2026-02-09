@@ -4,6 +4,7 @@ namespace Chess;
 
 require_once __DIR__ . '/Types.php';
 require_once __DIR__ . '/Board.php';
+require_once __DIR__ . '/AttackTables.php';
 
 /**
  * Move generation and validation
@@ -107,16 +108,13 @@ class MoveGenerator {
     
     private function generate_knight_moves(int $row, int $col): array {
         $moves = [];
-        $deltas = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+        $square = AttackTables::square_index($row, $col);
         
-        foreach ($deltas as [$drow, $dcol]) {
-            $new_row = $row + $drow;
-            $new_col = $col + $dcol;
-            if ($new_row >= 0 && $new_row < 8 && $new_col >= 0 && $new_col < 8) {
-                [$target_piece, $target_color] = $this->board->get_piece($new_row, $new_col);
-                if ($target_piece === CHESS_EMPTY || $target_color !== $this->board->current_player) {
-                    $moves[] = new Move($row, $col, $new_row, $new_col);
-                }
+        foreach (AttackTables::KNIGHT_ATTACKS[$square] as $target_square) {
+            [$new_row, $new_col] = AttackTables::index_to_square($target_square);
+            [$target_piece, $target_color] = $this->board->get_piece($new_row, $new_col);
+            if ($target_piece === CHESS_EMPTY || $target_color !== $this->board->current_player) {
+                $moves[] = new Move($row, $col, $new_row, $new_col);
             }
         }
         
@@ -167,16 +165,14 @@ class MoveGenerator {
     
     private function generate_king_moves(int $row, int $col): array {
         $moves = [];
-        $deltas = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+        $square = AttackTables::square_index($row, $col);
         
-        foreach ($deltas as [$drow, $dcol]) {
-            $new_row = $row + $drow;
-            $new_col = $col + $dcol;
-            if ($new_row >= 0 && $new_row < 8 && $new_col >= 0 && $new_col < 8) {
-                [$target_piece, $target_color] = $this->board->get_piece($new_row, $new_col);
-                if ($target_piece === CHESS_EMPTY || $target_color !== $this->board->current_player) {
-                    $moves[] = new Move($row, $col, $new_row, $new_col);
-                }
+        // Regular king moves using attack tables
+        foreach (AttackTables::KING_ATTACKS[$square] as $target_square) {
+            [$new_row, $new_col] = AttackTables::index_to_square($target_square);
+            [$target_piece, $target_color] = $this->board->get_piece($new_row, $new_col);
+            if ($target_piece === CHESS_EMPTY || $target_color !== $this->board->current_player) {
+                $moves[] = new Move($row, $col, $new_row, $new_col);
             }
         }
         

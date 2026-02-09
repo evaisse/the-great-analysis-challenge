@@ -1,5 +1,6 @@
 use crate::types::*;
 use crate::board::Board;
+use crate::attack_tables::get_attack_tables;
 
 pub struct MoveGenerator;
 
@@ -110,24 +111,17 @@ impl MoveGenerator {
 
     fn generate_knight_moves(&self, board: &Board, from: Square, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
-        let offsets = [-17, -15, -10, -6, 6, 10, 15, 17];
-        let from_i32 = from as i32;
-        let file = from % 8;
+        let tables = get_attack_tables();
+        let attacks = tables.knight.get(from);
 
-        for offset in offsets {
-            let to = from_i32 + offset;
-            let to_file = (to % 8) as usize;
-
-            if self.is_valid_square(to) && (to_file as i32 - file as i32).abs() <= 2 {
-                let to_square = to as usize;
-                match board.get_piece(to_square) {
-                    None => moves.push(Move::new(from, to_square, PieceType::Knight)),
-                    Some(piece) if piece.color != color => {
-                        moves.push(Move::new(from, to_square, PieceType::Knight)
-                            .with_capture(piece.piece_type));
-                    },
-                    _ => {}
-                }
+        for &to_square in attacks {
+            match board.get_piece(to_square) {
+                None => moves.push(Move::new(from, to_square, PieceType::Knight)),
+                Some(piece) if piece.color != color => {
+                    moves.push(Move::new(from, to_square, PieceType::Knight)
+                        .with_capture(piece.piece_type));
+                },
+                _ => {}
             }
         }
 
@@ -148,24 +142,17 @@ impl MoveGenerator {
 
     fn generate_king_moves(&self, board: &Board, from: Square, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
-        let offsets = [-9, -8, -7, -1, 1, 7, 8, 9];
-        let from_i32 = from as i32;
-        let file = from % 8;
+        let tables = get_attack_tables();
+        let attacks = tables.king.get(from);
 
-        for offset in offsets {
-            let to = from_i32 + offset;
-            let to_file = (to % 8) as usize;
-
-            if self.is_valid_square(to) && (to_file as i32 - file as i32).abs() <= 1 {
-                let to_square = to as usize;
-                match board.get_piece(to_square) {
-                    None => moves.push(Move::new(from, to_square, PieceType::King)),
-                    Some(piece) if piece.color != color => {
-                        moves.push(Move::new(from, to_square, PieceType::King)
-                            .with_capture(piece.piece_type));
-                    },
-                    _ => {}
-                }
+        for &to_square in attacks {
+            match board.get_piece(to_square) {
+                None => moves.push(Move::new(from, to_square, PieceType::King)),
+                Some(piece) if piece.color != color => {
+                    moves.push(Move::new(from, to_square, PieceType::King)
+                        .with_capture(piece.piece_type));
+                },
+                _ => {}
             }
         }
 

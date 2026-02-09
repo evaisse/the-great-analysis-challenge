@@ -1,4 +1,5 @@
 import 'package:chess_engine/chess_engine.dart';
+import 'attack_tables.dart';
 
 class Board {
   late List<List<Piece?>> squares;
@@ -373,24 +374,13 @@ class Board {
     PieceColor color,
     List<Move> moves,
   ) {
-    final offsets = [
-      [-2, -1],
-      [-2, 1],
-      [-1, -2],
-      [-1, 2],
-      [1, -2],
-      [1, 2],
-      [2, -1],
-      [2, 1],
-    ];
-    for (final offset in offsets) {
-      final newRow = row + offset[0];
-      final newCol = col + offset[1];
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final dest = squares[newRow][newCol];
-        if (dest == null || dest.color != color) {
-          moves.add(Move(row, col, newRow, newCol));
-        }
+    final squareIndex = row * 8 + col;
+    final attacks = AttackTables.knightAttacks[squareIndex];
+    
+    for (final target in attacks) {
+      final dest = squares[target.row][target.col];
+      if (dest == null || dest.color != color) {
+        moves.add(Move(row, col, target.row, target.col));
       }
     }
   }
@@ -429,24 +419,13 @@ class Board {
     PieceColor color,
     List<Move> moves,
   ) {
-    final offsets = [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
-    ];
-    for (final offset in offsets) {
-      final newRow = row + offset[0];
-      final newCol = col + offset[1];
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final dest = squares[newRow][newCol];
-        if (dest == null || dest.color != color) {
-          moves.add(Move(row, col, newRow, newCol));
-        }
+    final squareIndex = row * 8 + col;
+    final attacks = AttackTables.kingAttacks[squareIndex];
+    
+    for (final target in attacks) {
+      final dest = squares[target.row][target.col];
+      if (dest == null || dest.color != color) {
+        moves.add(Move(row, col, target.row, target.col));
       }
     }
 
@@ -516,26 +495,14 @@ class Board {
     }
 
     // Check for knight attacks
-    final knightOffsets = [
-      [-2, -1],
-      [-2, 1],
-      [-1, -2],
-      [-1, 2],
-      [1, -2],
-      [1, 2],
-      [2, -1],
-      [2, 1],
-    ];
-    for (final offset in knightOffsets) {
-      final newRow = row + offset[0];
-      final newCol = col + offset[1];
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final piece = squares[newRow][newCol];
-        if (piece != null &&
-            piece.color == attackerColor &&
-            piece.type == PieceType.knight) {
-          return true;
-        }
+    final squareIndex = row * 8 + col;
+    final knightAttackSquares = AttackTables.knightAttacks[squareIndex];
+    for (final target in knightAttackSquares) {
+      final piece = squares[target.row][target.col];
+      if (piece != null &&
+          piece.color == attackerColor &&
+          piece.type == PieceType.knight) {
+        return true;
       }
     }
 
@@ -587,26 +554,13 @@ class Board {
     }
 
     // Check for king attacks
-    final kingOffsets = [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
-    ];
-    for (final offset in kingOffsets) {
-      final newRow = row + offset[0];
-      final newCol = col + offset[1];
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final piece = squares[newRow][newCol];
-        if (piece != null &&
-            piece.color == attackerColor &&
-            piece.type == PieceType.king) {
-          return true;
-        }
+    final kingAttackSquares = AttackTables.kingAttacks[squareIndex];
+    for (final target in kingAttackSquares) {
+      final piece = squares[target.row][target.col];
+      if (piece != null &&
+          piece.color == attackerColor &&
+          piece.type == PieceType.king) {
+        return true;
       }
     }
 

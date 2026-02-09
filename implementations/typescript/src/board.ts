@@ -71,11 +71,21 @@ export class Board {
   }
 
   public getState(): GameState {
-    return { ...this.state };
+    return { 
+      ...this.state,
+      board: [...this.state.board],
+      castlingRights: { ...this.state.castlingRights },
+      moveHistory: [...this.state.moveHistory],
+    };
   }
 
   public setState(state: GameState): void {
-    this.state = { ...state };
+    this.state = { 
+      ...state,
+      board: [...state.board],
+      castlingRights: { ...state.castlingRights },
+      moveHistory: [...state.moveHistory],
+    };
   }
 
   public getPiece(square: Square): Piece | null {
