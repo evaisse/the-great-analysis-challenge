@@ -389,7 +389,7 @@ the-great-analysis-challenge/
 ## Contribution Workflow
 
 1. **Fork/Clone**: Get the repository
-2. **Branch**: Create a feature branch for your language
+2. **Branch**: Create a feature branch for your language. All branches MUST be linked to an issue and follow this naming format: `feat/{issue-number}-issue-slug` (e.g., `feat/85-implement-zobrist-hashing`). If an issue for the task doesn't exist, the agent SHOULD create one before starting work.
 3. **Implement**: Follow the workflow above
 4. **Test**: Thoroughly test with Docker
 5. **Document**: Write clear README
