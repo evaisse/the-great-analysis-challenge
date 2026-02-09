@@ -55,7 +55,7 @@ class Board {
     final piecePlacement = parts[0];
     turn = parts[1];
     _castlingRights = parts[2];
-    if (parts[3] != '-') {
+    if (parts.length > 3 && parts[3] != '-') {
       _enPassantTarget = _parseSquare(parts[3]);
     } else {
       _enPassantTarget = null;
@@ -135,17 +135,25 @@ class Board {
     }
 
     // 3. Handle castling rook
+<<<<<<< Updated upstream
     String? castlingMove;
     if (piece.type == PieceType.king && (from.col - to.col).abs() == 2) {
       if (to.col == 6) {
         castlingMove = 'K';
+=======
+    if (piece.type == PieceType.king && (from.col - to.col).abs() == 2) {
+      if (to.col == 6) {
+>>>>>>> Stashed changes
         final rook = squares[from.row][7]!;
         hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 7];
         hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 5];
         squares[from.row][7] = null;
         squares[from.row][5] = rook;
       } else {
+<<<<<<< Updated upstream
         castlingMove = 'Q';
+=======
+>>>>>>> Stashed changes
         final rook = squares[from.row][0]!;
         hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 0];
         hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 3];
@@ -166,12 +174,22 @@ class Board {
       if (_castlingRights.contains(rightsChars[i])) hash ^= zobrist.castling[i];
     }
 
+<<<<<<< Updated upstream
     // Update rights logic
     if (piece.type == PieceType.king) {
       if (piece.color == PieceColor.white) {
         _castlingRights = _castlingRights.replaceAll('K', '').replaceAll('Q', '');
       } else {
         _castlingRights = _castlingRights.replaceAll('k', '').replaceAll('q', '');
+=======
+    if (piece.type == PieceType.king) {
+      if (piece.color == PieceColor.white) {
+        _castlingRights =
+            _castlingRights.replaceAll('K', '').replaceAll('Q', '');
+      } else {
+        _castlingRights =
+            _castlingRights.replaceAll('k', '').replaceAll('q', '');
+>>>>>>> Stashed changes
       }
     } else if (piece.type == PieceType.rook) {
       if (from.row == 7 && from.col == 0) _castlingRights = _castlingRights.replaceAll('Q', '');
@@ -179,7 +197,10 @@ class Board {
       if (from.row == 0 && from.col == 0) _castlingRights = _castlingRights.replaceAll('q', '');
       if (from.row == 0 && from.col == 7) _castlingRights = _castlingRights.replaceAll('k', '');
     }
+<<<<<<< Updated upstream
     // Also if rook is captured
+=======
+>>>>>>> Stashed changes
     if (to.row == 7 && to.col == 0) _castlingRights = _castlingRights.replaceAll('Q', '');
     if (to.row == 7 && to.col == 7) _castlingRights = _castlingRights.replaceAll('K', '');
     if (to.row == 0 && to.col == 0) _castlingRights = _castlingRights.replaceAll('q', '');
@@ -204,7 +225,11 @@ class Board {
     // 6. Update side to move
     hash ^= zobrist.sideToMove;
     
+<<<<<<< Updated upstream
     if (isPawnMove || isCapture) {
+=======
+    if (piece.type == PieceType.pawn || isCapture) {
+>>>>>>> Stashed changes
       _halfmoveClock = 0;
     } else {
       _halfmoveClock += 1;
@@ -212,6 +237,7 @@ class Board {
 
     if (turn == 'b') {
       _fullmoveNumber += 1;
+<<<<<<< Updated upstream
     }
     turn = turn == 'w' ? 'b' : 'w';
 
@@ -264,6 +290,60 @@ class Board {
     }
     turn = turn == 'w' ? 'b' : 'w';
 
+=======
+    }
+    turn = turn == 'w' ? 'b' : 'w';
+
+    zobristHash = hash;
+  }
+
+  bool undoMove(Move move) {
+    if (irreversibleHistory.isEmpty) return false;
+    
+    final old = irreversibleHistory.removeLast();
+    positionHistory.removeLast();
+
+    final from = (row: move.fromRow, col: move.fromCol);
+    final to = (row: move.toRow, col: move.toCol);
+    
+    final movedPiece = squares[to.row][to.col]!;
+    final originalPiece = move.promotion != null ? Piece(PieceType.pawn, movedPiece.color) : movedPiece;
+
+    // Restore pieces
+    squares[from.row][from.col] = originalPiece;
+    squares[to.row][to.col] = move.capturedPiece;
+
+    if (move.isEnPassant) {
+      final capturedPawnRow = from.row;
+      squares[capturedPawnRow][to.col] = move.capturedPiece;
+      squares[to.row][to.col] = null;
+    }
+
+    // Handle castling rook
+    if (move.isCastling) {
+      if (to.col == 6) {
+        final rook = squares[from.row][5]!;
+        squares[from.row][5] = null;
+        squares[from.row][7] = rook;
+      } else {
+        final rook = squares[from.row][3]!;
+        squares[from.row][3] = null;
+        squares[from.row][0] = rook;
+      }
+    }
+
+    // Restore state
+    _castlingRights = old.castlingRights;
+    _enPassantTarget = old.enPassantTarget;
+    _halfmoveClock = old.halfmoveClock;
+    zobristHash = old.zobristHash;
+    
+    if (turn == 'w') {
+      _fullmoveNumber -= 1;
+    }
+    turn = turn == 'w' ? 'b' : 'w';
+
+>>>>>>> Stashed changes
     return true;
   }
 
@@ -272,6 +352,10 @@ class Board {
     final row = 8 - int.parse(square.substring(1));
     return (row: row, col: col);
   }
+
+  String get_castlingRights_internal() => _castlingRights;
+  ({int row, int col})? get_enPassantTarget_internal() => _enPassantTarget;
+  int get_halfmoveClock_val() => _halfmoveClock;
 
   Board clone() {
     final newSquares = List.generate(8, (i) => List.of(squares[i]));
@@ -282,6 +366,9 @@ class Board {
       _castlingRights,
       _halfmoveClock,
       _fullmoveNumber,
+      zobristHash,
+      List.of(positionHistory),
+      List.of(irreversibleHistory),
     );
   }
 
@@ -370,6 +457,7 @@ class Board {
     final legalMoves = <Move>[];
     for (final move in pseudoLegalMoves) {
       final newBoard = clone();
+      // Use internal move method that takes Move object or string
       newBoard.move(move.toString());
       if (!newBoard.isKingInCheck(playerColor)) {
         legalMoves.add(move);
@@ -465,7 +553,7 @@ class Board {
           } else if (_enPassantTarget != null &&
               _enPassantTarget!.row == row + direction &&
               _enPassantTarget!.col == col + dcol) {
-            moves.add(Move(row, col, row + direction, col + dcol));
+            moves.add(Move(row, col, row + direction, col + dcol)..isEnPassant = true);
           }
         }
       }
@@ -560,25 +648,25 @@ class Board {
       if (_castlingRights.contains('K') &&
           squares[7][5] == null &&
           squares[7][6] == null) {
-        moves.add(Move(7, 4, 7, 6));
+        moves.add(Move(7, 4, 7, 6)..isCastling = true);
       }
       if (_castlingRights.contains('Q') &&
           squares[7][1] == null &&
           squares[7][2] == null &&
           squares[7][3] == null) {
-        moves.add(Move(7, 4, 7, 2));
+        moves.add(Move(7, 4, 7, 2)..isCastling = true);
       }
     } else {
       if (_castlingRights.contains('k') &&
           squares[0][5] == null &&
           squares[0][6] == null) {
-        moves.add(Move(0, 4, 0, 6));
+        moves.add(Move(0, 4, 0, 6)..isCastling = true);
       }
       if (_castlingRights.contains('q') &&
           squares[0][1] == null &&
           squares[0][2] == null &&
           squares[0][3] == null) {
-        moves.add(Move(0, 4, 0, 2));
+        moves.add(Move(0, 4, 0, 2)..isCastling = true);
       }
     }
   }
