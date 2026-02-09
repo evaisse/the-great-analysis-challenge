@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'types'
+require_relative 'attack_tables'
 
 module Chess
   class MoveGenerator
@@ -149,22 +150,15 @@ module Chess
     
     def generate_knight_moves(row, col)
       moves = []
-      knight_moves = [
-        [-2, -1], [-2, 1], [-1, -2], [-1, 2],
-        [1, -2], [1, 2], [2, -1], [2, 1]
-      ]
+      piece = @board.piece_at(row, col)
+      square = AttackTables.square_index(row, col)
       
-      knight_moves.each do |row_offset, col_offset|
-        new_row = row + row_offset
-        new_col = col + col_offset
-        
-        next unless @board.valid_position?(new_row, new_col)
-        
-        target_piece = @board.piece_at(new_row, new_col)
-        piece = @board.piece_at(row, col)
+      AttackTables::KNIGHT_ATTACKS[square].each do |target_square|
+        target_row, target_col = AttackTables.row_col(target_square)
+        target_piece = @board.piece_at(target_row, target_col)
         
         if !target_piece || target_piece.color != piece.color
-          moves << Move.new(row, col, new_row, new_col)
+          moves << Move.new(row, col, target_row, target_col)
         end
       end
       
@@ -189,23 +183,15 @@ module Chess
     
     def generate_king_moves(row, col)
       moves = []
-      king_moves = [
-        [-1, -1], [-1, 0], [-1, 1],
-        [0, -1],           [0, 1],
-        [1, -1],  [1, 0],  [1, 1]
-      ]
+      piece = @board.piece_at(row, col)
+      square = AttackTables.square_index(row, col)
       
-      king_moves.each do |row_offset, col_offset|
-        new_row = row + row_offset
-        new_col = col + col_offset
-        
-        next unless @board.valid_position?(new_row, new_col)
-        
-        target_piece = @board.piece_at(new_row, new_col)
-        piece = @board.piece_at(row, col)
+      AttackTables::KING_ATTACKS[square].each do |target_square|
+        target_row, target_col = AttackTables.row_col(target_square)
+        target_piece = @board.piece_at(target_row, target_col)
         
         if !target_piece || target_piece.color != piece.color
-          moves << Move.new(row, col, new_row, new_col)
+          moves << Move.new(row, col, target_row, target_col)
         end
       end
       
