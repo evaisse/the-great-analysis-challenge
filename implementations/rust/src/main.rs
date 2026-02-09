@@ -4,6 +4,7 @@ mod move_generator;
 mod fen;
 mod ai;
 mod perft;
+mod attack_tables;
 
 use crate::board::Board;
 use crate::move_generator::MoveGenerator;
