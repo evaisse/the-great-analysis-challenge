@@ -45,3 +45,25 @@ help:
 	@echo "  make clean   - Clean build artifacts"
 	@echo "  make docker-build - Build Docker image"
 	@echo "  make docker-test  - Test in Docker (demo)"
+
+
+
+# New targets for error analysis
+bugit:
+	# Check if backup exists, if not create it
+	@if [ ! -f chess.mojo.bak ]; then cp chess.mojo chess.mojo.bak; fi
+	# Append bug
+	@printf "\n\nfn injected_bug_for_analysis():\n    var x: Int = \"string\"\n" >> chess.mojo
+
+fix:
+	# Restore from backup
+	@if [ -f chess.mojo.bak ]; then mv chess.mojo.bak chess.mojo; fi
+
+analyze-with-bug:
+	$(MAKE) bugit
+	@echo "Running analysis with bug..."
+	@python3 -c "import time, subprocess; start = time.time(); subprocess.run(['make', 'analyze'], stdout=open('analysis_bug.log', 'w'), stderr=subprocess.STDOUT); print(f'{time.time() - start:.4f}', file=open('analysis_time.log', 'w'))"
+	@echo "Analysis complete. Output in analysis_bug.log. Time in analysis_time.log."
+	@echo "Fixing bug..."
+	@python3 -c "import time, subprocess; start = time.time(); subprocess.run(['make', 'fix'], stdout=open('fix_log.txt', 'w'), stderr=subprocess.STDOUT); print(f'{time.time() - start:.4f}', file=open('fix_time.log', 'w'))"
+	@echo "Fix complete. Time in fix_time.log."

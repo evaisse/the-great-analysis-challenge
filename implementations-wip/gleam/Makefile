@@ -41,3 +41,25 @@ help:
 	@echo "  make clean   - Clean build artifacts"
 	@echo "  make docker-build - Build Docker image"
 	@echo "  make docker-test  - Test in Docker"
+
+
+
+# New targets for error analysis
+bugit:
+	# Check if backup exists, if not create it
+	@if [ ! -f src/chess_engine.gleam.bak ]; then cp src/chess_engine.gleam src/chess_engine.gleam.bak; fi
+	# Append bug
+	@printf "\n\npub fn injected_bug_for_analysis() {\n  let x: Int = \"string\"\n}\n" >> src/chess_engine.gleam
+
+fix:
+	# Restore from backup
+	@if [ -f src/chess_engine.gleam.bak ]; then mv src/chess_engine.gleam.bak src/chess_engine.gleam; fi
+
+analyze-with-bug:
+	$(MAKE) bugit
+	@echo "Running analysis with bug..."
+	@python3 -c "import time, subprocess; start = time.time(); subprocess.run(['make', 'analyze'], stdout=open('analysis_bug.log', 'w'), stderr=subprocess.STDOUT); print(f'{time.time() - start:.4f}', file=open('analysis_time.log', 'w'))"
+	@echo "Analysis complete. Output in analysis_bug.log. Time in analysis_time.log."
+	@echo "Fixing bug..."
+	@python3 -c "import time, subprocess; start = time.time(); subprocess.run(['make', 'fix'], stdout=open('fix_log.txt', 'w'), stderr=subprocess.STDOUT); print(f'{time.time() - start:.4f}', file=open('fix_time.log', 'w'))"
+	@echo "Fix complete. Time in fix_time.log."
