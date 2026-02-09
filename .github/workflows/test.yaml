@@ -2,7 +2,7 @@ name: Test Chess Engines
 
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
     inputs:
       test_all:
