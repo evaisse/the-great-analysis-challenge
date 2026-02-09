@@ -1,4 +1,19 @@
 import 'package:chess_engine/chess_engine.dart';
+import 'zobrist.dart';
+
+class IrreversibleState {
+  final String castlingRights;
+  final ({int row, int col})? enPassantTarget;
+  final int halfmoveClock;
+  final int zobristHash;
+
+  IrreversibleState(
+    this.castlingRights,
+    this.enPassantTarget,
+    this.halfmoveClock,
+    this.zobristHash,
+  );
+}
 
 class Board {
   late List<List<Piece?>> squares;
@@ -7,6 +22,9 @@ class Board {
   late String _castlingRights;
   late int _halfmoveClock;
   late int _fullmoveNumber;
+  int zobristHash = 0;
+  List<int> positionHistory = [];
+  List<IrreversibleState> irreversibleHistory = [];
 
   Board._(
     this.squares,
@@ -15,6 +33,9 @@ class Board {
     this._castlingRights,
     this._halfmoveClock,
     this._fullmoveNumber,
+    this.zobristHash,
+    this.positionHistory,
+    this.irreversibleHistory,
   );
 
   Board.empty() {
@@ -23,6 +44,9 @@ class Board {
     _castlingRights = 'KQkq';
     _halfmoveClock = 0;
     _fullmoveNumber = 1;
+    positionHistory = [];
+    irreversibleHistory = [];
+    zobristHash = Zobrist.instance.computeHash(this);
   }
 
   Board.fromFen(String fen) {
@@ -52,6 +76,9 @@ class Board {
         col++;
       }
     }
+    positionHistory = [];
+    irreversibleHistory = [];
+    zobristHash = Zobrist.instance.computeHash(this);
   }
 
   @override

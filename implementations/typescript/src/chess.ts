@@ -66,6 +66,15 @@ export class ChessEngine {
         case "eval":
           this.handleEval();
           break;
+        case "hash":
+          this.handleHash();
+          break;
+        case "draws":
+          this.handleDraws();
+          break;
+        case "history":
+          this.handleHistory();
+          break;
         case "perft":
           this.handlePerft(parts[1]);
           break;
@@ -208,6 +217,31 @@ export class ChessEngine {
     console.log(`Position evaluation: ${evaluation}`);
   }
 
+  private handleHash(): void {
+    console.log(
+      `Hash: ${this.board.getHash().toString(16).padStart(16, "0")}`,
+    );
+  }
+
+  private handleDraws(): void {
+    console.log(this.board.getDrawInfo());
+  }
+
+  private handleHistory(): void {
+    const state = this.board.getState();
+    console.log(
+      `Position History (${state.positionHistory.length + 1} positions):`,
+    );
+    state.positionHistory.forEach((hash, i) => {
+      console.log(`  ${i}: ${hash.toString(16).padStart(16, "0")}`);
+    });
+    console.log(
+      `  ${state.positionHistory.length}: ${state.zobristHash
+        .toString(16)
+        .padStart(16, "0")} (current)`,
+    );
+  }
+
   private evaluatePosition(): number {
     let score = 0;
     for (let square = 0; square < 64; square++) {
@@ -252,6 +286,9 @@ export class ChessEngine {
     console.log("  fen <string> - Load position from FEN");
     console.log("  export - Export current position as FEN");
     console.log("  eval - Evaluate current position");
+    console.log("  hash - Show Zobrist hash of current position");
+    console.log("  draws - Show draw detection status");
+    console.log("  history - Show position hash history");
     console.log("  perft <depth> - Run performance test");
     console.log("  help - Show this help message");
     console.log("  quit - Exit the program");
@@ -268,6 +305,8 @@ export class ChessEngine {
       } else {
         console.log("STALEMATE: Draw");
       }
+    } else if (this.board.isDraw()) {
+      console.log(`DRAW: ${this.board.getDrawInfo()}`);
     }
   }
 }

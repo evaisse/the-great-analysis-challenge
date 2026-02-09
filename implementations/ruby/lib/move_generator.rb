@@ -24,17 +24,15 @@ module Chess
     
     def legal_move?(move)
       # Make the move temporarily
-      original_state = save_board_state
       return false unless @board.make_move(move)
       
       # Check if the king is in check after the move
-      enemy_color = @board.current_turn # Current turn switched after move
-      king_color = enemy_color == :white ? :black : :white
+      # current_turn was switched in make_move
+      king_color = @board.current_turn == :white ? :black : :white
       legal = !@board.in_check?(king_color)
       
       # Undo the move
       @board.undo_move(move)
-      restore_board_state(original_state)
       
       legal
     end
@@ -249,14 +247,14 @@ module Chess
       king_row = color == :white ? 7 : 0
       
       # Kingside castling
-      if @board.castling_rights[color][:kingside]
+      if color == :white ? @board.castling_rights.white_kingside : @board.castling_rights.black_kingside
         if can_castle_kingside?(color, king_row)
           moves << Move.new(king_row, 4, king_row, 6)
         end
       end
       
       # Queenside castling
-      if @board.castling_rights[color][:queenside]
+      if color == :white ? @board.castling_rights.white_queenside : @board.castling_rights.black_queenside
         if can_castle_queenside?(color, king_row)
           moves << Move.new(king_row, 4, king_row, 2)
         end
@@ -275,34 +273,30 @@ module Chess
         !@board.under_attack?(king_row, 6, enemy_color)
     end
     
-    def can_castle_queenside?(color, king_row)
-      # Check if squares between king and rook are empty
-      return false if @board.piece_at(king_row, 3) || 
-                      @board.piece_at(king_row, 2) || 
-                      @board.piece_at(king_row, 1)
-      
-      # Check if king passes through check
-      enemy_color = color == :white ? :black : :white
-      !@board.under_attack?(king_row, 3, enemy_color) && 
-        !@board.under_attack?(king_row, 2, enemy_color)
+        def can_castle_queenside?(color, king_row)
+    
+          # Check if squares between king and rook are empty
+    
+          return false if @board.piece_at(king_row, 3) || 
+    
+                          @board.piece_at(king_row, 2) || 
+    
+                          @board.piece_at(king_row, 1)
+    
+          
+    
+          # Check if king passes through check
+    
+          enemy_color = color == :white ? :black : :white
+    
+          !@board.under_attack?(king_row, 3, enemy_color) && 
+    
+            !@board.under_attack?(king_row, 2, enemy_color)
+    
+        end
+    
+      end
+    
     end
     
-    def save_board_state
-      {
-        current_turn: @board.current_turn,
-        castling_rights: Marshal.load(Marshal.dump(@board.castling_rights)),
-        en_passant_target: @board.en_passant_target&.dup,
-        halfmove_clock: @board.halfmove_clock,
-        fullmove_number: @board.fullmove_number
-      }
-    end
     
-    def restore_board_state(state)
-      @board.current_turn = state[:current_turn]
-      @board.castling_rights = state[:castling_rights]
-      @board.en_passant_target = state[:en_passant_target]
-      @board.halfmove_clock = state[:halfmove_clock]
-      @board.fullmove_number = state[:fullmove_number]
-    end
-  end
-end

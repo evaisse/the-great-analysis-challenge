@@ -5,9 +5,12 @@ import {
   Move,
   CastlingRights,
   GameState,
+  IrreversibleState,
   FILES,
   RANKS,
 } from "./types";
+import { zobrist } from "./zobrist";
+import * as drawDetection from "./drawDetection";
 
 export class Board {
   private state: GameState;
@@ -50,7 +53,7 @@ export class Board {
       board[square] = piece;
     }
 
-    return {
+    const state: GameState = {
       board,
       turn: "white",
       castlingRights: {
@@ -63,7 +66,12 @@ export class Board {
       halfmoveClock: 0,
       fullmoveNumber: 1,
       moveHistory: [],
+      zobristHash: 0n,
+      positionHistory: [],
+      irreversibleHistory: [],
     };
+    state.zobristHash = zobrist.computeHash(state);
+    return state;
   }
 
   public reset(): void {
@@ -76,6 +84,23 @@ export class Board {
 
   public setState(state: GameState): void {
     this.state = { ...state };
+  }
+
+  public isDraw(): boolean {
+    return (
+      drawDetection.isDrawByRepetition(this.state) ||
+      drawDetection.isDrawByFiftyMoves(this.state)
+    );
+  }
+
+  public getHash(): bigint {
+    return this.state.zobristHash;
+  }
+
+  public getDrawInfo(): string {
+    return `Repetition: ${drawDetection.isDrawByRepetition(
+      this.state
+    )}, 50-move clock: ${this.state.halfmoveClock}`;
   }
 
   public getPiece(square: Square): Piece | null {
@@ -129,76 +154,121 @@ export class Board {
     const piece = this.getPiece(move.from);
     if (!piece) return;
 
-    this.setPiece(move.to, piece);
-    this.setPiece(move.from, null);
+    // Save irreversible state
+    this.state.irreversibleHistory.push({
+      castlingRights: { ...this.state.castlingRights },
+      enPassantTarget: this.state.enPassantTarget,
+      halfmoveClock: this.state.halfmoveClock,
+      zobristHash: this.state.zobristHash,
+    });
+    this.state.positionHistory.push(this.state.zobristHash);
 
-    if (move.castling) {
-      const rank = piece.color === "white" ? 0 : 7;
-      if (move.castling === "K" || move.castling === "k") {
-        const rookFrom = rank * 8 + 7;
-        const rookTo = rank * 8 + 5;
-        const rook = this.getPiece(rookFrom);
-        if (rook) {
-          this.setPiece(rookTo, rook);
-          this.setPiece(rookFrom, null);
-        }
+    let hash = this.state.zobristHash;
+
+    // 1. Remove moving piece from source
+    hash ^= zobrist.pieces[zobrist.getPieceIndex(piece)][move.from];
+
+    // 2. Handle capture
+    if (move.captured) {
+      const capturedColor = piece.color === "white" ? "black" : "white";
+      const capturedPiece: Piece = { type: move.captured, color: capturedColor };
+      if (move.enPassant) {
+        const capturedSq = move.to + (piece.color === "white" ? -8 : 8);
+        hash ^=
+          zobrist.pieces[zobrist.getPieceIndex(capturedPiece)][capturedSq];
+        this.setPiece(capturedSq, null);
       } else {
-        const rookFrom = rank * 8;
-        const rookTo = rank * 8 + 3;
-        const rook = this.getPiece(rookFrom);
-        if (rook) {
-          this.setPiece(rookTo, rook);
-          this.setPiece(rookFrom, null);
-        }
+        hash ^= zobrist.pieces[zobrist.getPieceIndex(capturedPiece)][move.to];
+        // Dest square will be overwritten below
       }
-    }
-
-    if (move.enPassant) {
-      const capturedPawnSquare = move.to + (piece.color === "white" ? -8 : 8);
-      this.setPiece(capturedPawnSquare, null);
-    }
-
-    if (move.promotion) {
-      this.setPiece(move.to, { type: move.promotion, color: piece.color });
-    }
-
-    const rights = this.getCastlingRights();
-    if (piece.type === "K") {
-      if (piece.color === "white") {
-        rights.whiteKingside = false;
-        rights.whiteQueenside = false;
-      } else {
-        rights.blackKingside = false;
-        rights.blackQueenside = false;
-      }
-    } else if (piece.type === "R") {
-      if (piece.color === "white") {
-        if (move.from === 0) rights.whiteQueenside = false;
-        if (move.from === 7) rights.whiteKingside = false;
-      } else {
-        if (move.from === 56) rights.blackQueenside = false;
-        if (move.from === 63) rights.blackKingside = false;
-      }
-    }
-    this.setCastlingRights(rights);
-
-    if (piece.type === "P" && Math.abs(move.to - move.from) === 16) {
-      const enPassantSquare = (move.from + move.to) / 2;
-      this.setEnPassantTarget(enPassantSquare);
-    } else {
-      this.setEnPassantTarget(null);
-    }
-
-    if (piece.type === "P" || move.captured) {
+      this.state.halfmoveClock = 0;
+    } else if (piece.type === "P") {
       this.state.halfmoveClock = 0;
     } else {
       this.state.halfmoveClock++;
     }
 
+    // 3. Place piece at destination (handling promotion)
+    if (move.promotion) {
+      const promoPiece: Piece = { type: move.promotion, color: piece.color };
+      hash ^= zobrist.pieces[zobrist.getPieceIndex(promoPiece)][move.to];
+      this.setPiece(move.to, promoPiece);
+    } else {
+      hash ^= zobrist.pieces[zobrist.getPieceIndex(piece)][move.to];
+      this.setPiece(move.to, piece);
+    }
+    this.setPiece(move.from, null);
+
+    // 4. Handle castling rook
+    if (move.castling) {
+      const rank = piece.color === "white" ? 0 : 7;
+      let rookFrom, rookTo;
+      if (move.castling === "K" || move.castling === "k") {
+        rookFrom = rank * 8 + 7;
+        rookTo = rank * 8 + 5;
+      } else {
+        rookFrom = rank * 8;
+        rookTo = rank * 8 + 3;
+      }
+      const rook = this.getPiece(rookFrom);
+      if (rook) {
+        hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][rookFrom];
+        hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][rookTo];
+        this.setPiece(rookTo, rook);
+        this.setPiece(rookFrom, null);
+      }
+    }
+
+    // 5. Update castling rights in hash
+    if (this.state.castlingRights.whiteKingside) hash ^= zobrist.castling[0];
+    if (this.state.castlingRights.whiteQueenside) hash ^= zobrist.castling[1];
+    if (this.state.castlingRights.blackKingside) hash ^= zobrist.castling[2];
+    if (this.state.castlingRights.blackQueenside) hash ^= zobrist.castling[3];
+
+    if (piece.type === "K") {
+      if (piece.color === "white") {
+        this.state.castlingRights.whiteKingside = false;
+        this.state.castlingRights.whiteQueenside = false;
+      } else {
+        this.state.castlingRights.blackKingside = false;
+        this.state.castlingRights.blackQueenside = false;
+      }
+    }
+
+    if (move.from === 0 || move.to === 0)
+      this.state.castlingRights.whiteQueenside = false;
+    if (move.from === 7 || move.to === 7)
+      this.state.castlingRights.whiteKingside = false;
+    if (move.from === 56 || move.to === 56)
+      this.state.castlingRights.blackQueenside = false;
+    if (move.from === 63 || move.to === 63)
+      this.state.castlingRights.blackKingside = false;
+
+    if (this.state.castlingRights.whiteKingside) hash ^= zobrist.castling[0];
+    if (this.state.castlingRights.whiteQueenside) hash ^= zobrist.castling[1];
+    if (this.state.castlingRights.blackKingside) hash ^= zobrist.castling[2];
+    if (this.state.castlingRights.blackQueenside) hash ^= zobrist.castling[3];
+
+    // 6. Update en passant target in hash
+    if (this.state.enPassantTarget !== null) {
+      hash ^= zobrist.enPassant[this.state.enPassantTarget % 8];
+    }
+
+    if (piece.type === "P" && Math.abs(move.to - move.from) === 16) {
+      const enPassantSquare = (move.from + move.to) / 2;
+      this.state.enPassantTarget = enPassantSquare;
+      hash ^= zobrist.enPassant[enPassantSquare % 8];
+    } else {
+      this.state.enPassantTarget = null;
+    }
+
+    // 7. Update side to move and fullmove
+    hash ^= zobrist.sideToMove;
     if (piece.color === "black") {
       this.state.fullmoveNumber++;
     }
 
+    this.state.zobristHash = hash;
     this.setTurn(piece.color === "white" ? "black" : "white");
     this.state.moveHistory.push(move);
   }
@@ -207,8 +277,18 @@ export class Board {
     const move = this.state.moveHistory.pop();
     if (!move) return null;
 
+    const oldState = this.state.irreversibleHistory.pop();
+    if (!oldState) throw new Error("No irreversible history for undo");
+    this.state.positionHistory.pop();
+
     const piece = this.getPiece(move.to);
     if (!piece) return null;
+
+    // Restore irreversible state
+    this.state.castlingRights = { ...oldState.castlingRights };
+    this.state.enPassantTarget = oldState.enPassantTarget;
+    this.state.halfmoveClock = oldState.halfmoveClock;
+    this.state.zobristHash = oldState.zobristHash;
 
     if (move.promotion) {
       this.setPiece(move.from, { type: "P", color: piece.color });
@@ -218,38 +298,38 @@ export class Board {
 
     if (move.captured) {
       const capturedColor = piece.color === "white" ? "black" : "white";
-      this.setPiece(move.to, { type: move.captured, color: capturedColor });
+      const capturedPiece: Piece = { type: move.captured, color: capturedColor };
+      if (move.enPassant) {
+        const capturedPawnSquare = move.to + (piece.color === "white" ? -8 : 8);
+        this.setPiece(capturedPawnSquare, capturedPiece);
+        this.setPiece(move.to, null);
+      } else {
+        this.setPiece(move.to, capturedPiece);
+      }
     } else {
       this.setPiece(move.to, null);
     }
 
     if (move.castling) {
       const rank = piece.color === "white" ? 0 : 7;
+      let rookFrom, rookTo;
       if (move.castling === "K" || move.castling === "k") {
-        const rookFrom = rank * 8 + 5;
-        const rookTo = rank * 8 + 7;
-        const rook = this.getPiece(rookFrom);
-        if (rook) {
-          this.setPiece(rookTo, rook);
-          this.setPiece(rookFrom, null);
-        }
+        rookFrom = rank * 8 + 5;
+        rookTo = rank * 8 + 7;
       } else {
-        const rookFrom = rank * 8 + 3;
-        const rookTo = rank * 8;
-        const rook = this.getPiece(rookFrom);
-        if (rook) {
-          this.setPiece(rookTo, rook);
-          this.setPiece(rookFrom, null);
-        }
+        rookFrom = rank * 8 + 3;
+        rookTo = rank * 8;
+      }
+      const rook = this.getPiece(rookFrom);
+      if (rook) {
+        this.setPiece(rookTo, rook);
+        this.setPiece(rookFrom, null);
       }
     }
 
-    if (move.enPassant) {
-      const capturedPawnSquare = move.to + (piece.color === "white" ? -8 : 8);
-      const capturedColor = piece.color === "white" ? "black" : "white";
-      this.setPiece(capturedPawnSquare, { type: "P", color: capturedColor });
+    if (piece.color === "black") {
+      this.state.fullmoveNumber--;
     }
-
     this.setTurn(piece.color);
 
     return move;

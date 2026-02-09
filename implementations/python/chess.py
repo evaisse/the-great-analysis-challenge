@@ -78,6 +78,12 @@ class ChessEngine:
                 self.handle_export()
             elif cmd == 'eval':
                 self.handle_eval()
+            elif cmd == 'hash':
+                self.handle_hash()
+            elif cmd == 'draws':
+                self.handle_draws()
+            elif cmd == 'history':
+                self.handle_history()
             elif cmd == 'perft':
                 depth = int(parts[1]) if len(parts) > 1 else 4
                 self.handle_perft(depth)
@@ -132,10 +138,16 @@ class ChessEngine:
             # Check for game end
             game_status = self.board.get_game_status()
             if game_status == 'checkmate':
-                winner = 'Black' if self.board.to_move == 'white' else 'White'
+                winner = 'Black' if self.board.to_move == Color.WHITE else 'White'
                 print(f'CHECKMATE: {winner} wins')
             elif game_status == 'stalemate':
                 print('STALEMATE: Draw')
+            else:
+                from lib.draw_detection import is_draw
+                if is_draw(self.board):
+                    from lib.draw_detection import is_draw_by_repetition
+                    reason = "repetition" if is_draw_by_repetition(self.board) else "50-move rule"
+                    print(f'DRAW: by {reason}')
             
             # Display board
             print(self.board.display())
@@ -193,10 +205,16 @@ class ChessEngine:
         # Check for game end
         game_status = self.board.get_game_status()
         if game_status == 'checkmate':
-            winner = 'Black' if self.board.to_move == 'white' else 'White'
+            winner = 'Black' if self.board.to_move == Color.WHITE else 'White'
             print(f'CHECKMATE: {winner} wins')
         elif game_status == 'stalemate':
             print('STALEMATE: Draw')
+        else:
+            from lib.draw_detection import is_draw
+            if is_draw(self.board):
+                from lib.draw_detection import is_draw_by_repetition
+                reason = "repetition" if is_draw_by_repetition(self.board) else "50-move rule"
+                print(f'DRAW: by {reason}')
         
         print(self.board.display())
     
@@ -223,6 +241,24 @@ class ChessEngine:
         """Handle eval command."""
         evaluation = self.ai.evaluate_position()
         print(f'Evaluation: {evaluation}')
+    
+    def handle_hash(self):
+        """Handle hash command."""
+        print(f'Hash: {self.board.zobrist_hash:016x}')
+    
+    def handle_draws(self):
+        """Handle draws command."""
+        from lib.draw_detection import is_draw_by_repetition, is_draw_by_fifty_moves
+        repetition = is_draw_by_repetition(self.board)
+        fifty_moves = is_draw_by_fifty_moves(self.board)
+        print(f'Repetition: {str(repetition).lower()}, 50-move rule: {str(fifty_moves).lower()}, 50-move clock: {self.board.halfmove_clock}')
+    
+    def handle_history(self):
+        """Handle history command."""
+        print(f'Position History ({len(self.board.position_history) + 1} positions):')
+        for i, h in enumerate(self.board.position_history):
+            print(f'  {i}: {h:016x}')
+        print(f'  {len(self.board.position_history)}: {self.board.zobrist_hash:016x} (current)')
     
     def handle_perft(self, depth: int):
         """Handle perft command."""
@@ -251,6 +287,9 @@ Available commands:
   fen <string>               - Load position from FEN
   export                     - Export current position as FEN
   eval                       - Display position evaluation
+  hash                       - Show Zobrist hash of current position
+  draws                      - Show draw detection status
+  history                    - Show position hash history
   perft <depth>              - Performance test (move count)
   help                       - Display this help
   quit                       - Exit the program

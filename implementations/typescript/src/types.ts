@@ -24,6 +24,13 @@ export interface CastlingRights {
   blackQueenside: boolean;
 }
 
+export interface IrreversibleState {
+  castlingRights: CastlingRights;
+  enPassantTarget: Square | null;
+  halfmoveClock: number;
+  zobristHash: bigint;
+}
+
 export interface GameState {
   board: (Piece | null)[];
   turn: Color;
@@ -32,6 +39,9 @@ export interface GameState {
   halfmoveClock: number;
   fullmoveNumber: number;
   moveHistory: Move[];
+  zobristHash: bigint;
+  positionHistory: bigint[];
+  irreversibleHistory: IrreversibleState[];
 }
 
 export const PIECE_VALUES: Record<PieceType, number> = {

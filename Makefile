@@ -88,6 +88,8 @@ ifdef DIR
 		echo "Testing $(DIR) implementation in Docker..."; \
 		$(MAKE) build DIR=$(DIR); \
 		docker run --rm chess-$(DIR) sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | $$RUN_CMD"; \
+		echo "Running internal tests for $(DIR) in Docker..."; \
+		docker run --rm chess-$(DIR) make test; \
 	fi
 else
 	@echo "Running all tests in Docker containers..."
@@ -110,9 +112,10 @@ ifdef DIR
 		echo "ERROR: Implementation '$(DIR)' not found"; \
 		exit 1; \
 	fi
-	@echo "Analyzing $(DIR) implementation..."
+	@echo "Analyzing $(DIR) implementation in Docker..."
+	@$(MAKE) build DIR=$(DIR)
 	@if [ -f "implementations/$(DIR)/Makefile" ]; then \
-		cd implementations/$(DIR) && make analyze; \
+		docker run --rm chess-$(DIR) make analyze; \
 	else \
 		echo "No Makefile found in $(DIR), skipping analysis"; \
 	fi

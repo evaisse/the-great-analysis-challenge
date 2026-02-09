@@ -19,7 +19,10 @@
 ### Universal Requirements
 
 1. **Specification Compliance**: All implementations MUST follow `CHESS_ENGINE_SPECS.md`
-2. **Docker-First**: All builds and tests MUST run inside Docker containers (enforced by Makefile)
+2. **Docker-Mandatory**: ALL operations for language implementations (build, test, lint, format, validate) MUST run inside Docker containers.
+   - **DO NOT** use local toolchains (e.g., local `python`, `cargo`, `go`, `npm`) to modify or verify implementations.
+   - **ALWAYS** use `make build DIR=<lang>`, `make test DIR=<lang>`, and `make analyze DIR=<lang>` from the project root.
+   - This ensures a consistent environment and avoids "it works on my machine" issues.
 3. **Standardized I/O**: Command-line interface via stdin/stdout with defined protocol
 4. **Consistent Testing**: Pass automated test suite defined in `test/test_suite.json`
 5. **Performance Targets**: Meet specified benchmarks (perft, AI depth timing)
@@ -405,7 +408,7 @@ the-great-analysis-challenge/
 - **Test early and often**: Build and test incrementally
 - **Follow language conventions**: Use standard project layouts
 - **Don't modify other languages**: Each implementation is independent
-- **Keep Docker images working**: All testing is Docker-based
+- **Docker-Mandatory Workflow**: ALL implementation-related tasks (build, test, lint, format) MUST be done via Docker. Never use local toolchains for these.
 - **Flush output properly**: Critical for stdin/stdout protocol
 - **Validate perft carefully**: This is the ultimate correctness check
 - **Document your choices**: Explain language-specific design decisions

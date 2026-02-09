@@ -4,6 +4,8 @@ mod move_generator;
 mod fen;
 mod ai;
 mod perft;
+mod zobrist;
+mod draw_detection;
 
 use crate::board::Board;
 use crate::move_generator::MoveGenerator;
@@ -89,6 +91,9 @@ impl ChessEngine {
             },
             "export" => self.handle_export(),
             "eval" => self.handle_eval(),
+            "hash" => self.handle_hash(),
+            "draws" => self.handle_draws(),
+            "history" => self.handle_history(),
             "perft" => {
                 if parts.len() > 1 {
                     self.handle_perft(parts[1]);
@@ -255,6 +260,23 @@ impl ChessEngine {
         println!("Position evaluation: {}", evaluation);
     }
 
+    fn handle_hash(&self) {
+        println!("Hash: {:016x}", self.board.get_hash());
+    }
+
+    fn handle_draws(&self) {
+        println!("{}", self.board.get_draw_info());
+    }
+
+    fn handle_history(&self) {
+        let state = self.board.get_state();
+        println!("Position History ({} positions):", state.position_history.len() + 1);
+        for (i, hash) in state.position_history.iter().enumerate() {
+            println!("  {}: {:016x}", i, hash);
+        }
+        println!("  {}: {:016x} (current)", state.position_history.len(), state.zobrist_hash);
+    }
+
     fn handle_perft(&self, depth_str: &str) {
         let depth = match depth_str.parse::<u8>() {
             Ok(d) if d >= 1 => d,
@@ -280,6 +302,9 @@ impl ChessEngine {
         println!("  fen <string> - Load position from FEN");
         println!("  export - Export current position as FEN");
         println!("  eval - Evaluate current position");
+        println!("  hash - Show Zobrist hash of current position");
+        println!("  draws - Show draw detection status");
+        println!("  history - Show position hash history");
         println!("  perft <depth> - Run performance test");
         println!("  help - Show this help message");
         println!("  quit - Exit the program");
@@ -296,6 +321,8 @@ impl ChessEngine {
             } else {
                 println!("STALEMATE: Draw");
             }
+        } else if self.board.is_draw() {
+            println!("DRAW: {}", self.board.get_draw_info());
         }
     }
 }

@@ -87,10 +87,11 @@ python3 test/verify_implementations.py
 
 **Manual Operations**: [GitHub Actions](../../actions/workflows/bench.yaml) | [Latest Results](../../releases/latest) | [Issue Triage Docs](./docs/ISSUE_TRIAGE_WORKFLOW.md)
 
-All implementations are tested exclusively via Docker containers to ensure:
+All implementations MUST be built, tested, and analyzed exclusively via Docker containers to ensure:
 
-- **Consistent Environment**: No host toolchain dependencies
-- **Reproducible Results**: Identical testing conditions
+- **Zero Host Dependencies**: No local toolchains required (python, rust, etc.)
+- **Consistent Environment**: Identical tool versions for all contributors
+- **Reproducible Results**: Identical testing and analysis conditions
 - **Simplified CI/CD**: Only Docker required, not X language toolchains
 
 ## 📋 Architecture

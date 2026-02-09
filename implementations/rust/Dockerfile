@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && rustup component add clippy rustfmt \
+    && cargo install cargo-audit \
     && chmod -R a+w $RUSTUP_HOME $CARGO_HOME
 
 WORKDIR /usr/src/chess

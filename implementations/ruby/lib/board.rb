@@ -4,16 +4,21 @@ require_relative 'types'
 
 module Chess
   class Board
-    attr_accessor :board, :current_turn, :castling_rights, :en_passant_target, :halfmove_clock, :fullmove_number
+    attr_accessor :board, :current_turn, :castling_rights, :en_passant_target, :halfmove_clock, :fullmove_number,
+                  :zobrist_hash, :position_history, :irreversible_history
     
     def initialize
       @board = Array.new(8) { Array.new(8) }
       @current_turn = :white
-      @castling_rights = { white: { kingside: true, queenside: true }, black: { kingside: true, queenside: true } }
+      @castling_rights = CastlingRights.new
       @en_passant_target = nil
       @halfmove_clock = 0
       @fullmove_number = 1
+      @position_history = []
+      @irreversible_history = []
       setup_initial_position
+      require_relative 'zobrist'
+      @zobrist_hash = ZOBRIST.compute_hash(self)
     end
     
     def setup_initial_position
@@ -60,53 +65,149 @@ module Chess
       piece = piece_at(move.from_row, move.from_col)
       return false unless piece && piece.color == @current_turn
       
-      # Store captured piece
-      move.captured_piece = piece_at(move.to_row, move.to_col)
+      # Save irreversible state
+      @irreversible_history.push(IrreversibleState.new(
+        @castling_rights.copy,
+        @en_passant_target ? @en_passant_target.dup : nil,
+        @halfmove_clock,
+        @zobrist_hash
+      ))
+      @position_history.push(@zobrist_hash)
+
+      hash = @zobrist_hash
       
+      # 1. Remove piece from source
+      hash ^= ZOBRIST.pieces[ZOBRIST.piece_index(piece)][(7 - move.from_row) * 8 + move.from_col]
+
+      # Store captured piece
+      target_piece = piece_at(move.to_row, move.to_col)
+      move.captured_piece = target_piece
+      
+      # 2. Handle capture
+      if target_piece
+        hash ^= ZOBRIST.pieces[ZOBRIST.piece_index(target_piece)][(7 - move.to_row) * 8 + move.to_col]
+      end
+
       # Handle special moves
-      handle_special_moves(move, piece)
+      if piece.type == :king && (move.to_col - move.from_col).abs == 2
+        move.is_castling = true
+        if move.to_col > move.from_col # Kingside
+          rook = piece_at(move.from_row, 7)
+          hash ^= ZOBRIST.pieces[ZOBRIST.piece_index(rook)][(7 - move.from_row) * 8 + 7]
+          hash ^= ZOBRIST.pieces[ZOBRIST.piece_index(rook)][(7 - move.from_row) * 8 + 5]
+          set_piece(move.from_row, 5, remove_piece(move.from_row, 7))
+        else # Queenside
+          rook = piece_at(move.from_row, 0)
+          hash ^= ZOBRIST.pieces[ZOBRIST.piece_index(rook)][(7 - move.from_row) * 8 + 0]
+          hash ^= ZOBRIST.pieces[ZOBRIST.piece_index(rook)][(7 - move.from_row) * 8 + 3]
+          set_piece(move.from_row, 3, remove_piece(move.from_row, 0))
+        end
+      elsif piece.type == :pawn && move.to_col != move.from_col && !target_piece
+        move.is_en_passant = true
+        move.en_passant_target = @en_passant_target.dup
+        captured_pawn_row = move.from_row
+        captured_pawn = piece_at(captured_pawn_row, move.to_col)
+        hash ^= ZOBRIST.pieces[ZOBRIST.piece_index(captured_pawn)][(7 - captured_pawn_row) * 8 + move.to_col]
+        remove_piece(captured_pawn_row, move.to_col)
+        move.captured_piece = captured_pawn
+      end
       
       # Move the piece
       remove_piece(move.from_row, move.from_col)
       
-      # Handle promotion
+      # 3. Handle promotion
+      final_piece = piece
       if move.promotion && piece.type == :pawn
-        set_piece(move.to_row, move.to_col, Piece.new(move.promotion, piece.color))
-      else
-        set_piece(move.to_row, move.to_col, piece)
+        final_piece = Piece.new(move.promotion, piece.color)
+      end
+      hash ^= ZOBRIST.pieces[ZOBRIST.piece_index(final_piece)][(7 - move.to_row) * 8 + move.to_col]
+      set_piece(move.to_row, move.to_col, final_piece)
+      
+      # 4. Update castling rights in hash
+      hash ^= ZOBRIST.castling[0] if @castling_rights.white_kingside
+      hash ^= ZOBRIST.castling[1] if @castling_rights.white_queenside
+      hash ^= ZOBRIST.castling[2] if @castling_rights.black_kingside
+      hash ^= ZOBRIST.castling[3] if @castling_rights.black_queenside
+
+      update_castling_rights(move, piece)
+
+      hash ^= ZOBRIST.castling[0] if @castling_rights.white_kingside
+      hash ^= ZOBRIST.castling[1] if @castling_rights.white_queenside
+      hash ^= ZOBRIST.castling[2] if @castling_rights.black_kingside
+      hash ^= ZOBRIST.castling[3] if @castling_rights.black_queenside
+
+      # 5. Update en passant target in hash
+      hash ^= ZOBRIST.en_passant[@en_passant_target[1]] if @en_passant_target
+      
+      @en_passant_target = nil
+      if piece.type == :pawn && (move.to_row - move.from_row).abs == 2
+        en_passant_row = (move.from_row + move.to_row) / 2
+        @en_passant_target = [en_passant_row, move.to_col]
+        hash ^= ZOBRIST.en_passant[@en_passant_target[1]]
       end
       
-      # Update game state
-      update_game_state(move, piece)
+      # 6. Update side to move
+      hash ^= ZOBRIST.side_to_move
       
-      # Switch turns
+      # Update counters
+      if piece.type == :pawn || move.captured_piece
+        @halfmove_clock = 0
+      else
+        @halfmove_clock += 1
+      end
+      @fullmove_number += 1 if @current_turn == :black
+      
       @current_turn = @current_turn == :white ? :black : :white
-      
+      @zobrist_hash = hash
       true
     end
     
     def undo_move(move)
-      piece = piece_at(move.to_row, move.to_col)
-      return false unless piece
+      return false if @irreversible_history.empty?
+      
+      # Restore irreversible state
+      old_state = @irreversible_history.pop
+      @position_history.pop
+      @castling_rights = old_state.castling_rights
+      @en_passant_target = old_state.en_passant_target
+      @halfmove_clock = old_state.halfmove_clock
+      @zobrist_hash = old_state.zobrist_hash
+      
+      # Switch turns back
+      @current_turn = @current_turn == :white ? :black : :white
+      @fullmove_number -= 1 if @current_turn == :black
+      
+      # Get the piece that was moved
+      moved_piece = piece_at(move.to_row, move.to_col)
       
       # Handle special move undos
-      undo_special_moves(move, piece)
+      if move.is_castling
+        if move.to_col > move.from_col # Kingside
+          rook = remove_piece(move.from_row, 5)
+          set_piece(move.from_row, 7, rook)
+        else # Queenside
+          rook = remove_piece(move.from_row, 3)
+          set_piece(move.from_row, 0, rook)
+        end
+      elsif move.is_en_passant && move.en_passant_target
+        captured_pawn_color = @current_turn == :white ? :black : :white
+        set_piece(move.from_row, move.to_col, Piece.new(:pawn, captured_pawn_color))
+      end
       
       # Move piece back
       remove_piece(move.to_row, move.to_col)
       
       # Handle promotion undo
       if move.promotion
-        set_piece(move.from_row, move.from_col, Piece.new(:pawn, piece.color))
+        set_piece(move.from_row, move.from_col, Piece.new(:pawn, moved_piece.color))
       else
-        set_piece(move.from_row, move.from_col, piece)
+        set_piece(move.from_row, move.from_col, moved_piece)
       end
       
       # Restore captured piece
-      set_piece(move.to_row, move.to_col, move.captured_piece) if move.captured_piece
-      
-      # Switch turns back
-      @current_turn = @current_turn == :white ? :black : :white
+      if move.captured_piece && !move.is_en_passant
+        set_piece(move.to_row, move.to_col, move.captured_piece)
+      end
       
       true
     end
@@ -159,90 +260,28 @@ module Chess
     
     private
     
-    def handle_special_moves(move, piece)
-      # Handle castling
-      if piece.type == :king && (move.to_col - move.from_col).abs == 2
-        move.is_castling = true
-        handle_castling(move)
-      end
-      
-      # Handle en passant
-      if piece.type == :pawn && move.to_col != move.from_col && !piece_at(move.to_row, move.to_col)
-        move.is_en_passant = true
-        move.en_passant_target = [@en_passant_target[0], @en_passant_target[1]]
-        remove_piece(@en_passant_target[0], @en_passant_target[1])
-      end
-    end
-    
-    def undo_special_moves(move, piece)
-      # Undo castling
-      if move.is_castling
-        undo_castling(move, piece.color)
-      end
-      
-      # Undo en passant
-      if move.is_en_passant && move.en_passant_target
-        enemy_color = piece.color == :white ? :black : :white
-        set_piece(move.en_passant_target[0], move.en_passant_target[1], Piece.new(:pawn, enemy_color))
-      end
-    end
-    
-    def handle_castling(move)
-      color = @current_turn
-      if move.to_col > move.from_col # Kingside
-        rook = remove_piece(move.from_row, 7)
-        set_piece(move.from_row, 5, rook)
-      else # Queenside
-        rook = remove_piece(move.from_row, 0)
-        set_piece(move.from_row, 3, rook)
-      end
-    end
-    
-    def undo_castling(move, color)
-      if move.to_col > move.from_col # Kingside
-        rook = remove_piece(move.from_row, 5)
-        set_piece(move.from_row, 7, rook)
-      else # Queenside
-        rook = remove_piece(move.from_row, 3)
-        set_piece(move.from_row, 0, rook)
-      end
-    end
-    
-    def update_game_state(move, piece)
-      # Update castling rights
-      update_castling_rights(move, piece)
-      
-      # Update en passant target
-      @en_passant_target = nil
-      if piece.type == :pawn && (move.to_row - move.from_row).abs == 2
-        en_passant_row = (move.from_row + move.to_row) / 2
-        @en_passant_target = [en_passant_row, move.to_col]
-      end
-      
-      # Update move counters
-      if piece.type == :pawn || move.captured_piece
-        @halfmove_clock = 0
-      else
-        @halfmove_clock += 1
-      end
-      
-      @fullmove_number += 1 if @current_turn == :black
-    end
-    
     def update_castling_rights(move, piece)
-      return unless piece.type == :king || piece.type == :rook
-      
-      color = piece.color
+      return unless piece
       
       if piece.type == :king
-        @castling_rights[color][:kingside] = false
-        @castling_rights[color][:queenside] = false
-      elsif piece.type == :rook
-        if move.from_col == 0 # Queenside rook
-          @castling_rights[color][:queenside] = false
-        elsif move.from_col == 7 # Kingside rook
-          @castling_rights[color][:kingside] = false
-        end
+        @castling_rights.white_kingside = false if piece.color == :white
+        @castling_rights.white_queenside = false if piece.color == :white
+        @castling_rights.black_kingside = false if piece.color == :black
+        @castling_rights.black_queenside = false if piece.color == :black
+      end
+      
+      # If a rook moves or is captured
+      if move.from_row == 7 && move.from_col == 0 || move.to_row == 7 && move.to_col == 0
+        @castling_rights.white_queenside = false
+      end
+      if move.from_row == 7 && move.from_col == 7 || move.to_row == 7 && move.to_col == 7
+        @castling_rights.white_kingside = false
+      end
+      if move.from_row == 0 && move.from_col == 0 || move.to_row == 0 && move.to_col == 0
+        @castling_rights.black_queenside = false
+      end
+      if move.from_row == 0 && move.from_col == 7 || move.to_row == 0 && move.to_col == 7
+        @castling_rights.black_kingside = false
       end
     end
     

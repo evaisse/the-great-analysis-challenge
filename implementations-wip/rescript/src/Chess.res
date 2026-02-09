@@ -90,6 +90,8 @@ let checkGameStatus = (state: gameState): gameStatus => {
     } else {
       Stalemate
     }
+  } else if DrawDetection.isDraw(state) {
+    Stalemate // Using Stalemate as a proxy for Draw
   } else {
     InProgress
   }
@@ -202,6 +204,24 @@ let processCommand = (engine: gameEngine, input: string): unit => {
       let score = Evaluation.evaluateGameState(engine.state)
       Js.log("Evaluation: " ++ Belt.Int.toString(score))
       
+    | "hash" =>
+      Js.log("Hash: " ++ %raw(`((h) => h.toString(16).padStart(16, "0"))`)(engine.state.zobristHash))
+      
+    | "draws" =>
+      let repetition = DrawDetection.isDrawByRepetition(engine.state)
+      let fiftyMoves = DrawDetection.isDrawByFiftyMoves(engine.state)
+      Js.log("Repetition: " ++ (if repetition { "true" } else { "false" }) ++ 
+             ", 50-move rule: " ++ (if fiftyMoves { "true" } else { "false" }) ++
+             ", 50-move clock: " ++ Belt.Int.toString(engine.state.halfmoveClock))
+             
+    | "history" =>
+      let historyLen = Belt.Array.length(engine.state.positionHistory)
+      Js.log("Position History (" ++ Belt.Int.toString(historyLen + 1) ++ " positions):")
+      Belt.Array.forEachWithIndex(engine.state.positionHistory, (i, h) => {
+        Js.log("  " ++ Belt.Int.toString(i) ++ ": " ++ Js.BigInt.toString(h))
+      })
+      Js.log("  " ++ Belt.Int.toString(historyLen) ++ ": " ++ Js.BigInt.toString(engine.state.zobristHash) ++ " (current)")
+
     | "perft" =>
       if Belt.Array.length(parts) < 2 {
         Js.log("ERROR: Invalid perft command")

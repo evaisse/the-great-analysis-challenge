@@ -327,14 +327,13 @@ export class MoveGenerator {
     const legalMoves: Move[] = [];
 
     for (const move of moves) {
-      const state = this.board.getState();
       this.board.makeMove(move);
 
       if (!this.isInCheck(color)) {
         legalMoves.push(move);
       }
 
-      this.board.setState(state);
+      this.board.undoMove();
     }
 
     return legalMoves;

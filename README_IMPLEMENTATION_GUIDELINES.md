@@ -17,9 +17,15 @@ This document provides essential guidelines for implementing a chess engine acco
 
 ## Core Requirements
 
-### 1. Project Structure
+### 1. Docker-Mandatory Development
 
-Each language implementation should follow this structure:
+All implementations MUST be developed and verified using Docker. This project enforces a "zero-local-toolchain" policy for implementations:
+
+- **Builds** happen during `docker build`.
+- **Tests** run via `docker run` (triggered by `make test DIR=<lang>`).
+- **Analysis/Linting** runs via `docker run` (triggered by `make analyze DIR=<lang>`).
+
+### 2. Project Structure
 ```
 <language>/
 ├── Dockerfile           # Docker container definition
