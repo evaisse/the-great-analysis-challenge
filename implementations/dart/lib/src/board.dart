@@ -109,19 +109,46 @@ class Board {
 
     final piece = squares[from.row][from.col]!;
     final targetPiece = squares[to.row][to.col];
-    final isPawnMove = piece.type == PieceType.pawn;
-    bool isCapture = targetPiece != null;
+    
+    // Save irreversible state
+    irreversibleHistory.add(IrreversibleState(_castlingRights, _enPassantTarget, _halfmoveClock, zobristHash));
+    positionHistory.add(zobristHash);
 
-    // Handle castling
+    int hash = zobristHash;
+    final zobrist = Zobrist.instance;
+
+    // 1. Remove piece from source
+    hash ^= zobrist.pieces[zobrist.getPieceIndex(piece)][from.row * 8 + from.col];
+
+    // 2. Handle capture
+    bool isCapture = targetPiece != null;
+    Piece? capturedPiece = targetPiece;
+    if (piece.type == PieceType.pawn &&
+        to.row == _enPassantTarget?.row &&
+        to.col == _enPassantTarget?.col) {
+      capturedPiece = squares[from.row][to.col];
+      hash ^= zobrist.pieces[zobrist.getPieceIndex(capturedPiece!)][from.row * 8 + to.col];
+      squares[from.row][to.col] = null;
+      isCapture = true;
+    } else if (isCapture) {
+      hash ^= zobrist.pieces[zobrist.getPieceIndex(targetPiece!)][to.row * 8 + to.col];
+    }
+
+    // 3. Handle castling rook
+    String? castlingMove;
     if (piece.type == PieceType.king && (from.col - to.col).abs() == 2) {
       if (to.col == 6) {
-        // Kingside
-        final rook = squares[from.row][7];
+        castlingMove = 'K';
+        final rook = squares[from.row][7]!;
+        hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 7];
+        hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 5];
         squares[from.row][7] = null;
         squares[from.row][5] = rook;
       } else {
-        // Queenside
-        final rook = squares[from.row][0];
+        castlingMove = 'Q';
+        final rook = squares[from.row][0]!;
+        hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 0];
+        hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 3];
         squares[from.row][0] = null;
         squares[from.row][3] = rook;
       }
@@ -129,64 +156,115 @@ class Board {
 
     squares[from.row][from.col] = null;
 
-    // En passant capture
-    if (piece.type == PieceType.pawn &&
-        to.row == _enPassantTarget?.row &&
-        to.col == _enPassantTarget?.col) {
-      squares[from.row][to.col] = null;
-      isCapture = true;
+    final finalPiece = promotion != null ? Piece(promotion, piece.color) : piece;
+    hash ^= zobrist.pieces[zobrist.getPieceIndex(finalPiece)][to.row * 8 + to.col];
+    squares[to.row][to.col] = finalPiece;
+
+    // 4. Update castling rights in hash
+    const rightsChars = 'KQkq';
+    for (int i = 0; i < 4; i++) {
+      if (_castlingRights.contains(rightsChars[i])) hash ^= zobrist.castling[i];
     }
 
-    if (promotion != null) {
-      squares[to.row][to.col] = Piece(promotion, piece.color);
+    // Update rights logic
+    if (piece.type == PieceType.king) {
+      if (piece.color == PieceColor.white) {
+        _castlingRights = _castlingRights.replaceAll('K', '').replaceAll('Q', '');
+      } else {
+        _castlingRights = _castlingRights.replaceAll('k', '').replaceAll('q', '');
+      }
+    } else if (piece.type == PieceType.rook) {
+      if (from.row == 7 && from.col == 0) _castlingRights = _castlingRights.replaceAll('Q', '');
+      if (from.row == 7 && from.col == 7) _castlingRights = _castlingRights.replaceAll('K', '');
+      if (from.row == 0 && from.col == 0) _castlingRights = _castlingRights.replaceAll('q', '');
+      if (from.row == 0 && from.col == 7) _castlingRights = _castlingRights.replaceAll('k', '');
+    }
+    // Also if rook is captured
+    if (to.row == 7 && to.col == 0) _castlingRights = _castlingRights.replaceAll('Q', '');
+    if (to.row == 7 && to.col == 7) _castlingRights = _castlingRights.replaceAll('K', '');
+    if (to.row == 0 && to.col == 0) _castlingRights = _castlingRights.replaceAll('q', '');
+    if (to.row == 0 && to.col == 7) _castlingRights = _castlingRights.replaceAll('k', '');
+
+    for (int i = 0; i < 4; i++) {
+      if (_castlingRights.contains(rightsChars[i])) hash ^= zobrist.castling[i];
+    }
+
+    // 5. Update en passant target in hash
+    if (_enPassantTarget != null) {
+      hash ^= zobrist.enPassant[_enPassantTarget!.col];
+    }
+
+    if (piece.type == PieceType.pawn && (to.row - from.row).abs() == 2) {
+      _enPassantTarget = (row: (from.row + to.row) ~/ 2, col: from.col);
+      hash ^= zobrist.enPassant[_enPassantTarget!.col];
     } else {
-      squares[to.row][to.col] = piece;
+      _enPassantTarget = null;
     }
 
+    // 6. Update side to move
+    hash ^= zobrist.sideToMove;
+    
     if (isPawnMove || isCapture) {
       _halfmoveClock = 0;
     } else {
       _halfmoveClock += 1;
     }
 
-    // Set en passant target
-    if (piece.type == PieceType.pawn && (to.row - from.row).abs() == 2) {
-      _enPassantTarget = (row: (from.row + to.row) ~/ 2, col: from.col);
-    } else {
-      _enPassantTarget = null;
-    }
-
-    // Update castling rights
-    if (piece.type == PieceType.king) {
-      if (piece.color == PieceColor.white) {
-        _castlingRights =
-            _castlingRights.replaceAll('K', '').replaceAll('Q', '');
-      } else {
-        _castlingRights =
-            _castlingRights.replaceAll('k', '').replaceAll('q', '');
-      }
-    } else if (piece.type == PieceType.rook) {
-      if (from.row == 7 && from.col == 0 && piece.color == PieceColor.white) {
-        _castlingRights = _castlingRights.replaceAll('Q', '');
-      } else if (from.row == 7 &&
-          from.col == 7 &&
-          piece.color == PieceColor.white) {
-        _castlingRights = _castlingRights.replaceAll('K', '');
-      } else if (from.row == 0 &&
-          from.col == 0 &&
-          piece.color == PieceColor.black) {
-        _castlingRights = _castlingRights.replaceAll('q', '');
-      } else if (from.row == 0 &&
-          from.col == 7 &&
-          piece.color == PieceColor.black) {
-        _castlingRights = _castlingRights.replaceAll('k', '');
-      }
-    }
-
-    turn = turn == 'w' ? 'b' : 'w';
-    if (turn == 'w') {
+    if (turn == 'b') {
       _fullmoveNumber += 1;
     }
+    turn = turn == 'w' ? 'b' : 'w';
+
+    zobristHash = hash;
+  }
+
+  bool undoMove(Move move) {
+    if (irreversibleHistory.isEmpty) return false;
+    
+    final old = irreversibleHistory.removeLast();
+    positionHistory.removeLast();
+
+    final from = (row: move.fromRow, col: move.fromCol);
+    final to = (row: move.toRow, col: move.toCol);
+    
+    final movedPiece = squares[to.row][to.col]!;
+    final originalPiece = move.promotion != null ? Piece(PieceType.pawn, movedPiece.color) : movedPiece;
+
+    // Restore pieces
+    squares[from.row][from.col] = originalPiece;
+    squares[to.row][to.col] = move.capturedPiece;
+
+    if (move.isEnPassant) {
+      final capturedPawnRow = from.row;
+      squares[capturedPawnRow][to.col] = move.capturedPiece;
+      squares[to.row][to.col] = null;
+    }
+
+    // Handle castling rook
+    if (move.isCastling) {
+      if (to.col == 6) {
+        final rook = squares[from.row][5]!;
+        squares[from.row][5] = null;
+        squares[from.row][7] = rook;
+      } else {
+        final rook = squares[from.row][3]!;
+        squares[from.row][3] = null;
+        squares[from.row][0] = rook;
+      }
+    }
+
+    // Restore state
+    _castlingRights = old.castlingRights;
+    _enPassantTarget = old.enPassantTarget;
+    _halfmoveClock = old.halfmoveClock;
+    zobristHash = old.zobristHash;
+    
+    if (turn == 'w') {
+      _fullmoveNumber -= 1;
+    }
+    turn = turn == 'w' ? 'b' : 'w';
+
+    return true;
   }
 
   ({int row, int col}) _parseSquare(String square) {
