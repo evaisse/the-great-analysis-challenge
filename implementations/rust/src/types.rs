@@ -186,6 +186,7 @@ pub struct GameState {
     pub halfmove_clock: u32,
     pub fullmove_number: u32,
     pub move_history: Vec<Move>,
+    pub hash: u64,
 }
 
 impl GameState {
@@ -220,7 +221,7 @@ impl GameState {
         board[62] = Some(Piece::new(PieceType::Knight, Color::Black));
         board[63] = Some(Piece::new(PieceType::Rook, Color::Black));
 
-        Self {
+        let mut state = Self {
             board,
             turn: Color::White,
             castling_rights: CastlingRights::new(),
@@ -228,7 +229,12 @@ impl GameState {
             halfmove_clock: 0,
             fullmove_number: 1,
             move_history: Vec::new(),
-        }
+            hash: 0,
+        };
+        
+        // Compute initial hash using zobrist module
+        // This will be set by the Board when it initializes
+        state
     }
 }
 

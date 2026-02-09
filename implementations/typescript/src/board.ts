@@ -8,11 +8,20 @@ import {
   FILES,
   RANKS,
 } from "./types";
+import {
+  ZobristTable,
+  ZobristKey,
+  computeHash,
+  updateHashAfterMove,
+} from "./zobrist";
+import { MoveGenerator } from "./moveGenerator";
 
 export class Board {
   private state: GameState;
+  private zobrist: ZobristTable;
 
   constructor() {
+    this.zobrist = new ZobristTable();
     this.state = this.createInitialState();
   }
 
@@ -50,7 +59,7 @@ export class Board {
       board[square] = piece;
     }
 
-    return {
+    const initialState: GameState = {
       board,
       turn: "white",
       castlingRights: {
@@ -63,7 +72,11 @@ export class Board {
       halfmoveClock: 0,
       fullmoveNumber: 1,
       moveHistory: [],
+      hash: 0n,
     };
+
+    initialState.hash = computeHash(initialState, this.zobrist);
+    return initialState;
   }
 
   public reset(): void {
@@ -75,7 +88,13 @@ export class Board {
   }
 
   public setState(state: GameState): void {
-    this.state = { ...state };
+    const newState = { ...state };
+    newState.hash = computeHash(newState, this.zobrist);
+    this.state = newState;
+  }
+
+  public getHash(): bigint {
+    return this.state.hash;
   }
 
   public getPiece(square: Square): Piece | null {
@@ -129,6 +148,13 @@ export class Board {
     const piece = this.getPiece(move.from);
     if (!piece) return;
 
+    // Store old state for hash update
+    const oldEp = this.state.enPassantTarget;
+    const oldCastling = { ...this.state.castlingRights };
+    const capturedPiece = move.enPassant
+      ? { type: "P" as const, color: (piece.color === "white" ? "black" : "white") as Color }
+      : this.getPiece(move.to);
+
     this.setPiece(move.to, piece);
     this.setPiece(move.from, null);
 
@@ -158,8 +184,10 @@ export class Board {
       this.setPiece(capturedPawnSquare, null);
     }
 
+    let finalPiece = piece;
     if (move.promotion) {
-      this.setPiece(move.to, { type: move.promotion, color: piece.color });
+      finalPiece = { type: move.promotion, color: piece.color };
+      this.setPiece(move.to, finalPiece);
     }
 
     const rights = this.getCastlingRights();
@@ -182,11 +210,57 @@ export class Board {
     }
     this.setCastlingRights(rights);
 
+    let newEp: Square | null = null;
     if (piece.type === "P" && Math.abs(move.to - move.from) === 16) {
-      const enPassantSquare = (move.from + move.to) / 2;
-      this.setEnPassantTarget(enPassantSquare);
+      newEp = (move.from + move.to) / 2;
+      this.setEnPassantTarget(newEp);
     } else {
       this.setEnPassantTarget(null);
+    }
+
+    // Update hash incrementally
+    this.state.hash = updateHashAfterMove(
+      this.state.hash,
+      move.from,
+      move.to,
+      piece,
+      capturedPiece,
+      oldEp,
+      newEp,
+      oldCastling,
+      rights,
+      this.zobrist
+    );
+
+    // Handle promotion hash update
+    if (move.promotion) {
+      // Remove pawn hash and add promoted piece hash
+      this.state.hash ^= this.zobrist.pieceKey(piece, move.to);
+      this.state.hash ^= this.zobrist.pieceKey(finalPiece, move.to);
+    }
+
+    // Handle castling rook move in hash
+    if (move.castling) {
+      const rank = piece.color === "white" ? 0 : 7;
+      const rook = { type: "R" as const, color: piece.color };
+      if (move.castling === "K" || move.castling === "k") {
+        const rookFrom = rank * 8 + 7;
+        const rookTo = rank * 8 + 5;
+        this.state.hash ^= this.zobrist.pieceKey(rook, rookFrom);
+        this.state.hash ^= this.zobrist.pieceKey(rook, rookTo);
+      } else {
+        const rookFrom = rank * 8;
+        const rookTo = rank * 8 + 3;
+        this.state.hash ^= this.zobrist.pieceKey(rook, rookFrom);
+        this.state.hash ^= this.zobrist.pieceKey(rook, rookTo);
+      }
+    }
+
+    // Handle en passant captured pawn in hash
+    if (move.enPassant) {
+      const capturedPawnSquare = move.to + (piece.color === "white" ? -8 : 8);
+      const capturedPawn = { type: "P" as const, color: (piece.color === "white" ? "black" : "white") as Color };
+      this.state.hash ^= this.zobrist.pieceKey(capturedPawn, capturedPawnSquare);
     }
 
     if (piece.type === "P" || move.captured) {
@@ -278,5 +352,10 @@ export class Board {
     output += `${this.state.turn === "white" ? "White" : "Black"} to move`;
 
     return output;
+  }
+
+  public getLegalMovesForPV(): Move[] {
+    const moveGenerator = new MoveGenerator(this);
+    return moveGenerator.getLegalMoves(this.getTurn());
   }
 }
