@@ -5,6 +5,7 @@ Move generation for chess pieces.
 from typing import List, Optional
 from lib.types import Move, Piece, PieceType, Color
 from lib.board import Board
+from lib import attack_tables
 
 
 class MoveGenerator:
@@ -109,17 +110,13 @@ class MoveGenerator:
     def generate_knight_moves(self, row: int, col: int, piece: Piece) -> List[Move]:
         """Generate knight moves."""
         moves = []
-        knight_moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
-                       (1, -2), (1, 2), (2, -1), (2, 1)]
+        attacked_squares = attack_tables.get_knight_attacks(row, col)
         
-        for dr, dc in knight_moves:
-            new_row, new_col = row + dr, col + dc
+        for new_row, new_col in attacked_squares:
+            target_piece = self.board.get_piece(new_row, new_col)
             
-            if self.board.is_valid_square(new_row, new_col):
-                target_piece = self.board.get_piece(new_row, new_col)
-                
-                if not target_piece or target_piece.color != piece.color:
-                    moves.append(Move(row, col, new_row, new_col))
+            if not target_piece or target_piece.color != piece.color:
+                moves.append(Move(row, col, new_row, new_col))
         
         return moves
     
@@ -168,17 +165,13 @@ class MoveGenerator:
         moves = []
         
         # Regular king moves
-        king_directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
-                          (0, 1), (1, -1), (1, 0), (1, 1)]
+        attacked_squares = attack_tables.get_king_attacks(row, col)
         
-        for dr, dc in king_directions:
-            new_row, new_col = row + dr, col + dc
+        for new_row, new_col in attacked_squares:
+            target_piece = self.board.get_piece(new_row, new_col)
             
-            if self.board.is_valid_square(new_row, new_col):
-                target_piece = self.board.get_piece(new_row, new_col)
-                
-                if not target_piece or target_piece.color != piece.color:
-                    moves.append(Move(row, col, new_row, new_col))
+            if not target_piece or target_piece.color != piece.color:
+                moves.append(Move(row, col, new_row, new_col))
         
         # Castling moves
         if not self.board.is_in_check(piece.color):
