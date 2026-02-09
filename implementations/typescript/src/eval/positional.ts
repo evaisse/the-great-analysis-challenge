@@ -120,14 +120,29 @@ function canBeAttackedByEnemyPawn(board: Board, square: Square, file: number, ra
   const startRank = color === "white" ? rank + 1 : 0;
   const endRank = color === "white" ? 8 : rank;
   
-  for (let checkRank = startRank; color === "white" ? checkRank < endRank : checkRank < endRank; checkRank++) {
-    const adjacentFiles = [Math.max(0, file - 1), Math.min(7, file + 1)];
-    for (const adjacentFile of adjacentFiles) {
-      if (adjacentFile !== file) {
-        const checkSquare = checkRank * 8 + adjacentFile;
-        const piece = board.getPiece(checkSquare);
-        if (piece && piece.color !== color && piece.type === "P") {
-          return true;
+  if (color === "white") {
+    for (let checkRank = startRank; checkRank < endRank; checkRank++) {
+      const adjacentFiles = [Math.max(0, file - 1), Math.min(7, file + 1)];
+      for (const adjacentFile of adjacentFiles) {
+        if (adjacentFile !== file) {
+          const checkSquare = checkRank * 8 + adjacentFile;
+          const piece = board.getPiece(checkSquare);
+          if (piece && piece.color !== color && piece.type === "P") {
+            return true;
+          }
+        }
+      }
+    }
+  } else {
+    for (let checkRank = startRank; checkRank < endRank; checkRank++) {
+      const adjacentFiles = [Math.max(0, file - 1), Math.min(7, file + 1)];
+      for (const adjacentFile of adjacentFiles) {
+        if (adjacentFile !== file) {
+          const checkSquare = checkRank * 8 + adjacentFile;
+          const piece = board.getPiece(checkSquare);
+          if (piece && piece.color !== color && piece.type === "P") {
+            return true;
+          }
         }
       }
     }

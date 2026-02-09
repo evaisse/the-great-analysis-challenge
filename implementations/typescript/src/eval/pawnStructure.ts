@@ -89,8 +89,12 @@ function isPassed(board: Board, square: Square, rank: number, file: number, colo
         return false;
       }
       
-      currentRank = direction > 0 ? currentRank + 1 : Math.max(0, currentRank - 1);
-      if (direction < 0 && currentRank === 0) break;
+      if (direction > 0) {
+        currentRank++;
+      } else {
+        if (currentRank === 0) break;
+        currentRank--;
+      }
     }
   }
   
