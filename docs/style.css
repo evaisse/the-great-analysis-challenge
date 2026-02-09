@@ -1,0 +1,163 @@
+
+:root {
+    color-scheme: light;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+    background: #fdf6e3;
+    color: #1f2933;
+    line-height: 1.7;
+}
+
+header {
+    background: #111827;
+    color: #fef3c7;
+    text-align: center;
+    padding: 2.8rem 1rem 2.2rem;
+    border-bottom: 4px solid #facc15;
+}
+
+header h1 {
+    margin: 0 0 0.5rem;
+    font-size: 2.25rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.subtitle {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: #fcd34d;
+    letter-spacing: 0.12em;
+}
+
+.links {
+    font-size: 0.95rem;
+}
+
+.links a {
+    color: #facc15;
+    text-decoration: none;
+}
+
+.links a:hover {
+    text-decoration: underline;
+}
+
+main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 4rem;
+}
+
+h2 {
+    font-size: 1.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 2rem 0 0.5rem;
+}
+
+p {
+    margin: 0 0 1.1rem;
+}
+
+.note {
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 1.4rem;
+}
+
+.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fffdf7;
+    border: 2px solid #d1c89f;
+    box-shadow: 0 4px 0 #d1c89f;
+}
+
+.comparison-table th,
+.comparison-table td {
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid #d1c89f;
+}
+
+.comparison-table th {
+    background: #f5edd5;
+    font-weight: 600;
+    text-transform: lowercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+}
+
+.comparison-table tbody tr:nth-child(even) {
+    background: #fdf1d6;
+}
+
+.comparison-table tbody tr:hover {
+    background: #fbeac0;
+}
+
+.comparison-table a {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.comparison-table a:hover {
+    text-decoration: underline;
+}
+
+.numeric {
+    text-align: right;
+}
+
+.emoji {
+    margin-right: 0.35rem;
+}
+
+.comparison-table th.sort-asc::after {
+    content: " ▲";
+    font-size: 0.75rem;
+}
+
+.comparison-table th.sort-desc::after {
+    content: " ▼";
+    font-size: 0.75rem;
+}
+
+footer {
+    margin-top: 3rem;
+    padding: 1.5rem 1rem;
+    border-top: 2px solid #d1c89f;
+    font-size: 0.9rem;
+    color: #4b5563;
+}
+
+footer a {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+    header h1 {
+        font-size: 1.65rem;
+    }
+
+    .comparison-table {
+        font-size: 0.85rem;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+        padding: 0.45rem 0.6rem;
+    }
+}

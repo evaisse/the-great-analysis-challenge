@@ -2,7 +2,11 @@
 
 A comprehensive project implementing identical chess engines across **different programming languages** to compare their approaches, performance, and unique paradigms.
 
-All implementations have complete feature parity:
+🌐 **[View Interactive Website](https://evaisse.github.io/the-great-analysis-challenge/)** - Complete comparison table and source code explorer
+
+## 📚 Available Implementations
+
+All implementations have complete feature parity with the following features:
 
 - ✅ **perft** - Performance testing with recursive move generation
 - ✅ **fen** - Forsyth-Edwards Notation support
@@ -11,38 +15,57 @@ All implementations have complete feature parity:
 - ✅ **en_passant** - Special pawn capture rules
 - ✅ **promotion** - Pawn advancement to other pieces
 
-## 📊 Performance Overview
+### Working Implementations (7 languages)
 
-<!-- status-table-start -->
+All implementations are fully working with complete feature support and produce benchmark timing results:
 
-| Language   | Status | Analysis Time | Build Time | Test Time |
-| ---------- | ------ | ------------- | ---------- | --------- |
-| Crystal    | 🟢     | 38ms          | 18ms       | 0ms       |
-| Dart       | 🟢     | 1055ms        | 639ms      | 0ms       |
-| Elm        | 🟢     | 722ms         | 847ms      | 0ms       |
-| Gleam      | 🟢     | 36ms          | 22ms       | 0ms       |
-| Go         | 🟢     | 280ms         | 153ms      | 0ms       |
-| Haskell    | 🟢     | 42ms          | 15ms       | 0ms       |
-| Julia      | 🟢     | 33ms          | 25ms       | 0ms       |
-| Kotlin     | 🟢     | 258ms         | 128ms      | 0ms       |
-| Mojo       | 🟢     | 33ms          | 33ms       | 0ms       |
-| Nim        | 🟢     | 33ms          | 29ms       | 0ms       |
-| Python     | 🟢     | 209ms         | 103ms      | 597ms     |
-| Rescript   | 🟢     | 141ms         | 3443ms     | 0ms       |
-| Ruby       | 🟢     | 1661ms        | 354ms      | 1850ms    |
-| Rust       | 🟢     | 899ms         | 567ms      | 518ms     |
-| Swift      | 🟢     | 1087ms        | 398ms      | 0ms       |
-| Typescript | 🟢     | 0ms           | 0ms        | 0ms       |
-| Zig        | 🟢     | 29ms          | 18ms       | 0ms       |
+- Dart
+- Lua
+- PHP
+- Python
+- Ruby
+- Rust
+- TypeScript
 
-<!-- status-table-end -->
+### Work In Progress (12 languages)
 
-_All implementations tested via Docker for consistency. Times in milliseconds, measured on the same github actions vm._
+These implementations are available in the `implementations-wip/` directory and have various issues preventing them from producing benchmark results. See [implementations-wip/README.md](./implementations-wip/README.md) for details:
+
+- Crystal (no compiler on test host)
+- Elm (no compiler + type errors)
+- Gleam (no compiler on test host)
+- Go (build structure mismatch)
+- Haskell (network issues)
+- Julia (slow package installation)
+- Kotlin (Gradle wrapper issue)
+- Mojo (no compiler + Docker issues)
+- Nim (no compiler on test host)
+- ReScript (no compiler + deprecated config)
+- Swift (folder structure mismatch)
+- Zig (no compiler on test host)
+
+📊 **For detailed performance metrics, build times, and comprehensive comparisons**, visit the [Interactive Website](https://evaisse.github.io/the-great-analysis-challenge/).
 
 ## 🚀 Quick Start
 
 ```bash
-# Test any implementation
+# List all available implementations
+make list-implementations
+
+# Build a specific implementation
+make build DIR=go
+
+# Test a specific implementation
+make test DIR=ruby
+
+# Analyze a specific implementation
+make analyze DIR=python
+
+# Build and test all implementations
+make build-all
+make test-all
+
+# Test from within an implementation directory
 cd implementations/<language> && make docker-test
 
 # Run performance benchmarks
@@ -73,14 +96,17 @@ Test how static analysis tools detect errors across different languages:
 ./demo-error-analysis.sh
 ```
 
+**New Convention-Based Approach**: All root Makefile commands now use the `DIR` parameter (e.g., `make build DIR=go`) instead of language-specific targets. This makes the infrastructure 100% implementation-agnostic!
+
 ## CI/CD
 
 - **🔄 Continuous Testing**: All implementations tested via Docker on every commit
 - **📊 Weekly Benchmarks**: Performance reports generated every Sunday
 - **🏷️ Automatic Releases**: Semantic versioning based on implementation health
 - **📈 Performance Tracking**: Historical analysis and build time monitoring
+- **🎯 Issue Triage**: Automated label application and clarification requests
 
-**Manual Operations**: [GitHub Actions](../../actions/workflows/bench.yaml) | [Latest Results](../../releases/latest)
+**Manual Operations**: [GitHub Actions](../../actions/workflows/bench.yaml) | [Latest Results](../../releases/latest) | [Issue Triage Docs](./docs/ISSUE_TRIAGE_WORKFLOW.md)
 
 All implementations are tested exclusively via Docker containers to ensure:
 
@@ -90,8 +116,10 @@ All implementations are tested exclusively via Docker containers to ensure:
 
 ## 📋 Architecture
 
-Each implementation follows identical specifications defined in [CHESS_ENGINE_SPECS.md](./CHESS_ENGINE_SPECS.md):
+Each implementation follows identical specifications:
 
+- **Chess Rules & Interface**: [CHESS_ENGINE_SPECS.md](./CHESS_ENGINE_SPECS.md) - Core engine requirements
+- **AI Algorithm**: [AI_ALGORITHM_SPEC.md](./AI_ALGORITHM_SPEC.md) - Deterministic move selection algorithm
 - **Standardized Commands**: Identical interface across all languages
 - **Docker Support**: Containerized testing and deployment
 - **Makefile Targets**: `build`, `test`, `analyze`, `docker-test`, `bugit`, `fix`, `analyze-with-bug`

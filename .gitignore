@@ -2,4 +2,10 @@
 *.log
 *.tmp
 __pycache__
+<<<<<<< HEAD
 analysis_reports/
+=======
+*_output.txt
+verification_results.txt
+reports/elm-stuff
+>>>>>>> origin/main

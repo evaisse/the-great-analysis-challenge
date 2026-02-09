@@ -6,6 +6,7 @@ Run benchmark for a specific implementation or all implementations.
 import os
 import subprocess
 import json
+from pathlib import Path
 from typing import List, Tuple
 
 
@@ -44,21 +45,23 @@ def run_benchmark(impl_name: str, timeout: int = 60) -> bool:
         return False
     
     # Create reports directory
-    os.makedirs("benchmark_reports", exist_ok=True)
+    reports_dir = Path("reports")
+    reports_dir.mkdir(exist_ok=True)
+    text_output = reports_dir / f"{impl_name}.out.txt"
+    json_output = reports_dir / f"{impl_name}.json"
     
     # Run performance test
     cmd = [
         "python3", "test/performance_test.py",
         "--impl", impl_dir,
         "--timeout", str(timeout),
-        "--output", f"benchmark_reports/performance_report_{impl_name}.txt",
-        "--json", f"benchmark_reports/performance_data_{impl_name}.json"
+        "--json", str(json_output)
     ]
     
     print(f"🔧 Running: {' '.join(cmd)}")
     
     try:
-        with open(f"benchmark_reports/benchmark_output_{impl_name}.txt", "w") as output_file:
+        with open(text_output, "w") as output_file:
             result = subprocess.run(cmd, stdout=output_file, stderr=subprocess.STDOUT, timeout=timeout+60)
         
         if result.returncode == 0:

@@ -1,0 +1,47 @@
+[
+  {
+    "language": "php",
+    "path": "implementations/php",
+    "metadata": {
+      "language": "php",
+      "version": "8.3",
+      "author": "PHP Implementation",
+      "build": "php -l chess.php",
+      "run": "php chess.php",
+      "analyze": "find . -name '*.php' -exec php -l {} \\;",
+      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | php chess.php",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1500
+    },
+    "timings": {
+      "build_seconds": 0.7111568450927734,
+      "analyze_seconds": 0.46027231216430664,
+      "test_seconds": 0.24146294593811035
+    },
+    "memory": {},
+    "docker": {
+      "build_time": 0.7111568450927734,
+      "build_success": true,
+      "test_time": 0.24146294593811035,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  }
+]
