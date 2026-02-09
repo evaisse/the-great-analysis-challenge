@@ -26,6 +26,13 @@ type castlingRights = {
   blackQueenside: bool,
 }
 
+type irreversibleState = {
+  castlingRights: castlingRights,
+  enPassantTarget: option<square>,
+  halfmoveClock: int,
+  zobristHash: bigint,
+}
+
 type gameState = {
   board: array<option<piece>>,
   turn: color,
@@ -34,6 +41,9 @@ type gameState = {
   halfmoveClock: int,
   fullmoveNumber: int,
   moveHistory: array<move>,
+  zobristHash: bigint,
+  positionHistory: array<bigint>,
+  irreversibleHistory: array<irreversibleState>,
 }
 
 type gameStatus =

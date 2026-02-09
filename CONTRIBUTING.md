@@ -95,10 +95,9 @@ Improve test coverage and test infrastructure.
 
 ### Prerequisites
 
-- **Docker**: All builds and tests run in Docker containers
+- **Docker**: **MANDATORY.** All builds, tests, and static analysis MUST run in Docker containers. No other toolchains should be used for implementation-related tasks.
 - **Git**: Version control
-- **Make**: Build automation (optional but recommended)
-- **Language-specific tools**: Only if developing outside Docker
+- **Make**: Build automation (used to trigger Docker commands)
 
 ### Initial Setup
 

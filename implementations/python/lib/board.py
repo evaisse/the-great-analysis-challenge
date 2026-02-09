@@ -18,8 +18,13 @@ class Board:
         self.halfmove_clock = 0
         self.fullmove_number = 1
         self.game_history: List[GameState] = []
+        self.zobrist_hash = 0
+        self.position_history = []
+        self.irreversible_history = []
         
         self.setup_starting_position()
+        from lib.zobrist import zobrist
+        self.zobrist_hash = zobrist.compute_hash(self)
     
     def setup_starting_position(self):
         """Set up the standard chess starting position."""
@@ -153,45 +158,104 @@ class Board:
     
     def make_move(self, move: Move):
         """Make a move on the board."""
+        from lib.zobrist import zobrist
+        from lib.types import IrreversibleState
+        
         # Save current game state for undo
         game_state = GameState(
             castling_rights=self.castling_rights.copy(),
             en_passant_target=self.en_passant_target,
             halfmove_clock=self.halfmove_clock,
             fullmove_number=self.fullmove_number,
+            zobrist_hash=self.zobrist_hash,
+            position_history=self.position_history.copy(),
+            irreversible_history=self.irreversible_history.copy(),
             captured_piece=move.captured_piece
         )
         self.game_history.append(game_state)
+        self.irreversible_history.append(IrreversibleState(
+            castling_rights=self.castling_rights.copy(),
+            en_passant_target=self.en_passant_target,
+            halfmove_clock=self.halfmove_clock,
+            zobrist_hash=self.zobrist_hash
+        ))
+        self.position_history.append(self.zobrist_hash)
+
+        hash_val = self.zobrist_hash
         
         # Get the piece being moved
         piece = self.get_piece(move.from_row, move.from_col)
         target_piece = self.get_piece(move.to_row, move.to_col)
         
-        # Update captured piece in move
-        move.captured_piece = target_piece
+        # 1. Remove moving piece from source
+        if piece:
+            hash_val ^= zobrist.pieces[zobrist.get_piece_index(piece)][move.from_row * 8 + move.from_col]
         
-        # Handle special moves
-        if move.is_castling:
-            self._handle_castling(move)
-        elif move.is_en_passant:
-            self._handle_en_passant(move)
-        else:
-            # Normal move
-            self.set_piece(move.to_row, move.to_col, piece)
+        # 2. Handle capture
+        if move.is_en_passant:
+            captured_row = move.from_row
+            captured_piece = Piece(PieceType.PAWN, Color.BLACK if piece.color == Color.WHITE else Color.WHITE)
+            hash_val ^= zobrist.pieces[zobrist.get_piece_index(captured_piece)][captured_row * 8 + move.to_col]
+            self.set_piece(captured_row, move.to_col, None)
+            move.captured_piece = captured_piece
+        elif target_piece:
+            hash_val ^= zobrist.pieces[zobrist.get_piece_index(target_piece)][move.to_row * 8 + move.to_col]
+            move.captured_piece = target_piece
+
+        # 3. Place piece at destination
+        final_piece = piece
+        if move.promotion and piece:
+            final_piece = Piece(move.promotion, piece.color)
+        
+        if final_piece:
+            hash_val ^= zobrist.pieces[zobrist.get_piece_index(final_piece)][move.to_row * 8 + move.to_col]
+            self.set_piece(move.to_row, move.to_col, final_piece)
             self.set_piece(move.from_row, move.from_col, None)
-            
-            # Handle promotion
-            if move.promotion and piece and piece.type == PieceType.PAWN:
-                self.set_piece(move.to_row, move.to_col, 
-                             Piece(move.promotion, piece.color))
-        
-        # Update castling rights
+
+        # 4. Handle castling rook
+        if move.is_castling:
+            if move.to_col == 6:  # Kingside
+                rook = self.get_piece(move.from_row, 7)
+                if rook:
+                    hash_val ^= zobrist.pieces[zobrist.get_piece_index(rook)][move.from_row * 8 + 7]
+                    hash_val ^= zobrist.pieces[zobrist.get_piece_index(rook)][move.from_row * 8 + 5]
+                    self.set_piece(move.from_row, 5, rook)
+                    self.set_piece(move.from_row, 7, None)
+            else:  # Queenside
+                rook = self.get_piece(move.from_row, 0)
+                if rook:
+                    hash_val ^= zobrist.pieces[zobrist.get_piece_index(rook)][move.from_row * 8 + 0]
+                    hash_val ^= zobrist.pieces[zobrist.get_piece_index(rook)][move.from_row * 8 + 3]
+                    self.set_piece(move.from_row, 3, rook)
+                    self.set_piece(move.from_row, 0, None)
+
+        # 5. Update castling rights in hash
+        rights = self.castling_rights
+        if rights.white_kingside: hash_val ^= zobrist.castling[0]
+        if rights.white_queenside: hash_val ^= zobrist.castling[1]
+        if rights.black_kingside: hash_val ^= zobrist.castling[2]
+        if rights.black_queenside: hash_val ^= zobrist.castling[3]
+
         self._update_castling_rights(move, piece)
         
-        # Update en passant target
+        rights = self.castling_rights
+        if rights.white_kingside: hash_val ^= zobrist.castling[0]
+        if rights.white_queenside: hash_val ^= zobrist.castling[1]
+        if rights.black_kingside: hash_val ^= zobrist.castling[2]
+        if rights.black_queenside: hash_val ^= zobrist.castling[3]
+
+        # 6. Update en passant target in hash
+        if self.en_passant_target:
+            hash_val ^= zobrist.en_passant[self.en_passant_target[1]]
+        
         self._update_en_passant_target(move, piece)
         
-        # Update clocks
+        if self.en_passant_target:
+            hash_val ^= zobrist.en_passant[self.en_passant_target[1]]
+
+        # 7. Update side to move and clocks
+        hash_val ^= zobrist.side_to_move
+        
         if target_piece or (piece and piece.type == PieceType.PAWN):
             self.halfmove_clock = 0
         else:
@@ -200,9 +264,9 @@ class Board:
         if self.to_move == Color.BLACK:
             self.fullmove_number += 1
         
-        # Switch turns
         self.to_move = Color.BLACK if self.to_move == Color.WHITE else Color.WHITE
-    
+        self.zobrist_hash = hash_val
+
     def undo_move(self, move: Move):
         """Undo a move on the board."""
         if not self.game_history:
@@ -210,10 +274,14 @@ class Board:
         
         # Restore game state
         game_state = self.game_history.pop()
+        self.irreversible_history.pop()
+        self.position_history.pop()
+        
         self.castling_rights = game_state.castling_rights
         self.en_passant_target = game_state.en_passant_target
         self.halfmove_clock = game_state.halfmove_clock
         self.fullmove_number = game_state.fullmove_number
+        self.zobrist_hash = game_state.zobrist_hash
         
         # Switch turns back
         self.to_move = Color.BLACK if self.to_move == Color.WHITE else Color.WHITE

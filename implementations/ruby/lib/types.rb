@@ -87,8 +87,98 @@ module Chess
       PIECE_VALUES[@type]
     end
     
-    def enemy_color
-      @color == :white ? :black : :white
+        def enemy_color
+    
+          @color == :white ? :black : :white
+    
+        end
+    
+      end
+    
+    
+    
+      class CastlingRights
+    
+        attr_accessor :white_kingside, :white_queenside, :black_kingside, :black_queenside
+    
+    
+    
+        def initialize(wk = true, wq = true, bk = true, bq = true)
+    
+          @white_kingside = wk
+    
+          @white_queenside = wq
+    
+          @black_kingside = bk
+    
+          @black_queenside = bq
+    
+        end
+    
+    
+    
+        def copy
+    
+          CastlingRights.new(@white_kingside, @white_queenside, @black_kingside, @black_queenside)
+    
+        end
+    
+      end
+    
+    
+    
+      class IrreversibleState
+    
+        attr_accessor :castling_rights, :en_passant_target, :halfmove_clock, :zobrist_hash
+    
+    
+    
+        def initialize(cr, ep, hc, zh)
+    
+          @castling_rights = cr
+    
+          @en_passant_target = ep
+    
+          @halfmove_clock = hc
+    
+          @zobrist_hash = zh
+    
+        end
+    
+      end
+    
+    
+    
+      class GameState
+    
+        attr_accessor :castling_rights, :en_passant_target, :halfmove_clock, :fullmove_number,
+    
+                      :zobrist_hash, :position_history, :irreversible_history, :captured_piece
+    
+    
+    
+        def initialize(cr, ep, hc, fn, zh, ph, ih, cp = nil)
+    
+          @castling_rights = cr
+    
+          @en_passant_target = ep
+    
+          @halfmove_clock = hc
+    
+          @fullmove_number = fn
+    
+          @zobrist_hash = zh
+    
+          @position_history = ph
+    
+          @irreversible_history = ih
+    
+          @captured_piece = cp
+    
+        end
+    
+      end
+    
     end
-  end
-end
+    
+    

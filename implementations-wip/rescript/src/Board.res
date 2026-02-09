@@ -41,7 +41,7 @@ let createInitialBoard = (): array<option<piece>> => {
 }
 
 let createInitialState = (): gameState => {
-  {
+  let state = {
     board: createInitialBoard(),
     turn: White,
     castlingRights: {
@@ -54,7 +54,11 @@ let createInitialState = (): gameState => {
     halfmoveClock: 0,
     fullmoveNumber: 1,
     moveHistory: [],
+    zobristHash: 0n,
+    positionHistory: [],
+    irreversibleHistory: [],
   }
+  {...state, zobristHash: Zobrist.computeHash(state)}
 }
 
 let getPiece = (state: gameState, square: square): option<piece> => {
@@ -172,7 +176,7 @@ let parseFen = (fen: string): result<gameState, string> => {
       | None => 1
       }
 
-    Ok({
+    let state = {
       board,
       turn,
       castlingRights,
@@ -180,7 +184,11 @@ let parseFen = (fen: string): result<gameState, string> => {
       halfmoveClock,
       fullmoveNumber,
       moveHistory: [],
-    })
+      zobristHash: 0n,
+      positionHistory: [],
+      irreversibleHistory: [],
+    }
+    Ok({...state, zobristHash: Zobrist.computeHash(state)})
   }
 }
 

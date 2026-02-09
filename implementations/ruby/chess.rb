@@ -58,6 +58,12 @@ module Chess
         handle_export
       when 'eval'
         handle_eval
+      when 'hash'
+        handle_hash
+      when 'draws'
+        handle_draws
+      when 'history'
+        handle_history
       when 'perft'
         handle_perft(parts[1]&.to_i || 4)
       when 'help'
@@ -200,6 +206,28 @@ module Chess
       puts "Evaluation: #{material_balance} (from White's perspective)"
       flush_output
     end
+
+    def handle_hash
+      puts "Hash: #{@board.zobrist_hash.to_s(16).rjust(16, '0')}"
+      flush_output
+    end
+
+    def handle_draws
+      require_relative 'lib/draw_detection'
+      repetition = DrawDetection.draw_by_repetition?(@board)
+      fifty_moves = DrawDetection.draw_by_fifty_moves?(@board)
+      puts "Repetition: #{repetition}, 50-move rule: #{fifty_moves}, 50-move clock: #{@board.halfmove_clock}"
+      flush_output
+    end
+
+    def handle_history
+      puts "Position History (#{@board.position_history.length + 1} positions):"
+      @board.position_history.each_with_index do |h, i|
+        puts "  #{i}: #{h.to_s(16).rjust(16, '0')}"
+      end
+      puts "  #{@board.position_history.length}: #{@board.zobrist_hash.to_s(16).rjust(16, '0')} (current)"
+      flush_output
+    end
     
     def handle_perft(depth)
       unless depth.between?(1, 6)
@@ -223,6 +251,9 @@ module Chess
         fen <string>              - Load position from FEN notation
         export                     - Export current position as FEN
         eval                       - Display position evaluation
+        hash                       - Show Zobrist hash of current position
+        draws                      - Show draw detection status
+        history                    - Show position hash history
         perft <depth>             - Performance test (move count)
         help                       - Display this help message
         quit                       - Exit the program
@@ -240,6 +271,13 @@ module Chess
       elsif @move_generator.in_stalemate?(current_color)
         puts 'STALEMATE: Draw'
         flush_output
+      else
+        require_relative 'lib/draw_detection'
+        if DrawDetection.draw?(@board)
+          reason = DrawDetection.draw_by_repetition?(@board) ? "repetition" : "50-move rule"
+          puts "DRAW: by #{reason}"
+          flush_output
+        end
       end
     end
     

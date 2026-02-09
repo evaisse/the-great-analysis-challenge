@@ -185,8 +185,9 @@ class MoveGenerator {
         $base_row = $color === CHESS_WHITE ? 7 : 0;
         
         if ($row === $base_row && $col === 4) {
+            $rights = $this->board->castling_rights;
             // Kingside castling
-            $can_castle_kingside = $color === CHESS_WHITE ? $this->board->castling_rights[0] : $this->board->castling_rights[2];
+            $can_castle_kingside = $color === CHESS_WHITE ? $rights->white_kingside : $rights->black_kingside;
             if ($can_castle_kingside) {
                 [$r1, $_] = $this->board->get_piece($base_row, 5);
                 [$r2, $_] = $this->board->get_piece($base_row, 6);
@@ -200,7 +201,7 @@ class MoveGenerator {
             }
             
             // Queenside castling
-            $can_castle_queenside = $color === CHESS_WHITE ? $this->board->castling_rights[1] : $this->board->castling_rights[3];
+            $can_castle_queenside = $color === CHESS_WHITE ? $rights->white_queenside : $rights->black_queenside;
             if ($can_castle_queenside) {
                 [$r1, $_] = $this->board->get_piece($base_row, 1);
                 [$r2, $_] = $this->board->get_piece($base_row, 2);
@@ -285,10 +286,10 @@ class MoveGenerator {
         // Make the move temporarily
         $this->board->make_move($move);
         
-        // Find king position
+        // Find king position (of the player who just moved)
+        $king_color = 1 - $this->board->current_player;
         $king_row = -1;
         $king_col = -1;
-        $king_color = 1 - $this->board->current_player;
         
         for ($row = 0; $row < 8; $row++) {
             for ($col = 0; $col < 8; $col++) {

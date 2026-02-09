@@ -15,6 +15,75 @@ local en_passant_target = nil
 local halfmove_clock = 0
 local fullmove_number = 1
 local move_history = {}
+local zobrist_hash = 0
+local position_history = {}
+local irreversible_history = {}
+
+local zobrist_keys = {
+    pieces = {},
+    side_to_move = 0,
+    castling = {},
+    en_passant = {}
+}
+
+local function xorshift64(state)
+    state = state ~ ((state << 13) & 0xFFFFFFFFFFFFFFFF)
+    state = state ~ (state >> 7)
+    state = state ~ ((state << 17) & 0xFFFFFFFFFFFFFFFF)
+    return state & 0xFFFFFFFFFFFFFFFF
+end
+
+local function init_zobrist()
+    local state = 0x123456789ABCDEF0
+    for p = 1, 12 do
+        zobrist_keys.pieces[p] = {}
+        for s = 1, 64 do
+            state = xorshift64(state)
+            zobrist_keys.pieces[p][s] = state
+        end
+    end
+    state = xorshift64(state)
+    zobrist_keys.side_to_move = state
+    for i = 1, 4 do
+        state = xorshift64(state)
+        zobrist_keys.castling[i] = state
+    end
+    for i = 1, 8 do
+        state = xorshift64(state)
+        zobrist_keys.en_passant[i] = state
+    end
+end
+
+init_zobrist()
+
+local function get_piece_index(piece)
+    local types = {P=1, N=2, B=3, R=4, Q=5, K=6, p=7, n=8, b=9, r=10, q=11, k=12}
+    return types[piece]
+end
+
+local function compute_hash()
+    local hash = 0
+    for rank = 1, 8 do
+        for file = 1, 8 do
+            local piece = board[rank][file]
+            if piece ~= "." then
+                local square = (rank - 1) * 8 + file -- a1=1, b1=2...
+                hash = hash ~ zobrist_keys.pieces[get_piece_index(piece)][square]
+            end
+        end
+    end
+    if not white_to_move then
+        hash = hash ~ zobrist_keys.side_to_move
+    end
+    if castling_rights.white_king then hash = hash ~ zobrist_keys.castling[1] end
+    if castling_rights.white_queen then hash = hash ~ zobrist_keys.castling[2] end
+    if castling_rights.black_king then hash = hash ~ zobrist_keys.castling[3] end
+    if castling_rights.black_queen then hash = hash ~ zobrist_keys.castling[4] end
+    if en_passant_target then
+        hash = hash ~ zobrist_keys.en_passant[en_passant_target[2]]
+    end
+    return hash
+end
 
 -- Piece values for AI evaluation
 local PIECE_VALUES = {
@@ -40,6 +109,9 @@ local function new_game()
     halfmove_clock = 0
     fullmove_number = 1
     move_history = {}
+    zobrist_hash = compute_hash()
+    position_history = {}
+    irreversible_history = {}
 end
 
 -- Display board
@@ -165,66 +237,95 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
     local piece = board[from_rank][from_file]
     local captured = board[to_rank][to_file]
     
-    -- Store move for undo
+    -- Save irreversible state
+    table.insert(irreversible_history, {
+        castling_rights = {white_king = castling_rights.white_king, white_queen = castling_rights.white_queen,
+                          black_king = castling_rights.black_king, black_queen = castling_rights.black_queen},
+        en_passant_target = en_passant_target and {en_passant_target[1], en_passant_target[2]} or nil,
+        halfmove_clock = halfmove_clock,
+        zobrist_hash = zobrist_hash
+    })
+    table.insert(position_history, zobrist_hash)
+
+    local hash = zobrist_hash
+    
+    -- 1. Remove moving piece from source
+    hash = hash ~ zobrist_keys.pieces[get_piece_index(piece)][(from_rank - 1) * 8 + from_file]
+
+    -- Handle capture
     local move_record = {
         from_rank = from_rank, from_file = from_file,
         to_rank = to_rank, to_file = to_file,
         piece = piece, captured = captured,
-        castling_rights = {white_king = castling_rights.white_king, white_queen = castling_rights.white_queen,
-                          black_king = castling_rights.black_king, black_queen = castling_rights.black_queen},
-        en_passant_target = en_passant_target,
-        halfmove_clock = halfmove_clock,
-        fullmove_number = fullmove_number,
         white_to_move = white_to_move,
         promotion = promotion
     }
-    
-    -- Handle en passant capture
+
     if en_passant_target and to_rank == en_passant_target[1] and to_file == en_passant_target[2] then
         if piece == "P" or piece == "p" then
-            -- Determine capture rank based on piece color (not turn, since turn hasn't switched yet)
             local capture_rank = (piece == "P") and to_rank - 1 or to_rank + 1
-            move_record.en_passant_captured = board[capture_rank][to_file]
+            local ep_captured = board[capture_rank][to_file]
+            hash = hash ~ zobrist_keys.pieces[get_piece_index(ep_captured)][(capture_rank - 1) * 8 + to_file]
             board[capture_rank][to_file] = "."
+            move_record.en_passant_captured = ep_captured
         end
+    elseif captured ~= "." then
+        hash = hash ~ zobrist_keys.pieces[get_piece_index(captured)][(to_rank - 1) * 8 + to_file]
     end
-    
-    -- Move piece
-    board[to_rank][to_file] = piece
-    board[from_rank][from_file] = "."
-    
-    -- Handle promotion
+
+    -- 3. Place piece at destination
+    local final_piece = piece
     if promotion then
-        board[to_rank][to_file] = promotion
+        final_piece = promotion
     elseif (piece == "P" and to_rank == 8) or (piece == "p" and to_rank == 1) then
-        board[to_rank][to_file] = white_to_move and "Q" or "q"
-        move_record.promotion = board[to_rank][to_file]
+        final_piece = white_to_move and "Q" or "q"
+        move_record.promotion = final_piece
     end
-    
-    -- Handle castling
+    hash = hash ~ zobrist_keys.pieces[get_piece_index(final_piece)][(to_rank - 1) * 8 + to_file]
+    board[to_rank][to_file] = final_piece
+    board[from_rank][from_file] = "."
+
+    -- 4. Handle castling rook
     if piece == "K" and from_file == 5 then
         if to_file == 7 then  -- Kingside
+            local rook = board[1][8]
+            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 8]
+            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 6]
             board[1][6] = board[1][8]
             board[1][8] = "."
             move_record.castling = "kingside"
         elseif to_file == 3 then  -- Queenside
+            local rook = board[1][1]
+            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 1]
+            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 4]
             board[1][4] = board[1][1]
             board[1][1] = "."
             move_record.castling = "queenside"
         end
     elseif piece == "k" and from_file == 5 then
         if to_file == 7 then  -- Kingside
+            local rook = board[8][8]
+            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 8]
+            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 6]
             board[8][6] = board[8][8]
             board[8][8] = "."
             move_record.castling = "kingside"
         elseif to_file == 3 then  -- Queenside
+            local rook = board[8][1]
+            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 1]
+            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 4]
             board[8][4] = board[8][1]
             board[8][1] = "."
             move_record.castling = "queenside"
         end
     end
-    
-    -- Update castling rights
+
+    -- 5. Update castling rights in hash
+    if castling_rights.white_king then hash = hash ~ zobrist_keys.castling[1] end
+    if castling_rights.white_queen then hash = hash ~ zobrist_keys.castling[2] end
+    if castling_rights.black_king then hash = hash ~ zobrist_keys.castling[3] end
+    if castling_rights.black_queen then hash = hash ~ zobrist_keys.castling[4] end
+
     if piece == "K" then
         castling_rights.white_king = false
         castling_rights.white_queen = false
@@ -238,30 +339,44 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
         if from_rank == 8 and from_file == 1 then castling_rights.black_queen = false end
         if from_rank == 8 and from_file == 8 then castling_rights.black_king = false end
     end
+    -- Handle capture of rooks
+    if to_rank == 1 and to_file == 1 then castling_rights.white_queen = false end
+    if to_rank == 1 and to_file == 8 then castling_rights.white_king = false end
+    if to_rank == 8 and to_file == 1 then castling_rights.black_queen = false end
+    if to_rank == 8 and to_file == 8 then castling_rights.black_king = false end
+
+    if castling_rights.white_king then hash = hash ~ zobrist_keys.castling[1] end
+    if castling_rights.white_queen then hash = hash ~ zobrist_keys.castling[2] end
+    if castling_rights.black_king then hash = hash ~ zobrist_keys.castling[3] end
+    if castling_rights.black_queen then hash = hash ~ zobrist_keys.castling[4] end
+
+    -- 6. Update en passant target in hash
+    if en_passant_target then
+        hash = hash ~ zobrist_keys.en_passant[en_passant_target[2]]
+    end
     
-    -- Update en passant target
     en_passant_target = nil
     if (piece == "P" and from_rank == 2 and to_rank == 4) or
        (piece == "p" and from_rank == 7 and to_rank == 5) then
         local ep_rank = white_to_move and 3 or 6
         en_passant_target = {ep_rank, from_file}
+        hash = hash ~ zobrist_keys.en_passant[from_file]
     end
     
-    -- Update clocks
+    -- 7. Update active color and clocks
+    hash = hash ~ zobrist_keys.side_to_move
     if captured ~= "." or piece == "P" or piece == "p" then
         halfmove_clock = 0
     else
         halfmove_clock = halfmove_clock + 1
     end
     
-    -- Switch turn
     white_to_move = not white_to_move
-    
-    -- Increment fullmove counter after Black's turn (when it becomes White's turn)
     if white_to_move then
         fullmove_number = fullmove_number + 1
     end
     
+    zobrist_hash = hash
     table.insert(move_history, move_record)
     
     return true
@@ -272,6 +387,8 @@ local function undo_move()
     if #move_history == 0 then return false end
     
     local move = table.remove(move_history)
+    local old = table.remove(irreversible_history)
+    table.remove(position_history)
     
     -- Restore piece
     board[move.from_rank][move.from_file] = move.piece
@@ -303,16 +420,37 @@ local function undo_move()
     end
     
     -- Restore state
-    castling_rights = move.castling_rights
-    en_passant_target = move.en_passant_target
-    halfmove_clock = move.halfmove_clock
-    fullmove_number = move.fullmove_number
+    castling_rights = old.castling_rights
+    en_passant_target = old.en_passant_target
+    halfmove_clock = old.halfmove_clock
+    zobrist_hash = old.zobrist_hash
     white_to_move = move.white_to_move
+    if white_to_move == false then -- It was black's turn to move, so it became white's turn. Fullmove was incremented.
+        fullmove_number = fullmove_number - 1
+    end
     
     return true
 end
 
--- Check if a move is legal
+local function is_draw_by_repetition()
+    local count = 1
+    local start_idx = math.max(1, #position_history - halfmove_clock + 1)
+    for i = #position_history, start_idx, -1 do
+        if position_history[i] == zobrist_hash then
+            count = count + 1
+            if count >= 3 then return true end
+        end
+    end
+    return false
+end
+
+local function is_draw_by_fifty_moves()
+    return halfmove_clock >= 100
+end
+
+local function is_draw()
+    return is_draw_by_repetition() or is_draw_by_fifty_moves()
+end
 local function is_legal_move(from_rank, from_file, to_rank, to_file, promotion)
     local piece = board[from_rank][from_file]
     if piece == "." then return false, "No piece at source square" end
@@ -805,12 +943,16 @@ local function main()
                     display_board()
                     
                     -- Check for game end
-                    if #generate_legal_moves() == 0 then
+                    local legal_moves = generate_legal_moves()
+                    if #legal_moves == 0 then
                         if is_in_check(white_to_move) then
                             print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
                         else
                             print("STALEMATE: Draw")
                         end
+                    elseif is_draw() then
+                        local reason = is_draw_by_repetition() and "repetition" or "50-move rule"
+                        print("DRAW: by " .. reason)
                     end
                 end
             else
@@ -825,6 +967,19 @@ local function main()
             end
         elseif cmd == "display" or cmd == "show" or cmd == "board" then
             display_board()
+        elseif cmd == "hash" then
+            print(string.format("Hash: %016x", zobrist_hash))
+        elseif cmd == "draws" then
+            local repetition = is_draw_by_repetition()
+            local fifty_moves = is_draw_by_fifty_moves()
+            print(string.format("Repetition: %s, 50-move rule: %s, 50-move clock: %d", 
+                tostring(repetition), tostring(fifty_moves), halfmove_clock))
+        elseif cmd == "history" then
+            print(string.format("Position History (%d positions):", #position_history + 1))
+            for i, h in ipairs(position_history) do
+                print(string.format("  %d: %016x", i - 1, h))
+            end
+            print(string.format("  %d: %016x (current)", #position_history, zobrist_hash))
         elseif cmd == "export" then
             print("FEN: " .. export_fen())
         elseif cmd == "fen" then
@@ -845,12 +1000,16 @@ local function main()
                 display_board()
                 
                 -- Check for game end
-                if #generate_legal_moves() == 0 then
+                local legal_moves = generate_legal_moves()
+                if #legal_moves == 0 then
                     if is_in_check(white_to_move) then
                         print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
                     else
                         print("STALEMATE: Draw")
                     end
+                elseif is_draw() then
+                    local reason = is_draw_by_repetition() and "repetition" or "50-move rule"
+                    print("DRAW: by " .. reason)
                 end
             end
         elseif cmd == "eval" then
@@ -868,6 +1027,9 @@ local function main()
             print("  move <from><to>  - Make a move (e.g., 'move e2e4')")
             print("  undo             - Undo last move")
             print("  board            - Show the board (also: display, show)")
+            print("  hash             - Show Zobrist hash of current position")
+            print("  draws            - Show draw detection status")
+            print("  history          - Show position hash history")
             print("  export           - Export position as FEN")
             print("  fen <string>     - Load position from FEN")
             print("  ai <depth>       - AI makes a move (depth 1-5)")

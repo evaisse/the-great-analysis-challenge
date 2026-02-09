@@ -51,3 +51,53 @@ class Move {
         };
     }
 }
+
+class CastlingRights {
+    public bool $white_kingside = true;
+    public bool $white_queenside = true;
+    public bool $black_kingside = true;
+    public bool $black_queenside = true;
+
+    public function copy(): CastlingRights {
+        $copy = new CastlingRights();
+        $copy->white_kingside = $this->white_kingside;
+        $copy->white_queenside = $this->white_queenside;
+        $copy->black_kingside = $this->black_kingside;
+        $copy->black_queenside = $this->black_queenside;
+        return $copy;
+    }
+}
+
+class IrreversibleState {
+    public CastlingRights $castling_rights;
+    public ?array $en_passant_target;
+    public int $halfmove_clock;
+    public \GMP $zobrist_hash;
+
+    public function __construct(CastlingRights $cr, ?array $ep, int $hc, \GMP $zh) {
+        $this->castling_rights = $cr;
+        $this->en_passant_target = $ep;
+        $this->halfmove_clock = $hc;
+        $this->zobrist_hash = $zh;
+    }
+}
+
+class GameState {
+    public CastlingRights $castling_rights;
+    public ?array $en_passant_target;
+    public int $halfmove_clock;
+    public int $fullmove_number;
+    public \GMP $zobrist_hash;
+    public array $position_history;
+    public array $irreversible_history;
+
+    public function __construct(CastlingRights $cr, ?array $ep, int $hc, int $fn, \GMP $zh, array $ph, array $ih) {
+        $this->castling_rights = $cr;
+        $this->en_passant_target = $ep;
+        $this->halfmove_clock = $hc;
+        $this->fullmove_number = $fn;
+        $this->zobrist_hash = $zh;
+        $this->position_history = $ph;
+        $this->irreversible_history = $ih;
+    }
+}

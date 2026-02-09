@@ -95,6 +95,18 @@ class ChessEngine {
                     $this->handle_eval();
                     break;
                     
+                case 'hash':
+                    $this->handle_hash();
+                    break;
+                    
+                case 'draws':
+                    $this->handle_draws();
+                    break;
+                    
+                case 'history':
+                    $this->handle_history();
+                    break;
+                    
                 case 'perft':
                     $depth = isset($parts[1]) ? intval($parts[1]) : 4;
                     $this->handle_perft($depth);
@@ -175,8 +187,13 @@ class ChessEngine {
         } elseif ($is_stalemate) {
             echo "STALEMATE: Draw\n";
         } else {
-            // Only output OK if game continues
-            echo "OK: " . $move->to_string() . "\n";
+            require_once __DIR__ . '/lib/DrawDetection.php';
+            if (DrawDetection::is_draw($this->board)) {
+                $reason = DrawDetection::is_draw_by_repetition($this->board) ? "repetition" : "50-move rule";
+                echo "DRAW: by $reason\n";
+            } else {
+                echo "OK: " . $move->to_string() . "\n";
+            }
         }
         
         echo $this->board->display();
@@ -224,8 +241,14 @@ class ChessEngine {
         } elseif ($is_stalemate) {
             echo "STALEMATE: Draw\n";
         } else {
-            // Only output AI message if game continues
-            echo "AI: " . $move->to_string() . " (depth=$depth, eval=$eval, time={$time_ms}ms)\n";
+            require_once __DIR__ . '/lib/DrawDetection.php';
+            if (DrawDetection::is_draw($this->board)) {
+                $reason = DrawDetection::is_draw_by_repetition($this->board) ? "repetition" : "50-move rule";
+                echo "DRAW: by $reason\n";
+            } else {
+                // Only output AI message if game continues
+                echo "AI: " . $move->to_string() . " (depth=$depth, eval=$eval, time={$time_ms}ms)\n";
+            }
         }
         
         echo $this->board->display();
@@ -255,6 +278,27 @@ class ChessEngine {
         echo "Evaluation: $eval\n";
     }
     
+    private function handle_hash(): void {
+        echo "Hash: " . str_pad(gmp_strval($this->board->zobrist_hash, 16), 16, "0", STR_PAD_LEFT) . "\n";
+    }
+
+    private function handle_draws(): void {
+        require_once __DIR__ . '/lib/DrawDetection.php';
+        $repetition = DrawDetection::is_draw_by_repetition($this->board);
+        $fifty_moves = DrawDetection::is_draw_by_fifty_moves($this->board);
+        echo "Repetition: " . ($repetition ? "true" : "false") . 
+             ", 50-move rule: " . ($fifty_moves ? "true" : "false") . 
+             ", 50-move clock: " . $this->board->halfmove_clock . "\n";
+    }
+
+    private function handle_history(): void {
+        echo "Position History (" . (count($this->board->position_history) + 1) . " positions):\n";
+        foreach ($this->board->position_history as $i => $h) {
+            echo "  $i: " . str_pad(gmp_strval($h, 16), 16, "0", STR_PAD_LEFT) . "\n";
+        }
+        echo "  " . count($this->board->position_history) . ": " . str_pad(gmp_strval($this->board->zobrist_hash, 16), 16, "0", STR_PAD_LEFT) . " (current)\n";
+    }
+    
     private function handle_perft(int $depth): void {
         if ($depth < 1 || $depth > 6) {
             echo "ERROR: Perft depth must be 1-6\n";
@@ -279,6 +323,9 @@ Available commands:
   fen <string>                - Load position from FEN notation
   export                      - Export current position as FEN
   eval                        - Display position evaluation
+  hash                        - Show Zobrist hash of current position
+  draws                       - Show draw detection status
+  history                     - Show position hash history
   perft <depth>               - Performance test (count moves at depth)
   help                        - Display this help message
   quit                        - Exit the program

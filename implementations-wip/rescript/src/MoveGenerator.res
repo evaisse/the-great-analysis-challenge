@@ -452,36 +452,73 @@ let makeMove = (state: gameState, move: move): gameState => {
     let setOnBoard = (square: int, pieceOpt: option<piece>) =>
       Belt.Array.setExn(board, square, pieceOpt)
 
-    setOnBoard(move.to, Some(piece))
+    let keys = Zobrist.globalKeys
+    let xor = Zobrist.xor
+    let hash = ref(state.zobristHash)
+
+    // 1. Remove moving piece from source
+    hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(piece)][move.from])
+
+    // 2. Handle capture
+    switch move.captured {
+    | Some(capturedType) =>
+      let capturedColor = oppositeColor(piece.color)
+      let capturedPiece = {pieceType: capturedType, color: capturedColor}
+      if move.enPassant {
+        let capturedPawnSquare = move.to + (if piece.color == White { -8 } else { 8 })
+        hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(capturedPiece)][capturedPawnSquare])
+        setOnBoard(capturedPawnSquare, None)
+      } else {
+        hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(capturedPiece)][move.to])
+      }
+    | None => ()
+    }
+
+    // 3. Place piece at destination (handling promotion)
+    let finalPiece = switch move.promotion {
+    | Some(promo) => {pieceType: promo, color: piece.color}
+    | None => piece
+    }
+    hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(finalPiece)][move.to])
+    setOnBoard(move.to, Some(finalPiece))
     setOnBoard(move.from, None)
 
+    // 4. Handle castling rook
     switch move.castling {
     | Some("K") =>
-      setOnBoard(5, getPiece(state, 7))
+      let rook = getPiece(state, 7)->Belt.Option.getExn
+      hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(rook)][7])
+      hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(rook)][5])
+      setOnBoard(5, Some(rook))
       setOnBoard(7, None)
     | Some("Q") =>
-      setOnBoard(3, getPiece(state, 0))
+      let rook = getPiece(state, 0)->Belt.Option.getExn
+      hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(rook)][0])
+      hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(rook)][3])
+      setOnBoard(3, Some(rook))
       setOnBoard(0, None)
     | Some("k") =>
-      setOnBoard(61, getPiece(state, 63))
+      let rook = getPiece(state, 63)->Belt.Option.getExn
+      hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(rook)][63])
+      hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(rook)][61])
+      setOnBoard(61, Some(rook))
       setOnBoard(63, None)
     | Some("q") =>
-      setOnBoard(59, getPiece(state, 56))
+      let rook = getPiece(state, 56)->Belt.Option.getExn
+      hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(rook)][56])
+      hash := xor(hash.contents, keys.pieces[Zobrist.getPieceIndex(rook)][59])
+      setOnBoard(59, Some(rook))
       setOnBoard(56, None)
     | _ => ()
     }
 
-    if move.enPassant {
-      let capturedPawnSquare = move.to + (if piece.color == White { -8 } else { 8 })
-      setOnBoard(capturedPawnSquare, None)
-    }
-
-    switch move.promotion {
-    | Some(promo) => setOnBoard(move.to, Some({pieceType: promo, color: piece.color}))
-    | None => ()
-    }
-
+    // 5. Update castling rights in hash
     let rights = state.castlingRights
+    if rights.whiteKingside { hash := xor(hash.contents, keys.castling[0]) }
+    if rights.whiteQueenside { hash := xor(hash.contents, keys.castling[1]) }
+    if rights.blackKingside { hash := xor(hash.contents, keys.castling[2]) }
+    if rights.blackQueenside { hash := xor(hash.contents, keys.castling[3]) }
+
     let newRights =
       switch piece.pieceType {
       | King =>
@@ -510,14 +547,37 @@ let makeMove = (state: gameState, move: move): gameState => {
         }
       | _ => rights
       }
+    
+    // Also update rights if a rook is captured
+    let finalRights = if move.to == 0 { {...newRights, whiteQueenside: false} }
+      else if move.to == 7 { {...newRights, whiteKingside: false} }
+      else if move.to == 56 { {...newRights, blackQueenside: false} }
+      else if move.to == 63 { {...newRights, blackKingside: false} }
+      else { newRights }
+
+    if finalRights.whiteKingside { hash := xor(hash.contents, keys.castling[0]) }
+    if finalRights.whiteQueenside { hash := xor(hash.contents, keys.castling[1]) }
+    if finalRights.blackKingside { hash := xor(hash.contents, keys.castling[2]) }
+    if finalRights.blackQueenside { hash := xor(hash.contents, keys.castling[3]) }
+
+    // 6. Update en passant target in hash
+    switch state.enPassantTarget {
+    | Some(sq) => hash := xor(hash.contents, keys.enPassant[modInt(sq, 8)])
+    | None => ()
+    }
 
     let enPassantTarget =
       if piece.pieceType == Pawn && absInt(move.to - move.from) == 16 {
-        Some((move.from + move.to) / 2)
+        let epSq = (move.from + move.to) / 2
+        hash := xor(hash.contents, keys.enPassant[modInt(epSq, 8)])
+        Some(epSq)
       } else {
         None
       }
 
+    // 7. Update side to move and histories
+    hash := xor(hash.contents, keys.sideToMove)
+    
     let halfmoveClock =
       if piece.pieceType == Pawn || move.captured != None {
         0
@@ -529,15 +589,25 @@ let makeMove = (state: gameState, move: move): gameState => {
 
     let newTurn = oppositeColor(state.turn)
     let moveHistory = Belt.Array.concat(state.moveHistory, [move])
+    let positionHistory = Belt.Array.concat(state.positionHistory, [state.zobristHash])
+    let irreversibleHistory = Belt.Array.concat(state.irreversibleHistory, [{
+      castlingRights: state.castlingRights,
+      enPassantTarget: state.enPassantTarget,
+      halfmoveClock: state.halfmoveClock,
+      zobristHash: state.zobristHash,
+    }])
 
     {
       board,
       turn: newTurn,
-      castlingRights: newRights,
+      castlingRights: finalRights,
       enPassantTarget,
       halfmoveClock,
       fullmoveNumber,
       moveHistory,
+      zobristHash: hash.contents,
+      positionHistory,
+      irreversibleHistory,
     }
   }
 }

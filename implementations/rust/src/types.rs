@@ -177,6 +177,14 @@ impl CastlingRights {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct IrreversibleState {
+    pub castling_rights: CastlingRights,
+    pub en_passant_target: Option<Square>,
+    pub halfmove_clock: u32,
+    pub zobrist_hash: u64,
+}
+
 #[derive(Debug, Clone)]
 pub struct GameState {
     pub board: [Option<Piece>; 64],
@@ -186,6 +194,9 @@ pub struct GameState {
     pub halfmove_clock: u32,
     pub fullmove_number: u32,
     pub move_history: Vec<Move>,
+    pub zobrist_hash: u64,
+    pub position_history: Vec<u64>,
+    pub irreversible_history: Vec<IrreversibleState>,
 }
 
 impl GameState {
@@ -228,6 +239,9 @@ impl GameState {
             halfmove_clock: 0,
             fullmove_number: 1,
             move_history: Vec::new(),
+            zobrist_hash: 0,
+            position_history: Vec::new(),
+            irreversible_history: Vec::new(),
         }
     }
 }

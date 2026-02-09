@@ -153,10 +153,58 @@ class CastlingRights:
 
 
 @dataclass
-class GameState:
-    """Represents complete game state for undo functionality."""
+
+
+class IrreversibleState:
+
+
+    """Tracks irreversible state for robust undo."""
+
+
     castling_rights: CastlingRights
+
+
     en_passant_target: Optional[Tuple[int, int]]
+
+
     halfmove_clock: int
+
+
+    zobrist_hash: int
+
+
+
+
+
+@dataclass
+
+
+class GameState:
+
+
+    """Represents complete game state for undo functionality."""
+
+
+    castling_rights: CastlingRights
+
+
+    en_passant_target: Optional[Tuple[int, int]]
+
+
+    halfmove_clock: int
+
+
     fullmove_number: int
+
+
+    zobrist_hash: int
+
+
+    position_history: List[int]
+
+
+    irreversible_history: List[IrreversibleState]
+
+
     captured_piece: Optional[Piece] = None
+
