@@ -77,17 +77,20 @@ def _generate_ray_tables() -> Tuple[Tuple[Tuple[Tuple[int, int], ...], ...], ...
     Generate ray tables for sliding pieces.
     
     Returns a tuple of 8 direction tables, each containing 64 entries.
-    Directions: N, NE, E, SE, S, SW, W, NW
+    Directions indexed as: NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST
+    
+    Note: In our coordinate system (row 0 = rank 1), "north" means toward rank 8 (increasing row),
+    and "south" means toward rank 1 (decreasing row).
     """
     directions = [
-        (-1, 0),   # North
-        (-1, 1),   # North-East
+        (1, 0),    # North (toward rank 8)
+        (1, 1),    # North-East
         (0, 1),    # East
-        (1, 1),    # South-East
-        (1, 0),    # South
-        (1, -1),   # South-West
+        (-1, 1),   # South-East (toward rank 1)
+        (-1, 0),   # South (toward rank 1)
+        (-1, -1),  # South-West
         (0, -1),   # West
-        (-1, -1)   # North-West
+        (1, -1)    # North-West (toward rank 8)
     ]
     
     ray_tables = []
