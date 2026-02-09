@@ -140,10 +140,14 @@ impl fmt::Display for TypedSquare {
 }
 
 // Arithmetic operations for TypedSquare
+// Note: These use saturating arithmetic for backward compatibility with existing code
+// that performs arithmetic on squares. In new code, prefer using offset() which returns Option.
+
 impl Add<u8> for TypedSquare {
     type Output = Self;
 
     fn add(self, rhs: u8) -> Self::Output {
+        // Saturate to maintain type invariant (0-63)
         TypedSquare(self.0.saturating_add(rhs).min(63))
     }
 }
