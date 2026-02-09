@@ -800,6 +800,9 @@ class AttackTables {
      * Converts row and column to square index (0-63)
      * Row 0 = rank 8 (a8-h8), Row 7 = rank 1 (a1-h1)
      * Col 0 = file a, Col 7 = file h
+     * 
+     * Note: Row is inverted (7 - row) because PHP's internal board representation
+     * uses row 0 for rank 8, but the attack table indices use 0 for a1.
      */
     public static function square_index(int $row, int $col): int {
         return (7 - $row) * 8 + $col;
@@ -807,6 +810,10 @@ class AttackTables {
 
     /**
      * Converts square index to [row, col]
+     * Returns [row, col] where row 0 = rank 8, row 7 = rank 1
+     * 
+     * Note: Row is inverted (7 - rank) to match PHP's internal board representation
+     * where row 0 represents rank 8.
      */
     public static function index_to_square(int $index): array {
         $row = 7 - intdiv($index, 8);
