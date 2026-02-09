@@ -1,5 +1,6 @@
 import { Board } from "./board";
 import { Move, Piece, Color, Square, PieceType } from "./types";
+import { getKnightAttacks, getKingAttacks } from "./attackTables";
 
 export class MoveGenerator {
   private board: Board;
@@ -101,34 +102,21 @@ export class MoveGenerator {
 
     const enPassantTarget = this.board.getEnPassantTarget();
     if (enPassantTarget !== null) {
-      const epRank = Math.floor(enPassantTarget / 8);
       const expectedPawnRank = piece.color === "white" ? 4 : 3;
 
       if (rank === expectedPawnRank) {
         [-1, 1].forEach((offset) => {
-          const adjacentSquare = from + offset;
-          const adjFile = adjacentSquare % 8;
+          const to = from + direction + offset;
+          const toFile = to % 8;
 
-          if (Math.abs(adjFile - file) === 1) {
-            const targetPawnSquare = adjacentSquare;
-            const targetPawn = this.board.getPiece(targetPawnSquare);
-
-            if (
-              targetPawn &&
-              targetPawn.type === "P" &&
-              targetPawn.color !== piece.color
-            ) {
-              const captureSquare = enPassantTarget;
-              if (captureSquare === targetPawnSquare + direction) {
-                moves.push({
-                  from,
-                  to: captureSquare,
-                  piece: "P",
-                  enPassant: true,
-                  captured: "P",
-                });
-              }
-            }
+          if (Math.abs(toFile - file) === 1 && to === enPassantTarget) {
+            moves.push({
+              from,
+              to,
+              piece: "P",
+              enPassant: true,
+              captured: "P",
+            });
           }
         });
       }
@@ -139,20 +127,14 @@ export class MoveGenerator {
 
   private generateKnightMoves(from: Square, piece: Piece): Move[] {
     const moves: Move[] = [];
-    const offsets = [-17, -15, -10, -6, 6, 10, 15, 17];
-    const file = from % 8;
+    const attacks = getKnightAttacks(from);
 
-    offsets.forEach((offset) => {
-      const to = from + offset;
-      const toFile = to % 8;
-
-      if (this.isValidSquare(to) && Math.abs(toFile - file) <= 2) {
-        const target = this.board.getPiece(to);
-        if (!target || target.color !== piece.color) {
-          moves.push({ from, to, piece: "N", captured: target?.type });
-        }
+    for (const to of attacks) {
+      const target = this.board.getPiece(to);
+      if (!target || target.color !== piece.color) {
+        moves.push({ from, to, piece: "N", captured: target?.type });
       }
-    });
+    }
 
     return moves;
   }
@@ -176,20 +158,14 @@ export class MoveGenerator {
 
   private generateKingMoves(from: Square, piece: Piece): Move[] {
     const moves: Move[] = [];
-    const offsets = [-9, -8, -7, -1, 1, 7, 8, 9];
-    const file = from % 8;
+    const attacks = getKingAttacks(from);
 
-    offsets.forEach((offset) => {
-      const to = from + offset;
-      const toFile = to % 8;
-
-      if (this.isValidSquare(to) && Math.abs(toFile - file) <= 1) {
-        const target = this.board.getPiece(to);
-        if (!target || target.color !== piece.color) {
-          moves.push({ from, to, piece: "K", captured: target?.type });
-        }
+    for (const to of attacks) {
+      const target = this.board.getPiece(to);
+      if (!target || target.color !== piece.color) {
+        moves.push({ from, to, piece: "K", captured: target?.type });
       }
-    });
+    }
 
     const rights = this.board.getCastlingRights();
     if (piece.color === "white" && from === 4) {
@@ -197,7 +173,8 @@ export class MoveGenerator {
         rights.whiteKingside &&
         !this.board.getPiece(5) &&
         !this.board.getPiece(6) &&
-        this.board.getPiece(7)?.type === "R"
+        this.board.getPiece(7)?.type === "R" &&
+        this.board.getPiece(7)?.color === "white"
       ) {
         if (
           !this.isSquareAttacked(4, "black") &&
@@ -212,7 +189,8 @@ export class MoveGenerator {
         !this.board.getPiece(3) &&
         !this.board.getPiece(2) &&
         !this.board.getPiece(1) &&
-        this.board.getPiece(0)?.type === "R"
+        this.board.getPiece(0)?.type === "R" &&
+        this.board.getPiece(0)?.color === "white"
       ) {
         if (
           !this.isSquareAttacked(4, "black") &&
@@ -227,7 +205,8 @@ export class MoveGenerator {
         rights.blackKingside &&
         !this.board.getPiece(61) &&
         !this.board.getPiece(62) &&
-        this.board.getPiece(63)?.type === "R"
+        this.board.getPiece(63)?.type === "R" &&
+        this.board.getPiece(63)?.color === "black"
       ) {
         if (
           !this.isSquareAttacked(60, "white") &&
@@ -242,7 +221,8 @@ export class MoveGenerator {
         !this.board.getPiece(59) &&
         !this.board.getPiece(58) &&
         !this.board.getPiece(57) &&
-        this.board.getPiece(56)?.type === "R"
+        this.board.getPiece(56)?.type === "R" &&
+        this.board.getPiece(56)?.color === "black"
       ) {
         if (
           !this.isSquareAttacked(60, "white") &&
@@ -267,15 +247,22 @@ export class MoveGenerator {
     const file = from % 8;
 
     directions.forEach((direction) => {
-      let to = from + direction;
-      let prevFile = file;
+      let current = from;
+      let to = current + direction;
 
       while (this.isValidSquare(to)) {
+        const currentFile = current % 8;
+        const currentRank = Math.floor(current / 8);
         const toFile = to % 8;
+        const toRank = Math.floor(to / 8);
 
-        if (isDiagonal === true && Math.abs(toFile - prevFile) !== 1) break;
-        if ((isDiagonal === false && direction === -1) || direction === 1) {
-          if (Math.abs(toFile - prevFile) !== 1) break;
+        // Check for board wrapping based on direction type
+        if (Math.abs(direction) === 1) {
+          // Horizontal movement - must stay on same rank
+          if (currentRank !== toRank) break;
+        } else if (Math.abs(direction) === 7 || Math.abs(direction) === 9) {
+          // Diagonal movement - file and rank must both change by 1
+          if (Math.abs(toRank - currentRank) !== 1 || Math.abs(toFile - currentFile) !== 1) break;
         }
 
         const target = this.board.getPiece(to);
@@ -288,7 +275,7 @@ export class MoveGenerator {
           break;
         }
 
-        prevFile = toFile;
+        current = to;
         to += direction;
       }
     });
