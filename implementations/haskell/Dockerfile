@@ -1,10 +1,7 @@
 # Use official Haskell image
-FROM haskell:9.10-slim
+FROM haskell:9.6
 
 WORKDIR /app
-
-# Install make for the test suite
-RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
 
 # Copy project files
 COPY chess.cabal ./

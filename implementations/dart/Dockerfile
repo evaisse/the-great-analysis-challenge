@@ -14,7 +14,7 @@ COPY . .
 RUN dart compile exe bin/main.dart -o bin/chess_engine
 
 # Runtime stage
-FROM debian:bookworm-slim
+FROM dart:stable
 
 WORKDIR /app
 
