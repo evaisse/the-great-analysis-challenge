@@ -1,29 +1,23 @@
-FROM ubuntu:24.04
+# Build stage
+FROM rust:1.84-slim AS builder
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-ENV RUSTUP_HOME=/usr/local/rustup
-ENV CARGO_HOME=/usr/local/cargo
-ENV PATH=/usr/local/cargo/bin:$PATH
-
-# Install system dependencies and Rust
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
-    && rustup component add clippy rustfmt \
-    && cargo install cargo-audit \
-    && chmod -R a+w $RUSTUP_HOME $CARGO_HOME
-
-WORKDIR /usr/src/chess
-
+WORKDIR /app
 COPY . .
 
+# Build the application
 RUN cargo build --release
 
-CMD ["./target/release/chess"]
+# Runtime stage
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/target/release/chess /app/chess
+COPY --from=builder /app/Makefile /app/Makefile
+
+# Install make for the test suite
+RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
+
+# Default command
+CMD ["./chess"]

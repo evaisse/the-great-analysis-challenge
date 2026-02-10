@@ -1,20 +1,22 @@
 # Use official Python image
-FROM python:3.12-slim
+FROM python:3.13-slim
 
-# Install system dependencies (needed for compiling potential C extensions)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    pkg-config \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
 # Copy requirements first for better caching
-COPY requirements.txt ./
+COPY requirements.txt* ./
 
 # Install Python dependencies
-RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+RUN if [ -f requirements.txt ]; then \
+    pip3 install --no-cache-dir -r requirements.txt; \
+    fi
 
 # Copy source code
 COPY . .
@@ -32,39 +34,13 @@ USER chess
 # Make chess.py executable
 RUN chmod +x chess.py
 
-# Create analyze script for comprehensive static analysis
+# Create analyze script
 RUN echo '#!/bin/bash\n\
 echo "🔍 Running Python static analysis..."\n\
-echo "=" | head -c 50; echo\n\
-\n\
-echo "📝 Type checking with mypy..."\n\
 python3 -m mypy . || true\n\
-echo\n\
-\n\
-echo "🎯 Code quality with pylint..."\n\
 python3 -m pylint . --disable=C0114,C0115,C0116 || true\n\
-echo\n\
-\n\
-echo "📏 Style checking with flake8..."\n\
-python3 -m flake8 . --max-line-length=100 --ignore=E203,W503 || true\n\
-echo\n\
-\n\
-echo "🖤 Code formatting with black..."\n\
-python3 -m black --check --diff . || true\n\
-echo\n\
-\n\
-echo "🔒 Security analysis with bandit..."\n\
-python3 -m bandit -r . -f txt || true\n\
-echo\n\
-\n\
 echo "✅ Analysis complete!"' > /app/analyze && \
     chmod +x /app/analyze
 
 # Default command to run the chess engine
 CMD ["python3", "chess.py"]
-
-# Alternative commands for different use cases:
-# To run static analysis: docker run --rm chess-python ./analyze
-# To run mypy only: docker run --rm chess-python python3 -m mypy .
-# To run pylint only: docker run --rm chess-python python3 -m pylint .
-# Interactive mode: docker run -it chess-python

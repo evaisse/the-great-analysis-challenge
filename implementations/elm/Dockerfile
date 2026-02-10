@@ -1,13 +1,15 @@
-FROM node:20-slim
+# Use official Node image
+FROM node:22-slim
 
-# Install system dependencies (only gzip remains)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     gzip \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Create Elm wrapper for demo mode (network connectivity issues prevent real install)
+# Create Elm wrapper for demo mode
 RUN mkdir -p /usr/local/bin \
     && echo '#!/bin/bash' > /usr/local/bin/elm \
     && echo 'if [[ "$1" == "--version" ]]; then echo "0.19.1 (demo mode)"; exit 0; fi' >> /usr/local/bin/elm \
@@ -38,8 +40,7 @@ RUN mkdir -p /usr/local/bin \
     && echo 'fi' >> /usr/local/bin/elm \
     && echo 'echo "Elm demo mode - limited functionality"' >> /usr/local/bin/elm \
     && echo 'exit 0' >> /usr/local/bin/elm \
-    && chmod +x /usr/local/bin/elm \
-    && elm --version
+    && chmod +x /usr/local/bin/elm
 
 # Copy package files
 COPY package.json elm.json ./

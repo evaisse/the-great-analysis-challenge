@@ -1,6 +1,6 @@
-FROM dart:stable-sdk AS build
+# Build stage
+FROM dart:stable AS build
 
-# Set the working directory.
 WORKDIR /app
 
 # Copy the pubspec files and get dependencies.
@@ -11,17 +11,15 @@ RUN dart pub get
 COPY . .
 
 # Compile the application.
-# `dart pub get` must have already run to ensure all dependencies are resolved.
 RUN dart compile exe bin/main.dart -o bin/chess_engine
 
-# --- Runtime Image ---
-FROM dart:stable-sdk
+# Runtime stage
+FROM debian:bookworm-slim
 
-# Install make
-RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
-
-# Set the working directory.
 WORKDIR /app
+
+# Install make for the test suite
+RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled executable and project structure
 COPY --from=build /app /app

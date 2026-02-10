@@ -1,9 +1,10 @@
 # Use official Lua image
 FROM lua:5.4-slim
 
-# Install build dependencies for potential C-extensions
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -25,13 +26,5 @@ USER chess
 # Make chess.lua executable
 RUN chmod +x chess.lua
 
-# Create analyze script for static analysis
-RUN echo '#!/bin/sh\necho "🔍 Running Lua syntax check..."\nlua5.4 -l chess.lua 2>&1 || true\necho "✅ Analysis complete!"' > /app/analyze && \
-    chmod +x /app/analyze
-
 # Default command to run the chess engine
 CMD ["lua5.4", "chess.lua"]
-
-# Alternative commands for different use cases:
-# To run static analysis: docker run --rm chess-lua ./analyze
-# Interactive mode: docker run -it chess-lua

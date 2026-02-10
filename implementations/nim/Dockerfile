@@ -1,9 +1,8 @@
-FROM nimlang/nim:2.0.4-alpine
+# Use official Nim image
+FROM nimlang/nim:2.2.0-alpine
 
-# Install build dependencies if needed (for c compilation)
-# The `build-base` package is a common requirement for compiling Nim projects that link to C libraries.
-RUN apk update && apk add build-base \
-    && rm -rf /var/cache/apk/*
+# Install build dependencies
+RUN apk add --no-cache build-base make
 
 # Set working directory
 WORKDIR /app
