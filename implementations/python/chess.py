@@ -160,8 +160,8 @@ class ChessEngine:
             else:
                 from lib.draw_detection import is_draw
                 if is_draw(self.board):
-                    from lib.draw_detection import is_draw_by_repetition
-                    reason = "repetition" if is_draw_by_repetition(self.board) else "50-move rule"
+                    from lib.draw_detection import is_draw_by_fifty_moves
+                    reason = "50-move rule" if is_draw_by_fifty_moves(self.board) else "repetition"
                     print(f'DRAW: by {reason}')
             
         except Exception as e:
@@ -252,18 +252,20 @@ class ChessEngine:
     def handle_eval(self):
         """Handle eval command."""
         evaluation = self.ai.evaluate_position()
-        print(f'Evaluation: {evaluation}')
+        print(f'EVALUATION: {evaluation}')
     
     def handle_hash(self):
         """Handle hash command."""
-        print(f'Hash: {self.board.zobrist_hash:016x}')
+        print(f'HASH: {self.board.zobrist_hash:016x}')
     
     def handle_draws(self):
         """Handle draws command."""
         from lib.draw_detection import is_draw_by_repetition, is_draw_by_fifty_moves
         repetition = is_draw_by_repetition(self.board)
         fifty_moves = is_draw_by_fifty_moves(self.board)
-        print(f'Repetition: {str(repetition).lower()}, 50-move rule: {str(fifty_moves).lower()}, 50-move clock: {self.board.halfmove_clock}')
+        print(f'REPETITION: {str(repetition).lower()}')
+        print(f'50-MOVE RULE: {str(fifty_moves).lower()}')
+        print(f'OK: clock={self.board.halfmove_clock}')
     
     def handle_history(self):
         """Handle history command."""
@@ -283,8 +285,8 @@ class ChessEngine:
         else:
             from lib.draw_detection import is_draw
             if is_draw(self.board):
-                from lib.draw_detection import is_draw_by_repetition
-                reason = "repetition" if is_draw_by_repetition(self.board) else "50-move rule"
+                from lib.draw_detection import is_draw_by_fifty_moves
+                reason = "50-move rule" if is_draw_by_fifty_moves(self.board) else "repetition"
                 print(f'DRAW: by {reason}')
             else:
                 print('OK: ongoing')

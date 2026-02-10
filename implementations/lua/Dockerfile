@@ -1,14 +1,15 @@
-# Use official Lua image
-FROM lua:5.4-slim
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    make \
-    && rm -rf /var/lib/apt/lists/*
+# Use Debian base image
+FROM debian:bookworm-slim
 
 # Set working directory
 WORKDIR /app
+
+# Install Lua and build dependencies
+RUN apt-get update && apt-get install -y \
+    lua5.4 \
+    build-essential \
+    make \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy source code
 COPY . .

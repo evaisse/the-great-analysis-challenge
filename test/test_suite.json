@@ -53,7 +53,7 @@
             {"cmd": "move e1g1"},
             {"cmd": "export"}
           ],
-          "expected_patterns": ["R4RK1", "5RK1"],
+          "expected_patterns": ["R4RK1"],
           "timeout": 2000
         },
         {
@@ -64,7 +64,7 @@
             {"cmd": "move e1c1"},
             {"cmd": "export"}
           ],
-          "expected_patterns": ["2KR3R", "K1R"],
+          "expected_patterns": ["2KR3R"],
           "timeout": 2000
         },
         {
@@ -86,7 +86,7 @@
             {"cmd": "move a7a8"},
             {"cmd": "export"}
           ],
-          "expected_patterns": ["Q7", "Q"],
+          "expected_patterns": ["Q7"],
           "timeout": 2000
         }
       ]
@@ -103,7 +103,8 @@
             {"cmd": "move f2f3"},
             {"cmd": "move e7e5"},
             {"cmd": "move g2g4"},
-            {"cmd": "move d8h4"}
+            {"cmd": "move d8h4"},
+            {"cmd": "status"}
           ],
           "expected_patterns": ["CHECKMATE"],
           "timeout": 2000
@@ -113,7 +114,8 @@
           "name": "Back Rank Mate",
           "commands": [
             {"cmd": "fen 6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"},
-            {"cmd": "move a1a8"}
+            {"cmd": "move a1a8"},
+            {"cmd": "status"}
           ],
           "expected_patterns": ["CHECKMATE"],
           "timeout": 2000
@@ -123,7 +125,8 @@
           "name": "Stalemate Detection",
           "commands": [
             {"cmd": "fen 7k/5Q2/8/8/8/8/8/7K w - - 0 1"},
-            {"cmd": "move f7f6"}
+            {"cmd": "move f7g6"},
+            {"cmd": "status"}
           ],
           "expected_patterns": ["STALEMATE"],
           "timeout": 2000
@@ -139,9 +142,10 @@
           "name": "AI Basic Move",
           "commands": [
             {"cmd": "new"},
-            {"cmd": "ai 1"}
+            {"cmd": "ai 1"},
+            {"cmd": "status"}
           ],
-          "expected_patterns": ["AI:", "depth"],
+          "expected_patterns": ["AI:", "OK: ONGOING"],
           "timeout": 2000
         },
         {
@@ -198,6 +202,71 @@
           ],
           "expected_patterns": ["AI:", "d4e5"],
           "timeout": 5000
+        }
+      ]
+    },
+    "advanced": {
+      "description": "Advanced engine features",
+      "required": false,
+      "tests": [
+        {
+          "id": "undo_functionality",
+          "name": "Undo Move",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e2e4"},
+            {"cmd": "undo"},
+            {"cmd": "export"}
+          ],
+          "expected_patterns": ["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"],
+          "timeout": 2000
+        },
+        {
+          "id": "evaluation_format",
+          "name": "Evaluation Command",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "eval"}
+          ],
+          "expected_patterns": ["EVALUATION:"],
+          "timeout": 1000
+        },
+        {
+          "id": "zobrist_hashing",
+          "name": "Zobrist Hash Consistency",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "hash"},
+            {"cmd": "move e2e4"},
+            {"cmd": "hash"}
+          ],
+          "expected_patterns": ["HASH:"],
+          "timeout": 1000
+        },
+        {
+          "id": "draw_by_repetition",
+          "name": "Draw by Repetition",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move g1f3"}, {"cmd": "move g8f6"},
+            {"cmd": "move f3g1"}, {"cmd": "move f6g8"},
+            {"cmd": "move g1f3"}, {"cmd": "move g8f6"},
+            {"cmd": "move f3g1"}, {"cmd": "move f6g8"},
+            {"cmd": "status"}
+          ],
+          "expected_patterns": ["DRAW:", "REPETITION"],
+          "timeout": 5000
+        },
+        {
+          "id": "draw_by_fifty_moves",
+          "name": "Draw by Fifty Moves",
+          "commands": [
+            {"cmd": "fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 99 1"},
+            {"cmd": "move g1f3"},
+            {"cmd": "status"}
+          ],
+          "expected_patterns": ["DRAW:", "50-MOVE"],
+          "timeout": 2000
         }
       ]
     },
@@ -289,7 +358,7 @@
     },
     "advanced": {
       "description": "Performance-optimized engine",
-      "required_categories": ["basic", "special_moves", "game_end", "ai", "fen", "performance"]
+      "required_categories": ["basic", "special_moves", "game_end", "ai", "fen", "performance", "advanced"]
     }
   },
   "test_positions": {
