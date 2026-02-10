@@ -100,6 +100,12 @@ class ChessEngine {
                 case "perft":
                     this.handlePerft(parts[1]);
                     break;
+                case "status":
+                    this.handleStatus();
+                    break;
+                case "board":
+                    console.log(this.board.display());
+                    break;
                 case "help":
                     this.handleHelp();
                     break;
@@ -158,9 +164,9 @@ class ChessEngine {
                 move.promotion = promotion;
             }
             this.board.makeMove(move);
-            console.log(`OK: ${moveStr}`);
             console.log(this.board.display());
             this.checkGameEnd();
+            console.log(`OK: ${moveStr}`);
         }
         catch (error) {
             console.log("ERROR: Invalid move format");
@@ -169,8 +175,8 @@ class ChessEngine {
     handleUndo() {
         const move = this.board.undoMove();
         if (move) {
-            console.log("Move undone");
             console.log(this.board.display());
+            console.log("OK: move undone");
         }
         else {
             console.log("ERROR: No moves to undo");
@@ -178,8 +184,8 @@ class ChessEngine {
     }
     handleNew() {
         this.board.reset();
-        console.log("New game started");
         console.log(this.board.display());
+        console.log("OK: new game started");
     }
     handleAI(depthStr) {
         const depth = parseInt(depthStr);
@@ -196,15 +202,15 @@ class ChessEngine {
             this.board.squareToAlgebraic(result.move.to) +
             (result.move.promotion || "");
         this.board.makeMove(result.move);
-        console.log(`AI: ${moveStr} (depth=${depth}, eval=${result.eval}, time=${result.time}ms)`);
         console.log(this.board.display());
         this.checkGameEnd();
+        console.log(`AI: ${moveStr} (depth=${depth}, eval=${result.eval}, time=${result.time}ms)`);
     }
     handleFen(fenString) {
         try {
             this.fenParser.parseFen(fenString);
-            console.log("Position loaded from FEN");
             console.log(this.board.display());
+            console.log("OK: FEN loaded");
         }
         catch (error) {
             console.log("ERROR: Invalid FEN string");
@@ -216,13 +222,13 @@ class ChessEngine {
     }
     handleEval() {
         const evaluation = this.evaluatePosition();
-        console.log(`Position evaluation: ${evaluation}`);
+        console.log(`EVALUATION: ${evaluation}`);
     }
     handleHash() {
-        console.log(`Hash: ${this.board.getHash().toString(16).padStart(16, "0")}`);
+        console.log(`HASH: ${this.board.getHash().toString(16).padStart(16, "0")}`);
     }
     handleDraws() {
-        console.log(this.board.getDrawInfo());
+        console.log(`DRAW: ${this.board.getDrawInfo()}`);
     }
     handleHistory() {
         const state = this.board.getState();
@@ -261,7 +267,26 @@ class ChessEngine {
         const startTime = Date.now();
         const nodes = this.perft.perft(depth);
         const endTime = Date.now();
-        console.log(`Perft(${depth}): ${nodes} nodes (${endTime - startTime}ms)`);
+        console.log(`OK: Perft(${depth}): ${nodes} nodes (${endTime - startTime}ms)`);
+    }
+    handleStatus() {
+        const color = this.board.getTurn();
+        const legalMoves = this.moveGenerator.getLegalMoves(color);
+        if (legalMoves.length === 0) {
+            if (this.moveGenerator.isInCheck(color)) {
+                const winner = color === "white" ? "Black" : "White";
+                console.log(`CHECKMATE: ${winner} wins`);
+            }
+            else {
+                console.log("STALEMATE: Draw");
+            }
+        }
+        else if (this.board.isDraw()) {
+            console.log(`DRAW: ${this.board.getDrawInfo()}`);
+        }
+        else {
+            console.log("OK: ongoing");
+        }
     }
     handleHelp() {
         console.log("Available commands:");

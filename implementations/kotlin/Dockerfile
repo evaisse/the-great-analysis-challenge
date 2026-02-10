@@ -1,19 +1,25 @@
-# Use official JDK image
-FROM eclipse-temurin:21-jdk-jammy
+# Build stage
+FROM gradle:jdk21 AS build
 
-# Set working directory
 WORKDIR /app
-
-# Install make
-RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
-
-# Copy all source files
 COPY . .
 
-# Build the application using the wrapper
-RUN ./gradlew build --no-daemon
+# Build the application
+RUN gradle build --no-daemon
 
-# Run the chess engine
+# Runtime stage
+FROM eclipse-temurin:21-jdk-jammy
+
+WORKDIR /app
+
+# Install make for the test suite
+RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
+
+# Copy the built jar and project structure
+COPY --from=build /app /app
+
+# Default command to run the chess engine
+CMD ["java", "-jar", "build/libs/chess-1.0.0.jar"]
 
 LABEL org.chess.language="kotlin"
 LABEL org.chess.version="1.9.10"
