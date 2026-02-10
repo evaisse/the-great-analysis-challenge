@@ -1,7 +1,5 @@
 package main
 
-import "math"
-
 const (
 	MATE_VALUE   = 20000
 	DRAW_VALUE   = 0

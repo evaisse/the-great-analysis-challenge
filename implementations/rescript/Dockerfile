@@ -10,9 +10,10 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy project files
 COPY package*.json ./
 COPY bsconfig.json ./
+COPY Makefile ./
 
 # Install dependencies
 RUN npm install
