@@ -1,31 +1,15 @@
-FROM ubuntu:24.04
+FROM gradle:8.5-jdk21-slim
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies and Java
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    unzip \
-    openjdk-11-jdk \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Gradle
-RUN GRADLE_VERSION="8.0" \
-    && wget "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
-    && unzip "gradle-${GRADLE_VERSION}-bin.zip" \
-    && mv "gradle-${GRADLE_VERSION}" /opt/gradle \
-    && ln -s /opt/gradle/bin/gradle /usr/local/bin/gradle \
-    && rm "gradle-${GRADLE_VERSION}-bin.zip"
-
+# Set working directory
 WORKDIR /app
 
 # Copy all source files and build script
 COPY . .
 
 # Build the application
+# This is required to compile and produce the JAR
 RUN gradle build
 
 # Run the chess engine
+# Assuming the JAR name convention is correct
 CMD ["java", "-jar", "build/libs/chess-1.0.0.jar"]

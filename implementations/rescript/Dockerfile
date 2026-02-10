@@ -1,18 +1,10 @@
 # Use Ubuntu base image
-FROM ubuntu:24.04
+FROM node:20-slim
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies and Node.js
+# Install minimal build dependencies needed for potential native node modules
 RUN apt-get update && apt-get install -y \
-    curl \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Node.js and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
 
 # Set working directory
 WORKDIR /app

@@ -1,14 +1,8 @@
-# Use Ubuntu base image
-FROM ubuntu:24.04
+# Use official Lua image
+FROM lua:5.4-slim
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies and Lua
+# Install build dependencies for potential C-extensions
 RUN apt-get update && apt-get install -y \
-    lua5.4 \
-    liblua5.4-dev \
-    luarocks \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 

@@ -1,24 +1,4 @@
-FROM ubuntu:24.04
-
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies and Dart
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    gnupg \
-    apt-transport-https \
-    ca-certificates \
-    make \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Dart
-RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/dart.gpg \
-    && echo 'deb [signed-by=/usr/share/keyrings/dart.gpg] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main' | tee /etc/apt/sources.list.d/dart_stable.list \
-    && apt-get update \
-    && apt-get install -y dart \
-    && rm -rf /var/lib/apt/lists/*
+FROM dart:stable-sdk AS build
 
 # Set the working directory.
 WORKDIR /app
@@ -31,7 +11,16 @@ RUN dart pub get
 COPY . .
 
 # Compile the application.
+# `dart pub get` must have already run to ensure all dependencies are resolved.
 RUN dart compile exe bin/main.dart -o bin/chess_engine
 
+# --- Runtime Image ---
+# Use an ultra-minimal scratch image for the final deployment to reduce size.
+FROM scratch
+# Copy runtime dependencies from the build stage.
+COPY --from=build /runtime/ /
+# Copy the compiled executable.
+COPY --from=build /app/bin/chess_engine /app/bin/chess_engine
+
 # Set the entrypoint for the container.
-CMD ["./bin/chess_engine"]
+CMD ["/app/bin/chess_engine"]

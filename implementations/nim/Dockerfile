@@ -1,13 +1,9 @@
-FROM ubuntu:24.04
+FROM nimlang/nim:2.0.4-alpine
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install Nim and dependencies
-RUN apt-get update && apt-get install -y \
-    nim \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies if needed (for c compilation)
+# The `build-base` package is a common requirement for compiling Nim projects that link to C libraries.
+RUN apk update && apk add build-base \
+    && rm -rf /var/cache/apk/*
 
 # Set working directory
 WORKDIR /app
