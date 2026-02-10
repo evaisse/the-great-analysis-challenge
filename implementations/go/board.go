@@ -13,10 +13,12 @@ func NewGameState() *GameState {
 		HalfmoveClock:   0,
 		FullmoveNumber:  1,
 		MoveHistory:     make([]Move, 0),
+		PositionHistory: make([]uint64, 0),
 	}
 
 	// Initialize starting position
 	gs.SetupInitialPosition()
+	gs.ZobristHash = computeZobristHash(gs)
 	return gs
 }
 
@@ -220,15 +222,18 @@ func (gs *GameState) IsInCheck(color Color) bool {
 
 func (gs *GameState) Clone() *GameState {
 	clone := &GameState{
-		Board:          gs.Board,
+		Board:           gs.Board,
 		ActiveColor:    gs.ActiveColor,
 		CastlingRights: gs.CastlingRights,
 		HalfmoveClock:  gs.HalfmoveClock,
 		FullmoveNumber: gs.FullmoveNumber,
 		MoveHistory:    make([]Move, len(gs.MoveHistory)),
+		ZobristHash:     gs.ZobristHash,
+		PositionHistory: make([]uint64, len(gs.PositionHistory)),
 	}
 
 	copy(clone.MoveHistory, gs.MoveHistory)
+	copy(clone.PositionHistory, gs.PositionHistory)
 
 	if gs.EnPassantTarget != nil {
 		target := *gs.EnPassantTarget
@@ -236,4 +241,35 @@ func (gs *GameState) Clone() *GameState {
 	}
 
 	return clone
+}
+
+func (gs *GameState) IsDrawByRepetition() bool {
+	count := 1
+	for _, h := range gs.PositionHistory {
+		if h == gs.ZobristHash {
+			count++
+			if count >= 3 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (gs *GameState) IsDrawByFiftyMoves() bool {
+	return gs.HalfmoveClock >= 100
+}
+
+func (gs *GameState) IsDraw() bool {
+	return gs.IsDrawByRepetition() || gs.IsDrawByFiftyMoves()
+}
+
+func (gs *GameState) GetDrawReason() string {
+	if gs.IsDrawByFiftyMoves() {
+		return "50-move rule"
+	}
+	if gs.IsDrawByRepetition() {
+		return "repetition"
+	}
+	return ""
 }

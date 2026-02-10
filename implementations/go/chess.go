@@ -58,6 +58,22 @@ func (engine *ChessEngine) Run() {
 			}
 		case "undo":
 			engine.handleUndo()
+		case "status":
+			engine.handleStatus()
+		case "hash":
+			fmt.Printf("HASH: %016x\n", engine.gameState.ZobristHash)
+		case "draws":
+			repetition := engine.gameState.IsDrawByRepetition()
+			fiftyMoves := engine.gameState.IsDrawByFiftyMoves()
+			fmt.Printf("REPETITION: %v\n", repetition)
+			fmt.Printf("50-MOVE RULE: %v\n", fiftyMoves)
+			fmt.Printf("OK: clock=%d\n", engine.gameState.HalfmoveClock)
+		case "history":
+			fmt.Printf("Position History (%d positions):\n", len(engine.gameState.PositionHistory)+1)
+			for i, h := range engine.gameState.PositionHistory {
+				fmt.Printf("  %d: %016x\n", i, h)
+			}
+			fmt.Printf("  %d: %016x (current)\n", len(engine.gameState.PositionHistory), engine.gameState.ZobristHash)
 		case "fen":
 			if len(parts) < 2 {
 				fmt.Println("ERROR: FEN string required")
@@ -68,8 +84,6 @@ func (engine *ChessEngine) Run() {
 			engine.handleExport()
 		case "eval":
 			engine.handleEval()
-		case "status":
-			engine.handleStatus()
 		case "board":
 			fmt.Print(engine.gameState.Display())
 			fmt.Println("OK: board displayed")
@@ -105,8 +119,8 @@ func (engine *ChessEngine) Run() {
 
 func (engine *ChessEngine) handleNew() {
 	engine.gameState = NewGameState()
+	fmt.Println("OK: New game started")
 	fmt.Print(engine.gameState.Display())
-	fmt.Println("OK: new game started")
 }
 
 func (engine *ChessEngine) handleMove(moveStr string) {
@@ -156,8 +170,6 @@ func (engine *ChessEngine) handleMove(moveStr string) {
 	}
 
 	engine.gameState.MakeMove(move)
-	fmt.Print(engine.gameState.Display())
-	fmt.Printf("OK: %s\n", moveStr)
 
 	// Check for game end conditions
 	legalMoves := engine.gameState.GenerateLegalMoves()
@@ -171,13 +183,21 @@ func (engine *ChessEngine) handleMove(moveStr string) {
 		} else {
 			fmt.Println("STALEMATE: Draw")
 		}
+	} else {
+		drawReason := engine.gameState.GetDrawReason()
+		if drawReason != "" {
+			fmt.Printf("DRAW: by %s\n", drawReason)
+		} else {
+			fmt.Printf("OK: %s\n", moveStr)
+		}
 	}
+	fmt.Print(engine.gameState.Display())
 }
 
 func (engine *ChessEngine) handleUndo() {
 	if engine.gameState.UndoLastMove() {
+		fmt.Println("OK: undo")
 		fmt.Print(engine.gameState.Display())
-		fmt.Println("OK: move undone")
 	} else {
 		fmt.Println("ERROR: No moves to undo")
 	}
@@ -188,8 +208,8 @@ func (engine *ChessEngine) handleFEN(fen string) {
 	if err != nil {
 		fmt.Printf("ERROR: Invalid FEN: %s\n", err.Error())
 	} else {
-		fmt.Print(engine.gameState.Display())
 		fmt.Println("OK: FEN loaded")
+		fmt.Print(engine.gameState.Display())
 	}
 }
 
@@ -216,7 +236,12 @@ func (engine *ChessEngine) handleStatus() {
 			fmt.Println("STALEMATE: Draw")
 		}
 	} else {
-		fmt.Println("OK: ongoing")
+		drawReason := engine.gameState.GetDrawReason()
+		if drawReason != "" {
+			fmt.Printf("DRAW: by %s\n", drawReason)
+		} else {
+			fmt.Println("OK: ongoing")
+		}
 	}
 }
 
@@ -265,32 +290,30 @@ func (engine *ChessEngine) handleAI(depth int) {
 		}
 	}
 
-	fmt.Printf("AI: %s (depth=%d, eval=%d, time=%dms)\n",
-		moveStr, depth, score, elapsed.Milliseconds())
-
-	fmt.Print(engine.gameState.Display())
-
 	// Check for game end conditions
-	legalMoves = engine.gameState.GenerateLegalMoves()
-	if len(legalMoves) == 0 {
+	nextLegalMoves := engine.gameState.GenerateLegalMoves()
+	if len(nextLegalMoves) == 0 {
 		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
-			if engine.gameState.ActiveColor == White {
-				fmt.Println("CHECKMATE: Black wins")
-			} else {
-				fmt.Println("CHECKMATE: White wins")
-			}
+			fmt.Printf("AI: %s (CHECKMATE)\n", moveStr)
 		} else {
-			fmt.Println("STALEMATE: Draw")
+			fmt.Printf("AI: %s (STALEMATE)\n", moveStr)
+		}
+	} else {
+		drawReason := engine.gameState.GetDrawReason()
+		if drawReason != "" {
+			fmt.Printf("AI: %s (DRAW: by %s)\n", moveStr, drawReason)
+		} else {
+			fmt.Printf("AI: %s (depth=%d, eval=%d, time=%d)\n",
+				moveStr, depth, score, elapsed.Milliseconds())
 		}
 	}
+
+	fmt.Print(engine.gameState.Display())
 }
 
 func (engine *ChessEngine) handlePerft(depth int) {
-	start := time.Now()
 	nodes := engine.perft(engine.gameState, depth)
-	elapsed := time.Since(start)
-
-	fmt.Printf("Perft(%d): %d nodes in %dms\n", depth, nodes, elapsed.Milliseconds())
+	fmt.Printf("Perft %d: %d\n", depth, nodes)
 }
 
 func (engine *ChessEngine) perft(gs *GameState, depth int) int {

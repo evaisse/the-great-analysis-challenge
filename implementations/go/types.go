@@ -49,12 +49,15 @@ type GameState struct {
 	FullmoveNumber  int        // Move number (increments after black's move)
 	MoveHistory     []Move
 	StateHistory    []SavedState
+	ZobristHash     uint64
+	PositionHistory []uint64
 }
 
 type SavedState struct {
 	CastlingRights  [2][2]bool
 	EnPassantTarget *Square
 	HalfmoveClock   int
+	ZobristHash     uint64
 }
 
 const (
