@@ -1,0 +1,21 @@
+[
+  {
+    "name": "Draw by Repetition (3-fold)",
+    "commands": [
+      "new",
+      "move g1f3", "move g8f6",
+      "move f3g1", "move f6g8",
+      "move g1f3", "move g8f6",
+      "move f3g1", "move f6g8"
+    ],
+    "expected_output": "DRAW"
+  },
+  {
+    "name": "Draw by 50-move rule",
+    "commands": [
+      "fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 99 1",
+      "move g1f3"
+    ],
+    "expected_output": "DRAW"
+  }
+]
