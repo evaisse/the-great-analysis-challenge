@@ -14,6 +14,12 @@
 4. **Performance Analysis**: Compare compilation times, execution speed, and resource usage
 5. **Developer Experience**: Document development workflow, tooling, and debugging approaches
 
+## Git Branch & Worktree Policy
+
+- **NEVER** switch the current branch manually (e.g., `git checkout <branch>`, `git switch <branch>`). The main worktree MUST stay on `main`.
+- When you need to work on a feature or fix branch, **always create a git worktree** instead. Use the `git-worktree-create` skill for the correct naming convention.
+- This prevents accidentally leaving the main repo on a stale branch and avoids conflicts with other agents or the user.
+
 ## Core Constraints
 
 ### Universal Requirements

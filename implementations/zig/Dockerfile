@@ -26,9 +26,9 @@ LABEL org.chess.author="Zig Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=800
-LABEL org.chess.run="zig run src/main.zig"
-LABEL org.chess.build="zig build"
-LABEL org.chess.test="zig test src/main.zig"
-LABEL org.chess.analyze="zig fmt --check src/ && zig test src/main.zig"
+LABEL org.chess.build="make docker-build"
+LABEL org.chess.run="docker run --rm -i chess-zig"
+LABEL org.chess.test="make docker-test"
+LABEL org.chess.analyze="docker run --rm chess-zig zig fmt --check src/"
 
 CMD ["./zig-out/bin/chess"]
