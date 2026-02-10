@@ -615,6 +615,16 @@ local function execute_move(move_str)
         return false, "ERROR: Invalid move format"
     end
     
+    local piece = board[from_rank][from_file]
+    if piece == "." then return false, "ERROR: No piece at source square" end
+    
+    -- Auto-promote to Queen if not specified
+    if not promotion_piece and string.upper(piece) == "P" then
+        if (white_to_move and to_rank == 8) or (not white_to_move and to_rank == 1) then
+            promotion_piece = white_to_move and "Q" or "q"
+        end
+    end
+
     if promotion_piece then
         promotion_piece = white_to_move and string.upper(promotion_piece) or string.lower(promotion_piece)
     end
@@ -895,7 +905,7 @@ local function ai_move(depth)
     
     make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
     
-    return true, string.format("AI: %s (depth=%d, eval=%d, time=%dms)", move_str, depth, eval, elapsed)
+    return true, string.format("AI: %s (depth=%d, eval=%d, time=%d)", move_str, depth, eval, elapsed)
 end
 
 -- Perft (performance test)
@@ -917,23 +927,25 @@ end
 -- Main command loop
 local function main()
     new_game()
-    
+    -- display_board() -- Removed to prevent duplicate display when 'new' is received
+
     while true do
-        io.write("> ")
-        io.flush()
-        local input = io.read()
+        local line = io.read()
+        if not line then break end
         
-        if not input then break end
-        
-        input = input:gsub("^%s*(.-)%s*$", "%1")  -- Trim whitespace
+        local input = line:gsub("^%s*(.-)%s*$", "%1")  -- Trim whitespace
+        if input == "" then goto continue end
         
         local cmd, arg = input:match("^(%S+)%s*(.*)$")
         if not cmd then cmd = input end
+        cmd = cmd:lower()
         
         if cmd == "quit" or cmd == "exit" then
+            print("Goodbye!")
             break
         elseif cmd == "new" then
             new_game()
+            print("OK: New game started")
             display_board()
         elseif cmd == "move" then
             if arg and arg ~= "" then
@@ -951,7 +963,7 @@ local function main()
                             print("STALEMATE: Draw")
                         end
                     elseif is_draw() then
-                        local reason = is_draw_by_repetition() and "repetition" or "50-move rule"
+                        local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
                         print("DRAW: by " .. reason)
                     end
                 end
@@ -960,20 +972,35 @@ local function main()
             end
         elseif cmd == "undo" then
             if undo_move() then
-                print("OK: Move undone")
+                print("OK: undo")
                 display_board()
             else
                 print("ERROR: No moves to undo")
             end
+        elseif cmd == "status" then
+            local legal_moves = generate_legal_moves()
+            if #legal_moves == 0 then
+                if is_in_check(white_to_move) then
+                    print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
+                else
+                    print("STALEMATE: Draw")
+                end
+            elseif is_draw() then
+                local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
+                print("DRAW: by " .. reason)
+            else
+                print("OK: ongoing")
+            end
         elseif cmd == "display" or cmd == "show" or cmd == "board" then
             display_board()
         elseif cmd == "hash" then
-            print(string.format("Hash: %016x", zobrist_hash))
+            print(string.format("HASH: %016x", zobrist_hash))
         elseif cmd == "draws" then
             local repetition = is_draw_by_repetition()
             local fifty_moves = is_draw_by_fifty_moves()
-            print(string.format("Repetition: %s, 50-move rule: %s, 50-move clock: %d", 
-                tostring(repetition), tostring(fifty_moves), halfmove_clock))
+            print(string.format("REPETITION: %s", tostring(repetition)))
+            print(string.format("50-MOVE RULE: %s", tostring(fifty_moves)))
+            print(string.format("OK: clock=%d", halfmove_clock))
         elseif cmd == "history" then
             print(string.format("Position History (%d positions):", #position_history + 1))
             for i, h in ipairs(position_history) do
@@ -985,9 +1012,11 @@ local function main()
         elseif cmd == "fen" then
             if arg and arg ~= "" then
                 local success, msg = import_fen(arg)
-                print(msg)
                 if success then
+                    print("OK: FEN loaded")
                     display_board()
+                else
+                    print(msg)
                 end
             else
                 print("ERROR: FEN command requires argument")
@@ -1008,38 +1037,36 @@ local function main()
                         print("STALEMATE: Draw")
                     end
                 elseif is_draw() then
-                    local reason = is_draw_by_repetition() and "repetition" or "50-move rule"
+                    local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
                     print("DRAW: by " .. reason)
                 end
             end
         elseif cmd == "eval" then
             local score = evaluate_position()
-            print(string.format("Evaluation: %+d", score))
+            print(string.format("EVALUATION: %d", score))
         elseif cmd == "perft" then
             local depth = tonumber(arg) or 4
             local start_time = os.clock()
             local nodes = perft(depth)
             local elapsed = math.floor((os.clock() - start_time) * 1000)
-            print(string.format("Nodes: %d (time=%dms)", nodes, elapsed))
+            print(string.format("Perft %d: %d", depth, nodes))
         elseif cmd == "help" then
             print("Available commands:")
             print("  new              - Start a new game")
             print("  move <from><to>  - Make a move (e.g., 'move e2e4')")
             print("  undo             - Undo last move")
-            print("  board            - Show the board (also: display, show)")
-            print("  hash             - Show Zobrist hash of current position")
-            print("  draws            - Show draw detection status")
-            print("  history          - Show position hash history")
+            print("  status           - Show game status")
+            print("  hash             - Show Zobrist hash")
             print("  export           - Export position as FEN")
             print("  fen <string>     - Load position from FEN")
-            print("  ai <depth>       - AI makes a move (depth 1-5)")
-            print("  eval             - Show position evaluation")
+            print("  ai <depth>       - AI makes a move")
+            print("  eval             - Show evaluation")
             print("  perft <depth>    - Performance test")
-            print("  help             - Show this help")
-            print("  quit             - Exit the program")
+            print("  quit             - Exit")
         else
             print("ERROR: Invalid command. Type 'help' for available commands.")
         end
+        ::continue::
     end
 end
 
