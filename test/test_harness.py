@@ -47,46 +47,61 @@ class ChessEngineTester:
         return True
     
     def send_command(self, command: str, timeout: float = 10.0) -> str:
-        """Send command and get response"""
+        """Send command and get response with non-blocking reads"""
         if not self.process:
             return ""
             
         try:
-            # Clear any pending output using non-blocking reads
             import fcntl
             import os
+            import select
+
+            # Clear any pending output using non-blocking reads
             fd = self.process.stdout.fileno()
             fl = fcntl.fcntl(fd, fcntl.F_GETFL)
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
             try:
-                # Small sleep to let OS fill buffer
-                time.sleep(0.01)
-                while True:
-                    if not self.process.stdout.read(1024):
-                        break
+                while self.process.stdout.read(1024): pass
             except:
                 pass
             fcntl.fcntl(fd, fcntl.F_SETFL, fl)
 
+            # Send command
             self.process.stdin.write(command + "\n")
             self.process.stdin.flush()
             
             start_time = time.time()
             output_lines = []
             
+            # Keywords that signal the end of an engine response
+            end_keywords = [
+                "OK:", "ERROR:", "CHECKMATE:", "STALEMATE:", 
+                "FEN:", "AI:", "EVALUATION:", "HASH:", 
+                "REPETITION:", "DRAW:"
+            ]
+            
             while time.time() - start_time < timeout:
                 if self.process.poll() is not None:
                     break
-                    
-                line = self.process.stdout.readline()
-                if line:
-                    stripped_line = line.strip()
-                    output_lines.append(stripped_line)
-                    if any(keyword in stripped_line.upper() for keyword in ["OK:", "ERROR:", "CHECKMATE:", "STALEMATE:", "FEN:", "AI:"]):
-                        break
+                
+                # Use select to wait for data with a short timeout
+                ready, _, _ = select.select([self.process.stdout], [], [], 0.1)
+                
+                if ready:
+                    line = self.process.stdout.readline()
+                    if line:
+                        stripped_line = line.strip()
+                        output_lines.append(stripped_line)
+                        if any(kw in stripped_line.upper() for kw in end_keywords):
+                            break
                 else:
-                    time.sleep(0.01)
-                    
+                    # If we already have some output and it's been a while, 
+                    # we might have missed a keyword or the command doesn't have one
+                    if output_lines and (time.time() - start_time > 0.5):
+                        # For commands like 'help' or others that don't follow protocol strictly
+                        # but we still want to wait a bit for the full output
+                        pass
+
             return "\n".join(output_lines)
             
         except Exception as e:
