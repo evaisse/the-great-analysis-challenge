@@ -2,7 +2,7 @@
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 # Convention over Configuration: This Makefile is 100% implementation-agnostic
 
-.PHONY: all test build analyze clean help website analyze-tools list-implementations verify workflow
+.PHONY: all test build analyze clean help website analyze-tools list-implementations verify workflow validate-website-metadata
 
 # Auto-discover all implementations with Dockerfiles
 IMPLEMENTATIONS := $(shell find implementations -mindepth 1 -maxdepth 1 -type d -exec test -f {}/Dockerfile \; -exec basename {} \; 2>/dev/null | sort)
@@ -29,6 +29,7 @@ help:
 	@echo "Other commands:"
 	@echo "  make list-implementations - List all available implementations"
 	@echo "  make website             - Generate static website in docs/"
+	@echo "  make validate-website-metadata - Validate website metadata completeness"
 	@echo "  make analyze-tools       - Static analysis for Python tooling (outside implementations)"
 	@echo "  make help                - Show this help message"
 	@echo ""
@@ -92,6 +93,8 @@ ifdef DIR
 		docker run --rm chess-$(DIR) make test; \
 	fi
 else
+	@echo "Validating website metadata..."
+	@./workflow validate-website-metadata
 	@echo "Running all tests in Docker containers..."
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
@@ -173,6 +176,8 @@ ifdef DIR
 	'
 else
 	@echo "Running workflow for all implementations..."
+	@echo "Validating website metadata..."
+	@./workflow validate-website-metadata
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
 		echo "==================== Workflow $$impl ===================="; \
@@ -207,6 +212,10 @@ website:
 	@python3 build_website.py
 	@echo "Website generated in docs/"
 	@echo "To preview: cd docs && python3 -m http.server 8080"
+
+# Validate website metadata completeness
+validate-website-metadata:
+	@./workflow validate-website-metadata
 
 # Static analysis for Python tooling outside implementations directory
 analyze-tools:
