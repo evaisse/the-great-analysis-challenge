@@ -37,3 +37,9 @@ RUN chmod +x chess.rb
 
 # Default command to run the chess engine
 CMD ["ruby", "chess.rb"]
+
+LABEL org.chess.language="ruby"
+LABEL org.chess.version="3.4"
+LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+LABEL org.chess.max_ai_depth=5
+LABEL org.chess.estimated_perft4_ms=1000

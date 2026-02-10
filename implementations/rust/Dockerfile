@@ -8,16 +8,15 @@ COPY . .
 RUN cargo build --release
 
 # Runtime stage
-FROM debian:bookworm-slim
+FROM rust:1.84-slim
 
 WORKDIR /app
-
-# Copy the compiled binary from the builder stage
-COPY --from=builder /app/target/release/chess /app/chess
-COPY --from=builder /app/Makefile /app/Makefile
 
 # Install make for the test suite
 RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
 
+# Copy the compiled binary and source code from the builder stage
+COPY --from=builder /app /app
+
 # Default command
-CMD ["./chess"]
+CMD ["./target/release/chess"]

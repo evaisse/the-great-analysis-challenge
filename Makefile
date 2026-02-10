@@ -79,12 +79,12 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
-	@if [ ! -f "implementations/$(DIR)/chess.meta" ]; then \
-		echo "WARNING: No chess.meta found for '$(DIR)', using basic test"; \
+	@RUN_CMD=$$(./scripts/get_metadata.py implementations/$(DIR) --field run); \
+	if [ -z "$$RUN_CMD" ]; then \
+		echo "WARNING: No run command found for '$(DIR)', using basic test"; \
 		$(MAKE) build DIR=$(DIR); \
 		docker run --rm chess-$(DIR) sh -c "cd /app && make test || true"; \
 	else \
-		RUN_CMD=$$(grep -o '"run"[[:space:]]*:[[:space:]]*"[^"]*"' implementations/$(DIR)/chess.meta | sed 's/"run"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/'); \
 		echo "Testing $(DIR) implementation in Docker..."; \
 		$(MAKE) build DIR=$(DIR); \
 		docker run --rm chess-$(DIR) sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | $$RUN_CMD"; \

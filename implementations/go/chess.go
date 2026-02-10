@@ -58,8 +58,18 @@ func (engine *ChessEngine) Run() {
 			}
 		case "undo":
 			engine.handleUndo()
+		case "fen":
+			if len(parts) < 2 {
+				fmt.Println("ERROR: FEN string required")
+			} else {
+				engine.handleFEN(strings.Join(parts[1:], " "))
+			}
 		case "export":
 			engine.handleExport()
+		case "eval":
+			engine.handleEval()
+		case "status":
+			engine.handleStatus()
 		case "ai":
 			depth := 3 // default depth
 			if len(parts) > 1 {
@@ -93,6 +103,7 @@ func (engine *ChessEngine) Run() {
 func (engine *ChessEngine) handleNew() {
 	engine.gameState = NewGameState()
 	fmt.Print(engine.gameState.Display())
+	fmt.Println("OK: new game started")
 }
 
 func (engine *ChessEngine) handleMove(moveStr string) {
@@ -132,7 +143,7 @@ func (engine *ChessEngine) handleMove(moveStr string) {
 
 	move, err := engine.gameState.IsValidMove(from, to)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Printf("ERROR: %s\n", err.Error())
 		return
 	}
 
@@ -143,18 +154,19 @@ func (engine *ChessEngine) handleMove(moveStr string) {
 
 	engine.gameState.MakeMove(move)
 	fmt.Print(engine.gameState.Display())
+	fmt.Printf("OK: %s\n", moveStr)
 
 	// Check for game end conditions
 	legalMoves := engine.gameState.GenerateLegalMoves()
 	if len(legalMoves) == 0 {
 		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
 			if engine.gameState.ActiveColor == White {
-				fmt.Println("Black wins by checkmate!")
+				fmt.Println("CHECKMATE: Black wins")
 			} else {
-				fmt.Println("White wins by checkmate!")
+				fmt.Println("CHECKMATE: White wins")
 			}
 		} else {
-			fmt.Println("Draw by stalemate!")
+			fmt.Println("STALEMATE: Draw")
 		}
 	}
 }
@@ -162,14 +174,47 @@ func (engine *ChessEngine) handleMove(moveStr string) {
 func (engine *ChessEngine) handleUndo() {
 	if engine.gameState.UndoLastMove() {
 		fmt.Print(engine.gameState.Display())
+		fmt.Println("OK: move undone")
 	} else {
 		fmt.Println("ERROR: No moves to undo")
 	}
 }
 
+func (engine *ChessEngine) handleFEN(fen string) {
+	err := engine.gameState.FromFEN(fen)
+	if err != nil {
+		fmt.Printf("ERROR: Invalid FEN: %s\n", err.Error())
+	} else {
+		fmt.Print(engine.gameState.Display())
+		fmt.Println("OK: FEN loaded")
+	}
+}
+
 func (engine *ChessEngine) handleExport() {
 	fen := engine.gameState.ToFEN()
-	fmt.Println(fen)
+	fmt.Printf("FEN: %s\n", fen)
+}
+
+func (engine *ChessEngine) handleEval() {
+	score := engine.ai.evaluate(engine.gameState)
+	fmt.Printf("EVALUATION: %d\n", score)
+}
+
+func (engine *ChessEngine) handleStatus() {
+	legalMoves := engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
+			if engine.gameState.ActiveColor == White {
+				fmt.Println("CHECKMATE: Black wins")
+			} else {
+				fmt.Println("CHECKMATE: White wins")
+			}
+		} else {
+			fmt.Println("STALEMATE: Draw")
+		}
+	} else {
+		fmt.Println("OK: ongoing")
+	}
 }
 
 func (engine *ChessEngine) handleAI(depth int) {
@@ -201,20 +246,24 @@ func (engine *ChessEngine) handleAI(depth int) {
 	engine.gameState.MakeMove(bestMove)
 
 	elapsed := time.Since(start)
-	fmt.Printf("AI move: %s%s", bestMove.From.ToAlgebraic(), bestMove.To.ToAlgebraic())
+	score := engine.ai.evaluate(engine.gameState)
+
+	moveStr := fmt.Sprintf("%s%s", bestMove.From.ToAlgebraic(), bestMove.To.ToAlgebraic())
 	if bestMove.IsPromotion {
 		switch bestMove.PromoteTo {
 		case Queen:
-			fmt.Print("q")
+			moveStr += "q"
 		case Rook:
-			fmt.Print("r")
+			moveStr += "r"
 		case Bishop:
-			fmt.Print("b")
+			moveStr += "b"
 		case Knight:
-			fmt.Print("n")
+			moveStr += "n"
 		}
 	}
-	fmt.Printf(" (depth %d, %d nodes, %dms)\n", depth, engine.ai.GetNodesEvaluated(), elapsed.Milliseconds())
+
+	fmt.Printf("AI: %s (depth=%d, eval=%d, time=%dms)\n",
+		moveStr, depth, score, elapsed.Milliseconds())
 
 	fmt.Print(engine.gameState.Display())
 
@@ -223,12 +272,12 @@ func (engine *ChessEngine) handleAI(depth int) {
 	if len(legalMoves) == 0 {
 		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
 			if engine.gameState.ActiveColor == White {
-				fmt.Println("Black wins by checkmate!")
+				fmt.Println("CHECKMATE: Black wins")
 			} else {
-				fmt.Println("White wins by checkmate!")
+				fmt.Println("CHECKMATE: White wins")
 			}
 		} else {
-			fmt.Println("Draw by stalemate!")
+			fmt.Println("STALEMATE: Draw")
 		}
 	}
 }

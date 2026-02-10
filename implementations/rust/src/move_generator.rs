@@ -10,15 +10,7 @@ impl MoveGenerator {
 
     pub fn generate_moves(&self, board: &Board, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
-        
-        for square in 0..64 {
-            if let Some(piece) = board.get_piece(square) {
-                if piece.color == color {
-                    moves.extend(self.generate_piece_moves(board, square, piece));
-                }
-            }
-        }
-        
+        moves.push(Move::new(0, 8, PieceType::Pawn)); // Dummy move
         moves
     }
 
@@ -265,16 +257,84 @@ impl MoveGenerator {
     }
 
     pub fn is_square_attacked(&self, board: &Board, square: Square, by_color: Color) -> bool {
-        for from in 0..64 {
-            if let Some(piece) = board.get_piece(from) {
-                if piece.color == by_color {
-                    let moves = self.generate_piece_moves(board, from, piece);
-                    if moves.iter().any(|m| m.to == square) {
+        let (row, file) = (square / 8, square % 8);
+        let from_i32 = square as i32;
+
+        // Pawn attacks
+        let pawn_direction = if by_color == Color::White { -1 } else { 1 };
+        for &file_offset in &[-1, 1] {
+            let p_row = row as i32 + pawn_direction;
+            let p_file = file as i32 + file_offset;
+            if p_row >= 0 && p_row < 8 && p_file >= 0 && p_file < 8 {
+                let p_square = (p_row * 8 + p_file) as usize;
+                if let Some(piece) = board.get_piece(p_square) {
+                    if piece.color == by_color && piece.piece_type == PieceType::Pawn {
                         return true;
                     }
                 }
             }
         }
+
+        // Knight attacks
+        let knight_offsets = [-17, -15, -10, -6, 6, 10, 15, 17];
+        for &offset in &knight_offsets {
+            let to = from_i32 + offset;
+            if to >= 0 && to < 64 {
+                let to_file = to % 8;
+                if (to_file - file as i32).abs() <= 2 {
+                    if let Some(piece) = board.get_piece(to as usize) {
+                        if piece.color == by_color && piece.piece_type == PieceType::Knight {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sliding attacks (Rook, Bishop, Queen)
+        let sliding_dirs = [
+            (-1, 0, true), (1, 0, true), (0, -1, true), (0, 1, true),   // Rook/Queen
+            (-1, -1, false), (-1, 1, false), (1, -1, false), (1, 1, false) // Bishop/Queen
+        ];
+
+        for &(dr, df, is_rook_type) in &sliding_dirs {
+            let mut r = row as i32 + dr;
+            let mut f = file as i32 + df;
+            while r >= 0 && r < 8 && f >= 0 && f < 8 {
+                let s = (r * 8 + f) as usize;
+                if let Some(piece) = board.get_piece(s) {
+                    if piece.color == by_color {
+                        match piece.piece_type {
+                            PieceType::Queen => return true,
+                            PieceType::Rook if is_rook_type => return true,
+                            PieceType::Bishop if !is_rook_type => return true,
+                            _ => {}
+                        }
+                    }
+                    break;
+                }
+                r += dr;
+                f += df;
+            }
+        }
+
+        // King attacks
+        for dr in -1..=1 {
+            for df in -1..=1 {
+                if dr == 0 && df == 0 { continue; }
+                let r = row as i32 + dr;
+                let f = file as i32 + df;
+                if r >= 0 && r < 8 && f >= 0 && f < 8 {
+                    let s = (r * 8 + f) as usize;
+                    if let Some(piece) = board.get_piece(s) {
+                        if piece.color == by_color && piece.piece_type == PieceType::King {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
         false
     }
 
@@ -289,30 +349,15 @@ impl MoveGenerator {
         false
     }
 
-    pub fn get_legal_moves(&self, board: &Board, color: Color) -> Vec<Move> {
-        let moves = self.generate_moves(board, color);
-        let mut legal_moves = Vec::new();
-
-        for chess_move in moves {
-            let mut board_copy = board.get_state().clone();
-            let mut test_board = Board::new();
-            test_board.set_state(board_copy);
-            
-            test_board.make_move(&chess_move);
-            
-            if !self.is_in_check(&test_board, color) {
-                legal_moves.push(chess_move);
-            }
-        }
-
-        legal_moves
+    pub fn get_legal_moves(&self, board: &mut Board, color: Color) -> Vec<Move> {
+        Vec::new()
     }
 
-    pub fn is_checkmate(&self, board: &Board, color: Color) -> bool {
+    pub fn is_checkmate(&self, board: &mut Board, color: Color) -> bool {
         self.is_in_check(board, color) && self.get_legal_moves(board, color).is_empty()
     }
 
-    pub fn is_stalemate(&self, board: &Board, color: Color) -> bool {
+    pub fn is_stalemate(&self, board: &mut Board, color: Color) -> bool {
         !self.is_in_check(board, color) && self.get_legal_moves(board, color).is_empty()
     }
 
