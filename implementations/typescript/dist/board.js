@@ -103,11 +103,21 @@ class Board {
         return (drawDetection.isDrawByRepetition(this.state) ||
             drawDetection.isDrawByFiftyMoves(this.state));
     }
+    isDrawByRepetition() {
+        return drawDetection.isDrawByRepetition(this.state);
+    }
+    isDrawByFiftyMoveRule() {
+        return drawDetection.isDrawByFiftyMoves(this.state);
+    }
     getHash() {
         return this.state.zobristHash;
     }
     getDrawInfo() {
-        return `Repetition: ${drawDetection.isDrawByRepetition(this.state)}, 50-move clock: ${this.state.halfmoveClock}`;
+        if (this.isDrawByFiftyMoveRule())
+            return "50-move rule";
+        if (this.isDrawByRepetition())
+            return "repetition";
+        return null;
     }
     getPiece(square) {
         return this.state.board[square];

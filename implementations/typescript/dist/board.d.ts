@@ -7,8 +7,10 @@ export declare class Board {
     getState(): GameState;
     setState(state: GameState): void;
     isDraw(): boolean;
+    isDrawByRepetition(): boolean;
+    isDrawByFiftyMoveRule(): boolean;
     getHash(): bigint;
-    getDrawInfo(): string;
+    getDrawInfo(): string | null;
     getPiece(square: Square): Piece | null;
     setPiece(square: Square, piece: Piece | null): void;
     getTurn(): Color;

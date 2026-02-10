@@ -117,12 +117,13 @@ export class ChessEngine {
         return;
       }
 
-      if (piece.color !== this.board.getTurn()) {
+      const turn = this.board.getTurn();
+      if (piece.color !== turn) {
         console.log("ERROR: Wrong color piece");
         return;
       }
 
-      const legalMoves = this.moveGenerator.getLegalMoves(this.board.getTurn());
+      const legalMoves = this.moveGenerator.getLegalMoves(turn);
       const move = legalMoves.find(
         (m) =>
           m.from === fromSquare &&
@@ -133,7 +134,7 @@ export class ChessEngine {
       );
 
       if (!move) {
-        const inCheck = this.moveGenerator.isInCheck(this.board.getTurn());
+        const inCheck = this.moveGenerator.isInCheck(turn);
         if (inCheck) {
           console.log("ERROR: King would be in check");
         } else {
@@ -144,14 +145,24 @@ export class ChessEngine {
 
       if (move.promotion && !promotion) {
         move.promotion = "Q";
-      } else if (move.promotion && promotion) {
-        move.promotion = promotion;
       }
 
       this.board.makeMove(move);
+      
+      const nextTurn = this.board.getTurn();
+      if (this.moveGenerator.isCheckmate(nextTurn)) {
+        console.log(`CHECKMATE: ${turn === "white" ? "White" : "Black"} wins`);
+      } else if (this.moveGenerator.isStalemate(nextTurn)) {
+        console.log("STALEMATE: Draw");
+      } else {
+        const drawInfo = this.board.getDrawInfo();
+        if (drawInfo) {
+          console.log(`DRAW: by ${drawInfo}`);
+        } else {
+          console.log(`OK: ${moveStr}`);
+        }
+      }
       console.log(this.board.display());
-      this.checkGameEnd();
-      console.log(`OK: ${moveStr}`);
     } catch (error) {
       console.log("ERROR: Invalid move format");
     }
@@ -160,8 +171,8 @@ export class ChessEngine {
   private handleUndo(): void {
     const move = this.board.undoMove();
     if (move) {
+      console.log("OK: undo");
       console.log(this.board.display());
-      console.log("OK: move undone");
     } else {
       console.log("ERROR: No moves to undo");
     }
@@ -169,8 +180,8 @@ export class ChessEngine {
 
   private handleNew(): void {
     this.board.reset();
+    console.log("OK: New game started");
     console.log(this.board.display());
-    console.log("OK: new game started");
   }
 
   private handleAI(depthStr: string): void {
@@ -189,21 +200,34 @@ export class ChessEngine {
     const moveStr =
       this.board.squareToAlgebraic(result.move.from) +
       this.board.squareToAlgebraic(result.move.to) +
-      (result.move.promotion || "");
+      (result.move.promotion || "").toLowerCase();
 
+    const turn = this.board.getTurn();
     this.board.makeMove(result.move);
+
+    const nextTurn = this.board.getTurn();
+    if (this.moveGenerator.isCheckmate(nextTurn)) {
+      console.log(`AI: ${moveStr} (CHECKMATE)`);
+    } else if (this.moveGenerator.isStalemate(nextTurn)) {
+      console.log(`AI: ${moveStr} (STALEMATE)`);
+    } else {
+      const drawInfo = this.board.getDrawInfo();
+      if (drawInfo) {
+        console.log(`AI: ${moveStr} (DRAW: by ${drawInfo})`);
+      } else {
+        console.log(
+          `AI: ${moveStr} (depth=${depth}, eval=${result.eval}, time=${result.time})`,
+        );
+      }
+    }
     console.log(this.board.display());
-    console.log(
-      `AI: ${moveStr} (depth=${depth}, eval=${result.eval}, time=${result.time}ms)`,
-    );
-    this.checkGameEnd();
   }
 
   private handleFen(fenString: string): void {
     try {
       this.fenParser.parseFen(fenString);
-      console.log(this.board.display());
       console.log("OK: FEN loaded");
+      console.log(this.board.display());
     } catch (error) {
       console.log("ERROR: Invalid FEN string");
     }
@@ -224,7 +248,10 @@ export class ChessEngine {
   }
 
   private handleDraws(): void {
-    console.log(`DRAW: ${this.board.getDrawInfo()}`);
+    const state = this.board.getState();
+    console.log(`REPETITION: ${this.board.isDrawByRepetition()}`);
+    console.log(`50-MOVE RULE: ${this.board.isDrawByFiftyMoveRule()}`);
+    console.log(`OK: clock=${state.halfmoveClock}`);
   }
 
   private handleHistory(): void {
@@ -249,50 +276,42 @@ export class ChessEngine {
       return;
     }
 
-    const startTime = Date.now();
     const nodes = this.perft.perft(depth);
-    const endTime = Date.now();
-
-    console.log(
-      `OK: Perft(${depth}): ${nodes} nodes (${endTime - startTime}ms)`,
-    );
+    console.log(`Perft ${depth}: ${nodes}`);
   }
 
   private handleStatus(): void {
     const color = this.board.getTurn();
-    const legalMoves = this.moveGenerator.getLegalMoves(color);
-
-    if (legalMoves.length === 0) {
-      if (this.moveGenerator.isInCheck(color)) {
-        const winner = color === "white" ? "Black" : "White";
-        console.log(`CHECKMATE: ${winner} wins`);
-      } else {
-        console.log("STALEMATE: Draw");
-      }
-    } else if (this.board.isDraw()) {
-      console.log(`DRAW: ${this.board.getDrawInfo()}`);
+    if (this.moveGenerator.isCheckmate(color)) {
+      const winner = color === "white" ? "Black" : "White";
+      console.log(`CHECKMATE: ${winner} wins`);
+    } else if (this.moveGenerator.isStalemate(color)) {
+      console.log("STALEMATE: Draw");
     } else {
-      console.log("OK: ongoing");
+      const drawInfo = this.board.getDrawInfo();
+      if (drawInfo) {
+        console.log(`DRAW: by ${drawInfo}`);
+      } else {
+        console.log("OK: ongoing");
+      }
     }
   }
 
   private handleHelp(): void {
     console.log("Available commands:");
     console.log(
-      "  move <from><to>[promotion] - Make a move (e.g., e2e4, e7e8Q)",
+      "  new              - Start a new game",
     );
-    console.log("  undo - Undo the last move");
-    console.log("  new - Start a new game");
-    console.log("  ai <depth> - Let AI make a move (depth 1-5)");
-    console.log("  fen <string> - Load position from FEN");
-    console.log("  export - Export current position as FEN");
-    console.log("  eval - Evaluate current position");
-    console.log("  hash - Show Zobrist hash of current position");
-    console.log("  draws - Show draw detection status");
-    console.log("  history - Show position hash history");
-    console.log("  perft <depth> - Run performance test");
-    console.log("  help - Show this help message");
-    console.log("  quit - Exit the program");
+    console.log("  move <from><to>  - Make a move (e.g., e2e4)");
+    console.log("  undo             - Undo last move");
+    console.log("  status           - Show game status");
+    console.log("  hash             - Show Zobrist hash");
+    console.log("  export           - Export position as FEN");
+    console.log("  fen <string>     - Load position from FEN");
+    console.log("  ai <depth>       - AI makes a move");
+    console.log("  eval             - Show evaluation");
+    console.log("  perft <depth>    - Performance test");
+    console.log("  quit             - Exit");
   }
 
   private checkGameEnd(): void {
@@ -306,8 +325,11 @@ export class ChessEngine {
       } else {
         console.log("STALEMATE: Draw");
       }
-    } else if (this.board.isDraw()) {
-      console.log(`DRAW: ${this.board.getDrawInfo()}`);
+    } else {
+      const drawInfo = this.board.getDrawInfo();
+      if (drawInfo) {
+        console.log(`DRAW: by ${drawInfo}`);
+      }
     }
   }
 }
