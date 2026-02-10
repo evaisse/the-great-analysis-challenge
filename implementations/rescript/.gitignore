@@ -1,8 +1,3 @@
-# ReScript
-lib/bs/
-node_modules/
-*.bs.js
+/node_modules/
+/lib/
 .bsb.lock
-package-lock.json
-npm-debug.log*
-.DS_Store
