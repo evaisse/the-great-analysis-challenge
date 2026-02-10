@@ -2,11 +2,11 @@
 
 class FenParser {
     
-    fun parseFen(board: Board, fenString: String): Result<Unit> {
+    fun parseFen(board: Board, fenString: String): Boolean {
         try {
             val parts = fenString.split(" ")
             if (parts.size < 4) {
-                return Result.failure(Exception("ERROR: Invalid FEN string"))
+                return false
             }
             
             val pieces = parts[0]
@@ -25,14 +25,16 @@ class FenParser {
                 when (char) {
                     '/' -> square -= 16 // Move to next rank
                     in '1'..'8' -> {
-                        val emptySquares = char.digitToInt()
+                        val emptySquares = char.toString().toInt()
                         square += emptySquares
                     }
                     else -> {
                         val piece = Piece.fromChar(char)
                         if (piece != null) {
-                            gameBoard[square] = piece
-                            square++
+                            if (square in 0..63) {
+                                gameBoard[square] = piece
+                                square++
+                            }
                         }
                     }
                 }
@@ -42,7 +44,7 @@ class FenParser {
             val color = when (turn) {
                 "w" -> Color.WHITE
                 "b" -> Color.BLACK
-                else -> return Result.failure(Exception("ERROR: Invalid FEN string"))
+                else -> return false
             }
             
             // Parse castling rights
@@ -69,10 +71,10 @@ class FenParser {
             )
             
             board.setGameState(newState)
-            return Result.success(Unit)
+            return true
             
         } catch (e: Exception) {
-            return Result.failure(Exception("ERROR: Invalid FEN string"))
+            return false
         }
     }
     

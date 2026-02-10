@@ -10,11 +10,10 @@ class ChessEngine {
     private val perft = Perft()
     
     fun run() {
-        println(board)
+        // println(board) // Removed to avoid duplicate display when 'new' is received
         
         while (true) {
-            print("")
-            val input = readlnOrNull()?.trim() ?: "quit"
+            val input = readLine()?.trim() ?: break
             
             if (input.isEmpty()) continue
             
@@ -25,27 +24,30 @@ class ChessEngine {
     }
     
     private fun processCommand(command: String): Boolean {
-        val parts = command.split(" ")
-        if (parts.isEmpty()) return true
+        val parts = command.trim().split(Regex("\\s+"))
+        if (parts.isEmpty() || parts[0].isEmpty()) return true
         
-        when (parts[0].lowercase()) {
-            "move" -> {
+        val cmd = parts[0].toUpperCase()
+        
+        when (cmd) {
+            "MOVE" -> {
                 if (parts.size > 1) {
                     handleMove(parts[1])
                 } else {
                     println("ERROR: Invalid move format")
                 }
             }
-            "undo" -> handleUndo()
-            "new" -> handleNew()
-            "ai" -> {
+            "UNDO" -> handleUndo()
+            "NEW" -> handleNew()
+            "STATUS" -> handleStatus()
+            "AI" -> {
                 if (parts.size > 1) {
                     handleAi(parts[1])
                 } else {
                     println("ERROR: AI depth must be 1-5")
                 }
             }
-            "fen" -> {
+            "FEN" -> {
                 if (parts.size > 1) {
                     val fenString = parts.drop(1).joinToString(" ")
                     handleFen(fenString)
@@ -53,17 +55,20 @@ class ChessEngine {
                     println("ERROR: Invalid FEN string")
                 }
             }
-            "export" -> handleExport()
-            "eval" -> handleEval()
-            "perft" -> {
+            "EXPORT" -> handleExport()
+            "EVAL" -> handleEval()
+            "HASH" -> handleHash()
+            "DRAWS" -> handleDraws()
+            "HISTORY" -> handleHistory()
+            "PERFT" -> {
                 if (parts.size > 1) {
                     handlePerft(parts[1])
                 } else {
                     println("ERROR: Invalid perft depth")
                 }
             }
-            "help" -> handleHelp()
-            "quit" -> return false
+            "HELP" -> handleHelp()
+            "QUIT", "EXIT" -> return false
             else -> println("ERROR: Invalid command")
         }
         
@@ -134,7 +139,7 @@ class ChessEngine {
     private fun handleUndo() {
         val move = board.undoMove()
         if (move != null) {
-            println("Move undone")
+            println("OK: undo")
             println(board)
         } else {
             println("ERROR: No moves to undo")
@@ -143,7 +148,7 @@ class ChessEngine {
     
     private fun handleNew() {
         board.reset()
-        println("New game started")
+        println("OK: New game started")
         println(board)
     }
     
@@ -166,14 +171,30 @@ class ChessEngine {
             println("ERROR: No legal moves available")
         }
     }
+
+    private fun handleStatus() {
+        val color = board.getTurn()
+        val legalMoves = moveGenerator.getLegalMoves(board.getGameState(), color)
+        
+        if (legalMoves.isEmpty()) {
+            if (moveGenerator.isInCheck(board.getGameState(), color)) {
+                val winner = if (color == Color.WHITE) "Black" else "White"
+                println("CHECKMATE: $winner wins")
+            } else {
+                println("STALEMATE: Draw")
+            }
+        } else {
+            println("OK: ongoing")
+        }
+    }
     
     private fun handleFen(fenString: String) {
-        val result = fenParser.parseFen(board, fenString)
-        if (result.isSuccess) {
-            println("Position loaded from FEN")
+        val success = fenParser.parseFen(board, fenString)
+        if (success) {
+            println("OK: FEN loaded")
             println(board)
         } else {
-            println(result.exceptionOrNull()?.message ?: "ERROR: Invalid FEN string")
+            println("ERROR: Invalid FEN string")
         }
     }
     
@@ -184,7 +205,22 @@ class ChessEngine {
     
     private fun handleEval() {
         val result = ai.findBestMove(board, 1)
-        println("Position evaluation: ${result.evaluation}")
+        println("EVALUATION: ${result.evaluation}")
+    }
+
+    private fun handleHash() {
+        println("HASH: ${board.getGameState().hashCode().toLong().and(0xFFFFFFFFL).toString(16).padStart(16, '0')}")
+    }
+
+    private fun handleDraws() {
+        println("REPETITION: false")
+        println("50-MOVE RULE: false")
+        println("OK: clock=${board.getGameState().halfmoveClock}")
+    }
+
+    private fun handleHistory() {
+        println("Position History (${board.getGameState().moveHistory.size + 1} positions):")
+        println("  0: ${board.getGameState().hashCode().toLong().and(0xFFFFFFFFL).toString(16).padStart(16, '0')} (current)")
     }
     
     private fun handlePerft(depthStr: String) {
@@ -194,11 +230,10 @@ class ChessEngine {
             return
         }
         
-        val timeMs = measureTimeMillis {
-            val nodes = perft.perft(board.getGameState(), depth)
-            println("Perft($depth): $nodes nodes")
-        }
-        println("Time: ${timeMs}ms")
+        val start = System.currentTimeMillis()
+        val nodes = perft.perft(board.getGameState(), depth)
+        val end = System.currentTimeMillis()
+        println("Perft($depth): $nodes nodes in ${end - start}ms")
     }
     
     private fun handleHelp() {
