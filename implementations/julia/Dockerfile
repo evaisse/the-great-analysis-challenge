@@ -1,32 +1,14 @@
-FROM ubuntu:24.04
-
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Julia
-RUN JULIA_VERSION="1.10.1" \
-    && wget "https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
-    && tar -xzf "julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
-    && mv "julia-${JULIA_VERSION}" /opt/julia \
-    && ln -s /opt/julia/bin/julia /usr/local/bin/julia \
-    && rm "julia-${JULIA_VERSION}-linux-x86_64.tar.gz"
+# Use official Julia image
+FROM julia:1.11-bookworm
 
 WORKDIR /app
 
 # Copy project files
-COPY Project.toml .
-COPY src/ src/
-COPY chess.jl .
+COPY . .
 
-# Install dependencies (if any)
-RUN julia --project=. -e "using Pkg; Pkg.instantiate()"
+# Install dependencies and make for the test suite
+RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/* && \
+    julia --project=. -e "using Pkg; Pkg.instantiate(); Pkg.precompile()"
 
-# Make the chess engine executable
+# Default command
 CMD ["julia", "--project=.", "chess.jl"]

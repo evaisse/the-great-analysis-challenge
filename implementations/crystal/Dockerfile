@@ -1,5 +1,8 @@
-# Use the official Crystal image for version 1.11.2
-FROM crystal:1.11.2-alpine
+# Use official Crystal image
+FROM crystal:1.15-alpine
+
+# Install make for the test suite
+RUN apk add --no-cache make
 
 # Set working directory
 WORKDIR /app
@@ -8,12 +11,7 @@ WORKDIR /app
 COPY shard.yml ./
 COPY src/ ./src/
 
-# The official image should already contain necessary build tools.
-# If the project requires specific C libraries, they should be added here using `apk add`.
-# Assuming core libraries are covered for a typical chess engine.
-
 # Build the application
-# We use a release build for performance
 RUN crystal build src/chess_engine.cr --release -o chess_engine
 
 # Make executable

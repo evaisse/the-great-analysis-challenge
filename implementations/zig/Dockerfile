@@ -1,34 +1,23 @@
-FROM ubuntu:24.04
+# Build stage
+FROM ziglang/zig:0.13.0 AS builder
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
+COPY . .
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    xz-utils \
-    && rm -rf /var/lib/apt/lists/*
+# Build the application
+RUN zig build -Doptimize=ReleaseFast
 
-# Install Zig
-RUN ZIG_VERSION="0.12.0" \
-    && wget "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
-    && tar -xf "zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
-    && mv "zig-linux-x86_64-${ZIG_VERSION}" /opt/zig \
-    && ln -s /opt/zig/zig /usr/local/bin/zig \
-    && rm "zig-linux-x86_64-${ZIG_VERSION}.tar.xz"
+# Runtime stage
+FROM alpine:3.20
 
 WORKDIR /app
 
-# Copy source files
-COPY build.zig ./
-COPY src/ ./src/
+# Copy the compiled binary and necessary files
+COPY --from=builder /app/zig-out/bin/chess /app/chess
+COPY --from=builder /app/Makefile /app/Makefile
 
-# Build the application
-RUN zig build
-
-# Make executable
-RUN chmod +x zig-out/bin/chess
+# Install make for the test suite
+RUN apk add --no-cache make
 
 # Default command
-CMD ["./zig-out/bin/chess"]
+CMD ["./chess"]
