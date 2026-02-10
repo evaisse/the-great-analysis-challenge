@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Copy source files
+COPY Makefile ./
 COPY shard.yml ./
 COPY src/ ./src/
 
@@ -26,7 +27,7 @@ LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=800
 LABEL org.chess.build="make docker-build"
-LABEL org.chess.run="docker run --rm -i chess-crystal"
+LABEL org.chess.run="./chess_engine"
 LABEL org.chess.test="make docker-test"
 LABEL org.chess.analyze="docker run --rm chess-crystal make analyze"
 
