@@ -93,14 +93,22 @@ export class Board {
     );
   }
 
+  public isDrawByRepetition(): boolean {
+    return drawDetection.isDrawByRepetition(this.state);
+  }
+
+  public isDrawByFiftyMoveRule(): boolean {
+    return drawDetection.isDrawByFiftyMoves(this.state);
+  }
+
   public getHash(): bigint {
     return this.state.zobristHash;
   }
 
-  public getDrawInfo(): string {
-    return `Repetition: ${drawDetection.isDrawByRepetition(
-      this.state
-    )}, 50-move clock: ${this.state.halfmoveClock}`;
+  public getDrawInfo(): string | null {
+    if (this.isDrawByFiftyMoveRule()) return "50-move rule";
+    if (this.isDrawByRepetition()) return "repetition";
+    return null;
   }
 
   public getPiece(square: Square): Piece | null {
