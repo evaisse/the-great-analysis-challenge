@@ -16,14 +16,14 @@ enum class PieceType(val value: Int, val symbol: Char) {
     
     companion object {
         fun fromChar(char: Char): PieceType? {
-            return values().find { it.symbol == char.uppercaseChar() }
+            return values().find { it.symbol == char.toUpperCase() }
         }
     }
 }
 
 data class Piece(val type: PieceType, val color: Color) {
     fun toChar(): Char {
-        return if (color == Color.WHITE) type.symbol else type.symbol.lowercaseChar()
+        return if (color == Color.WHITE) type.symbol else type.symbol.toLowerCase()
     }
     
     companion object {
@@ -66,13 +66,13 @@ data class CastlingRights(
 }
 
 data class GameState(
-    val board: Array<Piece?>,
-    val turn: Color,
-    val castlingRights: CastlingRights,
-    val enPassantTarget: Square? = null,
-    val halfmoveClock: Int = 0,
-    val fullmoveNumber: Int = 1,
-    val moveHistory: MutableList<Move> = mutableListOf()
+    var board: Array<Piece?>,
+    var turn: Color,
+    var castlingRights: CastlingRights,
+    var enPassantTarget: Square? = null,
+    var halfmoveClock: Int = 0,
+    var fullmoveNumber: Int = 1,
+    var moveHistory: MutableList<Move> = mutableListOf()
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

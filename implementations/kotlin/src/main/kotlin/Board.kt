@@ -204,7 +204,7 @@ class Board {
     
     override fun toString(): String {
         val sb = StringBuilder()
-        sb.appendLine("  a b c d e f g h")
+        sb.append("  a b c d e f g h\n")
         
         for (rank in 7 downTo 0) {
             sb.append("${rank + 1} ")
@@ -213,11 +213,10 @@ class Board {
                 val piece = getPiece(square)
                 sb.append("${piece?.toChar() ?: '.'} ")
             }
-            sb.appendLine("${rank + 1}")
+            sb.append("${rank + 1}\n")
         }
         
-        sb.appendLine("  a b c d e f g h")
-        sb.appendLine()
+        sb.append("  a b c d e f g h\n\n")
         sb.append("${if (getTurn() == Color.WHITE) "White" else "Black"} to move")
         
         return sb.toString()

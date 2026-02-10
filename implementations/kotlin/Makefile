@@ -5,11 +5,11 @@ all: build
 
 # Build target - compile Kotlin with Gradle
 build:
-	./gradlew build
+	gradle build
 
 # Run basic tests
 test:
-	./gradlew test || true
+	gradle test || true
 	@echo "Running basic functionality test..."
 	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | java -jar build/libs/chess-1.0.0.jar | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
 
