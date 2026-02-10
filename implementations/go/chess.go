@@ -70,6 +70,9 @@ func (engine *ChessEngine) Run() {
 			engine.handleEval()
 		case "status":
 			engine.handleStatus()
+		case "board":
+			fmt.Print(engine.gameState.Display())
+			fmt.Println("OK: board displayed")
 		case "ai":
 			depth := 3 // default depth
 			if len(parts) > 1 {

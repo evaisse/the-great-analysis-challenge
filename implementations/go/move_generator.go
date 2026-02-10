@@ -351,6 +351,13 @@ func (gs *GameState) IsValidMove(from, to Square) (Move, error) {
 }
 
 func (gs *GameState) MakeMove(move Move) {
+	// Save current state for undo
+	gs.StateHistory = append(gs.StateHistory, SavedState{
+		CastlingRights:  gs.CastlingRights,
+		EnPassantTarget: gs.EnPassantTarget,
+		HalfmoveClock:   gs.HalfmoveClock,
+	})
+
 	// Handle en passant capture
 	if move.IsEnPassant {
 		capturedPawnSquare := Square{move.To.File, move.From.Rank}
@@ -426,13 +433,23 @@ func (gs *GameState) UndoLastMove() bool {
 		return false
 	}
 
-	// This is a simplified undo - in a full implementation,
-	// you'd need to store additional game state information
 	lastMoveIndex := len(gs.MoveHistory) - 1
 	move := gs.MoveHistory[lastMoveIndex]
 	gs.MoveHistory = gs.MoveHistory[:lastMoveIndex]
 
+	// Restore state history
+	lastStateIndex := len(gs.StateHistory) - 1
+	savedState := gs.StateHistory[lastStateIndex]
+	gs.StateHistory = gs.StateHistory[:lastStateIndex]
+
+	gs.CastlingRights = savedState.CastlingRights
+	gs.EnPassantTarget = savedState.EnPassantTarget
+	gs.HalfmoveClock = savedState.HalfmoveClock
+
 	// Switch back the active color
+	if gs.ActiveColor == White {
+		gs.FullmoveNumber--
+	}
 	gs.ActiveColor = 1 - gs.ActiveColor
 
 	// Restore the piece to its original position
