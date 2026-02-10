@@ -2,6 +2,7 @@
 
 class Board {
     private var gameState: GameState = createInitialGameState()
+    private val gameStateStack = mutableListOf<GameState>()
     
     private fun createInitialGameState(): GameState {
         val board = Array<Piece?>(64) { null }
@@ -43,6 +44,7 @@ class Board {
     
     fun reset() {
         gameState = createInitialGameState()
+        gameStateStack.clear()
     }
     
     fun getPiece(square: Square): Piece? = gameState.board[square]
@@ -61,7 +63,11 @@ class Board {
         if (piece.color != gameState.turn) return false
         
         val newState = gameState.copy()
+        gameStateStack.add(gameState) // Save current state before modifying
         
+        // Record current position hash in history before moving
+        newState.positionHistory.add(gameState.zobristHash)
+
         // Move the piece
         newState.board[move.to] = piece
         newState.board[move.from] = null
@@ -84,8 +90,36 @@ class Board {
         newState.turn = piece.color.opposite()
         newState.moveHistory.add(move)
         
+        // Update hash
+        newState.zobristHash = Zobrist.computeHash(newState)
+
         gameState = newState
         return true
+    }
+
+    fun isDraw(): Boolean {
+        return isDrawByRepetition() || isDrawByFiftyMoveRule()
+    }
+
+    fun isDrawByRepetition(): Boolean {
+        var count = 1
+        for (h in gameState.positionHistory) {
+            if (h == gameState.zobristHash) {
+                count++
+                if (count >= 3) return true
+            }
+        }
+        return false
+    }
+
+    fun isDrawByFiftyMoveRule(): Boolean {
+        return gameState.halfmoveClock >= 100
+    }
+
+    fun getDrawInfo(): String? {
+        if (isDrawByFiftyMoveRule()) return "50-move rule"
+        if (isDrawByRepetition()) return "repetition"
+        return null
     }
     
     private fun handleCastling(state: GameState, move: Move, piece: Piece) {
@@ -172,33 +206,11 @@ class Board {
     }
     
     fun undoMove(): Move? {
-        if (gameState.moveHistory.isEmpty()) return null
+        if (gameStateStack.isEmpty()) return null
         
-        val lastMove = gameState.moveHistory.removeAt(gameState.moveHistory.size - 1)
+        val lastMove = gameState.moveHistory.lastOrNull() ?: return null
+        gameState = gameStateStack.removeAt(gameStateStack.size - 1)
         
-        // Simple undo - in a full implementation we'd restore all state
-        val piece = getPiece(lastMove.to) ?: return lastMove
-        
-        val newState = gameState.copy()
-        
-        // Move piece back
-        val originalPiece = if (lastMove.promotion != null) {
-            Piece(PieceType.PAWN, piece.color)
-        } else {
-            piece
-        }
-        
-        newState.board[lastMove.from] = originalPiece
-        newState.board[lastMove.to] = if (lastMove.captured != null) {
-            Piece(lastMove.captured, piece.color.opposite())
-        } else {
-            null
-        }
-        
-        // Restore turn
-        newState.turn = piece.color
-        
-        gameState = newState
         return lastMove
     }
     

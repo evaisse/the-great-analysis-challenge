@@ -25,12 +25,21 @@ RUN mkdir -p build/classes build/libs && \
 CMD ["java", "-jar", "build/libs/chess-1.0.0.jar"]
 
 LABEL org.chess.language="kotlin"
+
 LABEL org.chess.version="1.9.10"
+
 LABEL org.chess.author="Kotlin Implementation"
+
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+
 LABEL org.chess.max_ai_depth=5
+
 LABEL org.chess.estimated_perft4_ms=500
-LABEL org.chess.run="java -jar build/libs/chess-1.0.0.jar"
-LABEL org.chess.build="make build"
-LABEL org.chess.test="make test"
-LABEL org.chess.analyze="make analyze"
+
+LABEL org.chess.run="docker run --rm -i chess-kotlin"
+
+LABEL org.chess.build="make docker-build"
+
+LABEL org.chess.test="make docker-test"
+
+LABEL org.chess.analyze="docker run --rm chess-kotlin make analyze"

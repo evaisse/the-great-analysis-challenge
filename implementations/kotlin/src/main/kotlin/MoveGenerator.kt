@@ -15,14 +15,14 @@ class MoveGenerator {
         return moves
     }
     
-    private fun generatePieceMoves(gameState: GameState, from: Square, piece: Piece): List<Move> {
+    private fun generatePieceMoves(gameState: GameState, from: Square, piece: Piece, includeCastling: Boolean = true): List<Move> {
         return when (piece.type) {
             PieceType.PAWN -> generatePawnMoves(gameState, from, piece.color)
             PieceType.KNIGHT -> generateKnightMoves(gameState, from, piece.color)
             PieceType.BISHOP -> generateBishopMoves(gameState, from, piece.color)
             PieceType.ROOK -> generateRookMoves(gameState, from, piece.color)
             PieceType.QUEEN -> generateQueenMoves(gameState, from, piece.color)
-            PieceType.KING -> generateKingMoves(gameState, from, piece.color)
+            PieceType.KING -> generateKingMoves(gameState, from, piece.color, includeCastling)
         }
     }
     
@@ -124,10 +124,14 @@ class MoveGenerator {
             
             while (isValidSquare(to)) {
                 val toFile = to % 8
+                val fileDiff = kotlin.math.abs(toFile - prevFile)
                 
-                // Check for wrapping (especially important for horizontal moves)
-                if (direction == -1 || direction == 1) {
-                    if (kotlin.math.abs(toFile - prevFile) != 1) break
+                if (kotlin.math.abs(direction) % 8 == 0) {
+                    // Vertical moves
+                    if (fileDiff != 0) break
+                } else {
+                    // Horizontal or diagonal moves
+                    if (fileDiff != 1) break
                 }
                 
                 val target = gameState.board[to]
@@ -160,7 +164,7 @@ class MoveGenerator {
         return generateSlidingMoves(gameState, from, color, listOf(-9, -8, -7, -1, 1, 7, 8, 9), PieceType.QUEEN)
     }
     
-    private fun generateKingMoves(gameState: GameState, from: Square, color: Color): List<Move> {
+    private fun generateKingMoves(gameState: GameState, from: Square, color: Color, includeCastling: Boolean = true): List<Move> {
         val moves = mutableListOf<Move>()
         val offsets = listOf(-9, -8, -7, -1, 1, 7, 8, 9)
         val file = from % 8
@@ -180,7 +184,9 @@ class MoveGenerator {
         }
         
         // Castling
-        moves.addAll(generateCastlingMoves(gameState, from, color))
+        if (includeCastling) {
+            moves.addAll(generateCastlingMoves(gameState, from, color))
+        }
         
         return moves
     }
@@ -248,10 +254,23 @@ class MoveGenerator {
     }
     
     fun isSquareAttacked(gameState: GameState, square: Square, byColor: Color): Boolean {
+        val squareRank = square / 8
+        val squareFile = square % 8
+        
         for (fromSquare in 0..63) {
             val piece = gameState.board[fromSquare]
             if (piece != null && piece.color == byColor) {
-                val moves = generatePieceMoves(gameState, fromSquare, piece)
+                if (piece.type == PieceType.PAWN) {
+                    val direction = if (byColor == Color.WHITE) 8 else -8
+                    val fromFile = fromSquare % 8
+                    
+                    if (square == fromSquare + direction - 1 && kotlin.math.abs(squareFile - fromFile) == 1) return true
+                    if (square == fromSquare + direction + 1 && kotlin.math.abs(squareFile - fromFile) == 1) return true
+                    continue
+                }
+                
+                // IMPORTANT: When checking for attacks, we must NOT include castling to avoid infinite recursion
+                val moves = generatePieceMoves(gameState, fromSquare, piece, false)
                 if (moves.any { it.to == square }) {
                     return true
                 }
