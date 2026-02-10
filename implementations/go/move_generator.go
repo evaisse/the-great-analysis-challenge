@@ -351,11 +351,15 @@ func (gs *GameState) IsValidMove(from, to Square) (Move, error) {
 }
 
 func (gs *GameState) MakeMove(move Move) {
+	// Record current position hash in history before moving
+	gs.PositionHistory = append(gs.PositionHistory, gs.ZobristHash)
+
 	// Save current state for undo
 	gs.StateHistory = append(gs.StateHistory, SavedState{
 		CastlingRights:  gs.CastlingRights,
 		EnPassantTarget: gs.EnPassantTarget,
 		HalfmoveClock:   gs.HalfmoveClock,
+		ZobristHash:     gs.ZobristHash,
 	})
 
 	// Handle en passant capture
@@ -424,6 +428,9 @@ func (gs *GameState) MakeMove(move Move) {
 	// Switch active color
 	gs.ActiveColor = 1 - gs.ActiveColor
 
+	// Recalculate hash
+	gs.ZobristHash = computeZobristHash(gs)
+
 	// Add to move history
 	gs.MoveHistory = append(gs.MoveHistory, move)
 }
@@ -437,6 +444,11 @@ func (gs *GameState) UndoLastMove() bool {
 	move := gs.MoveHistory[lastMoveIndex]
 	gs.MoveHistory = gs.MoveHistory[:lastMoveIndex]
 
+	// Restore position history
+	if len(gs.PositionHistory) > 0 {
+		gs.PositionHistory = gs.PositionHistory[:len(gs.PositionHistory)-1]
+	}
+
 	// Restore state history
 	lastStateIndex := len(gs.StateHistory) - 1
 	savedState := gs.StateHistory[lastStateIndex]
@@ -445,6 +457,7 @@ func (gs *GameState) UndoLastMove() bool {
 	gs.CastlingRights = savedState.CastlingRights
 	gs.EnPassantTarget = savedState.EnPassantTarget
 	gs.HalfmoveClock = savedState.HalfmoveClock
+	gs.ZobristHash = savedState.ZobristHash
 
 	// Switch back the active color
 	if gs.ActiveColor == White {
