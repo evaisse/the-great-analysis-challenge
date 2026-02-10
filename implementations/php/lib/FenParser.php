@@ -60,26 +60,32 @@ class FenParser {
         $this->board->current_player = $parts[1] === 'w' ? CHESS_WHITE : CHESS_BLACK;
         
         // Parse castling rights
-        $this->board->castling_rights = [false, false, false, false];
+        $rights = new CastlingRights();
+        $rights->white_kingside = false;
+        $rights->white_queenside = false;
+        $rights->black_kingside = false;
+        $rights->black_queenside = false;
+        
         if ($parts[2] !== '-') {
             for ($i = 0; $i < strlen($parts[2]); $i++) {
                 $char = $parts[2][$i];
                 switch ($char) {
                     case 'K':
-                        $this->board->castling_rights[0] = true;
+                        $rights->white_kingside = true;
                         break;
                     case 'Q':
-                        $this->board->castling_rights[1] = true;
+                        $rights->white_queenside = true;
                         break;
                     case 'k':
-                        $this->board->castling_rights[2] = true;
+                        $rights->black_kingside = true;
                         break;
                     case 'q':
-                        $this->board->castling_rights[3] = true;
+                        $rights->black_queenside = true;
                         break;
                 }
             }
         }
+        $this->board->castling_rights = $rights;
         
         // Parse en passant target
         $this->board->en_passant_target = null;
@@ -143,10 +149,11 @@ class FenParser {
         
         // Castling rights
         $castling = '';
-        if ($this->board->castling_rights[0]) $castling .= 'K';
-        if ($this->board->castling_rights[1]) $castling .= 'Q';
-        if ($this->board->castling_rights[2]) $castling .= 'k';
-        if ($this->board->castling_rights[3]) $castling .= 'q';
+        $rights = $this->board->castling_rights;
+        if ($rights->white_kingside) $castling .= 'K';
+        if ($rights->white_queenside) $castling .= 'Q';
+        if ($rights->black_kingside) $castling .= 'k';
+        if ($rights->black_queenside) $castling .= 'q';
         $fen .= ' ' . ($castling === '' ? '-' : $castling);
         
         // En passant target
