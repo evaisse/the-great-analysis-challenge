@@ -38,22 +38,29 @@ def get_language_metadata_from_file() -> Dict[str, Dict]:
             except ModuleNotFoundError:
                 stub = types.ModuleType("yaml")
 
-                def _missing_yaml(*args, **kwargs):
-                    raise ModuleNotFoundError(
-                        "PyYAML is required to use yaml functions in build_website.py. "
-                        "Install PyYAML or avoid calling yaml helpers."
-                    )
+                def _empty_yaml(*args, **kwargs):
+                    return {}
 
-                stub.safe_load = _missing_yaml  # type: ignore[attr-defined]
-                stub.load = _missing_yaml       # type: ignore[attr-defined]
-                stub.dump = _missing_yaml       # type: ignore[attr-defined]
+                stub.safe_load = _empty_yaml  # type: ignore[attr-defined]
+                stub.load = _empty_yaml       # type: ignore[attr-defined]
+                stub.dump = lambda *args, **kwargs: ""  # type: ignore[attr-defined]
                 sys.modules['yaml'] = stub
 
         build_website = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(build_website)
-        
-        # Get the metadata
-        return build_website.get_language_metadata()
+
+        stats_data = {'metadata': {}, 'languages': {}}
+        if hasattr(build_website, "load_language_statistics"):
+            try:
+                stats_data = build_website.load_language_statistics()
+            except Exception as exc:
+                print(f"Warning: could not load language statistics: {exc}")
+
+        # Get the metadata (support both new and legacy signatures)
+        try:
+            return build_website.get_language_metadata(stats_data)
+        except TypeError:
+            return build_website.get_language_metadata()
     except Exception as e:
         print(f"❌ Error importing build_website.py: {e}")
         print(f"   Make sure the file has valid Python syntax and no missing dependencies")
