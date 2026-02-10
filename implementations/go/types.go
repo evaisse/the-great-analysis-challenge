@@ -48,6 +48,13 @@ type GameState struct {
 	HalfmoveClock   int        // Moves since last capture or pawn move
 	FullmoveNumber  int        // Move number (increments after black's move)
 	MoveHistory     []Move
+	StateHistory    []SavedState
+}
+
+type SavedState struct {
+	CastlingRights  [2][2]bool
+	EnPassantTarget *Square
+	HalfmoveClock   int
 }
 
 const (
