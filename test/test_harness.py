@@ -374,9 +374,9 @@ def main():
         
         # Build if necessary
         if "build" in metadata and metadata["build"] != "make build":
-            cmd = metadata["build"].split()
-            print(f"🔧 Running: {' '.join(cmd)}")
-            subprocess.run(cmd, cwd=impl_path, check=True)
+            cmd = metadata["build"]
+            print(f"🔧 Running: {cmd}")
+            subprocess.run(cmd, cwd=impl_path, check=True, shell=True)
         
         # Start engine
         if not tester.start():
