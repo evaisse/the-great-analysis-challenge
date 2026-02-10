@@ -87,7 +87,7 @@ ifdef DIR
 	else \
 		echo "Testing $(DIR) implementation in Docker..."; \
 		$(MAKE) build DIR=$(DIR); \
-		docker run --rm chess-$(DIR) sh -c "cd /app && echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | $$RUN_CMD"; \
+		docker run --rm chess-$(DIR) sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | $$RUN_CMD"; \
 		echo "Running internal tests for $(DIR) in Docker..."; \
 		docker run --rm chess-$(DIR) make test; \
 	fi
@@ -151,16 +151,24 @@ endif
 workflow:
 ifdef DIR
 	@echo "Starting workflow for $(DIR)..."
-	@timeout 180s bash -c ' \
+	@bash -c ' \
 		set -e; \
-		echo "Step 1/4: Verify (timeout 60s)"; \
-		timeout 60s $(MAKE) verify DIR=$(DIR); \
-		echo "Step 2/4: Build (timeout 60s)"; \
-		timeout 60s $(MAKE) build DIR=$(DIR); \
-		echo "Step 3/4: Analyze (timeout 60s)"; \
-		timeout 60s $(MAKE) analyze DIR=$(DIR); \
-		echo "Step 4/4: Test (timeout 60s)"; \
-		timeout 60s $(MAKE) test DIR=$(DIR); \
+		TIMEOUT_CMD=$$(command -v timeout 2>/dev/null || command -v gtimeout 2>/dev/null || true); \
+		run_with_timeout() { \
+			if [ -z "$$TIMEOUT_CMD" ]; then \
+				shift; "$$@"; \
+			else \
+				"$$TIMEOUT_CMD" "$$@"; \
+			fi; \
+		}; \
+		echo "Step 1/4: Verify"; \
+		run_with_timeout 60s $(MAKE) verify DIR=$(DIR); \
+		echo "Step 2/4: Build"; \
+		run_with_timeout 60s $(MAKE) build DIR=$(DIR); \
+		echo "Step 3/4: Analyze"; \
+		run_with_timeout 60s $(MAKE) analyze DIR=$(DIR); \
+		echo "Step 4/4: Test"; \
+		run_with_timeout 60s $(MAKE) test DIR=$(DIR); \
 		echo "Workflow completed successfully for $(DIR)"; \
 	'
 else
