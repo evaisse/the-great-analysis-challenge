@@ -2,7 +2,6 @@
 FEN (Forsyth-Edwards Notation) parser and serializer
 """
 
-include("board.jl")
 
 function parse_fen!(board::Board, fen::String)
     parts = split(fen, ' ')
@@ -61,6 +60,10 @@ function parse_fen!(board::Board, fen::String)
         
         # Parse fullmove number
         board.state.fullmove_number = parse(Int, parts[6])
+
+        empty!(board.move_history)
+        empty!(board.position_history)
+        board.zobrist_hash = compute_zobrist_hash(board.pieces, board.state)
         
         return true
         

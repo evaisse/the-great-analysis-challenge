@@ -2,7 +2,6 @@
 Perft (Performance Test) function for move generation validation
 """
 
-include("move_generator.jl")
 
 function perft(board::Board, depth::Int)
     if depth == 0

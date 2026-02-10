@@ -2,17 +2,18 @@
 Chess board representation and basic operations
 """
 
-include("types.jl")
 
 mutable struct Board
     pieces::Matrix{Piece}
     state::GameState
     move_history::Vector{Move}
+    position_history::Vector{UInt64}
+    zobrist_hash::UInt64
     
     function Board()
         pieces = Matrix{Piece}(undef, 8, 8)
         fill!(pieces, EMPTY_PIECE)
-        new(pieces, GameState(), Move[])
+        new(pieces, GameState(), Move[], UInt64[], UInt64(0))
     end
 end
 
@@ -51,6 +52,8 @@ function setup_starting_position!(board::Board)
     # Reset game state
     board.state = GameState()
     empty!(board.move_history)
+    empty!(board.position_history)
+    board.zobrist_hash = compute_zobrist_hash(board.pieces, board.state)
 end
 
 function get_piece(board::Board, square::Int)

@@ -2,7 +2,6 @@
 Chess move generation and validation
 """
 
-include("board.jl")
 
 function generate_pawn_moves(board::Board, square::Int, moves::Vector{Move})
     piece = get_piece(board, square)
@@ -151,6 +150,7 @@ function generate_king_moves(board::Board, square::Int, moves::Vector{Move})
     if !is_in_check(board, color)
         if color == WHITE
             if board.state.white_can_castle_kingside && 
+               get_piece(board, 7).type == ROOK && get_piece(board, 7).color == WHITE &&
                is_empty_square(board, 5) && is_empty_square(board, 6) &&
                !is_square_attacked(board, 5, BLACK) && !is_square_attacked(board, 6, BLACK)
                 move = Move(square, 6, piece, EMPTY_PIECE)
@@ -158,6 +158,7 @@ function generate_king_moves(board::Board, square::Int, moves::Vector{Move})
                 push!(moves, move)
             end
             if board.state.white_can_castle_queenside &&
+               get_piece(board, 0).type == ROOK && get_piece(board, 0).color == WHITE &&
                is_empty_square(board, 1) && is_empty_square(board, 2) && is_empty_square(board, 3) &&
                !is_square_attacked(board, 2, BLACK) && !is_square_attacked(board, 3, BLACK)
                 move = Move(square, 2, piece, EMPTY_PIECE)
@@ -166,6 +167,7 @@ function generate_king_moves(board::Board, square::Int, moves::Vector{Move})
             end
         else
             if board.state.black_can_castle_kingside &&
+               get_piece(board, 63).type == ROOK && get_piece(board, 63).color == BLACK &&
                is_empty_square(board, 61) && is_empty_square(board, 62) &&
                !is_square_attacked(board, 61, WHITE) && !is_square_attacked(board, 62, WHITE)
                 move = Move(square, 62, piece, EMPTY_PIECE)
@@ -173,6 +175,7 @@ function generate_king_moves(board::Board, square::Int, moves::Vector{Move})
                 push!(moves, move)
             end
             if board.state.black_can_castle_queenside &&
+               get_piece(board, 56).type == ROOK && get_piece(board, 56).color == BLACK &&
                is_empty_square(board, 57) && is_empty_square(board, 58) && is_empty_square(board, 59) &&
                !is_square_attacked(board, 58, WHITE) && !is_square_attacked(board, 59, WHITE)
                 move = Move(square, 58, piece, EMPTY_PIECE)
@@ -212,6 +215,9 @@ function generate_moves(board::Board)
 end
 
 function make_move!(board::Board, move::Move)
+    # Store current position hash for repetition detection
+    push!(board.position_history, board.zobrist_hash)
+
     # Backup current state in the move
     move.prev_en_passant = board.state.en_passant_square
     move.prev_white_can_castle_kingside = board.state.white_can_castle_kingside
@@ -288,6 +294,19 @@ function make_move!(board::Board, move::Move)
             board.state.black_can_castle_kingside = false
         end
     end
+
+    # Capturing a rook on its original square also removes castling rights
+    if move.captured.type == ROOK
+        if move.to == 0
+            board.state.white_can_castle_queenside = false
+        elseif move.to == 7
+            board.state.white_can_castle_kingside = false
+        elseif move.to == 56
+            board.state.black_can_castle_queenside = false
+        elseif move.to == 63
+            board.state.black_can_castle_kingside = false
+        end
+    end
     
     # Update move counters
     if move.piece.type == PAWN || move.captured.type != EMPTY
@@ -303,6 +322,8 @@ function make_move!(board::Board, move::Move)
     if board.state.white_to_move
         board.state.fullmove_number += 1
     end
+
+    board.zobrist_hash = compute_zobrist_hash(board.pieces, board.state)
 end
 
 function undo_move!(board::Board)
@@ -352,6 +373,12 @@ function undo_move!(board::Board)
         captured_square = move.to + direction
         set_piece!(board, captured_square, move.captured)
         set_piece!(board, move.to, EMPTY_PIECE)
+    end
+
+    if !isempty(board.position_history)
+        board.zobrist_hash = pop!(board.position_history)
+    else
+        board.zobrist_hash = compute_zobrist_hash(board.pieces, board.state)
     end
     
     return true
