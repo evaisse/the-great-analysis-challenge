@@ -13,4 +13,16 @@ COPY . .
 RUN julia --project=. -e "using Pkg; Pkg.instantiate(); Pkg.precompile()"
 
 # Default command
+
+LABEL org.chess.language="julia"
+LABEL org.chess.version="1.9"
+LABEL org.chess.author="Julia Implementation"
+LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+LABEL org.chess.max_ai_depth=5
+LABEL org.chess.estimated_perft4_ms=1000
+LABEL org.chess.run="julia chess.jl"
+LABEL org.chess.build="true"
+LABEL org.chess.test="julia -e 'using Pkg; Pkg.test()'"
+LABEL org.chess.analyze="julia --check-bounds=yes chess.jl"
+
 CMD ["julia", "--project=.", "chess.jl"]

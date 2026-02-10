@@ -19,4 +19,16 @@ COPY . .
 RUN zig build -Doptimize=ReleaseFast
 
 # Default command
+
+LABEL org.chess.language="zig"
+LABEL org.chess.version="0.13.0"
+LABEL org.chess.author="Zig Implementation"
+LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+LABEL org.chess.max_ai_depth=5
+LABEL org.chess.estimated_perft4_ms=800
+LABEL org.chess.run="zig run src/main.zig"
+LABEL org.chess.build="zig build"
+LABEL org.chess.test="zig test src/main.zig"
+LABEL org.chess.analyze="zig fmt --check src/ && zig test src/main.zig"
+
 CMD ["./zig-out/bin/chess"]

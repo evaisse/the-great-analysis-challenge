@@ -9,7 +9,7 @@ Thank you for your interest in contributing to The Great Analysis Challenge! Thi
 All implementations, scripts, and tooling in this project MUST follow a standardized convention-based approach. The infrastructure is designed to be 100% implementation language-agnostic, meaning:
 
 - **No hardcoded language-specific logic** in root-level Makefiles or scripts
-- **Self-describing implementations** using `chess.meta` files that contain build/run/test/analyze commands
+- **Self-describing implementations** using `Dockerfile` labels that contain build/run/test/analyze commands
 - **Standardized directory structure** where each implementation follows the same layout
 - **Generic tooling** that discovers and works with any implementation without modification
 
@@ -161,30 +161,23 @@ Follow these steps to add a new language implementation:
 
 2. **Create required files:**
 
-   **`Dockerfile`** - Build and runtime environment
-   ```dockerfile
-   FROM <base-image>
-   WORKDIR /app
-   COPY . .
-   # Build commands here
-   CMD ["<run-command>"]
-   ```
+    **`Dockerfile`** - Build and runtime environment with metadata
+    ```dockerfile
+    FROM <base-image>
+    WORKDIR /app
+    COPY . .
+    # Build commands here
+    
+    LABEL org.chess.language="<language_name>"
+    LABEL org.chess.version="<language_version>"
+    LABEL org.chess.author="Your Name"
+    LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+    LABEL org.chess.max_ai_depth=5
+    LABEL org.chess.estimated_perft4_ms=1000
 
-   **`chess.meta`** - Metadata JSON
-   ```json
-   {
-     "language": "<language_name>",
-     "version": "<language_version>",
-     "author": "Your Name",
-     "build": "<build_command>",
-     "run": "<run_command>",
-     "analyze": "<analysis_command>",
-     "test": "<test_command>",
-     "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
-     "max_ai_depth": 5,
-     "estimated_perft4_ms": 1000
-   }
-   ```
+    CMD ["<run-command>"]
+    ```
+
 
    **`Makefile`** - Build automation
    ```makefile

@@ -90,10 +90,15 @@ def check_dockerfile_format(dockerfile_path: Path) -> List[str]:
         if 'COPY' not in content:
             issues.append("Dockerfile should copy source files")
             
+        # Check for essential labels
+        if 'LABEL org.chess.language' not in content:
+            issues.append("Dockerfile missing LABEL org.chess.language")
+            
     except Exception as e:
         issues.append(f"Error reading Dockerfile: {e}")
     
     return issues
+
 
 def check_makefile_targets(makefile_path: Path) -> Tuple[Set[str], Set[str]]:
     """Check Makefile for required targets."""
@@ -283,15 +288,11 @@ def verify_implementation(impl_dir: Path) -> Dict:
     # Check required files
     found_files, missing_files = check_required_files(impl_dir)
     
-    # Get metadata
+    # Get metadata from Dockerfile labels
     metadata = get_metadata(str(impl_dir))
     
-    # metadata is now required (from chess.meta or Dockerfile labels)
-    meta_path = impl_dir / 'chess.meta'
-    dockerfile_path = impl_dir / 'Dockerfile'
-    
     if not metadata:
-        missing_files.append('chess.meta (Metadata file OR Dockerfile labels)')
+        missing_files.append('Dockerfile labels (org.chess.*)')
     
     result['files'] = {
         'found': found_files,
@@ -302,6 +303,7 @@ def verify_implementation(impl_dir: Path) -> Dict:
         result['summary']['errors'] += len(missing_files)
     
     # Check Dockerfile if it exists
+    dockerfile_path = impl_dir / 'Dockerfile'
     if dockerfile_path.exists():
         dockerfile_issues = check_dockerfile_format(dockerfile_path)
         result['dockerfile'] = {

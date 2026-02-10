@@ -31,8 +31,7 @@
 
 - Each language gets its own directory: `<language>/`
 - Required files per implementation:
-  - `Dockerfile` - Complete build and runtime environment
-  - `chess.meta` - JSON metadata about the implementation
+  - `Dockerfile` - Complete build and runtime environment with `org.chess.*` metadata labels
   - `README.md` - Language-specific documentation
   - Main source files following language conventions
 - No cross-language dependencies
@@ -56,22 +55,17 @@
    - Install language runtime/compiler and dependencies
    - Copy source files to `/app`
    - Build/compile if needed
-   - Set default command to run the chess engine
+   - Set default command to run the chess engine (via `CMD`)
+   - Add metadata labels:
+     ```dockerfile
+     LABEL org.chess.language="<language_name>"
+     LABEL org.chess.version="<language_version>"
+     LABEL org.chess.author="Your Name"
+     LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+     LABEL org.chess.max_ai_depth=5
+     LABEL org.chess.estimated_perft4_ms=1000
+     ```
    - Keep image size reasonable (multi-stage builds recommended)
-
-3. **Create chess.meta**
-   ```json
-   {
-     "language": "<language_name>",
-     "version": "<language_version>",
-     "author": "Your Name",
-     "build": "<build_command>",
-     "run": "<run_command>",
-     "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
-     "max_ai_depth": 5,
-     "estimated_perft4_ms": 1000
-   }
-   ```
 
 ### Phase 2: Core Implementation (2-8 hours)
 
@@ -297,7 +291,6 @@ Before considering an implementation complete:
 - [ ] Perft(4) returns 197281
 - [ ] FEN import/export works correctly
 - [ ] Error handling is graceful
-- [ ] chess.meta file is accurate
 - [ ] README.md is comprehensive
 - [ ] Makefile targets added
 - [ ] Added to root README.md
@@ -369,7 +362,6 @@ the-great-analysis-challenge/
 │
 ├── <language>/                        # One directory per language
 │   ├── Dockerfile                     # Complete build environment
-│   ├── chess.meta                     # Metadata JSON
 │   ├── README.md                      # Language-specific docs
 │   ├── <source files>                 # Implementation
 │   └── lib/ or src/                   # Additional modules

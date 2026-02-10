@@ -5,7 +5,7 @@
 **IMPORTANT:** This project follows a strict "convention over configuration" approach. The infrastructure tooling is 100% implementation-agnostic, meaning:
 
 - No language-specific logic in root Makefile or scripts
-- Each implementation is self-describing via `chess.meta` and `Makefile`
+- Each implementation is self-describing via `Dockerfile` labels and `Makefile`
 - All implementations discovered automatically by directory structure
 - Root Makefile uses generic `DIR` parameter: `make build DIR=<language>`
 
@@ -28,9 +28,8 @@ All implementations MUST be developed and verified using Docker. This project en
 ### 2. Project Structure
 ```
 <language>/
-├── Dockerfile           # Docker container definition
+├── Dockerfile           # Docker container definition with metadata labels
 ├── Makefile            # Build automation (required)
-├── chess.meta          # Metadata file (JSON)
 ├── <main_file>         # Entry point (chess.py, chess.rb, etc.)
 ├── src/ or lib/        # Source code modules
 └── README.md           # Language-specific documentation
@@ -167,34 +166,32 @@ ERROR: Wrong color piece
 ERROR: King would be in check
 ```
 
-### 9. Metadata File (chess.meta)
+### 9. Metadata Labels (Dockerfile)
 
-```json
-{
-  "language": "python",
-  "version": "3.11",
-  "author": "Your Name",
-  "build": "python3 -m py_compile chess.py",
-  "run": "python3 chess.py",
-  "analyze": "python3 -m pylint chess.py && python3 -m mypy chess.py",
-  "test": "python3 test_engine.py",
-  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
-  "max_ai_depth": 5,
-  "estimated_perft4_ms": 1000
-}
+Each implementation must include metadata labels in its `Dockerfile`:
+
+```dockerfile
+LABEL org.chess.language="python"
+LABEL org.chess.version="3.11"
+LABEL org.chess.author="Your Name"
+LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+LABEL org.chess.max_ai_depth=5
+LABEL org.chess.estimated_perft4_ms=1000
 ```
 
 **Required fields:**
-- `language`: Programming language name
-- `version`: Language version
-- `author`: Implementation author
-- `build`: Command to build/compile the implementation
-- `run`: Command to run the chess engine
-- `analyze`: Command to run static analysis (linters, type checkers)
-- `test`: Command to run tests
-- `features`: Array of implemented features
-- `max_ai_depth`: Maximum supported AI search depth
-- `estimated_perft4_ms`: Estimated time for perft(4) in milliseconds
+- `org.chess.language`: Programming language name
+- `org.chess.version`: Language version
+- `org.chess.author`: Implementation author
+- `org.chess.features`: Comma-separated list of implemented features
+- `org.chess.max_ai_depth`: Maximum supported AI search depth
+- `org.chess.estimated_perft4_ms`: Estimated time for perft(4) in milliseconds
+
+**Optional command labels:**
+- `org.chess.build`: Command to build/compile (defaults to `make build`)
+- `org.chess.run`: Command to run engine (inferred from `CMD` if missing)
+- `org.chess.test`: Command to run tests (defaults to `make test`)
+- `org.chess.analyze`: Command for static analysis (defaults to `make analyze`)
 
 ## Testing Requirements
 
@@ -253,7 +250,7 @@ Before submitting, ensure your implementation:
 - [ ] Displays board correctly
 - [ ] Handles errors gracefully
 - [ ] Passes basic move sequence test
-- [ ] Includes chess.meta file
+- [ ] Includes required Dockerfile labels
 - [ ] AI makes legal moves at all depths
 - [ ] Perft(4) returns 197281
 

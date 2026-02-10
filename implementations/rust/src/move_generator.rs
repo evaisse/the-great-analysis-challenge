@@ -10,7 +10,15 @@ impl MoveGenerator {
 
     pub fn generate_moves(&self, board: &Board, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
-        moves.push(Move::new(0, 8, PieceType::Pawn)); // Dummy move
+        
+        for square in 0..64 {
+            if let Some(piece) = board.get_piece(square) {
+                if piece.color == color {
+                    moves.extend(self.generate_piece_moves(board, square, piece));
+                }
+            }
+        }
+        
         moves
     }
 
@@ -51,7 +59,9 @@ impl MoveGenerator {
             // Two squares forward from starting position
             if rank == start_rank {
                 let two_forward = from_i32 + 2 * direction;
-                if self.is_valid_square(two_forward) && board.get_piece(two_forward as usize).is_none() {
+                if self.is_valid_square(two_forward) && 
+                   board.get_piece(one_forward as usize).is_none() &&
+                   board.get_piece(two_forward as usize).is_none() {
                     moves.push(Move::new(from, two_forward as usize, PieceType::Pawn));
                 }
             }
@@ -60,22 +70,23 @@ impl MoveGenerator {
         // Captures
         for &offset in &[direction - 1, direction + 1] {
             let to = from_i32 + offset;
-            let to_file = (to % 8) as usize;
-            
-            if self.is_valid_square(to) && (to_file as i32 - file as i32).abs() == 1 {
-                let to_square = to as usize;
-                if let Some(target_piece) = board.get_piece(to_square) {
-                    if target_piece.color != color {
-                        if to_square / 8 == promotion_rank {
-                            // Promotion captures
-                            for promotion_piece in [PieceType::Queen, PieceType::Rook, PieceType::Bishop, PieceType::Knight] {
+            if self.is_valid_square(to) {
+                let to_file = to % 8;
+                if (to_file - file as i32).abs() == 1 {
+                    let to_square = to as usize;
+                    if let Some(target_piece) = board.get_piece(to_square) {
+                        if target_piece.color != color {
+                            if to_square / 8 == promotion_rank {
+                                // Promotion captures
+                                for promotion_piece in [PieceType::Queen, PieceType::Rook, PieceType::Bishop, PieceType::Knight] {
+                                    moves.push(Move::new(from, to_square, PieceType::Pawn)
+                                        .with_capture(target_piece.piece_type)
+                                        .with_promotion(promotion_piece));
+                                }
+                            } else {
                                 moves.push(Move::new(from, to_square, PieceType::Pawn)
-                                    .with_capture(target_piece.piece_type)
-                                    .with_promotion(promotion_piece));
+                                    .with_capture(target_piece.piece_type));
                             }
-                        } else {
-                            moves.push(Move::new(from, to_square, PieceType::Pawn)
-                                .with_capture(target_piece.piece_type));
                         }
                     }
                 }
@@ -108,17 +119,18 @@ impl MoveGenerator {
 
         for offset in offsets {
             let to = from_i32 + offset;
-            let to_file = (to % 8) as usize;
-
-            if self.is_valid_square(to) && (to_file as i32 - file as i32).abs() <= 2 {
-                let to_square = to as usize;
-                match board.get_piece(to_square) {
-                    None => moves.push(Move::new(from, to_square, PieceType::Knight)),
-                    Some(piece) if piece.color != color => {
-                        moves.push(Move::new(from, to_square, PieceType::Knight)
-                            .with_capture(piece.piece_type));
-                    },
-                    _ => {}
+            if self.is_valid_square(to) {
+                let to_file = to % 8;
+                if (to_file - file as i32).abs() <= 2 {
+                    let to_square = to as usize;
+                    match board.get_piece(to_square) {
+                        None => moves.push(Move::new(from, to_square, PieceType::Knight)),
+                        Some(piece) if piece.color != color => {
+                            moves.push(Move::new(from, to_square, PieceType::Knight)
+                                .with_capture(piece.piece_type));
+                        },
+                        _ => {}
+                    }
                 }
             }
         }
@@ -146,17 +158,18 @@ impl MoveGenerator {
 
         for offset in offsets {
             let to = from_i32 + offset;
-            let to_file = (to % 8) as usize;
-
-            if self.is_valid_square(to) && (to_file as i32 - file as i32).abs() <= 1 {
-                let to_square = to as usize;
-                match board.get_piece(to_square) {
-                    None => moves.push(Move::new(from, to_square, PieceType::King)),
-                    Some(piece) if piece.color != color => {
-                        moves.push(Move::new(from, to_square, PieceType::King)
-                            .with_capture(piece.piece_type));
-                    },
-                    _ => {}
+            if self.is_valid_square(to) {
+                let to_file = to % 8;
+                if (to_file - file as i32).abs() <= 1 {
+                    let to_square = to as usize;
+                    match board.get_piece(to_square) {
+                        None => moves.push(Move::new(from, to_square, PieceType::King)),
+                        Some(piece) if piece.color != color => {
+                            moves.push(Move::new(from, to_square, PieceType::King)
+                                .with_capture(piece.piece_type));
+                        },
+                        _ => {}
+                    }
                 }
             }
         }
@@ -227,11 +240,9 @@ impl MoveGenerator {
             while self.is_valid_square(to) {
                 let to_file = to % 8;
                 
-                // Check for wrapping (especially important for horizontal moves)
-                if direction == -1 || direction == 1 {
-                    if (to_file - prev_file).abs() != 1 {
-                        break;
-                    }
+                // Check for wrapping
+                if (to_file - prev_file).abs() > 1 {
+                    break;
                 }
 
                 let to_square = to as usize;
@@ -350,7 +361,18 @@ impl MoveGenerator {
     }
 
     pub fn get_legal_moves(&self, board: &mut Board, color: Color) -> Vec<Move> {
-        Vec::new()
+        let moves = self.generate_moves(board, color);
+        let mut legal_moves = Vec::new();
+
+        for chess_move in moves {
+            board.make_move(&chess_move);
+            if !self.is_in_check(board, color) {
+                legal_moves.push(chess_move);
+            }
+            board.undo_move();
+        }
+
+        legal_moves
     }
 
     pub fn is_checkmate(&self, board: &mut Board, color: Color) -> bool {

@@ -59,7 +59,54 @@ impl ChessEngine {
     }
 
     fn process_command(&mut self, command: &str) -> bool {
-        println!("DEBUG: command: {}", command);
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        if parts.is_empty() {
+            return true;
+        }
+
+        match parts[0].to_lowercase().as_str() {
+            "move" => {
+                if parts.len() > 1 {
+                    self.handle_move(parts[1]);
+                } else {
+                    println!("ERROR: Invalid move format");
+                }
+            },
+            "undo" => self.handle_undo(),
+            "new" => self.handle_new(),
+            "status" => self.handle_status(),
+            "ai" => {
+                if parts.len() > 1 {
+                    self.handle_ai(parts[1]);
+                } else {
+                    println!("ERROR: AI depth must be 1-5");
+                }
+            },
+            "fen" => {
+                if parts.len() > 1 {
+                    let fen_string = parts[1..].join(" ");
+                    self.handle_fen(&fen_string);
+                } else {
+                    println!("ERROR: Invalid FEN string");
+                }
+            },
+            "export" => self.handle_export(),
+            "eval" => self.handle_eval(),
+            "hash" => self.handle_hash(),
+            "draws" => self.handle_draws(),
+            "history" => self.handle_history(),
+            "perft" => {
+                if parts.len() > 1 {
+                    self.handle_perft(parts[1]);
+                } else {
+                    println!("ERROR: Invalid perft depth");
+                }
+            },
+            "help" => self.handle_help(),
+            "quit" => return false,
+            _ => println!("ERROR: Invalid command"),
+        }
+
         true
     }
 
@@ -137,7 +184,7 @@ impl ChessEngine {
                 self.board.make_move(&chess_move);
                 println!("OK: {}", move_str);
                 println!("{}", self.board);
-                // self.check_game_end();
+                self.check_game_end();
             },
             None => {
                 if self.move_generator.is_in_check(&self.board, self.board.get_turn()) {
