@@ -1,8 +1,8 @@
 # Use official Crystal image
-FROM crystal:1.15-alpine
+FROM jfrog.int.bourso.net/web-v-docker/crystallang/crystal:latest
 
 # Install make for the test suite
-RUN apk add --no-cache make
+RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app

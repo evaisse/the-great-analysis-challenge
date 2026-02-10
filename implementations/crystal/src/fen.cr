@@ -121,11 +121,12 @@ class FEN
     castling_str = "-" if castling_str.empty?
 
     # Export en passant target
-    en_passant_str = if target = game_state.en_passant_target
-                       square_to_algebraic(target)
-                     else
-                       "-"
-                     end
+    en_passant_str = "-"
+    # if target = game_state.en_passant_target
+    #   en_passant_str = square_to_algebraic(target)
+    # else
+    #   en_passant_str = "-"
+    # end
 
     # Build FEN string
     "#{board_str} #{turn_str} #{castling_str} #{en_passant_str} #{game_state.halfmove_clock} #{game_state.fullmove_number}"

@@ -24,35 +24,51 @@ enum PieceType
 
   def value
     case self
-    in .pawn?
+    when PieceType::Pawn
       100
-    in .knight?
+    when PieceType::Knight
       320
-    in .bishop?
+    when PieceType::Bishop
       330
-    in .rook?
+    when PieceType::Rook
       500
-    in .queen?
+    when PieceType::Queen
       900
-    in .king?
+    when PieceType::King
       20000
+    else
+      0
+    end
+  end
+
+  def to_index
+    case self
+    when PieceType::Pawn   then 0
+    when PieceType::Knight then 1
+    when PieceType::Bishop then 2
+    when PieceType::Rook   then 3
+    when PieceType::Queen  then 4
+    when PieceType::King   then 5
+    else                        0
     end
   end
 
   def symbol
     case self
-    in .pawn?
+    when PieceType::Pawn
       'P'
-    in .knight?
+    when PieceType::Knight
       'N'
-    in .bishop?
+    when PieceType::Bishop
       'B'
-    in .rook?
+    when PieceType::Rook
       'R'
-    in .queen?
+    when PieceType::Queen
       'Q'
-    in .king?
+    when PieceType::King
       'K'
+    else
+      ' '
     end
   end
 
@@ -116,7 +132,7 @@ struct Move
   def to_s(io : IO) : Nil
     from_str = square_to_algebraic(@from)
     to_str = square_to_algebraic(@to)
-    promotion_str = @promotion ? @promotion.not_nil!.symbol.to_s : ""
+    promotion_str = @promotion ? @promotion.not_nil!.symbol.to_s.downcase : ""
     io << from_str << to_str << promotion_str
   end
 end
@@ -136,6 +152,78 @@ struct CastlingRights
   end
 end
 
+module Zobrist
+  @@piece_keys = Array(UInt64).new
+  @@turn_key = 0u64
+  @@castling_keys = Array(UInt64).new
+  @@en_passant_keys = Array(UInt64).new
+  @@initialized = false
+
+  class Xorshift64
+    def initialize(@state : UInt64)
+    end
+
+    def next : UInt64
+      @state ^= @state << 13
+      @state ^= @state >> 7
+      @state ^= @state << 17
+      @state
+    end
+  end
+
+  def self.init
+    return if @@initialized
+    rng = Xorshift64.new(0x123456789ABCDEF0u64)
+
+    768.times { @@piece_keys << rng.next }
+    @@turn_key = rng.next
+    16.times { @@castling_keys << rng.next }
+    64.times { @@en_passant_keys << rng.next }
+    @@initialized = true
+  end
+
+  def self.get_piece_key(square, piece_type, color)
+    init
+    index = square * 12 + piece_type.to_index + (color.white? ? 0 : 6)
+    @@piece_keys[index]
+  end
+
+  def self.get_turn_key
+    init
+    @@turn_key
+  end
+
+  def self.get_castling_key(rights)
+    init
+    index = 0
+    index |= 1 if rights.white_kingside
+    index |= 2 if rights.white_queenside
+    index |= 4 if rights.black_kingside
+    index |= 8 if rights.black_queenside
+    @@castling_keys[index]
+  end
+
+  def self.get_en_passant_key(square)
+    init
+    @@en_passant_keys[square]
+  end
+
+  def self.calculate_hash(game_state)
+    h = 0u64
+    game_state.board.each_with_index do |piece, square|
+      if piece
+        h ^= get_piece_key(square, piece.type, piece.color)
+      end
+    end
+    h ^= get_turn_key if game_state.turn.black?
+    h ^= get_castling_key(game_state.castling_rights)
+    if ep = game_state.en_passant_target
+      h ^= get_en_passant_key(ep)
+    end
+    h
+  end
+end
+
 class GameState
   property board : Array(Piece?)
   property turn : Color
@@ -144,6 +232,8 @@ class GameState
   property halfmove_clock : Int32
   property fullmove_number : Int32
   property move_history : Array(Move)
+  property hash : UInt64
+  property position_history : Array(UInt64)
 
   def initialize(@board = Array(Piece?).new(64, nil),
                  @turn = Color::White,
@@ -151,12 +241,18 @@ class GameState
                  @en_passant_target = nil,
                  @halfmove_clock = 0,
                  @fullmove_number = 1,
-                 @move_history = Array(Move).new)
+                 @move_history = Array(Move).new,
+                 @hash = 0u64,
+                 @position_history = Array(UInt64).new)
+    if @hash == 0u64
+      @hash = Zobrist.calculate_hash(self)
+    end
   end
 
   def dup
     new_board = @board.dup
     new_history = @move_history.dup
+    new_pos_history = @position_history.dup
     GameState.new(
       new_board,
       @turn,
@@ -164,7 +260,9 @@ class GameState
       @en_passant_target,
       @halfmove_clock,
       @fullmove_number,
-      new_history
+      new_history,
+      @hash,
+      new_pos_history
     )
   end
 end
@@ -183,7 +281,7 @@ end
 def square_to_algebraic(square : Square) : String
   file = square % 8
   rank = square // 8
-  "#{('a'.ord + file).chr}#{rank + 1}"
+  "#{(('a'.ord + file).chr)}#{rank + 1}"
 end
 
 def algebraic_to_square(algebraic : String) : Square?

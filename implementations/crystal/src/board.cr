@@ -36,48 +36,42 @@ class Board
   end
 
   def self.display(game_state : GameState) : String
-    result = String.build do |io|
-      io << "\n  +---+---+---+---+---+---+---+---+\n"
-      
-      7.downto(0) do |rank|
-        io << "#{rank + 1} |"
-        
-        8.times do |file|
-          square = rank * 8 + file
-          piece = game_state.board[square]
-          
-          char = piece ? piece.to_char : ' '
-          io << " #{char} |"
+    sb = String::Builder.new
+    sb << "  a b c d e f g h\n"
+    rank = 7
+    while rank >= 0
+      sb << (rank + 1).to_s
+      sb << " "
+      file = 0
+      while file < 8
+        square = rank * 8 + file
+        piece = game_state.board[square]
+        if piece
+          sb << piece.to_char
+        else
+          sb << "."
         end
-        
-        io << "\n  +---+---+---+---+---+---+---+---+\n"
+        sb << " "
+        file += 1
       end
-      
-      io << "    a   b   c   d   e   f   g   h\n\n"
-      
-      io << "Turn: #{game_state.turn}\n"
-      io << "Castling: "
-      io << (game_state.castling_rights.white_kingside ? "K" : "-")
-      io << (game_state.castling_rights.white_queenside ? "Q" : "-")
-      io << (game_state.castling_rights.black_kingside ? "k" : "-")
-      io << (game_state.castling_rights.black_queenside ? "q" : "-")
-      io << "\n"
-      
-      if target = game_state.en_passant_target
-        io << "En passant: #{square_to_algebraic(target)}\n"
-      end
-      
-      io << "Halfmove: #{game_state.halfmove_clock}\n"
-      io << "Fullmove: #{game_state.fullmove_number}\n"
+      sb << (rank + 1).to_s
+      sb << "\n"
+      rank -= 1
     end
-    
-    result
+    sb << "  a b c d e f g h\n\n"
+    if game_state.turn.white?
+      sb << "White to move"
+    else
+      sb << "Black to move"
+    end
+    sb.to_s
   end
 
   def self.make_move(game_state : GameState, move : Move) : GameState
     new_state = game_state.dup
-    piece = new_state.board[move.from]
-    return new_state unless piece
+    new_state.position_history << game_state.hash
+
+    piece = new_state.board[move.from].not_nil!
     
     # Move piece
     new_state.board[move.to] = piece
@@ -115,8 +109,7 @@ class Board
     end
     
     # Update castling rights
-    new_rights = update_castling_rights(new_state.castling_rights, move, piece)
-    new_state.castling_rights = new_rights
+    new_state.castling_rights = update_castling_rights(new_state.castling_rights, move, piece)
     
     # Update clocks
     if move.captured || piece.type.pawn?
@@ -129,9 +122,12 @@ class Board
       new_state.fullmove_number += 1
     end
     
-    # Switch turn and add move to history
+    # Switch turn
     new_state.turn = piece.color.opposite
     new_state.move_history << move
+    
+    # Update hash
+    new_state.hash = Zobrist.calculate_hash(new_state)
     
     new_state
   end
@@ -179,15 +175,30 @@ class Board
     CastlingRights.new(new_white_kingside, new_white_queenside, new_black_kingside, new_black_queenside)
   end
 
+  def self.is_draw_by_repetition(game_state : GameState) : Bool
+    count = 1
+    game_state.position_history.reverse_each do |h|
+      count += 1 if h == game_state.hash
+      return true if count >= 3
+    end
+    false
+  end
+
+  def self.is_draw_by_fifty_moves(game_state : GameState) : Bool
+    game_state.halfmove_clock >= 100
+  end
+
   def self.is_game_over(game_state : GameState) : {Bool, String?}
-    # Draw by fifty-move rule
-    if game_state.halfmove_clock >= 100
-      return {true, "Draw by fifty-move rule"}
+    if is_draw_by_fifty_moves(game_state)
+      return {true, "DRAW: by 50-move rule"}
     end
     
-    # Draw by insufficient material (basic check)
+    if is_draw_by_repetition(game_state)
+      return {true, "DRAW: by repetition"}
+    end
+
     if insufficient_material?(game_state)
-      return {true, "Draw by insufficient material"}
+      return {true, "DRAW: by insufficient material"}
     end
     
     {false, nil}

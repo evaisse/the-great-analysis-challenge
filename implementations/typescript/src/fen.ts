@@ -1,5 +1,6 @@
 import { Board } from "./board";
-import { Piece, Color, CastlingRights, Square } from "./types";
+import { Piece, CastlingRights, Square, GameState } from "./types";
+import { zobrist } from "./zobrist";
 
 export class FenParser {
   private board: Board;
@@ -9,7 +10,7 @@ export class FenParser {
   }
 
   public parseFen(fen: string): void {
-    const parts = fen.split(" ");
+    const parts = fen.trim().split(/\s+/);
     if (parts.length < 4) {
       throw new Error("ERROR: Invalid FEN string");
     }
@@ -17,26 +18,23 @@ export class FenParser {
     const [pieces, turn, castling, enPassant, halfmove = "0", fullmove = "1"] =
       parts;
 
-    for (let i = 0; i < 64; i++) {
-      this.board.setPiece(i, null);
-    }
-
+    const boardState: (Piece | null)[] = new Array(64).fill(null);
     let square = 56;
     for (const char of pieces) {
       if (char === "/") {
         square -= 16;
       } else if ("12345678".includes(char)) {
-        square += parseInt(char);
+        square += parseInt(char, 10);
       } else {
         const piece = this.charToPiece(char);
         if (piece) {
-          this.board.setPiece(square, piece);
+          boardState[square] = piece;
           square++;
         }
       }
     }
 
-    this.board.setTurn(turn === "w" ? "white" : "black");
+    const color = turn === "w" ? "white" : "black";
 
     const rights: CastlingRights = {
       whiteKingside: castling.includes("K"),
@@ -44,23 +42,36 @@ export class FenParser {
       blackKingside: castling.includes("k"),
       blackQueenside: castling.includes("q"),
     };
-    this.board.setCastlingRights(rights);
 
+    let enPassantTarget: Square | null = null;
     if (enPassant !== "-") {
       try {
-        const epSquare = this.board.algebraicToSquare(enPassant);
-        this.board.setEnPassantTarget(epSquare);
+        enPassantTarget = this.board.algebraicToSquare(
+          enPassant.toLowerCase(),
+        );
       } catch {
-        this.board.setEnPassantTarget(null);
+        enPassantTarget = null;
       }
-    } else {
-      this.board.setEnPassantTarget(null);
     }
 
-    const state = this.board.getState();
-    state.halfmoveClock = parseInt(halfmove) || 0;
-    state.fullmoveNumber = parseInt(fullmove) || 1;
-    this.board.setState(state);
+    const halfmoveClock = parseInt(halfmove, 10) || 0;
+    const fullmoveNumber = parseInt(fullmove, 10) || 1;
+
+    const newState: GameState = {
+      board: boardState,
+      turn: color,
+      castlingRights: rights,
+      enPassantTarget,
+      halfmoveClock,
+      fullmoveNumber,
+      moveHistory: [],
+      positionHistory: [],
+      irreversibleHistory: [],
+      zobristHash: 0n,
+    };
+
+    newState.zobristHash = zobrist.computeHash(newState);
+    this.board.setState(newState);
   }
 
   public exportFen(): string {

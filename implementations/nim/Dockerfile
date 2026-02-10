@@ -23,7 +23,7 @@ ENTRYPOINT ["./chess"]
 LABEL org.chess.language="nim"
 LABEL org.chess.version="1.6.14"
 LABEL org.chess.author="Nim Implementation"
-LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion,zobrist,repetition"
 LABEL org.chess.max_ai_depth=3
 LABEL org.chess.estimated_perft4_ms=1200
 LABEL org.chess.run="./chess"

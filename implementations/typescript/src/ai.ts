@@ -1,11 +1,77 @@
 import { Board } from "./board";
 import { MoveGenerator } from "./moveGenerator";
-import { Move, Color, Square, PIECE_VALUES } from "./types";
+import { Move, PIECE_VALUES } from "./types";
 
 export class AI {
   private board: Board;
   private moveGenerator: MoveGenerator;
   private nodesEvaluated: number = 0;
+
+  private static readonly PAWN_TABLE: number[][] = [
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [50, 50, 50, 50, 50, 50, 50, 50],
+    [10, 10, 20, 30, 30, 20, 10, 10],
+    [5, 5, 10, 25, 25, 10, 5, 5],
+    [0, 0, 0, 20, 20, 0, 0, 0],
+    [5, -5, -10, 0, 0, -10, -5, 5],
+    [5, 10, 10, -20, -20, 10, 10, 5],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+  ];
+
+  private static readonly KNIGHT_TABLE: number[][] = [
+    [-50, -40, -30, -30, -30, -30, -40, -50],
+    [-40, -20, 0, 0, 0, 0, -20, -40],
+    [-30, 0, 10, 15, 15, 10, 0, -30],
+    [-30, 5, 15, 20, 20, 15, 5, -30],
+    [-30, 0, 15, 20, 20, 15, 0, -30],
+    [-30, 5, 10, 15, 15, 10, 5, -30],
+    [-40, -20, 0, 5, 5, 0, -20, -40],
+    [-50, -40, -30, -30, -30, -30, -40, -50],
+  ];
+
+  private static readonly BISHOP_TABLE: number[][] = [
+    [-20, -10, -10, -10, -10, -10, -10, -20],
+    [-10, 0, 0, 0, 0, 0, 0, -10],
+    [-10, 0, 5, 10, 10, 5, 0, -10],
+    [-10, 5, 5, 10, 10, 5, 5, -10],
+    [-10, 0, 10, 10, 10, 10, 0, -10],
+    [-10, 10, 10, 10, 10, 10, 10, -10],
+    [-10, 5, 0, 0, 0, 0, 5, -10],
+    [-20, -10, -10, -10, -10, -10, -10, -20],
+  ];
+
+  private static readonly ROOK_TABLE: number[][] = [
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [5, 10, 10, 10, 10, 10, 10, 5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [0, 0, 0, 5, 5, 0, 0, 0],
+  ];
+
+  private static readonly QUEEN_TABLE: number[][] = [
+    [-20, -10, -10, -5, -5, -10, -10, -20],
+    [-10, 0, 0, 0, 0, 0, 0, -10],
+    [-10, 0, 5, 5, 5, 5, 0, -10],
+    [-5, 0, 5, 5, 5, 5, 0, -5],
+    [0, 0, 5, 5, 5, 5, 0, -5],
+    [-10, 5, 5, 5, 5, 5, 0, -10],
+    [-10, 0, 5, 0, 0, 0, 0, -10],
+    [-20, -10, -10, -5, -5, -10, -10, -20],
+  ];
+
+  private static readonly KING_TABLE: number[][] = [
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-20, -30, -30, -40, -40, -30, -30, -20],
+    [-10, -20, -20, -20, -20, -20, -20, -10],
+    [20, 20, 0, 0, 0, 0, 20, 20],
+    [20, 30, 10, 0, 0, 10, 30, 20],
+  ];
 
   constructor(board: Board, moveGenerator: MoveGenerator) {
     this.board = board;
@@ -28,29 +94,34 @@ export class AI {
       return { move: null, eval: 0, nodes: 0, time: 0 };
     }
 
-    let bestMove = moves[0];
-    let bestEval = color === "white" ? -Infinity : Infinity;
-    const alpha = -Infinity;
-    const beta = Infinity;
+    const orderedMoves = this.orderMoves(moves);
+    const maximizing = color === "white";
 
-    for (const move of moves) {
+    let bestMove: Move | null = null;
+    let bestEval = maximizing ? -Infinity : Infinity;
+
+    let alpha = -Infinity;
+    let beta = Infinity;
+
+    for (const move of orderedMoves) {
       this.board.makeMove(move);
 
-      const evaluation = this.minimax(
-        depth - 1,
-        alpha,
-        beta,
-        color === "black",
-      );
+      const evaluation = this.minimax(depth - 1, alpha, beta, !maximizing);
 
       this.board.undoMove();
 
-      if (color === "white" && evaluation > bestEval) {
-        bestEval = evaluation;
-        bestMove = move;
-      } else if (color === "black" && evaluation < bestEval) {
-        bestEval = evaluation;
-        bestMove = move;
+      if (maximizing) {
+        if (evaluation > bestEval || bestMove === null) {
+          bestEval = evaluation;
+          bestMove = move;
+        }
+        alpha = Math.max(alpha, evaluation);
+      } else {
+        if (evaluation < bestEval || bestMove === null) {
+          bestEval = evaluation;
+          bestMove = move;
+        }
+        beta = Math.min(beta, evaluation);
       }
     }
 
@@ -61,6 +132,10 @@ export class AI {
       nodes: this.nodesEvaluated,
       time: endTime - startTime,
     };
+  }
+
+  public evaluatePosition(): number {
+    return this.evaluate();
   }
 
   private minimax(
@@ -85,10 +160,12 @@ export class AI {
       return 0;
     }
 
+    const orderedMoves = this.orderMoves(moves);
+
     if (maximizing) {
       let maxEval = -Infinity;
 
-      for (const move of moves) {
+      for (const move of orderedMoves) {
         this.board.makeMove(move);
 
         const evaluation = this.minimax(depth - 1, alpha, beta, false);
@@ -107,7 +184,7 @@ export class AI {
     } else {
       let minEval = Infinity;
 
-      for (const move of moves) {
+      for (const move of orderedMoves) {
         this.board.makeMove(move);
 
         const evaluation = this.minimax(depth - 1, alpha, beta, true);
@@ -132,14 +209,33 @@ export class AI {
     for (let square = 0; square < 64; square++) {
       const piece = this.board.getPiece(square);
       if (piece) {
-        const value = PIECE_VALUES[piece.type];
-        const positionBonus = this.getPositionBonus(
-          square,
-          piece.type,
-          piece.color,
-        );
-        const totalValue = value + positionBonus;
+        const row = Math.floor(square / 8);
+        const col = square % 8;
+        const evalRow = piece.color === "white" ? row : 7 - row;
 
+        let positionBonus = 0;
+        switch (piece.type) {
+          case "P":
+            positionBonus = AI.PAWN_TABLE[evalRow][col];
+            break;
+          case "N":
+            positionBonus = AI.KNIGHT_TABLE[evalRow][col];
+            break;
+          case "B":
+            positionBonus = AI.BISHOP_TABLE[evalRow][col];
+            break;
+          case "R":
+            positionBonus = AI.ROOK_TABLE[evalRow][col];
+            break;
+          case "Q":
+            positionBonus = AI.QUEEN_TABLE[evalRow][col];
+            break;
+          case "K":
+            positionBonus = AI.KING_TABLE[evalRow][col];
+            break;
+        }
+
+        const totalValue = PIECE_VALUES[piece.type] + positionBonus;
         score += piece.color === "white" ? totalValue : -totalValue;
       }
     }
@@ -147,56 +243,62 @@ export class AI {
     return score;
   }
 
-  private getPositionBonus(
-    square: Square,
-    pieceType: string,
-    color: Color,
-  ): number {
-    const file = square % 8;
-    const rank = Math.floor(square / 8);
-    let bonus = 0;
+  private orderMoves(moves: Move[]): Move[] {
+    const scored = moves.map((move) => ({
+      move,
+      score: this.scoreMove(move),
+      notation: this.moveToNotation(move),
+    }));
 
-    const centerSquares = [27, 28, 35, 36];
-    if (centerSquares.includes(square)) {
-      bonus += 10;
-    }
-
-    if (pieceType === "P") {
-      const advancement = color === "white" ? rank : 7 - rank;
-      bonus += advancement * 5;
-    }
-
-    if (pieceType === "K") {
-      const isEndgame = this.isEndgame();
-      if (!isEndgame) {
-        const kingSafetyRow = color === "white" ? 0 : 7;
-        if (rank === kingSafetyRow && (file <= 2 || file >= 5)) {
-          bonus += 20;
-        } else {
-          bonus -= 20;
-        }
+    scored.sort((a, b) => {
+      if (a.score !== b.score) {
+        return b.score - a.score;
       }
-    }
+      if (a.notation < b.notation) {
+        return -1;
+      }
+      if (a.notation > b.notation) {
+        return 1;
+      }
+      return 0;
+    });
 
-    return bonus;
+    return scored.map((entry) => entry.move);
   }
 
-  private isEndgame(): number {
-    let pieceCount = 0;
-    let queenCount = 0;
+  private scoreMove(move: Move): number {
+    let score = 0;
 
-    for (let square = 0; square < 64; square++) {
-      const piece = this.board.getPiece(square);
-      if (piece) {
-        if (piece.type !== "K" && piece.type !== "P") {
-          pieceCount++;
-          if (piece.type === "Q") {
-            queenCount++;
-          }
-        }
-      }
+    const attacker = this.board.getPiece(move.from);
+    const attackerValue = attacker ? PIECE_VALUES[attacker.type] : 0;
+
+    const targetType = move.captured ?? this.board.getPiece(move.to)?.type;
+    if (targetType) {
+      const victimValue = PIECE_VALUES[targetType];
+      score += victimValue * 10 - attackerValue;
     }
 
-    return pieceCount <= 4 || (pieceCount <= 6 && queenCount === 0) ? 1 : 0;
+    if (move.promotion) {
+      score += PIECE_VALUES[move.promotion] * 10;
+    }
+
+    const toRow = Math.floor(move.to / 8);
+    const toCol = move.to % 8;
+    if ((toRow === 3 || toRow === 4) && (toCol === 3 || toCol === 4)) {
+      score += 10;
+    }
+
+    if (move.castling) {
+      score += 50;
+    }
+
+    return score;
+  }
+
+  private moveToNotation(move: Move): string {
+    const from = this.board.squareToAlgebraic(move.from);
+    const to = this.board.squareToAlgebraic(move.to);
+    const promotion = move.promotion ? move.promotion.toLowerCase() : "";
+    return `${from}${to}${promotion}`;
   }
 }
