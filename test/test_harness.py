@@ -52,6 +52,20 @@ class ChessEngineTester:
             return ""
             
         try:
+            # Clear any pending output using non-blocking reads
+            import fcntl
+            import os
+            fd = self.process.stdout.fileno()
+            fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+            try:
+                while True:
+                    if not self.process.stdout.read(1024):
+                        break
+            except:
+                pass
+            fcntl.fcntl(fd, fcntl.F_SETFL, fl)
+
             self.process.stdin.write(command + "\n")
             self.process.stdin.flush()
             
@@ -64,10 +78,12 @@ class ChessEngineTester:
                     
                 line = self.process.stdout.readline()
                 if line:
-                    output_lines.append(line.strip())
-                    
-                if any(keyword in line for keyword in ["OK:", "ERROR:", "CHECKMATE:", "STALEMATE:", "FEN:", "AI:"]):
-                    break
+                    stripped_line = line.strip()
+                    output_lines.append(stripped_line)
+                    if any(keyword in stripped_line.upper() for keyword in ["OK:", "ERROR:", "CHECKMATE:", "STALEMATE:", "FEN:", "AI:"]):
+                        break
+                else:
+                    time.sleep(0.01)
                     
             return "\n".join(output_lines)
             
@@ -139,7 +155,8 @@ class TestSuite:
                 "move f2f3",
                 "move e7e5", 
                 "move g2g4",
-                "move d8h4"
+                "move d8h4",
+                "status"
             ],
             "validate": lambda output: "CHECKMATE" in output.upper(),
             "timeout": 2.0
@@ -150,9 +167,10 @@ class TestSuite:
             "name": "AI Move Generation",
             "commands": [
                 "new",
-                "ai 3"
+                "ai 3",
+                "status"
             ],
-            "validate": lambda output: "AI:" in output and "depth" in output.lower(),
+            "validate": lambda output: "AI:" in output and ("OK" in output.upper() or "CHECKMATE" in output.upper() or "STALEMATE" in output.upper() or "DRAW" in output.upper()),
             "timeout": 10.0
         })
         
@@ -211,7 +229,7 @@ class TestSuite:
             else:
                 tester.results["failed"].append({
                     "test": test["name"],
-                    "output": full_output[:500]
+                    "output": full_output[:1000]
                 })
                 return False
                 

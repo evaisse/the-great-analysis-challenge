@@ -11,7 +11,7 @@ from lib.move_generator import MoveGenerator
 from lib.fen_parser import FenParser
 from lib.ai import AI
 from lib.perft import Perft
-from lib.types import Move
+from lib.types import Move, Color, PieceType
 
 
 class ChessEngine:
@@ -84,6 +84,8 @@ class ChessEngine:
                 self.handle_draws()
             elif cmd == 'history':
                 self.handle_history()
+            elif cmd == 'status':
+                self.handle_status()
             elif cmd == 'perft':
                 depth = int(parts[1]) if len(parts) > 1 else 4
                 self.handle_perft(depth)
@@ -112,6 +114,16 @@ class ChessEngine:
                 print('ERROR: Invalid move format')
                 return
             
+            # Get the piece being moved
+            moving_piece = self.board.get_piece(move.from_row, move.from_col)
+            
+            # Auto-promote to Queen if not specified and moving to promotion rank
+            if (moving_piece and moving_piece.type == PieceType.PAWN and 
+                move.promotion is None):
+                if (moving_piece.color == Color.WHITE and move.to_row == 7) or \
+                   (moving_piece.color == Color.BLACK and move.to_row == 0):
+                    move.promotion = PieceType.QUEEN
+            
             # Check if move is legal
             legal_moves = self.move_generator.generate_legal_moves()
             legal_move = None
@@ -135,6 +147,9 @@ class ChessEngine:
             
             print(f'OK: {move_str}')
             
+            # Display board
+            print(self.board.display())
+            
             # Check for game end
             game_status = self.board.get_game_status()
             if game_status == 'checkmate':
@@ -148,9 +163,6 @@ class ChessEngine:
                     from lib.draw_detection import is_draw_by_repetition
                     reason = "repetition" if is_draw_by_repetition(self.board) else "50-move rule"
                     print(f'DRAW: by {reason}')
-            
-            # Display board
-            print(self.board.display())
             
         except Exception as e:
             print(f'ERROR: {e}')
@@ -202,6 +214,8 @@ class ChessEngine:
         move_str = best_move.to_algebraic()
         print(f'AI: {move_str} (depth={depth}, eval={eval_score}, time={elapsed_ms}ms)')
         
+        print(self.board.display())
+        
         # Check for game end
         game_status = self.board.get_game_status()
         if game_status == 'checkmate':
@@ -215,8 +229,6 @@ class ChessEngine:
                 from lib.draw_detection import is_draw_by_repetition
                 reason = "repetition" if is_draw_by_repetition(self.board) else "50-move rule"
                 print(f'DRAW: by {reason}')
-        
-        print(self.board.display())
     
     def handle_fen(self, fen: Optional[str]):
         """Handle FEN command."""
@@ -259,6 +271,23 @@ class ChessEngine:
         for i, h in enumerate(self.board.position_history):
             print(f'  {i}: {h:016x}')
         print(f'  {len(self.board.position_history)}: {self.board.zobrist_hash:016x} (current)')
+    
+    def handle_status(self):
+        """Handle status command."""
+        game_status = self.board.get_game_status()
+        if game_status == 'checkmate':
+            winner = 'Black' if self.board.to_move == Color.WHITE else 'White'
+            print(f'CHECKMATE: {winner} wins')
+        elif game_status == 'stalemate':
+            print('STALEMATE: Draw')
+        else:
+            from lib.draw_detection import is_draw
+            if is_draw(self.board):
+                from lib.draw_detection import is_draw_by_repetition
+                reason = "repetition" if is_draw_by_repetition(self.board) else "50-move rule"
+                print(f'DRAW: by {reason}')
+            else:
+                print('OK: ongoing')
     
     def handle_perft(self, depth: int):
         """Handle perft command."""
