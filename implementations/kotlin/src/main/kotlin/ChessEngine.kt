@@ -1,7 +1,5 @@
 // Main chess engine with CLI interface
 
-import kotlin.system.measureTimeMillis
-
 class ChessEngine {
     private val board = Board()
     private val moveGenerator = MoveGenerator()
@@ -83,7 +81,7 @@ class ChessEngine {
         
         val fromStr = moveStr.substring(0, 2)
         val toStr = moveStr.substring(2, 4)
-        val promotionStr = if (moveStr.length > 4) moveStr.substring(4, 5) else null
+        val promotionStr = if (moveStr.length > 4) moveStr.substring(4, 5).toUpperCase() else null
         
         val fromSquare = algebraicToSquare(fromStr)
         val toSquare = algebraicToSquare(toStr)
@@ -99,21 +97,34 @@ class ChessEngine {
             return
         }
         
-        if (piece.color != board.getTurn()) {
+        val turn = board.getTurn()
+        if (piece.color != turn) {
             println("ERROR: Wrong color piece")
             return
         }
         
-        val legalMoves = moveGenerator.getLegalMoves(board.getGameState(), board.getTurn())
+        val legalMoves = moveGenerator.getLegalMoves(board.getGameState(), turn)
         val matchingMove = findMatchingMove(legalMoves, fromSquare, toSquare, promotionStr)
         
         if (matchingMove != null) {
             board.makeMove(matchingMove)
-            println("OK: $moveStr")
+            
+            val nextTurn = board.getTurn()
+            val nextLegalMoves = moveGenerator.getLegalMoves(board.getGameState(), nextTurn)
+            
+            if (nextLegalMoves.isEmpty()) {
+                if (moveGenerator.isInCheck(board.getGameState(), nextTurn)) {
+                    val winner = if (turn == Color.WHITE) "White" else "Black"
+                    println("CHECKMATE: $winner wins")
+                } else {
+                    println("STALEMATE: Draw")
+                }
+            } else {
+                println("OK: $moveStr")
+            }
             println(board)
-            checkGameEnd()
         } else {
-            if (moveGenerator.isInCheck(board.getGameState(), board.getTurn())) {
+            if (moveGenerator.isInCheck(board.getGameState(), turn)) {
                 println("ERROR: King would be in check")
             } else {
                 println("ERROR: Illegal move")
@@ -124,15 +135,7 @@ class ChessEngine {
     private fun findMatchingMove(moves: List<Move>, from: Square, to: Square, promotionStr: String?): Move? {
         return moves.find { move ->
             move.from == from && move.to == to &&
-            when {
-                move.promotion != null && promotionStr != null -> {
-                    val promoType = PieceType.fromChar(promotionStr[0])
-                    move.promotion == promoType
-                }
-                move.promotion == null && promotionStr == null -> true
-                move.promotion == PieceType.QUEEN && promotionStr == null -> true // Default to queen
-                else -> false
-            }
+            (promotionStr == null || (move.promotion != null && move.promotion.symbol.toString() == promotionStr))
         }
     }
     
@@ -159,14 +162,26 @@ class ChessEngine {
             return
         }
         
+        val turn = board.getTurn()
         val result = ai.findBestMove(board, depth)
         
         if (result.bestMove != null) {
-            val moveStr = result.bestMove.toString()
+            val moveStr = result.bestMove.toString().toLowerCase()
             board.makeMove(result.bestMove)
-            println("AI: $moveStr (depth=$depth, eval=${result.evaluation}, time=${result.timeMs}ms)")
+            
+            val nextTurn = board.getTurn()
+            val nextLegalMoves = moveGenerator.getLegalMoves(board.getGameState(), nextTurn)
+            
+            if (nextLegalMoves.isEmpty()) {
+                if (moveGenerator.isInCheck(board.getGameState(), nextTurn)) {
+                    println("AI: $moveStr (CHECKMATE)")
+                } else {
+                    println("AI: $moveStr (STALEMATE)")
+                }
+            } else {
+                println("AI: $moveStr (depth=$depth, eval=${result.evaluation}, time=${result.timeMs})")
+            }
             println(board)
-            checkGameEnd()
         } else {
             println("ERROR: No legal moves available")
         }
@@ -184,7 +199,12 @@ class ChessEngine {
                 println("STALEMATE: Draw")
             }
         } else {
-            println("OK: ongoing")
+            val drawReason = board.getDrawInfo()
+            if (drawReason != null) {
+                println("DRAW: by $drawReason")
+            } else {
+                println("OK: ongoing")
+            }
         }
     }
     
@@ -209,18 +229,22 @@ class ChessEngine {
     }
 
     private fun handleHash() {
-        println("HASH: ${board.getGameState().hashCode().toLong().and(0xFFFFFFFFL).toString(16).padStart(16, '0')}")
+        println("HASH: ${String.format("%016x", board.getGameState().zobristHash)}")
     }
 
     private fun handleDraws() {
-        println("REPETITION: false")
-        println("50-MOVE RULE: false")
+        println("REPETITION: ${board.isDrawByRepetition()}")
+        println("50-MOVE RULE: ${board.isDrawByFiftyMoveRule()}")
         println("OK: clock=${board.getGameState().halfmoveClock}")
     }
 
     private fun handleHistory() {
-        println("Position History (${board.getGameState().moveHistory.size + 1} positions):")
-        println("  0: ${board.getGameState().hashCode().toLong().and(0xFFFFFFFFL).toString(16).padStart(16, '0')} (current)")
+        val state = board.getGameState()
+        println("Position History (${state.positionHistory.size + 1} positions):")
+        for ((index, hash) in state.positionHistory.withIndex()) {
+            println("  $index: ${String.format("%016x", hash)}")
+        }
+        println("  ${state.positionHistory.size}: ${String.format("%016x", state.zobristHash)} (current)")
     }
     
     private fun handlePerft(depthStr: String) {
@@ -230,10 +254,8 @@ class ChessEngine {
             return
         }
         
-        val start = System.currentTimeMillis()
         val nodes = perft.perft(board.getGameState(), depth)
-        val end = System.currentTimeMillis()
-        println("Perft($depth): $nodes nodes in ${end - start}ms")
+        println("Perft $depth: $nodes")
     }
     
     private fun handleHelp() {
@@ -248,20 +270,6 @@ class ChessEngine {
         println("  perft <depth> - Run performance test")
         println("  help - Show this help message")
         println("  quit - Exit the program")
-    }
-    
-    private fun checkGameEnd() {
-        val color = board.getTurn()
-        val legalMoves = moveGenerator.getLegalMoves(board.getGameState(), color)
-        
-        if (legalMoves.isEmpty()) {
-            if (moveGenerator.isInCheck(board.getGameState(), color)) {
-                val winner = if (color == Color.WHITE) "Black" else "White"
-                println("CHECKMATE: $winner wins")
-            } else {
-                println("STALEMATE: Draw")
-            }
-        }
     }
 }
 

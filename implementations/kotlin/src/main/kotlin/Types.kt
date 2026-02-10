@@ -72,8 +72,16 @@ data class GameState(
     var enPassantTarget: Square? = null,
     var halfmoveClock: Int = 0,
     var fullmoveNumber: Int = 1,
-    var moveHistory: MutableList<Move> = mutableListOf()
+    var moveHistory: MutableList<Move> = mutableListOf(),
+    var zobristHash: Long = 0L,
+    var positionHistory: MutableList<Long> = mutableListOf()
 ) {
+    init {
+        if (zobristHash == 0L) {
+            zobristHash = Zobrist.computeHash(this)
+        }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is GameState) return false
@@ -87,7 +95,7 @@ data class GameState(
     }
     
     override fun hashCode(): Int {
-        return board.contentHashCode()
+        return zobristHash.toInt()
     }
     
     fun copy(): GameState {
@@ -98,7 +106,9 @@ data class GameState(
             enPassantTarget = enPassantTarget,
             halfmoveClock = halfmoveClock,
             fullmoveNumber = fullmoveNumber,
-            moveHistory = moveHistory.toMutableList()
+            moveHistory = moveHistory.toMutableList(),
+            zobristHash = zobristHash,
+            positionHistory = positionHistory.toMutableList()
         )
     }
 }
