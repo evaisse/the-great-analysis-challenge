@@ -103,128 +103,62 @@ class ChessEngineTester:
             self.process = None
 
 class TestSuite:
-    def __init__(self):
+    def __init__(self, suite_path: str = "test/test_suite.json"):
+        self.suite_path = suite_path
         self.tests = []
         self.load_tests()
         
     def load_tests(self):
-        """Load all test cases"""
-        
-        # Test 1: Basic Movement
-        self.tests.append({
-            "name": "Basic Movement",
-            "commands": [
-                "new",
-                "move e2e4",
-                "move e7e5",
-                "move g1f3",
-                "move b8c6",
-                "export"
-            ],
-            "validate": lambda output: "r1bqkb" in output and "4p3/4P3" in output,
-            "timeout": 2.0
-        })
-        
-        # Test 2: Castling
-        self.tests.append({
-            "name": "Castling",
-            "commands": [
-                "fen r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
-                "move e1g1",
-                "export"
-            ],
-            "validate": lambda output: "R4RK1" in output or "5RK1" in output,
-            "timeout": 2.0
-        })
-        
-        # Test 3: En Passant
-        self.tests.append({
-            "name": "En Passant",
-            "commands": [
-                "fen rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3",
-                "move e5f6",
-                "export"
-            ],
-            "validate": lambda output: "5P2" in output,
-            "timeout": 2.0
-        })
-        
-        # Test 4: Checkmate Detection
-        self.tests.append({
-            "name": "Checkmate Detection",
-            "commands": [
-                "new",
-                "move f2f3",
-                "move e7e5", 
-                "move g2g4",
-                "move d8h4",
-                "status"
-            ],
-            "validate": lambda output: "CHECKMATE" in output.upper(),
-            "timeout": 2.0
-        })
-        
-        # Test 5: AI Move
-        self.tests.append({
-            "name": "AI Move Generation",
-            "commands": [
-                "new",
-                "ai 3",
-                "status"
-            ],
-            "validate": lambda output: "AI:" in output and ("OK" in output.upper() or "CHECKMATE" in output.upper() or "STALEMATE" in output.upper() or "DRAW" in output.upper()),
-            "timeout": 10.0
-        })
-        
-        # Test 6: Invalid Move Handling
-        self.tests.append({
-            "name": "Invalid Move Handling",
-            "commands": [
-                "new",
-                "move e2e5"
-            ],
-            "validate": lambda output: "ERROR" in output.upper(),
-            "timeout": 2.0
-        })
-        
-        # Test 7: Promotion
-        self.tests.append({
-            "name": "Pawn Promotion",
-            "commands": [
-                "fen 8/P7/8/8/8/8/8/8 w - - 0 1",
-                "move a7a8",
-                "export"
-            ],
-            "validate": lambda output: "Q7" in output or "Q" in output,
-            "timeout": 2.0
-        })
-        
-        # Test 8: Perft (if supported)
-        self.tests.append({
-            "name": "Perft Accuracy",
-            "commands": [
-                "new",
-                "perft 3"
-            ],
-            "validate": lambda output: "8902" in output,
-            "timeout": 5.0,
-            "optional": True
-        })
+        """Load all test cases from JSON suite"""
+        if not os.path.exists(self.suite_path):
+            print(f"Warning: Test suite file not found at {self.suite_path}")
+            return
+
+        try:
+            with open(self.suite_path, 'r') as f:
+                data = json.load(f)
+                
+            categories = data.get("test_categories", {})
+            for cat_id, cat_info in categories.items():
+                cat_tests = cat_info.get("tests", [])
+                for test in cat_tests:
+                    # Add category info to test
+                    test["category"] = cat_id
+                    self.tests.append(test)
+                    
+            print(f"Loaded {len(self.tests)} tests from {self.suite_path}")
+        except Exception as e:
+            print(f"Error loading test suite: {e}")
 
     def run_test(self, tester: ChessEngineTester, test: Dict) -> bool:
-        """Run a single test case"""
+        """Run a single test case from the suite definition"""
         try:
             all_output = []
             start_time = time.time()
             
-            for command in test["commands"]:
-                output = tester.send_command(command, test.get("timeout", 10.0))
+            commands = test.get("commands", [])
+            for cmd_info in commands:
+                # Support both simple string and dict command formats
+                if isinstance(cmd_info, dict):
+                    cmd = cmd_info.get("cmd", "")
+                else:
+                    cmd = cmd_info
+                    
+                output = tester.send_command(cmd, test.get("timeout", 1000) / 1000.0)
                 all_output.append(output)
                 
             elapsed = time.time() - start_time
             full_output = "\n".join(all_output)
             
-            if test["validate"](full_output):
+            # Pattern-based validation
+            patterns = test.get("expected_patterns", [])
+            # For backward compatibility with older tests that used lambda validate
+            if "validate" in test and callable(test["validate"]):
+                success = test["validate"](full_output)
+            else:
+                success = all(p.upper() in full_output.upper() for p in patterns)
+            
+            if success:
                 tester.results["passed"].append(test["name"])
                 tester.results["performance"][test["name"]] = elapsed
                 return True
