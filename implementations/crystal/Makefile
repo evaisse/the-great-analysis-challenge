@@ -11,7 +11,12 @@ build:
 test:
 	crystal spec || true
 	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ./chess_engine | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@if printf "new\nmove e2e4\nmove e7e5\nexport\nquit\n" | ./chess_engine | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"; then \
+		echo "✅ Basic test passed"; \
+	else \
+		echo "❌ Basic test failed"; \
+		exit 1; \
+	fi
 
 # Static analysis and code quality
 analyze:
@@ -30,7 +35,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Crystal implementation in Docker..."
-	docker run --rm -i chess-crystal sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ./chess_engine"
+	docker run --rm -i chess-crystal sh -c "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | ./chess_engine"
 
 # Help target
 help:
