@@ -102,6 +102,13 @@ impl ChessEngine {
                     println!("ERROR: Invalid perft depth");
                 }
             },
+            "divide" => {
+                if parts.len() > 1 {
+                    self.handle_divide(parts[1]);
+                } else {
+                    println!("ERROR: Invalid perft depth");
+                }
+            },
             "help" => self.handle_help(),
             "quit" => return false,
             _ => println!("ERROR: Invalid command"),
@@ -311,6 +318,25 @@ impl ChessEngine {
         let elapsed = start_time.elapsed();
         
         println!("Perft({}): {} nodes ({}ms)", depth, nodes, elapsed.as_millis());
+    }
+
+    fn handle_divide(&mut self, depth_str: &str) {
+        let depth = match depth_str.parse::<u8>() {
+            Ok(d) if d >= 1 => d,
+            _ => {
+                println!("ERROR: Invalid perft depth");
+                return;
+            }
+        };
+
+        let results = self.perft.perft_divide(&mut self.board, depth);
+        let mut sorted_keys: Vec<_> = results.keys().collect();
+        sorted_keys.sort();
+
+        for key in sorted_keys {
+            println!("{}: {}", key, results[key]);
+        }
+        println!("\nTotal: {}", results.values().sum::<u64>());
     }
 
     fn handle_help(&self) {
