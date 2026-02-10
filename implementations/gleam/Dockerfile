@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Gleam
-RUN GLEAM_VERSION="1.2.1" \
+RUN GLEAM_VERSION="1.3.1" \
     && case "$(uname -m)" in \
         x86_64) ARCH="x86_64-unknown-linux-musl" ;; \
         aarch64|arm64) ARCH="aarch64-unknown-linux-musl" ;; \

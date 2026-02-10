@@ -1,19 +1,4 @@
-FROM ubuntu:24.04
-
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies and Haskell
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    libffi-dev \
-    libgmp-dev \
-    zlib1g-dev \
-    libtinfo-dev \
-    ghc \
-    cabal-install \
-    && rm -rf /var/lib/apt/lists/*
+FROM haskell:9.6.3-slim
 
 WORKDIR /app
 
@@ -22,6 +7,7 @@ COPY chess.cabal ./
 COPY src/ src/
 
 # Install dependencies and build
+# `cabal update` is needed to ensure the package list is fresh
 RUN cabal update && cabal build
 
 # Run the chess engine

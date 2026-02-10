@@ -1,35 +1,19 @@
-FROM ubuntu:24.04
+# Use the official Crystal image for version 1.11.2
+FROM crystal:1.11.2-alpine
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies and Crystal
-RUN apt-get update && apt-get install -y \
-    curl \
-    gnupg \
-    build-essential \
-    pkg-config \
-    libssl-dev \
-    libxml2-dev \
-    libyaml-dev \
-    libgmp-dev \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Crystal
-RUN curl -fsSL https://packagecloud.io/84codes/crystal/gpgkey | gpg --dearmor -o /etc/apt/trusted.gpg.d/84codes_crystal.gpg \
-    && echo "deb https://packagecloud.io/84codes/crystal/ubuntu/ jammy main" > /etc/apt/sources.list.d/crystal.list \
-    && apt-get update \
-    && apt-get install -y crystal \
-    && rm -rf /var/lib/apt/lists/*
-
+# Set working directory
 WORKDIR /app
 
 # Copy source files
 COPY shard.yml ./
 COPY src/ ./src/
 
+# The official image should already contain necessary build tools.
+# If the project requires specific C libraries, they should be added here using `apk add`.
+# Assuming core libraries are covered for a typical chess engine.
+
 # Build the application
+# We use a release build for performance
 RUN crystal build src/chess_engine.cr --release -o chess_engine
 
 # Make executable

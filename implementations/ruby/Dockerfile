@@ -1,13 +1,9 @@
 # Use Ubuntu base image
-FROM ubuntu:24.04
+FROM ruby:3.3-slim-bookworm
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies and Ruby
+# Install system dependencies
+# build-essential is needed for native gems
 RUN apt-get update && apt-get install -y \
-    ruby \
-    ruby-dev \
     build-essential \
     git \
     && rm -rf /var/lib/apt/lists/*

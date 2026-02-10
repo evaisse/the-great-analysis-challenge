@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Zig
-RUN ZIG_VERSION="0.11.0" \
+RUN ZIG_VERSION="0.12.0" \
     && wget "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
     && tar -xf "zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
     && mv "zig-linux-x86_64-${ZIG_VERSION}" /opt/zig \
