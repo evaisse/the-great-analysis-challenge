@@ -1,0 +1,12 @@
+{
+  "language": "crystal",
+  "version": "1.14.0",
+  "author": "Crystal Implementation",
+  "build": "crystal build src/chess_engine.cr --release -o chess_engine",
+  "run": "./chess_engine",
+  "analyze": "crystal tool format --check src/ && crystal build src/chess_engine.cr --no-codegen",
+  "test": "crystal spec",
+  "features": ["perft", "fen", "ai", "castling", "en_passant", "promotion"],
+  "max_ai_depth": 5,
+  "estimated_perft4_ms": 800
+}
