@@ -110,25 +110,24 @@ module Chess
     end
     
     def parse_castling_rights(castling_part)
-      @board.castling_rights = {
-        white: { kingside: false, queenside: false },
-        black: { kingside: false, queenside: false }
-      }
+      rights = CastlingRights.new(false, false, false, false)
       
-      return if castling_part == '-'
-      
-      castling_part.each_char do |char|
-        case char
-        when 'K'
-          @board.castling_rights[:white][:kingside] = true
-        when 'Q'
-          @board.castling_rights[:white][:queenside] = true
-        when 'k'
-          @board.castling_rights[:black][:kingside] = true
-        when 'q'
-          @board.castling_rights[:black][:queenside] = true
+      unless castling_part == '-'
+        castling_part.each_char do |char|
+          case char
+          when 'K'
+            rights.white_kingside = true
+          when 'Q'
+            rights.white_queenside = true
+          when 'k'
+            rights.black_kingside = true
+          when 'q'
+            rights.black_queenside = true
+          end
         end
       end
+      
+      @board.castling_rights = rights
     end
     
     def parse_en_passant_target(en_passant_part)
@@ -184,11 +183,12 @@ module Chess
     
     def export_castling_rights
       castling = ''
+      rights = @board.castling_rights
       
-      castling += 'K' if @board.castling_rights[:white][:kingside]
-      castling += 'Q' if @board.castling_rights[:white][:queenside]
-      castling += 'k' if @board.castling_rights[:black][:kingside]
-      castling += 'q' if @board.castling_rights[:black][:queenside]
+      castling += 'K' if rights.white_kingside
+      castling += 'Q' if rights.white_queenside
+      castling += 'k' if rights.black_kingside
+      castling += 'q' if rights.black_queenside
       
       castling.empty? ? '-' : castling
     end

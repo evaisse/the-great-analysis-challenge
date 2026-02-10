@@ -25,8 +25,8 @@ RUN gem install bundler && bundle install
 COPY . .
 
 # Create a non-root user
-RUN addgroup -g 1001 -S ruby && \
-    adduser -S chess -u 1001
+RUN groupadd -g 1001 ruby && \
+    useradd -m -u 1001 -g ruby -s /bin/false chess
 
 # Change ownership of the app directory
 RUN chown -R chess:ruby /app

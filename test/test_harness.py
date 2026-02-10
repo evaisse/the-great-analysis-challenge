@@ -59,6 +59,8 @@ class ChessEngineTester:
             fl = fcntl.fcntl(fd, fcntl.F_GETFL)
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
             try:
+                # Small sleep to let OS fill buffer
+                time.sleep(0.01)
                 while True:
                     if not self.process.stdout.read(1024):
                         break

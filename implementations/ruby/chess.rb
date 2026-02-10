@@ -24,7 +24,7 @@ module Chess
       flush_output
       
       loop do
-        print "\n> "
+        print "\n> " if $stdin.tty?
         flush_output
         input = gets&.strip
         break if input.nil? || input.empty?
@@ -64,6 +64,8 @@ module Chess
         handle_draws
       when 'history'
         handle_history
+      when 'status'
+        handle_status
       when 'perft'
         handle_perft(parts[1]&.to_i || 4)
       when 'help'
@@ -93,6 +95,14 @@ module Chess
         puts 'ERROR: Invalid move format'
         flush_output
         return
+      end
+      
+      # Auto-promote to Queen if not specified and moving to promotion rank
+      piece = @board.piece_at(move.from_row, move.from_col)
+      if piece&.type == :pawn && move.promotion.nil?
+        if (piece.color == :white && move.to_row == 0) || (piece.color == :black && move.to_row == 7)
+          move.promotion = :queen
+        end
       end
       
       # Validate move is legal
@@ -185,7 +195,7 @@ module Chess
       
       if @fen_parser.parse(fen_string)
         @move_history.clear
-        puts 'OK: Position loaded from FEN'
+        puts 'OK: FEN loaded'
         puts @board.display
         flush_output
       else
@@ -226,6 +236,26 @@ module Chess
         puts "  #{i}: #{h.to_s(16).rjust(16, '0')}"
       end
       puts "  #{@board.position_history.length}: #{@board.zobrist_hash.to_s(16).rjust(16, '0')} (current)"
+      flush_output
+    end
+
+    def handle_status
+      current_color = @board.current_turn
+      
+      if @move_generator.in_checkmate?(current_color)
+        winner = current_color == :white ? 'Black' : 'White'
+        puts "CHECKMATE: #{winner} wins"
+      elsif @move_generator.in_stalemate?(current_color)
+        puts 'STALEMATE: Draw'
+      else
+        require_relative 'lib/draw_detection'
+        if DrawDetection.draw?(@board)
+          reason = DrawDetection.draw_by_repetition?(@board) ? "repetition" : "50-move rule"
+          puts "DRAW: by #{reason}"
+        else
+          puts "OK: ongoing"
+        end
+      end
       flush_output
     end
     
