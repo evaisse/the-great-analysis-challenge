@@ -6,11 +6,15 @@ Command-line interface for the Julia chess engine implementation
 """
 
 include("src/types.jl")
+include("src/zobrist.jl")
 include("src/board.jl")
 include("src/move_generator.jl")
 include("src/fen.jl")
 include("src/ai.jl")
 include("src/perft.jl")
+include("src/draw_detection.jl")
+
+using Printf
 
 mutable struct ChessEngine
     board::Board
@@ -35,6 +39,7 @@ function process_command(engine::ChessEngine, command::String)
         return false
     elseif cmd == "new"
         setup_starting_position!(engine.board)
+        println("OK: New game started")
         println(engine.board)
     elseif cmd == "move"
         if length(parts) != 2
@@ -80,21 +85,24 @@ function process_command(engine::ChessEngine, command::String)
         end
         
         make_move!(engine.board, move)
-        println("OK: $(move_to_string(move))")
         
-        # Check for checkmate/stalemate
+        # Check for game end / draws
         new_legal_moves = get_legal_moves(engine.board)
         current_color = engine.board.state.white_to_move ? WHITE : BLACK
-        
+
         if isempty(new_legal_moves)
             if is_in_check(engine.board, current_color)
-                winner = current_color == WHITE ? "Black" : "White"
-                println("CHECKMATE: $winner wins")
+                println("CHECKMATE: $(current_color == WHITE ? "Black" : "White") wins")
             else
                 println("STALEMATE: Draw")
             end
+        elseif is_draw_by_repetition(engine.board)
+            println("DRAW: REPETITION")
+        elseif is_draw_by_fifty_moves(engine.board)
+            println("DRAW: 50-MOVE")
+        else
+            println("OK: $(move_to_string(move))")
         end
-        
         println(engine.board)
     elseif cmd == "undo"
         if undo_move!(engine.board)
@@ -103,6 +111,28 @@ function process_command(engine::ChessEngine, command::String)
         else
             println("ERROR: No move to undo")
         end
+    elseif cmd == "status"
+        legal_moves = get_legal_moves(engine.board)
+        current_color = engine.board.state.white_to_move ? WHITE : BLACK
+        if isempty(legal_moves)
+            if is_in_check(engine.board, current_color)
+                println("CHECKMATE: $(current_color == WHITE ? "Black" : "White") wins")
+            else
+                println("STALEMATE: Draw")
+            end
+        elseif is_draw_by_repetition(engine.board)
+            println("DRAW: REPETITION")
+        elseif is_draw_by_fifty_moves(engine.board)
+            println("DRAW: 50-MOVE")
+        else
+            println("OK: ONGOING")
+        end
+    elseif cmd == "hash"
+        println("HASH: ", @sprintf("%016x", engine.board.zobrist_hash))
+    elseif cmd == "draws"
+        repetition = is_draw_by_repetition(engine.board)
+        fifty = is_draw_by_fifty_moves(engine.board)
+        println("DRAW: repetition=$(repetition), 50-move=$(fifty), clock=$(engine.board.state.halfmove_clock)")
     elseif cmd == "fen"
         if length(parts) < 2
             println("ERROR: FEN string required")
@@ -121,7 +151,7 @@ function process_command(engine::ChessEngine, command::String)
         println("FEN: $fen")
     elseif cmd == "eval"
         evaluation = evaluate_position(engine.board)
-        println("Evaluation: $evaluation")
+        println("EVALUATION: $evaluation")
     elseif cmd == "ai"
         if length(parts) != 2
             println("ERROR: AI depth required (1-5)")
@@ -143,24 +173,27 @@ function process_command(engine::ChessEngine, command::String)
                 println("ERROR: No legal moves available")
                 return true
             end
-            
+
             make_move!(engine.board, best_move)
             move_str = move_to_string(best_move)
+
             println("AI: $move_str (depth=$depth, eval=$eval_score, time=$(elapsed_ms)ms)")
-            
-            # Check for checkmate/stalemate
+
             new_legal_moves = get_legal_moves(engine.board)
             current_color = engine.board.state.white_to_move ? WHITE : BLACK
-            
+
             if isempty(new_legal_moves)
                 if is_in_check(engine.board, current_color)
-                    winner = current_color == WHITE ? "Black" : "White"
-                    println("CHECKMATE: $winner wins")
+                    println("CHECKMATE: $(current_color == WHITE ? "Black" : "White") wins")
                 else
                     println("STALEMATE: Draw")
                 end
+            elseif is_draw_by_repetition(engine.board)
+                println("DRAW: REPETITION")
+            elseif is_draw_by_fifty_moves(engine.board)
+                println("DRAW: 50-MOVE")
             end
-            
+
             println(engine.board)
         catch
             println("ERROR: Invalid depth")
@@ -181,7 +214,7 @@ function process_command(engine::ChessEngine, command::String)
             start_time = time()
             count = perft(engine.board, depth)
             elapsed_ms = round(Int, (time() - start_time) * 1000)
-            println("Perft($depth): $count ($(elapsed_ms)ms)")
+            println("OK: Perft($(depth)): $(count) nodes ($(elapsed_ms)ms)")
         catch
             println("ERROR: Invalid depth")
         end

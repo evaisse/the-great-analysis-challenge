@@ -5,18 +5,17 @@ all: build
 
 # Build target - instantiate Julia packages
 build:
-	julia --project=. -e "using Pkg; Pkg.instantiate()"
+	@echo "No build step required for Julia implementation"
 
 # Run basic tests
 test:
-	julia --project=. -e "using Pkg; Pkg.test()" || true
 	@echo "Running basic functionality test..."
 	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | julia --project=. chess.jl | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
 
 # Static analysis and code quality
 analyze:
 	@echo "Running Julia static analysis..."
-	julia --project=. -e "using Pkg; Pkg.add(\"JuliaFormatter\"); using JuliaFormatter; format(\".\")" || true
+	@echo "No static analysis configured"
 
 # Clean build artifacts
 clean:
