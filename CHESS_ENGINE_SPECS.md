@@ -341,18 +341,22 @@ Examples:
 
 ### 8.3 Test Metadata
 
-Each implementation should include a `chess.meta` file:
-```json
-{
-  "language": "python",
-  "version": "3.9",
-  "author": "Developer Name",
-  "build": "python3 chess.py",
-  "run": "python3 chess.py",
-  "features": ["perft", "fen", "ai"],
-  "max_ai_depth": 5,
-  "estimated_perft4_ms": 800
-}
+Each implementation must include metadata labels in its `Dockerfile`:
+```dockerfile
+LABEL org.chess.language="python"
+LABEL org.chess.version="3.11"
+LABEL org.chess.author="Developer Name"
+LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+LABEL org.chess.max_ai_depth=5
+LABEL org.chess.estimated_perft4_ms=800
+```
+
+Optional command labels (if different from standard `make` targets):
+```dockerfile
+LABEL org.chess.build="custom build command"
+LABEL org.chess.test="custom test command"
+LABEL org.chess.analyze="custom analyze command"
+LABEL org.chess.run="custom run command" # Automatically inferred from CMD if missing
 ```
 
 ## 9. Validation Criteria
