@@ -20,6 +20,7 @@ export declare class ChessEngine {
     private handleHistory;
     private evaluatePosition;
     private handlePerft;
+    private handleStatus;
     private handleHelp;
     private checkGameEnd;
 }

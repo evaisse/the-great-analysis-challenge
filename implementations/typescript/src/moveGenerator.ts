@@ -21,7 +21,11 @@ export class MoveGenerator {
     return moves;
   }
 
-  public generatePieceMoves(from: Square, piece: Piece): Move[] {
+  public generatePieceMoves(
+    from: Square,
+    piece: Piece,
+    includeCastling: boolean = true,
+  ): Move[] {
     switch (piece.type) {
       case "P":
         return this.generatePawnMoves(from, piece);
@@ -34,7 +38,7 @@ export class MoveGenerator {
       case "Q":
         return this.generateQueenMoves(from, piece);
       case "K":
-        return this.generateKingMoves(from, piece);
+        return this.generateKingMoves(from, piece, includeCastling);
       default:
         return [];
     }
@@ -174,7 +178,11 @@ export class MoveGenerator {
     );
   }
 
-  private generateKingMoves(from: Square, piece: Piece): Move[] {
+  private generateKingMoves(
+    from: Square,
+    piece: Piece,
+    includeCastling: boolean = true,
+  ): Move[] {
     const moves: Move[] = [];
     const offsets = [-9, -8, -7, -1, 1, 7, 8, 9];
     const file = from % 8;
@@ -190,6 +198,8 @@ export class MoveGenerator {
         }
       }
     });
+
+    if (!includeCastling) return moves;
 
     const rights = this.board.getCastlingRights();
     if (piece.color === "white" && from === 4) {
@@ -300,7 +310,7 @@ export class MoveGenerator {
     for (let from = 0; from < 64; from++) {
       const piece = this.board.getPiece(from);
       if (piece && piece.color === byColor) {
-        const moves = this.generatePieceMoves(from, piece);
+        const moves = this.generatePieceMoves(from, piece, false);
         if (moves.some((move) => move.to === square)) {
           return true;
         }

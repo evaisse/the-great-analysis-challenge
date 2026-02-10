@@ -4,7 +4,7 @@ export declare class MoveGenerator {
     private board;
     constructor(board: Board);
     generateAllMoves(color: Color): Move[];
-    generatePieceMoves(from: Square, piece: Piece): Move[];
+    generatePieceMoves(from: Square, piece: Piece, includeCastling?: boolean): Move[];
     private generatePawnMoves;
     private generateKnightMoves;
     private generateBishopMoves;

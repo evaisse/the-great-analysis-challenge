@@ -21,10 +21,9 @@ class AI {
         const alpha = -Infinity;
         const beta = Infinity;
         for (const move of moves) {
-            const state = this.board.getState();
             this.board.makeMove(move);
             const evaluation = this.minimax(depth - 1, alpha, beta, color === "black");
-            this.board.setState(state);
+            this.board.undoMove();
             if (color === "white" && evaluation > bestEval) {
                 bestEval = evaluation;
                 bestMove = move;
@@ -58,10 +57,9 @@ class AI {
         if (maximizing) {
             let maxEval = -Infinity;
             for (const move of moves) {
-                const state = this.board.getState();
                 this.board.makeMove(move);
                 const evaluation = this.minimax(depth - 1, alpha, beta, false);
-                this.board.setState(state);
+                this.board.undoMove();
                 maxEval = Math.max(maxEval, evaluation);
                 alpha = Math.max(alpha, evaluation);
                 if (beta <= alpha) {
@@ -73,10 +71,9 @@ class AI {
         else {
             let minEval = Infinity;
             for (const move of moves) {
-                const state = this.board.getState();
                 this.board.makeMove(move);
                 const evaluation = this.minimax(depth - 1, alpha, beta, true);
-                this.board.setState(state);
+                this.board.undoMove();
                 minEval = Math.min(minEval, evaluation);
                 beta = Math.min(beta, evaluation);
                 if (beta <= alpha) {
