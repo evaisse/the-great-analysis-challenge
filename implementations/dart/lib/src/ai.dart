@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:chess_engine/chess_engine.dart';
 
 class AI {
@@ -13,17 +12,24 @@ class AI {
   };
 
   Move findBestMove(Board board, int depth) {
-    double bestValue = double.negativeInfinity;
+    int bestValue = -1000000;
     Move? bestMove;
 
-    for (final move in board.generateMoves()) {
+    final moves = board.generateMoves();
+    if (moves.isEmpty) {
+      throw Exception('ERROR: No legal moves available');
+    }
+
+    // Sort moves for better pruning (optional, but good practice)
+    // For now, let's keep it simple and deterministic
+    for (final move in moves) {
       final newBoard = board.clone();
       newBoard.move(move.toString());
       final value = _minimax(
         newBoard,
         depth - 1,
-        double.negativeInfinity,
-        double.infinity,
+        -1000000,
+        1000000,
         false,
       );
       if (value > bestValue) {
@@ -34,11 +40,11 @@ class AI {
     return bestMove!;
   }
 
-  double _minimax(
+  int _minimax(
     Board board,
     int depth,
-    double alpha,
-    double beta,
+    int alpha,
+    int beta,
     bool maximizingPlayer,
   ) {
     if (depth == 0) {
@@ -47,12 +53,16 @@ class AI {
 
     final moves = board.generateMoves();
     if (moves.isEmpty) {
-      // TODO: Check for checkmate/stalemate
-      return 0;
+      final playerColor = board.turn == 'w' ? PieceColor.white : PieceColor.black;
+      if (board.isKingInCheck(playerColor)) {
+        return maximizingPlayer ? -100000 : 100000;
+      } else {
+        return 0;
+      }
     }
 
     if (maximizingPlayer) {
-      double maxEval = double.negativeInfinity;
+      int maxEval = -1000000;
       for (final move in moves) {
         final newBoard = board.clone();
         newBoard.move(move.toString());
@@ -65,7 +75,7 @@ class AI {
       }
       return maxEval;
     } else {
-      double minEval = double.infinity;
+      int minEval = 1000000;
       for (final move in moves) {
         final newBoard = board.clone();
         newBoard.move(move.toString());
@@ -80,8 +90,8 @@ class AI {
     }
   }
 
-  double evaluate(Board board) {
-    double score = 0;
+  int evaluate(Board board) {
+    int score = 0;
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
         final piece = board.squares[i][j];
@@ -95,6 +105,8 @@ class AI {
         }
       }
     }
+    // Return score from the perspective of the player whose turn it was at the START of search
+    // Actually, evaluation is usually absolute (White positive, Black negative)
     return score;
   }
 }

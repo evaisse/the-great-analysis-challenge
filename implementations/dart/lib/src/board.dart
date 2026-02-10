@@ -38,10 +38,29 @@ class Board {
     this.irreversibleHistory,
   );
 
-  Board.empty() {
+  Board() {
+    reset();
+  }
+
+  void reset() {
     squares = List.generate(8, (_) => List.filled(8, null));
+    
+    // Set up pieces
+    // Black pieces (row 0 and 1)
+    const backRank = [
+      PieceType.rook, PieceType.knight, PieceType.bishop, PieceType.queen,
+      PieceType.king, PieceType.bishop, PieceType.knight, PieceType.rook
+    ];
+    for (int col = 0; col < 8; col++) {
+      squares[0][col] = Piece(backRank[col], PieceColor.black);
+      squares[1][col] = Piece(PieceType.pawn, PieceColor.black);
+      squares[6][col] = Piece(PieceType.pawn, PieceColor.white);
+      squares[7][col] = Piece(backRank[col], PieceColor.white);
+    }
+
     turn = 'w';
     _castlingRights = 'KQkq';
+    _enPassantTarget = null;
     _halfmoveClock = 0;
     _fullmoveNumber = 1;
     positionHistory = [];
@@ -99,6 +118,8 @@ class Board {
     return buffer.toString();
   }
 
+  String display() => toString();
+
   void move(String moveStr) {
     final from = _parseSquare(moveStr.substring(0, 2));
     final to = _parseSquare(moveStr.substring(2, 4));
@@ -135,25 +156,14 @@ class Board {
     }
 
     // 3. Handle castling rook
-<<<<<<< Updated upstream
-    String? castlingMove;
     if (piece.type == PieceType.king && (from.col - to.col).abs() == 2) {
       if (to.col == 6) {
-        castlingMove = 'K';
-=======
-    if (piece.type == PieceType.king && (from.col - to.col).abs() == 2) {
-      if (to.col == 6) {
->>>>>>> Stashed changes
         final rook = squares[from.row][7]!;
         hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 7];
         hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 5];
         squares[from.row][7] = null;
         squares[from.row][5] = rook;
       } else {
-<<<<<<< Updated upstream
-        castlingMove = 'Q';
-=======
->>>>>>> Stashed changes
         final rook = squares[from.row][0]!;
         hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 0];
         hash ^= zobrist.pieces[zobrist.getPieceIndex(rook)][from.row * 8 + 3];
@@ -174,22 +184,11 @@ class Board {
       if (_castlingRights.contains(rightsChars[i])) hash ^= zobrist.castling[i];
     }
 
-<<<<<<< Updated upstream
-    // Update rights logic
     if (piece.type == PieceType.king) {
       if (piece.color == PieceColor.white) {
         _castlingRights = _castlingRights.replaceAll('K', '').replaceAll('Q', '');
       } else {
         _castlingRights = _castlingRights.replaceAll('k', '').replaceAll('q', '');
-=======
-    if (piece.type == PieceType.king) {
-      if (piece.color == PieceColor.white) {
-        _castlingRights =
-            _castlingRights.replaceAll('K', '').replaceAll('Q', '');
-      } else {
-        _castlingRights =
-            _castlingRights.replaceAll('k', '').replaceAll('q', '');
->>>>>>> Stashed changes
       }
     } else if (piece.type == PieceType.rook) {
       if (from.row == 7 && from.col == 0) _castlingRights = _castlingRights.replaceAll('Q', '');
@@ -197,10 +196,7 @@ class Board {
       if (from.row == 0 && from.col == 0) _castlingRights = _castlingRights.replaceAll('q', '');
       if (from.row == 0 && from.col == 7) _castlingRights = _castlingRights.replaceAll('k', '');
     }
-<<<<<<< Updated upstream
-    // Also if rook is captured
-=======
->>>>>>> Stashed changes
+    
     if (to.row == 7 && to.col == 0) _castlingRights = _castlingRights.replaceAll('Q', '');
     if (to.row == 7 && to.col == 7) _castlingRights = _castlingRights.replaceAll('K', '');
     if (to.row == 0 && to.col == 0) _castlingRights = _castlingRights.replaceAll('q', '');
@@ -225,11 +221,7 @@ class Board {
     // 6. Update side to move
     hash ^= zobrist.sideToMove;
     
-<<<<<<< Updated upstream
-    if (isPawnMove || isCapture) {
-=======
     if (piece.type == PieceType.pawn || isCapture) {
->>>>>>> Stashed changes
       _halfmoveClock = 0;
     } else {
       _halfmoveClock += 1;
@@ -237,11 +229,14 @@ class Board {
 
     if (turn == 'b') {
       _fullmoveNumber += 1;
-<<<<<<< Updated upstream
     }
     turn = turn == 'w' ? 'b' : 'w';
 
     zobristHash = hash;
+  }
+
+  void makeMove(Move move) {
+    this.move(move.toString());
   }
 
   bool undoMove(Move move) {
@@ -290,60 +285,6 @@ class Board {
     }
     turn = turn == 'w' ? 'b' : 'w';
 
-=======
-    }
-    turn = turn == 'w' ? 'b' : 'w';
-
-    zobristHash = hash;
-  }
-
-  bool undoMove(Move move) {
-    if (irreversibleHistory.isEmpty) return false;
-    
-    final old = irreversibleHistory.removeLast();
-    positionHistory.removeLast();
-
-    final from = (row: move.fromRow, col: move.fromCol);
-    final to = (row: move.toRow, col: move.toCol);
-    
-    final movedPiece = squares[to.row][to.col]!;
-    final originalPiece = move.promotion != null ? Piece(PieceType.pawn, movedPiece.color) : movedPiece;
-
-    // Restore pieces
-    squares[from.row][from.col] = originalPiece;
-    squares[to.row][to.col] = move.capturedPiece;
-
-    if (move.isEnPassant) {
-      final capturedPawnRow = from.row;
-      squares[capturedPawnRow][to.col] = move.capturedPiece;
-      squares[to.row][to.col] = null;
-    }
-
-    // Handle castling rook
-    if (move.isCastling) {
-      if (to.col == 6) {
-        final rook = squares[from.row][5]!;
-        squares[from.row][5] = null;
-        squares[from.row][7] = rook;
-      } else {
-        final rook = squares[from.row][3]!;
-        squares[from.row][3] = null;
-        squares[from.row][0] = rook;
-      }
-    }
-
-    // Restore state
-    _castlingRights = old.castlingRights;
-    _enPassantTarget = old.enPassantTarget;
-    _halfmoveClock = old.halfmoveClock;
-    zobristHash = old.zobristHash;
-    
-    if (turn == 'w') {
-      _fullmoveNumber -= 1;
-    }
-    turn = turn == 'w' ? 'b' : 'w';
-
->>>>>>> Stashed changes
     return true;
   }
 
@@ -457,7 +398,6 @@ class Board {
     final legalMoves = <Move>[];
     for (final move in pseudoLegalMoves) {
       final newBoard = clone();
-      // Use internal move method that takes Move object or string
       newBoard.move(move.toString());
       if (!newBoard.isKingInCheck(playerColor)) {
         legalMoves.add(move);
@@ -647,25 +587,37 @@ class Board {
     if (color == PieceColor.white) {
       if (_castlingRights.contains('K') &&
           squares[7][5] == null &&
-          squares[7][6] == null) {
+          squares[7][6] == null &&
+          !isSquareAttacked(7, 4, PieceColor.black) &&
+          !isSquareAttacked(7, 5, PieceColor.black) &&
+          !isSquareAttacked(7, 6, PieceColor.black)) {
         moves.add(Move(7, 4, 7, 6)..isCastling = true);
       }
       if (_castlingRights.contains('Q') &&
           squares[7][1] == null &&
           squares[7][2] == null &&
-          squares[7][3] == null) {
+          squares[7][3] == null &&
+          !isSquareAttacked(7, 4, PieceColor.black) &&
+          !isSquareAttacked(7, 3, PieceColor.black) &&
+          !isSquareAttacked(7, 2, PieceColor.black)) {
         moves.add(Move(7, 4, 7, 2)..isCastling = true);
       }
     } else {
       if (_castlingRights.contains('k') &&
           squares[0][5] == null &&
-          squares[0][6] == null) {
+          squares[0][6] == null &&
+          !isSquareAttacked(0, 4, PieceColor.white) &&
+          !isSquareAttacked(0, 5, PieceColor.white) &&
+          !isSquareAttacked(0, 6, PieceColor.white)) {
         moves.add(Move(0, 4, 0, 6)..isCastling = true);
       }
       if (_castlingRights.contains('q') &&
           squares[0][1] == null &&
           squares[0][2] == null &&
-          squares[0][3] == null) {
+          squares[0][3] == null &&
+          !isSquareAttacked(0, 4, PieceColor.white) &&
+          !isSquareAttacked(0, 3, PieceColor.white) &&
+          !isSquareAttacked(0, 2, PieceColor.white)) {
         moves.add(Move(0, 4, 0, 2)..isCastling = true);
       }
     }
@@ -688,22 +640,18 @@ class Board {
 
   bool isSquareAttacked(int row, int col, PieceColor attackerColor) {
     // Check for pawn attacks
-    final direction = attackerColor == PieceColor.white ? -1 : 1;
-    if (row + direction >= 0 && row + direction < 8) {
-      if (col - 1 >= 0) {
-        final piece = squares[row + direction][col - 1];
-        if (piece != null &&
-            piece.color == attackerColor &&
-            piece.type == PieceType.pawn) {
-          return true;
-        }
-      }
-      if (col + 1 < 8) {
-        final piece = squares[row + direction][col + 1];
-        if (piece != null &&
-            piece.color == attackerColor &&
-            piece.type == PieceType.pawn) {
-          return true;
+    final direction = attackerColor == PieceColor.white ? 1 : -1;
+    final pawnRow = row + direction;
+    if (pawnRow >= 0 && pawnRow < 8) {
+      for (int dcol in [-1, 1]) {
+        final pawnCol = col + dcol;
+        if (pawnCol >= 0 && pawnCol < 8) {
+          final piece = squares[pawnRow][pawnCol];
+          if (piece != null &&
+              piece.color == attackerColor &&
+              piece.type == PieceType.pawn) {
+            return true;
+          }
         }
       }
     }
@@ -821,6 +769,7 @@ class Board {
         }
       }
     }
+    if (kingRow == -1) return false;
     return isSquareAttacked(
       kingRow,
       kingCol,

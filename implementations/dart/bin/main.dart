@@ -32,6 +32,7 @@ void main() {
         break;
       case 'new':
         game.init();
+        print('OK: New game started');
         game.printBoard();
         break;
       case 'ai':
@@ -90,6 +91,9 @@ void main() {
           '  ${game.board.positionHistory.length}: ${game.board.zobristHash.toUnsigned(64).toRadixString(16).padLeft(16, '0')} (current)',
         );
         break;
+      case 'status':
+        _checkGameState(game);
+        break;
       case 'perft':
         if (parts.length < 2) {
           print('ERROR: perft depth must be provided');
@@ -139,5 +143,7 @@ void _checkGameState(Game game) {
         ? 'repetition'
         : '50-move rule';
     print('DRAW: by $reason');
+  } else {
+    print('OK: ongoing');
   }
 }
