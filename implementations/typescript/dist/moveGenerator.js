@@ -216,10 +216,15 @@ class MoveGenerator {
             let prevFile = file;
             while (this.isValidSquare(to)) {
                 const toFile = to % 8;
-                if (isDiagonal === true && Math.abs(toFile - prevFile) !== 1)
-                    break;
-                if ((isDiagonal === false && direction === -1) || direction === 1) {
-                    if (Math.abs(toFile - prevFile) !== 1)
+                const fileDiff = Math.abs(toFile - prevFile);
+                if (Math.abs(direction) % 8 === 0) {
+                    // Vertical moves: file must stay the same
+                    if (fileDiff !== 0)
+                        break;
+                }
+                else {
+                    // Horizontal or diagonal moves: file must change by 1
+                    if (fileDiff !== 1)
                         break;
                 }
                 const target = this.board.getPiece(to);
@@ -240,9 +245,21 @@ class MoveGenerator {
         return moves;
     }
     isSquareAttacked(square, byColor) {
+        const file = square % 8;
+        const rank = Math.floor(square / 8);
         for (let from = 0; from < 64; from++) {
             const piece = this.board.getPiece(from);
             if (piece && piece.color === byColor) {
+                if (piece.type === "P") {
+                    // Pawns attack diagonally
+                    const direction = piece.color === "white" ? 8 : -8;
+                    const fromFile = from % 8;
+                    if ((square === from + direction - 1 && Math.abs(file - fromFile) === 1) ||
+                        (square === from + direction + 1 && Math.abs(file - fromFile) === 1)) {
+                        return true;
+                    }
+                    continue;
+                }
                 const moves = this.generatePieceMoves(from, piece, false);
                 if (moves.some((move) => move.to === square)) {
                     return true;

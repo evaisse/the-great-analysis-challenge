@@ -26,4 +26,4 @@ docs/
 
 # Nim cache
 nimcache/
-nimblecache/
+nimblecache/chess

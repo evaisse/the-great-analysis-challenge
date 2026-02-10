@@ -1,4 +1,4 @@
-import std/[strutils, sequtils, tables, strformat]
+import std/[strutils, sequtils, tables, strformat, hashes, times, algorithm]
 
 # ================================
 # Type Definitions
@@ -45,6 +45,8 @@ type
     enPassantTarget*: int  # -1 if none, otherwise 0-63
     halfmoveClock*: int
     fullmoveNumber*: int
+    whiteKingPos*: Square
+    blackKingPos*: Square
 
   GameState* = object
     board*: Board
@@ -68,6 +70,73 @@ const
   
   # Piece values for evaluation
   PieceValues*: array[PieceType, int] = [0, 100, 320, 330, 500, 900, 20000]
+
+  # Piece-Square Tables (from AI Specification)
+  PawnTable: array[64, int] = [
+     0,  0,  0,  0,  0,  0,  0,  0,
+     5, 10, 10,-20,-20, 10, 10,  5,
+     5, -5,-10,  0,  0,-10, -5,  5,
+     0,  0,  0, 20, 20,  0,  0,  0,
+     5,  5, 10, 25, 25, 10,  5,  5,
+    10, 10, 20, 30, 30, 20, 10, 10,
+    50, 50, 50, 50, 50, 50, 50, 50,
+     0,  0,  0,  0,  0,  0,  0,  0
+  ]
+
+  KnightTable: array[64, int] = [
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50
+  ]
+
+  BishopTable: array[64, int] = [
+    -20,-10,-10,-10,-10,-10,-10,-20,
+    -10,  5,  0,  0,  0,  0,  5,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10,  0, 10, 10, 10, 10,  0,-10,
+    -10,  5,  5, 10, 10,  5,  5,-10,
+    -10,  0,  5, 10, 10,  5,  0,-10,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -20,-10,-10,-10,-10,-10,-10,-20
+  ]
+
+  RookTable: array[64, int] = [
+     0,  0,  0,  5,  5,  0,  0,  0,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+     5, 10, 10, 10, 10, 10, 10,  5,
+     0,  0,  0,  0,  0,  0,  0,  0
+  ]
+
+  QueenTable: array[64, int] = [
+    -20,-10,-10, -5, -5,-10,-10,-20,
+    -10,  0,  5,  0,  0,  0,  0,-10,
+    -10,  5,  5,  5,  5,  5,  0,-10,
+     0,  0,  5,  5,  5,  5,  0, -5,
+    -5,  0,  5,  5,  5,  5,  0, -5,
+    -10,  0,  5,  5,  5,  5,  0,-10,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -20,-10,-10, -5, -5,-10,-10,-20
+  ]
+
+  KingTable: array[64, int] = [
+     20, 30, 10,  0,  0, 10, 30, 20,
+     20, 20,  0,  0,  0,  0, 20, 20,
+    -10,-20,-20,-20,-20,-20,-20,-10,
+    -20,-30,-30,-40,-40,-30,-30,-20,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30
+  ]
 
 # ================================
 # Utility Functions
@@ -145,12 +214,19 @@ proc clearBoard*(board: var Board) =
   board.enPassantTarget = -1
   board.halfmoveClock = 0
   board.fullmoveNumber = 1
+  board.whiteKingPos = Square(4)
+  board.blackKingPos = Square(60)
 
 proc getPiece*(board: Board, sq: Square): Piece =
   board.squares[sq]
 
 proc setPiece*(board: var Board, sq: Square, piece: Piece) =
   board.squares[sq] = piece
+  if piece.pieceType == ptKing:
+    if piece.color == cWhite:
+      board.whiteKingPos = sq
+    else:
+      board.blackKingPos = sq
 
 proc isEmpty*(board: Board, sq: Square): bool =
   board.squares[sq].pieceType == ptNone
@@ -287,13 +363,6 @@ proc displayBoard*(board: Board): string =
 # Move Validation
 # ================================
 
-proc findKing*(board: Board, color: Color): Square =
-  for sq in 0..63:
-    let p = board.getPiece(Square(sq))
-    if p.pieceType == ptKing and p.color == color:
-      return Square(sq)
-  return Square(0)  # Should never happen in valid position
-
 proc isSquareAttacked*(board: Board, sq: Square, byColor: Color): bool =
   # Check pawn attacks
   let pawnDir = if byColor == cWhite: -8 else: 8
@@ -388,7 +457,7 @@ proc isSquareAttacked*(board: Board, sq: Square, byColor: Color): bool =
   return false
 
 proc isInCheck*(board: Board, color: Color): bool =
-  let kingSq = board.findKing(color)
+  let kingSq = if color == cWhite: board.whiteKingPos else: board.blackKingPos
   return board.isSquareAttacked(kingSq, opposite(color))
 
 # ================================
@@ -527,28 +596,6 @@ proc generateKingMoves*(board: Board, sq: Square, moves: var seq[Move]) =
              not board.isSquareAttacked(Square(58), cWhite):
             moves.add(Move(fromSquare: sq, toSquare: Square(58), isCastling: true))
 
-proc generateLegalMoves*(board: Board): seq[Move] =
-  result = @[]
-  
-  for sq in 0..63:
-    let piece = board.getPiece(Square(sq))
-    if piece.pieceType != ptNone and piece.color == board.activeColor:
-      case piece.pieceType
-      of ptPawn:
-        board.generatePawnMoves(Square(sq), result)
-      of ptKnight:
-        board.generateKnightMoves(Square(sq), result)
-      of ptBishop:
-        board.generateSlidingMoves(Square(sq), BishopDirections, result)
-      of ptRook:
-        board.generateSlidingMoves(Square(sq), RookDirections, result)
-      of ptQueen:
-        board.generateSlidingMoves(Square(sq), RookDirections & BishopDirections, result)
-      of ptKing:
-        board.generateKingMoves(Square(sq), result)
-      else:
-        discard
-
 # ================================
 # Move Execution
 # ================================
@@ -622,6 +669,35 @@ proc makeMove*(board: var Board, move: Move): bool =
   
   return true
 
+proc generateLegalMoves*(board: Board): seq[Move] =
+  var pseudoMoves: seq[Move] = @[]
+  
+  for sq in 0..63:
+    let piece = board.getPiece(Square(sq))
+    if piece.pieceType != ptNone and piece.color == board.activeColor:
+      case piece.pieceType
+      of ptPawn:
+        board.generatePawnMoves(Square(sq), pseudoMoves)
+      of ptKnight:
+        board.generateKnightMoves(Square(sq), pseudoMoves)
+      of ptBishop:
+        board.generateSlidingMoves(Square(sq), BishopDirections, pseudoMoves)
+      of ptRook:
+        board.generateSlidingMoves(Square(sq), RookDirections, pseudoMoves)
+      of ptQueen:
+        board.generateSlidingMoves(Square(sq), RookDirections & BishopDirections, pseudoMoves)
+      of ptKing:
+        board.generateKingMoves(Square(sq), pseudoMoves)
+      else:
+        discard
+  
+  result = @[]
+  for move in pseudoMoves:
+    var nextBoard = board
+    if nextBoard.makeMove(move):
+      if not nextBoard.isInCheck(board.activeColor):
+        result.add(move)
+
 # ================================
 # Evaluation
 # ================================
@@ -632,11 +708,29 @@ proc evaluatePosition*(board: Board): int =
   for sq in 0..63:
     let piece = board.getPiece(Square(sq))
     if piece.pieceType != ptNone:
-      let value = PieceValues[piece.pieceType]
+      let pieceValue = PieceValues[piece.pieceType]
+      
+      # Get position bonus from piece-square table
+      let row = sq div 8
+      let col = sq mod 8
+      let evalRow = if piece.color == cWhite: row else: 7 - row
+      let tableIdx = evalRow * 8 + col
+      
+      var positionBonus = 0
+      case piece.pieceType
+      of ptPawn: positionBonus = PawnTable[tableIdx]
+      of ptKnight: positionBonus = KnightTable[tableIdx]
+      of ptBishop: positionBonus = BishopTable[tableIdx]
+      of ptRook: positionBonus = RookTable[tableIdx]
+      of ptQueen: positionBonus = QueenTable[tableIdx]
+      of ptKing: positionBonus = KingTable[tableIdx]
+      else: discard
+      
+      let totalValue = pieceValue + positionBonus
       if piece.color == cWhite:
-        result += value
+        result += totalValue
       else:
-        result -= value
+        result -= totalValue
   
   # Return from perspective of side to move
   if board.activeColor == cBlack:
@@ -646,23 +740,69 @@ proc evaluatePosition*(board: Board): int =
 # Simple AI
 # ================================
 
+proc moveToUCI*(move: Move): string
+
+proc scoreMove(move: Move, board: Board): int =
+  var score = 0
+  
+  # 1. Captures (MVV-LVA)
+  let targetPiece = board.getPiece(move.toSquare)
+  if targetPiece.pieceType != ptNone:
+    let victimValue = PieceValues[targetPiece.pieceType]
+    let attacker = board.getPiece(move.fromSquare)
+    let attackerValue = PieceValues[attacker.pieceType]
+    score += (victimValue * 10) - attackerValue
+    
+  # 2. Promotions
+  if move.promotion != ptNone:
+    score += PieceValues[move.promotion] * 10
+    
+  # 3. Center control
+  let toRow = getRank(move.toSquare)
+  let toCol = getFile(move.toSquare)
+  if (toRow == 3 or toRow == 4) and (toCol == 3 or toCol == 4):
+    score += 10
+    
+  # 4. Castling
+  if move.isCastling:
+    score += 50
+    
+  return score
+
+proc orderMoves(moves: seq[Move], board: Board): seq[Move] =
+  var moveScores: seq[tuple[m: Move, score: int, notation: string]] = @[]
+  for m in moves:
+    moveScores.add((m, scoreMove(m, board), moveToUCI(m)))
+    
+  # Sort by: score (descending), then notation (ascending)
+  moveScores.sort(proc (x, y: tuple[m: Move, score: int, notation: string]): int =
+    if x.score != y.score:
+      return cmp(y.score, x.score)
+    return cmp(x.notation, y.notation)
+  )
+  
+  result = @[]
+  for ms in moveScores:
+    result.add(ms.m)
+
 proc minimax*(board: Board, depth: int, alpha: int, beta: int, maximizing: bool): tuple[score: int, move: Move] =
   if depth == 0:
     return (score: evaluatePosition(board), move: Move())
   
-  let moves = generateLegalMoves(board)
-  if moves.len == 0:
+  let legalMoves = generateLegalMoves(board)
+  if legalMoves.len == 0:
     if board.isInCheck(board.activeColor):
-      return (score: if maximizing: -30000 else: 30000, move: Move())
+      return (score: if maximizing: -100000 else: 100000, move: Move())
     else:
       return (score: 0, move: Move())  # Stalemate
   
+  let moves = orderMoves(legalMoves, board)
   var bestMove = moves[0]
   var currentAlpha = alpha
   var currentBeta = beta
   
   if maximizing:
-    var maxEval = -100000
+    var maxEval = -1000000
     for move in moves:
       var newBoard = board
       if newBoard.makeMove(move):
@@ -675,7 +815,7 @@ proc minimax*(board: Board, depth: int, alpha: int, beta: int, maximizing: bool)
           break
     return (score: maxEval, move: bestMove)
   else:
-    var minEval = 100000
+    var minEval = 1000000
     for move in moves:
       var newBoard = board
       if newBoard.makeMove(move):
@@ -689,7 +829,7 @@ proc minimax*(board: Board, depth: int, alpha: int, beta: int, maximizing: bool)
     return (score: minEval, move: bestMove)
 
 proc findBestMove*(board: Board, depth: int): Move =
-  let result = minimax(board, depth, -100000, 100000, true)
+  let result = minimax(board, depth, -1000000, 1000000, true)
   return result.move
 
 # ================================
@@ -760,12 +900,32 @@ proc processCommand*(game: var GameState, command: string): string =
     
     let move = parseUCIMove(parts[1])
     
-    if not game.board.isMoveLegal(move):
+    # Find the full legal move with all flags set
+    var fullMove: Move
+    var found = false
+    let legalMoves = game.board.generateLegalMoves()
+    for m in legalMoves:
+      if m.fromSquare == move.fromSquare and m.toSquare == move.toSquare:
+        if move.promotion == ptNone or move.promotion == m.promotion:
+          fullMove = m
+          found = true
+          break
+    
+    if not found:
       return "ERROR: Illegal move"
     
     game.boardHistory.add(game.board)
-    if game.board.makeMove(move):
-      game.moveHistory.add(move)
+    if game.board.makeMove(fullMove):
+      game.moveHistory.add(fullMove)
+      
+      # Check for game end
+      let nextLegalMoves = game.board.generateLegalMoves()
+      if nextLegalMoves.len == 0:
+        if game.board.isInCheck(game.board.activeColor):
+          return "CHECKMATE: " & parts[1]
+        else:
+          return "STALEMATE: " & parts[1]
+          
       return "OK: " & parts[1]
     else:
       return "ERROR: Invalid move"
@@ -782,6 +942,38 @@ proc processCommand*(game: var GameState, command: string): string =
     else:
       return "ERROR: Cannot undo"
   
+  of "status":
+    let legalMoves = game.board.generateLegalMoves()
+    if legalMoves.len == 0:
+      if game.board.isInCheck(game.board.activeColor):
+        return "OK: CHECKMATE"
+      else:
+        return "OK: STALEMATE"
+    
+    # Check for draw by 50 moves
+    if game.board.halfmoveClock >= 100:
+      return "DRAW: 50-MOVE RULE"
+    
+    # Check for draw by repetition
+    var count = 0
+    for b in game.boardHistory:
+      if b.squares == game.board.squares and 
+         b.activeColor == game.board.activeColor and
+         b.castlingRights == game.board.castlingRights and
+         b.enPassantTarget == game.board.enPassantTarget:
+        count.inc
+    if count >= 2:
+      return "DRAW: REPETITION"
+    
+    if game.board.isInCheck(game.board.activeColor):
+      return "OK: CHECK"
+    else:
+      return "OK: ONGOING"
+
+  of "hash":
+    # Simple dummy hash since we don't have Zobrist implemented yet
+    return "HASH: " & $game.board.squares.hash()
+
   of "fen":
     if parts.len < 2:
       return "ERROR: FEN string required"
@@ -800,11 +992,15 @@ proc processCommand*(game: var GameState, command: string): string =
   
   of "eval":
     let score = evaluatePosition(game.board)
-    return "EVAL: " & $score
+    return "EVALUATION: " & $score
   
   of "ai":
     let depth = if parts.len > 1: parseInt(parts[1]) else: 3
-    let move = findBestMove(game.board, depth)
+    let startTime = cpuTime()
+    let searchResult = minimax(game.board, depth, -1000000, 1000000, true)
+    let move = searchResult.move
+    let endTime = cpuTime()
+    let durationMs = int((endTime - startTime) * 1000)
     
     if move.fromSquare == move.toSquare:
       return "ERROR: No legal moves"
@@ -812,7 +1008,18 @@ proc processCommand*(game: var GameState, command: string): string =
     game.boardHistory.add(game.board)
     if game.board.makeMove(move):
       game.moveHistory.add(move)
-      return "AI: " & moveToUCI(move)
+      
+      # Check for game end
+      let nextLegalMoves = game.board.generateLegalMoves()
+      var resp = "AI: "
+      if nextLegalMoves.len == 0:
+        if game.board.isInCheck(game.board.activeColor):
+          resp.add("CHECKMATE: ")
+        else:
+          resp.add("STALEMATE: ")
+          
+      resp.add(moveToUCI(move) & " (depth=" & $depth & ", eval=" & $searchResult.score & ", time=" & $durationMs & ")")
+      return resp
     else:
       return "ERROR: AI move failed"
   
@@ -837,6 +1044,16 @@ proc processCommand*(game: var GameState, command: string): string =
     let nodes = perft(game.board, depth)
     return "PERFT: " & $nodes & " nodes"
   
+  of "moves":
+    let moves = game.board.generateLegalMoves()
+    var resp = "MOVES:"
+    for m in moves:
+      resp.add(" " & moveToUCI(m))
+    return resp
+
+  of "display":
+    return game.board.displayBoard()
+
   of "help":
     return """Commands:
 new - Start new game
@@ -847,6 +1064,9 @@ export - Export current position as FEN
 eval - Evaluate position
 ai <depth> - AI makes a move (default depth: 3)
 perft <depth> - Count positions at depth
+status - Show game status
+hash - Show position hash
+display - Display the board
 quit - Exit program"""
   
   of "quit":
@@ -864,13 +1084,12 @@ when isMainModule:
   
   echo "Nim Chess Engine v2.0"
   echo "Type 'help' for commands\n"
-  echo game.board.displayBoard()
   
   while true:
     stdout.write("> ")
     stdout.flushFile()
     
-    let input = stdin.readLine()
+    let input = try: stdin.readLine() except EOFError: ""
     if input == "":
       break
     
@@ -882,7 +1101,5 @@ when isMainModule:
     elif response != "":
       echo response
     
-    # Display board after moves
-    if input.startsWith("move") or input.startsWith("new") or 
-       input.startsWith("fen") or input.startsWith("ai") or input.startsWith("undo"):
-      echo game.board.displayBoard()
+    # We no longer display the board automatically after every move
+    # to avoid confusing the test harness. Use 'display' to see it.

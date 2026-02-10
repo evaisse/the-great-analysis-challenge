@@ -29,8 +29,6 @@ export class ChessEngine {
   }
 
   public start(): void {
-    console.log(this.board.display());
-
     this.rl.on("line", (input: string) => {
       const trimmed = input.trim();
       if (trimmed) {
@@ -194,11 +192,10 @@ export class ChessEngine {
       (result.move.promotion || "");
 
     this.board.makeMove(result.move);
+    console.log(this.board.display());
     console.log(
       `AI: ${moveStr} (depth=${depth}, eval=${result.eval}, time=${result.time}ms)`,
     );
-    console.log(this.board.display());
-
     this.checkGameEnd();
   }
 
@@ -218,14 +215,12 @@ export class ChessEngine {
   }
 
   private handleEval(): void {
-    const evaluation = this.evaluatePosition();
+    const evaluation = this.ai.evaluatePosition();
     console.log(`EVALUATION: ${evaluation}`);
   }
 
   private handleHash(): void {
-    console.log(
-      `HASH: ${this.board.getHash().toString(16).padStart(16, "0")}`,
-    );
+    console.log(`HASH: ${this.board.getHash().toString(16).padStart(16, "0")}`);
   }
 
   private handleDraws(): void {
@@ -247,25 +242,6 @@ export class ChessEngine {
     );
   }
 
-  private evaluatePosition(): number {
-    let score = 0;
-    for (let square = 0; square < 64; square++) {
-      const piece = this.board.getPiece(square);
-      if (piece) {
-        const value = {
-          P: 100,
-          N: 320,
-          B: 330,
-          R: 500,
-          Q: 900,
-          K: 20000,
-        }[piece.type];
-        score += piece.color === "white" ? value : -value;
-      }
-    }
-    return score;
-  }
-
   private handlePerft(depthStr: string): void {
     const depth = parseInt(depthStr);
     if (isNaN(depth) || depth < 1) {
@@ -277,7 +253,9 @@ export class ChessEngine {
     const nodes = this.perft.perft(depth);
     const endTime = Date.now();
 
-    console.log(`OK: Perft(${depth}): ${nodes} nodes (${endTime - startTime}ms)`);
+    console.log(
+      `OK: Perft(${depth}): ${nodes} nodes (${endTime - startTime}ms)`,
+    );
   }
 
   private handleStatus(): void {

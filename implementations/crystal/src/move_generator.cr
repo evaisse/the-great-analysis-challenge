@@ -131,8 +131,8 @@ class MoveGenerator
       while valid_square?(to)
         to_file = to % 8
         
-        # Check for wrapping (especially important for horizontal moves)
-        if direction == -1 || direction == 1
+        # Check for wrapping
+        if direction % 8 != 0
           break if (to_file - prev_file).abs != 1
         end
         
