@@ -15,12 +15,16 @@ COPY . .
 RUN dart compile exe bin/main.dart -o bin/chess_engine
 
 # --- Runtime Image ---
-# Use an ultra-minimal scratch image for the final deployment to reduce size.
-FROM scratch
-# Copy runtime dependencies from the build stage.
-COPY --from=build /runtime/ /
-# Copy the compiled executable.
-COPY --from=build /app/bin/chess_engine /app/bin/chess_engine
+FROM dart:stable-sdk
+
+# Install make
+RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory.
+WORKDIR /app
+
+# Copy the compiled executable and project structure
+COPY --from=build /app /app
 
 # Set the entrypoint for the container.
-CMD ["/app/bin/chess_engine"]
+CMD ["./bin/chess_engine"]
