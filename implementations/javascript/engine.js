@@ -41,8 +41,8 @@ export class ChessEngine {
                 bQ: parts[2].includes('q'),
             },
             enPassant: parts[3] === '-' ? null : this.algebraicToIndex(parts[3]),
-            halfmoveClock: parseInt(parts[4]),
-            fullmoveNumber: parseInt(parts[5]),
+            halfmoveClock: parseInt(parts[4] || '0'),
+            fullmoveNumber: parseInt(parts[5] || '1'),
         };
     }
 
@@ -107,11 +107,20 @@ export class ChessEngine {
         if (moveStr.length < 4) return null;
         const from = this.algebraicToIndex(moveStr.substring(0, 2));
         const to = this.algebraicToIndex(moveStr.substring(2, 4));
-        const promotion = moveStr.length > 4 ? /** @type {PieceType} */ (moveStr[4].toLowerCase()) : undefined;
+        let promotion = moveStr.length > 4 ? /** @type {PieceType} */ (moveStr[4].toLowerCase()) : undefined;
+        
+        // Auto-detect promotion if not specified
+        const piece = this.state.board[from];
+        if (piece && piece.type === 'p' && !promotion) {
+            const toRank = Math.floor(to / 8);
+            if (toRank === 0 || toRank === 7) {
+                promotion = 'q';
+            }
+        }
+        
         return { from, to, promotion };
     }
 
-    // Simplified move generation for brevity, but full implementation follows spec
     /**
      * @returns {Move[]}
      */
@@ -135,20 +144,12 @@ export class ChessEngine {
         const r = Math.floor(index / 8);
         const c = index % 8;
 
-        const addMove = (toR, toC, promotion) => {
-            if (toR >= 0 && toR < 8 && toC >= 0 && toC < 8) {
-                moves.push({ from: index, to: toR * 8 + toC, promotion });
+        const addMove = (tr, tc, promotion) => {
+            if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
+                moves.push({ from: index, to: tr * 8 + tc, promotion });
                 return true;
             }
             return false;
-        };
-
-        const dirs = {
-            n: [[-1, -2], [-2, -1], [-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2]],
-            b: [[-1, -1], [-1, 1], [1, -1], [1, 1]],
-            r: [[-1, 0], [1, 0], [0, -1], [0, 1]],
-            q: [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]],
-            k: [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]
         };
 
         if (piece.type === 'p') {
@@ -157,7 +158,8 @@ export class ChessEngine {
             const promRank = piece.color === 'w' ? 0 : 7;
 
             // Push
-            if (!this.state.board[index + dir * 8]) {
+            const pushIdx = index + dir * 8;
+            if (pushIdx >= 0 && pushIdx < 64 && !this.state.board[pushIdx]) {
                 if (r + dir === promRank) {
                     ['q', 'r', 'b', 'n'].forEach(p => addMove(r + dir, c, p));
                 } else {
@@ -181,28 +183,35 @@ export class ChessEngine {
                     }
                 }
             });
-        } else if (piece.type === 'n' || piece.type === 'k') {
-            dirs[piece.type].forEach(([dr, dc]) => {
+        } else if (piece.type === 'n') {
+            [[-1, -2], [-2, -1], [-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2]].forEach(([dr, dc]) => {
                 const tr = r + dr, tc = c + dc;
                 if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
                     const target = this.state.board[tr * 8 + tc];
-                    if (!target || target.color !== piece.color) {
-                        addMove(tr, tc);
-                    }
+                    if (!target || target.color !== piece.color) addMove(tr, tc);
+                }
+            });
+        } else if (piece.type === 'k') {
+            [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dr, dc]) => {
+                const tr = r + dr, tc = c + dc;
+                if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
+                    const target = this.state.board[tr * 8 + tc];
+                    if (!target || target.color !== piece.color) addMove(tr, tc);
                 }
             });
             // Castling
-            if (piece.type === 'k') {
-                if (piece.color === 'w') {
-                    if (this.state.castling.wK && !this.state.board[61] && !this.state.board[62] && !this.isSquareAttacked(60, 'b') && !this.isSquareAttacked(61, 'b')) addMove(7, 6);
-                    if (this.state.castling.wQ && !this.state.board[59] && !this.state.board[58] && !this.state.board[57] && !this.isSquareAttacked(60, 'b') && !this.isSquareAttacked(59, 'b')) addMove(7, 2);
-                } else {
-                    if (this.state.castling.bK && !this.state.board[5] && !this.state.board[6] && !this.isSquareAttacked(4, 'w') && !this.isSquareAttacked(5, 'w')) addMove(0, 6);
-                    if (this.state.castling.bQ && !this.state.board[3] && !this.state.board[2] && !this.state.board[1] && !this.isSquareAttacked(4, 'w') && !this.isSquareAttacked(3, 'w')) addMove(0, 2);
-                }
+            if (piece.color === 'w') {
+                if (this.state.castling.wK && !this.state.board[61] && !this.state.board[62] && !this.isSquareAttacked(60, 'b') && !this.isSquareAttacked(61, 'b')) addMove(7, 6);
+                if (this.state.castling.wQ && !this.state.board[59] && !this.state.board[58] && !this.state.board[57] && !this.isSquareAttacked(60, 'b') && !this.isSquareAttacked(59, 'b')) addMove(7, 2);
+            } else {
+                if (this.state.castling.bK && !this.state.board[5] && !this.state.board[6] && !this.isSquareAttacked(4, 'w') && !this.isSquareAttacked(5, 'w')) addMove(0, 6);
+                if (this.state.castling.bQ && !this.state.board[3] && !this.state.board[2] && !this.state.board[1] && !this.isSquareAttacked(4, 'w') && !this.isSquareAttacked(3, 'w')) addMove(0, 2);
             }
         } else {
-            dirs[piece.type].forEach(([dr, dc]) => {
+            const dirs = piece.type === 'b' ? [[-1, -1], [-1, 1], [1, -1], [1, 1]] :
+                         piece.type === 'r' ? [[-1, 0], [1, 0], [0, -1], [0, 1]] :
+                         [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]];
+            dirs.forEach(([dr, dc]) => {
                 for (let dist = 1; dist < 8; dist++) {
                     const tr = r + dr * dist, tc = c + dc * dist;
                     if (tr < 0 || tr >= 8 || tc < 0 || tc >= 8) break;
@@ -225,16 +234,55 @@ export class ChessEngine {
      */
     isSquareAttacked(index, attackerColor) {
         const r = Math.floor(index / 8), c = index % 8;
-        // Check for attackers (simplified check)
-        for (let i = 0; i < 64; i++) {
-            const p = this.state.board[i];
-            if (p && p.color === attackerColor) {
-                // For simplicity in this logic, we'd need a non-recursive move generator or 
-                // specialized attack check. 
-                // Let's implement a minimal version.
+        
+        // Knight
+        for (const [dr, dc] of [[-1, -2], [-2, -1], [-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2]]) {
+            const tr = r + dr, tc = c + dc;
+            if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
+                const p = this.state.board[tr * 8 + tc];
+                if (p && p.type === 'n' && p.color === attackerColor) return true;
             }
         }
-        return false; // TODO: Implement correctly
+
+        // King
+        for (const [dr, dc] of [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]) {
+            const tr = r + dr, tc = c + dc;
+            if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
+                const p = this.state.board[tr * 8 + tc];
+                if (p && p.type === 'k' && p.color === attackerColor) return true;
+            }
+        }
+
+        // Sliding pieces (Rook, Bishop, Queen)
+        const sliding = [
+            { type: ['r', 'q'], dirs: [[-1, 0], [1, 0], [0, -1], [0, 1]] },
+            { type: ['b', 'q'], dirs: [[-1, -1], [-1, 1], [1, -1], [1, 1]] }
+        ];
+        for (const { type, dirs } of sliding) {
+            for (const [dr, dc] of dirs) {
+                for (let d = 1; d < 8; d++) {
+                    const tr = r + dr * d, tc = c + dc * d;
+                    if (tr < 0 || tr >= 8 || tc < 0 || tc >= 8) break;
+                    const p = this.state.board[tr * 8 + tc];
+                    if (p) {
+                        if (p.color === attackerColor && type.includes(p.type)) return true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Pawn
+        const pDir = attackerColor === 'w' ? 1 : -1;
+        for (const dc of [-1, 1]) {
+            const tr = r + pDir, tc = c + dc;
+            if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
+                const p = this.state.board[tr * 8 + tc];
+                if (p && p.type === 'p' && p.color === attackerColor) return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -269,43 +317,35 @@ export class ChessEngine {
         const piece = this.state.board[move.from];
         if (!piece) return;
 
-        // Handle special moves (captures, ep, castling)
         const target = this.state.board[move.to];
-        
-        // Reset EP
         let nextEp = null;
 
         if (piece.type === 'p') {
-            // EP capture
             if (move.to === this.state.enPassant) {
                 const dir = piece.color === 'w' ? 1 : -1;
                 this.state.board[move.to + dir * 8] = null;
             }
-            // EP set
             if (Math.abs(move.from - move.to) === 16) {
                 nextEp = (move.from + move.to) / 2;
             }
-            // Promotion
             if (move.promotion) {
                 piece.type = move.promotion;
+            } else if ((piece.color === 'w' && Math.floor(move.to / 8) === 0) || (piece.color === 'b' && Math.floor(move.to / 8) === 7)) {
+                piece.type = 'q'; // Auto-promote to Queen
             }
         }
 
-        // Castling move
         if (piece.type === 'k') {
-            if (move.from === 60) {
+            if (Math.abs(move.from - move.to) === 2 || (move.from === 60 && (move.to === 62 || move.to === 58)) || (move.from === 4 && (move.to === 6 || move.to === 2))) {
                 if (move.to === 62) { this.state.board[61] = this.state.board[63]; this.state.board[63] = null; }
-                if (move.to === 58) { this.state.board[59] = this.state.board[56]; this.state.board[56] = null; }
-            } else if (move.from === 4) {
-                if (move.to === 6) { this.state.board[5] = this.state.board[7]; this.state.board[7] = null; }
-                if (move.to === 2) { this.state.board[3] = this.state.board[0]; this.state.board[0] = null; }
+                else if (move.to === 58) { this.state.board[59] = this.state.board[56]; this.state.board[56] = null; }
+                else if (move.to === 6) { this.state.board[5] = this.state.board[7]; this.state.board[7] = null; }
+                else if (move.to === 2) { this.state.board[3] = this.state.board[0]; this.state.board[0] = null; }
             }
-            // Update castling rights
             if (piece.color === 'w') { this.state.castling.wK = false; this.state.castling.wQ = false; }
             else { this.state.castling.bK = false; this.state.castling.bQ = false; }
         }
 
-        // Update castling rights on rook moves/captures
         if (move.from === 56 || move.to === 56) this.state.castling.wQ = false;
         if (move.from === 63 || move.to === 63) this.state.castling.wK = false;
         if (move.from === 0 || move.to === 0) this.state.castling.bQ = false;
@@ -313,11 +353,9 @@ export class ChessEngine {
 
         this.state.board[move.to] = piece;
         this.state.board[move.from] = null;
-        
         this.state.enPassant = nextEp;
         if (piece.type === 'p' || target) this.state.halfmoveClock = 0;
         else this.state.halfmoveClock++;
-        
         if (this.state.turn === 'b') this.state.fullmoveNumber++;
         this.state.turn = this.state.turn === 'w' ? 'b' : 'w';
     }
@@ -326,5 +364,21 @@ export class ChessEngine {
         if (this.history.length > 0) {
             this.state = this.history.pop();
         }
+    }
+
+    /**
+     * @param {number} depth
+     * @returns {number}
+     */
+    perft(depth) {
+        if (depth === 0) return 1;
+        let nodes = 0;
+        const moves = this.generateMoves();
+        for (const move of moves) {
+            this.makeMove(move);
+            nodes += this.perft(depth - 1);
+            this.undo();
+        }
+        return nodes;
     }
 }
