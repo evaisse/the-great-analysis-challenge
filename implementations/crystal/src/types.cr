@@ -22,7 +22,7 @@ enum PieceType
   Queen
   King
 
-  def value
+  def material_value
     case self
     when PieceType::Pawn
       100
@@ -41,7 +41,7 @@ enum PieceType
     end
   end
 
-  def to_index
+  def zobrist_index
     case self
     when PieceType::Pawn   then 0
     when PieceType::Knight then 1
@@ -184,7 +184,7 @@ module Zobrist
 
   def self.get_piece_key(square, piece_type, color)
     init
-    index = square * 12 + piece_type.to_index + (color.white? ? 0 : 6)
+    index = square * 12 + piece_type.zobrist_index + (color.white? ? 0 : 6)
     @@piece_keys[index]
   end
 

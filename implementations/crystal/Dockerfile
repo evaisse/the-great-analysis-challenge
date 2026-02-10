@@ -25,8 +25,9 @@ LABEL org.chess.author="Crystal Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=800
-LABEL org.chess.build="crystal build src/chess_engine.cr --release -o chess_engine"
-LABEL org.chess.test="crystal spec"
-LABEL org.chess.analyze="crystal tool format --check src/ && crystal build src/chess_engine.cr --no-codegen"
+LABEL org.chess.build="make docker-build"
+LABEL org.chess.run="docker run --rm -i chess-crystal"
+LABEL org.chess.test="make docker-test"
+LABEL org.chess.analyze="docker run --rm chess-crystal make analyze"
 
 CMD ["./chess_engine"]

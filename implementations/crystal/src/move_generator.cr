@@ -256,11 +256,47 @@ class MoveGenerator
     64.times do |from_square|
       piece = game_state.board[from_square]
       if piece && piece.color == by_color
-        moves = generate_piece_moves(game_state, from_square, piece)
+        moves = case piece.type
+                when PieceType::Pawn
+                  generate_pawn_moves(game_state, from_square, piece.color)
+                when PieceType::Knight
+                  generate_knight_moves(game_state, from_square, piece.color)
+                when PieceType::Bishop
+                  generate_bishop_moves(game_state, from_square, piece.color)
+                when PieceType::Rook
+                  generate_rook_moves(game_state, from_square, piece.color)
+                when PieceType::Queen
+                  generate_queen_moves(game_state, from_square, piece.color)
+                when PieceType::King
+                  generate_basic_king_moves(game_state, from_square, piece.color)
+                else
+                  Array(Move).new
+                end
         return true if moves.any? { |move| move.to == square }
       end
     end
     false
+  end
+
+  private def generate_basic_king_moves(game_state : GameState, from : Square, color : Color) : Array(Move)
+    moves = Array(Move).new
+    offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
+    file = from % 8
+    
+    offsets.each do |offset|
+      to = from + offset
+      to_file = to % 8
+      
+      if valid_square?(to) && (to_file - file).abs <= 1
+        target = game_state.board[to]
+        if !target
+          moves << Move.new(from, to, PieceType::King)
+        elsif target.color != color
+          moves << Move.new(from, to, PieceType::King, target.type)
+        end
+      end
+    end
+    moves
   end
 
   def in_check?(game_state : GameState, color : Color) : Bool

@@ -1,4 +1,4 @@
-# Chess AI with minimax and alpha-beta pruning
+# Chess AI following Standard AI Algorithm Specification v1.0
 
 require "./types"
 require "./board"
@@ -6,6 +6,73 @@ require "./move_generator"
 
 class ChessAI
   @move_generator : MoveGenerator
+
+  # Piece-Square Tables (from AI Specification)
+  PAWN_TABLE = [
+     0,  0,  0,  0,  0,  0,  0,  0,
+    50, 50, 50, 50, 50, 50, 50, 50,
+    10, 10, 20, 30, 30, 20, 10, 10,
+     5,  5, 10, 25, 25, 10,  5,  5,
+     0,  0,  0, 20, 20,  0,  0,  0,
+     5, -5,-10,  0,  0,-10, -5,  5,
+     5, 10, 10,-20,-20, 10, 10,  5,
+     0,  0,  0,  0,  0,  0,  0,  0
+  ]
+
+  KNIGHT_TABLE = [
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50
+  ]
+
+  BISHOP_TABLE = [
+    -20,-10,-10,-10,-10,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5, 10, 10,  5,  0,-10,
+    -10,  5,  5, 10, 10,  5,  5,-10,
+    -10,  0, 10, 10, 10, 10,  0,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10,  5,  0,  0,  0,  0,  5,-10,
+    -20,-10,-10,-10,-10,-10,-10,-20
+  ]
+
+  ROOK_TABLE = [
+     0,  0,  0,  0,  0,  0,  0,  0,
+     5, 10, 10, 10, 10, 10, 10,  5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+     0,  0,  0,  5,  5,  0,  0,  0
+  ]
+
+  QUEEN_TABLE = [
+    -20,-10,-10, -5, -5,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5,  5,  5,  5,  0,-10,
+     -5,  0,  5,  5,  5,  5,  0, -5,
+      0,  0,  5,  5,  5,  5,  0, -5,
+    -10,  5,  5,  5,  5,  5,  0,-10,
+    -10,  0,  5,  0,  0,  0,  0,-10,
+    -20,-10,-10, -5, -5,-10,-10,-20
+  ]
+
+  KING_TABLE = [
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -20,-30,-30,-40,-40,-30,-30,-20,
+    -10,-20,-20,-20,-20,-20,-20,-10,
+     20, 20,  0,  0,  0,  0, 20, 20,
+     20, 30, 10,  0,  0, 10, 30, 20
+  ]
 
   def initialize
     @move_generator = MoveGenerator.new
@@ -15,198 +82,175 @@ class ChessAI
     start_time = Time.monotonic
     nodes = 0
     
-    best_move, evaluation = minimax(
-      game_state, depth, Int32::MIN + 1, Int32::MAX - 1, 
-      maximize, pointerof(nodes)
-    )
+    best_move, evaluation = minimax_root(game_state, depth, Int32::MIN + 1, Int32::MAX - 1, pointerof(nodes))
     
     time_ms = (Time.monotonic - start_time).total_milliseconds.to_i64
     
     SearchResult.new(best_move, evaluation, nodes, time_ms)
   end
 
-  private def minimax(game_state : GameState, depth : Int32, alpha : Int32, beta : Int32, 
-                     maximize : Bool, nodes : Int32*) : {Move?, Int32}
+  private def minimax_root(game_state : GameState, depth : Int32, alpha : Int32, beta : Int32, nodes : Int32*) : {Move?, Int32}
+    moves = @move_generator.get_legal_moves(game_state, game_state.turn)
+    return {nil, evaluate(game_state)} if moves.empty? || depth == 0
+
+    ordered_moves = order_moves(moves, game_state)
+    
+    best_move : Move? = nil
+    maximizing = game_state.turn.white?
+    best_score = maximizing ? Int32::MIN + 1 : Int32::MAX - 1
+    
+    current_alpha = alpha
+    current_beta = beta
+
+    ordered_moves.each do |move|
+      new_state = Board.make_move(game_state, move)
+      score = minimax(new_state, depth - 1, current_alpha, current_beta, !maximizing, nodes)
+      
+      if maximizing
+        if score > best_score || best_move.nil?
+          best_score = score
+          best_move = move
+        end
+        current_alpha = [current_alpha, score].max
+      else
+        if score < best_score || best_move.nil?
+          best_score = score
+          best_move = move
+        end
+        current_beta = [current_beta, score].min
+      end
+      
+      break if current_beta <= current_alpha
+    end
+    
+    {best_move, best_score}
+  end
+
+  private def minimax(game_state : GameState, depth : Int32, alpha : Int32, beta : Int32, maximizing : Bool, nodes : Int32*) : Int32
     nodes.value += 1
     
     if depth == 0
-      return {nil, evaluate(game_state)}
+      return evaluate(game_state)
     end
     
-    color = maximize ? game_state.turn : game_state.turn.opposite
-    moves = @move_generator.get_legal_moves(game_state, color)
+    moves = @move_generator.get_legal_moves(game_state, game_state.turn)
     
     if moves.empty?
-      if @move_generator.in_check?(game_state, color)
-        # Checkmate
-        return {nil, maximize ? Int32::MIN + 1000 : Int32::MAX - 1000}
+      if @move_generator.in_check?(game_state, game_state.turn)
+        return maximizing ? -100000 : 100000
       else
-        # Stalemate
-        return {nil, 0}
+        return 0
       end
     end
     
-    best_move : Move? = nil
+    ordered_moves = order_moves(moves, game_state)
     
-    if maximize
+    if maximizing
       max_eval = Int32::MIN + 1
+      current_alpha = alpha
       
-      moves.each do |move|
+      ordered_moves.each do |move|
         new_state = Board.make_move(game_state, move)
-        _, evaluation = minimax(new_state, depth - 1, alpha, beta, false, nodes)
-        
-        if evaluation > max_eval
-          max_eval = evaluation
-          best_move = move
-        end
-        
-        alpha = [alpha, evaluation].max
-        break if beta <= alpha  # Alpha-beta pruning
+        evaluation = minimax(new_state, depth - 1, current_alpha, beta, false, nodes)
+        max_eval = [max_eval, evaluation].max
+        current_alpha = [current_alpha, evaluation].max
+        break if beta <= current_alpha
       end
-      
-      {best_move, max_eval}
+      max_eval
     else
       min_eval = Int32::MAX - 1
+      current_beta = beta
       
-      moves.each do |move|
+      ordered_moves.each do |move|
         new_state = Board.make_move(game_state, move)
-        _, evaluation = minimax(new_state, depth - 1, alpha, beta, true, nodes)
-        
-        if evaluation < min_eval
-          min_eval = evaluation
-          best_move = move
-        end
-        
-        beta = [beta, evaluation].min
-        break if beta <= alpha  # Alpha-beta pruning
+        evaluation = minimax(new_state, depth - 1, alpha, current_beta, true, nodes)
+        min_eval = [min_eval, evaluation].min
+        current_beta = [current_beta, evaluation].min
+        break if current_beta <= alpha
       end
-      
-      {best_move, min_eval}
+      min_eval
     end
   end
 
   private def evaluate(game_state : GameState) : Int32
     score = 0
     
-    # Material evaluation
-    game_state.board.each do |piece|
+    game_state.board.each_with_index do |piece, square|
       next unless piece
       
-      piece_value = piece.type.value
+      piece_value = piece.type.material_value
+      
+      row = square // 8
+      col = square % 8
+      eval_row = piece.color.white? ? row : 7 - row
+      table_idx = eval_row * 8 + col
+      
+      position_bonus = case piece.type
+                       when PieceType::Pawn   then PAWN_TABLE[table_idx]
+                       when PieceType::Knight then KNIGHT_TABLE[table_idx]
+                       when PieceType::Bishop then BISHOP_TABLE[table_idx]
+                       when PieceType::Rook   then ROOK_TABLE[table_idx]
+                       when PieceType::Queen  then QUEEN_TABLE[table_idx]
+                       when PieceType::King   then KING_TABLE[table_idx]
+                       else 0
+                       end
+      
+      total_value = piece_value + position_bonus
+      
       if piece.color.white?
-        score += piece_value
+        score += total_value
       else
-        score -= piece_value
+        score -= total_value
       end
     end
-    
-    # Position evaluation
-    score += evaluate_position(game_state)
     
     score
   end
 
-  private def evaluate_position(game_state : GameState) : Int32
+  private def order_moves(moves : Array(Move), game_state : GameState) : Array(Move)
+    scored_moves = moves.map do |move|
+      {move, score_move(move, game_state), move.to_s}
+    end
+    
+    # Sort by score descending, then notation ascending
+    scored_moves.sort! do |a, b|
+      if a[1] != b[1]
+        b[1] <=> a[1]
+      else
+        a[2] <=> b[2]
+      end
+    end
+    
+    scored_moves.map { |m| m[0] }
+  end
+
+  private def score_move(move : Move, game_state : GameState) : Int32
     score = 0
     
-    # Center control bonus
-    center_squares = [27, 28, 35, 36]  # d4, e4, d5, e5
-    
-    center_squares.each do |square|
-      if piece = game_state.board[square]
-        bonus = piece.type.pawn? ? 20 : 10
-        if piece.color.white?
-          score += bonus
-        else
-          score -= bonus
-        end
-      end
+    # 1. Captures (MVV-LVA)
+    if move.captured
+      victim_value = move.captured.not_nil!.material_value
+      attacker_value = move.piece.material_value
+      score += (victim_value * 10) - attacker_value
     end
     
-    # King safety (basic)
-    score += evaluate_king_safety(game_state, Color::White)
-    score -= evaluate_king_safety(game_state, Color::Black)
+    # 2. Promotions
+    if move.promotion
+      score += move.promotion.not_nil!.material_value * 10
+    end
     
-    # Mobility (number of legal moves)
-    white_moves = @move_generator.get_legal_moves(game_state, Color::White).size
-    black_moves = @move_generator.get_legal_moves(game_state, Color::Black).size
-    score += (white_moves - black_moves) * 2
+    # 3. Center control
+    to_row = move.to // 8
+    to_col = move.to % 8
+    if (to_row == 3 || to_row == 4) && (to_col == 3 || to_col == 4)
+      score += 10
+    end
+    
+    # 4. Castling
+    if move.is_castling
+      score += 50
+    end
     
     score
-  end
-
-  private def evaluate_king_safety(game_state : GameState, color : Color) : Int32
-    safety = 0
-    king_square = nil
-    
-    # Find king
-    64.times do |square|
-      piece = game_state.board[square]
-      if piece && piece.type.king? && piece.color == color
-        king_square = square
-        break
-      end
-    end
-    
-    return 0 unless king_square
-    
-    # Penalty for king in center during opening/middlegame
-    file = king_square % 8
-    rank = king_square // 8
-    expected_rank = color.white? ? 0 : 7
-    
-    if rank != expected_rank
-      safety -= 30  # King not on back rank
-    end
-    
-    if file >= 2 && file <= 5
-      safety -= 20  # King in center files
-    end
-    
-    # Bonus for castling rights
-    rights = game_state.castling_rights
-    if color.white?
-      if rights.white_kingside || rights.white_queenside
-        safety += 15
-      end
-    else
-      if rights.black_kingside || rights.black_queenside
-        safety += 15
-      end
-    end
-    
-    safety
-  end
-
-  def get_best_move(game_state : GameState, depth : Int32 = 4) : Move?
-    maximize = game_state.turn.white?
-    result = search(game_state, depth, maximize)
-    result.best_move
-  end
-
-  # Quiescence search for better tactical evaluation
-  private def quiesce(game_state : GameState, alpha : Int32, beta : Int32, depth : Int32, nodes : Int32*) : Int32
-    nodes.value += 1
-    
-    return evaluate(game_state) if depth <= 0
-    
-    stand_pat = evaluate(game_state)
-    return stand_pat if stand_pat >= beta
-    
-    new_alpha = [alpha, stand_pat].max
-    
-    # Only consider captures and checks
-    moves = @move_generator.get_legal_moves(game_state, game_state.turn)
-    capture_moves = moves.select { |move| move.captured }
-    
-    capture_moves.each do |move|
-      new_state = Board.make_move(game_state, move)
-      score = -quiesce(new_state, -beta, -new_alpha, depth - 1, nodes)
-      
-      return score if score >= beta
-      new_alpha = [new_alpha, score].max
-    end
-    
-    new_alpha
   end
 end
