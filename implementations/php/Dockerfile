@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     php8.3-cli \
     php8.3-mbstring \
     php8.3-xml \
+    php8.3-gmp \
     composer \
     && rm -rf /var/lib/apt/lists/*
 

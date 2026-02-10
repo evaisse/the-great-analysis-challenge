@@ -107,6 +107,10 @@ class ChessEngine {
                     $this->handle_history();
                     break;
                     
+                case 'status':
+                    $this->handle_status();
+                    break;
+                    
                 case 'perft':
                     $depth = isset($parts[1]) ? intval($parts[1]) : 4;
                     $this->handle_perft($depth);
@@ -210,7 +214,7 @@ class ChessEngine {
     
     private function handle_new_game(): void {
         $this->board->reset();
-        echo "OK: New game\n";
+        echo "OK: New game started\n";
         echo $this->board->display();
     }
     
@@ -297,6 +301,26 @@ class ChessEngine {
             echo "  $i: " . str_pad(gmp_strval($h, 16), 16, "0", STR_PAD_LEFT) . "\n";
         }
         echo "  " . count($this->board->position_history) . ": " . str_pad(gmp_strval($this->board->zobrist_hash, 16), 16, "0", STR_PAD_LEFT) . " (current)\n";
+    }
+
+    private function handle_status(): void {
+        $is_checkmate = $this->move_gen->is_checkmate();
+        $is_stalemate = $this->move_gen->is_stalemate();
+        
+        if ($is_checkmate) {
+            $winner = $this->board->current_player === CHESS_WHITE ? "Black" : "White";
+            echo "CHECKMATE: $winner wins\n";
+        } elseif ($is_stalemate) {
+            echo "STALEMATE: Draw\n";
+        } else {
+            require_once __DIR__ . '/lib/DrawDetection.php';
+            if (DrawDetection::is_draw($this->board)) {
+                $reason = DrawDetection::is_draw_by_repetition($this->board) ? "repetition" : "50-move rule";
+                echo "DRAW: by $reason\n";
+            } else {
+                echo "OK: ongoing\n";
+            }
+        }
     }
     
     private function handle_perft(int $depth): void {
