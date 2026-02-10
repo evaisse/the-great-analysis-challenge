@@ -14,7 +14,7 @@ impl Perft {
         }
     }
 
-    pub fn perft(&self, board: &Board, depth: u8) -> u64 {
+    pub fn perft(&self, board: &mut Board, depth: u8) -> u64 {
         if depth == 0 {
             return 1;
         }
@@ -24,18 +24,15 @@ impl Perft {
         let mut nodes = 0;
 
         for chess_move in &moves {
-            let mut board_copy = board.get_state().clone();
-            let mut test_board = Board::new();
-            test_board.set_state(board_copy);
-            test_board.make_move(chess_move);
-            
-            nodes += self.perft(&test_board, depth - 1);
+            board.make_move(chess_move);
+            nodes += self.perft(board, depth - 1);
+            board.undo_move();
         }
 
         nodes
     }
 
-    pub fn perft_divide(&self, board: &Board, depth: u8) -> HashMap<String, u64> {
+    pub fn perft_divide(&self, board: &mut Board, depth: u8) -> HashMap<String, u64> {
         let mut results = HashMap::new();
         let color = board.get_turn();
         let moves = self.move_generator.get_legal_moves(board, color);
@@ -48,12 +45,10 @@ impl Perft {
                 None => format!("{}{}", from, to),
             };
             
-            let mut board_copy = board.get_state().clone();
-            let mut test_board = Board::new();
-            test_board.set_state(board_copy);
-            test_board.make_move(chess_move);
+            board.make_move(chess_move);
+            let count = self.perft(board, depth - 1);
+            board.undo_move();
             
-            let count = self.perft(&test_board, depth - 1);
             results.insert(move_str, count);
         }
 

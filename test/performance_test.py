@@ -20,6 +20,18 @@ from typing import Dict, List, Tuple, Optional
 import argparse
 from datetime import datetime
 
+# Ensure repository root is importable
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+# Add scripts directory to path to import shared module
+SCRIPTS_DIR = REPO_ROOT / 'scripts'
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from chess_metadata import get_metadata
+
 # Try to import psutil for memory monitoring
 try:
     import psutil
@@ -636,12 +648,11 @@ Requirements:
     # Find implementations
     if args.impl:
         impl_path = Path(args.impl)
-        meta_path = impl_path / "chess.meta"
-        if meta_path.exists():
-            with open(meta_path, 'r') as f:
-                implementations = [(str(impl_path), json.load(f))]
+        metadata = get_metadata(str(impl_path))
+        if metadata:
+            implementations = [(str(impl_path), metadata)]
         else:
-            print(f"❌ No chess.meta found in {args.impl}")
+            print(f"❌ No metadata found in {args.impl} (check chess.meta or Dockerfile labels)")
             return 1
     else:
         base_dir = Path(__file__).parent.parent

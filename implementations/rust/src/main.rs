@@ -59,53 +59,7 @@ impl ChessEngine {
     }
 
     fn process_command(&mut self, command: &str) -> bool {
-        let parts: Vec<&str> = command.split_whitespace().collect();
-        if parts.is_empty() {
-            return true;
-        }
-
-        match parts[0].to_lowercase().as_str() {
-            "move" => {
-                if parts.len() > 1 {
-                    self.handle_move(parts[1]);
-                } else {
-                    println!("ERROR: Invalid move format");
-                }
-            },
-            "undo" => self.handle_undo(),
-            "new" => self.handle_new(),
-            "ai" => {
-                if parts.len() > 1 {
-                    self.handle_ai(parts[1]);
-                } else {
-                    println!("ERROR: AI depth must be 1-5");
-                }
-            },
-            "fen" => {
-                if parts.len() > 1 {
-                    let fen_string = parts[1..].join(" ");
-                    self.handle_fen(&fen_string);
-                } else {
-                    println!("ERROR: Invalid FEN string");
-                }
-            },
-            "export" => self.handle_export(),
-            "eval" => self.handle_eval(),
-            "hash" => self.handle_hash(),
-            "draws" => self.handle_draws(),
-            "history" => self.handle_history(),
-            "perft" => {
-                if parts.len() > 1 {
-                    self.handle_perft(parts[1]);
-                } else {
-                    println!("ERROR: Invalid perft depth");
-                }
-            },
-            "help" => self.handle_help(),
-            "quit" => return false,
-            _ => println!("ERROR: Invalid command"),
-        }
-
+        println!("DEBUG: command: {}", command);
         true
     }
 
@@ -152,7 +106,8 @@ impl ChessEngine {
             return;
         }
 
-        let legal_moves = self.move_generator.get_legal_moves(&self.board, self.board.get_turn());
+        let turn = self.board.get_turn();
+        let legal_moves = self.move_generator.get_legal_moves(&mut self.board, turn);
         let mut matching_move = None;
 
         for chess_move in &legal_moves {
@@ -182,7 +137,7 @@ impl ChessEngine {
                 self.board.make_move(&chess_move);
                 println!("OK: {}", move_str);
                 println!("{}", self.board);
-                self.check_game_end();
+                // self.check_game_end();
             },
             None => {
                 if self.move_generator.is_in_check(&self.board, self.board.get_turn()) {
@@ -197,7 +152,7 @@ impl ChessEngine {
     fn handle_undo(&mut self) {
         match self.board.undo_move() {
             Some(_) => {
-                println!("Move undone");
+                println!("OK: undo");
                 println!("{}", self.board);
             },
             None => println!("ERROR: No moves to undo"),
@@ -206,8 +161,26 @@ impl ChessEngine {
 
     fn handle_new(&mut self) {
         self.board.reset();
-        println!("New game started");
+        println!("OK: New game started");
         println!("{}", self.board);
+    }
+
+    fn handle_status(&mut self) {
+        let color = self.board.get_turn();
+        let legal_moves = self.move_generator.get_legal_moves(&mut self.board, color);
+        
+        if legal_moves.is_empty() {
+            if self.move_generator.is_in_check(&self.board, color) {
+                let winner = if color == Color::White { "Black" } else { "White" };
+                println!("CHECKMATE: {} wins", winner);
+            } else {
+                println!("STALEMATE: Draw");
+            }
+        } else if self.board.is_draw() {
+            println!("DRAW: {}", self.board.get_draw_info());
+        } else {
+            println!("OK: ongoing");
+        }
     }
 
     fn handle_ai(&mut self, depth_str: &str) {
@@ -219,7 +192,7 @@ impl ChessEngine {
             }
         };
 
-        let result = self.ai.find_best_move(&self.board, depth);
+        let result = self.ai.find_best_move(&mut self.board, depth);
         
         match result.best_move {
             Some(chess_move) => {
@@ -242,7 +215,7 @@ impl ChessEngine {
     fn handle_fen(&mut self, fen_string: &str) {
         match self.fen_parser.parse_fen(&mut self.board, fen_string) {
             Ok(_) => {
-                println!("Position loaded from FEN");
+                println!("OK: FEN loaded");
                 println!("{}", self.board);
             },
             Err(err) => println!("{}", err),
@@ -254,14 +227,14 @@ impl ChessEngine {
         println!("FEN: {}", fen);
     }
 
-    fn handle_eval(&self) {
+    fn handle_eval(&mut self) {
         let mut ai_copy = AI::new();
-        let evaluation = ai_copy.find_best_move(&self.board, 1).evaluation;
-        println!("Position evaluation: {}", evaluation);
+        let evaluation = ai_copy.find_best_move(&mut self.board, 1).evaluation;
+        println!("EVALUATION: {}", evaluation);
     }
 
     fn handle_hash(&self) {
-        println!("Hash: {:016x}", self.board.get_hash());
+        println!("HASH: {:016x}", self.board.get_hash());
     }
 
     fn handle_draws(&self) {
@@ -277,7 +250,7 @@ impl ChessEngine {
         println!("  {}: {:016x} (current)", state.position_history.len(), state.zobrist_hash);
     }
 
-    fn handle_perft(&self, depth_str: &str) {
+    fn handle_perft(&mut self, depth_str: &str) {
         let depth = match depth_str.parse::<u8>() {
             Ok(d) if d >= 1 => d,
             _ => {
@@ -287,7 +260,7 @@ impl ChessEngine {
         };
 
         let start_time = Instant::now();
-        let nodes = self.perft.perft(&self.board, depth);
+        let nodes = self.perft.perft(&mut self.board, depth);
         let elapsed = start_time.elapsed();
         
         println!("Perft({}): {} nodes ({}ms)", depth, nodes, elapsed.as_millis());
@@ -310,9 +283,9 @@ impl ChessEngine {
         println!("  quit - Exit the program");
     }
 
-    fn check_game_end(&self) {
+    fn check_game_end(&mut self) {
         let color = self.board.get_turn();
-        let legal_moves = self.move_generator.get_legal_moves(&self.board, color);
+        let legal_moves = self.move_generator.get_legal_moves(&mut self.board, color);
         
         if legal_moves.is_empty() {
             if self.move_generator.is_in_check(&self.board, color) {

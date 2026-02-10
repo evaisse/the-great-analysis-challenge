@@ -4,6 +4,7 @@
 import glob
 import json
 import os
+import sys
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 
@@ -234,16 +235,16 @@ def load_performance_data(lang: str) -> Dict[str, Any]:
     return {}
 
 
+# Add scripts directory to path to import shared module
+SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts')
+if SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, SCRIPTS_DIR)
+
+from chess_metadata import get_metadata
+
 def load_metadata(impl_path: str) -> Dict[str, Any]:
-    """Load chess.meta for an implementation."""
-    meta_file = os.path.join(impl_path, 'chess.meta')
-    if os.path.exists(meta_file):
-        try:
-            with open(meta_file, 'r', encoding='utf-8') as handle:
-                return json.load(handle)
-        except Exception as exc:
-            print(f"Error loading {meta_file}: {exc}")
-    return {}
+    """Load metadata for an implementation."""
+    return get_metadata(impl_path)
 
 
 def discover_implementations() -> List[str]:

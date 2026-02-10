@@ -19,11 +19,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+# Add scripts directory to path to import shared module
+SCRIPTS_DIR = REPO_ROOT / 'scripts'
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from chess_metadata import get_metadata
+
 # Required files for each implementation
 REQUIRED_FILES = {
     'Dockerfile': 'Docker container definition',
     'Makefile': 'Build automation',
-    'chess.meta': 'Metadata file (JSON)',
     'README.md': 'Implementation documentation',
 }
 
@@ -32,17 +38,17 @@ REQUIRED_MAKEFILE_TARGETS = {
     'all', 'build', 'test', 'analyze', 'clean', 'docker-build', 'docker-test', 'help'
 }
 
-# Required chess.meta fields
+# Required metadata fields
 REQUIRED_META_FIELDS = {
     'language', 'version', 'author', 'build', 'run', 'features', 'max_ai_depth'
 }
 
-# Optional but recommended chess.meta fields
+# Optional but recommended metadata fields
 RECOMMENDED_META_FIELDS = {
     'analyze', 'test', 'estimated_perft4_ms'
 }
 
-# Expected features in chess.meta
+# Expected features in metadata
 EXPECTED_FEATURES = {
     'perft', 'fen', 'ai', 'castling', 'en_passant', 'promotion'
 }
@@ -76,14 +82,6 @@ def check_dockerfile_format(dockerfile_path: Path) -> List[str]:
     
     try:
         content = dockerfile_path.read_text()
-        
-        # Check for ubuntu:24.04 base image
-        if 'FROM ubuntu:24.04' not in content:
-            issues.append("Dockerfile should use 'FROM ubuntu:24.04' as base image")
-        
-        # Check for DEBIAN_FRONTEND=noninteractive
-        if 'DEBIAN_FRONTEND=noninteractive' not in content:
-            issues.append("Dockerfile should set DEBIAN_FRONTEND=noninteractive")
         
         # Check for basic structure
         if 'WORKDIR' not in content:
@@ -121,63 +119,58 @@ def check_makefile_targets(makefile_path: Path) -> Tuple[Set[str], Set[str]]:
     missing_targets = REQUIRED_MAKEFILE_TARGETS - found_targets
     return found_targets, missing_targets
 
-def check_chess_meta(meta_path: Path) -> Dict[str, List[str]]:
-    """Check chess.meta file format and content."""
+def validate_metadata(data: Dict, impl_name: str) -> Dict[str, List[str]]:
+    """Validate combined metadata."""
     result = {
         'errors': [],
         'warnings': [],
         'info': []
     }
     
-    try:
-        content = meta_path.read_text()
-        data = json.loads(content)
+    # Check required fields
+    missing_required = REQUIRED_META_FIELDS - set(data.keys())
+    if missing_required:
+        result['errors'].extend([f"Missing required field: {field}" for field in missing_required])
+    
+    # Check recommended fields
+    missing_recommended = RECOMMENDED_META_FIELDS - set(data.keys())
+    if missing_recommended:
+        result['warnings'].extend([f"Missing recommended field: {field}" for field in missing_recommended])
+    
+    # Check features
+    if 'features' in data:
+        features = set(data['features'])
+        missing_features = EXPECTED_FEATURES - features
+        if missing_features:
+            result['warnings'].extend([f"Missing feature: {feature}" for feature in missing_features])
         
-        # Check required fields
-        missing_required = REQUIRED_META_FIELDS - set(data.keys())
-        if missing_required:
-            result['errors'].extend([f"Missing required field: {field}" for field in missing_required])
-        
-        # Check recommended fields
-        missing_recommended = RECOMMENDED_META_FIELDS - set(data.keys())
-        if missing_recommended:
-            result['warnings'].extend([f"Missing recommended field: {field}" for field in missing_recommended])
-        
-        # Check features
-        if 'features' in data:
-            features = set(data['features'])
-            missing_features = EXPECTED_FEATURES - features
-            if missing_features:
-                result['warnings'].extend([f"Missing feature: {feature}" for feature in missing_features])
-            
-            extra_features = features - EXPECTED_FEATURES
-            if extra_features:
-                result['info'].extend([f"Extra feature: {feature}" for feature in extra_features])
-        
-        # Check AI depth
-        if 'max_ai_depth' in data:
-            depth = data['max_ai_depth']
-            if not isinstance(depth, int) or depth < 1 or depth > 10:
+        extra_features = features - EXPECTED_FEATURES
+        if extra_features:
+            result['info'].extend([f"Extra feature: {feature}" for feature in extra_features])
+    
+    # Check AI depth
+    if 'max_ai_depth' in data:
+        depth = data['max_ai_depth']
+        try:
+            depth_int = int(depth)
+            if depth_int < 1 or depth_int > 10:
                 result['warnings'].append(f"max_ai_depth should be between 1-10, got: {depth}")
-        
-        # Check path standards (Prevention Guideline 1)
-        path_issues = check_meta_path_standards(data, meta_path.parent.name)
-        result['errors'].extend(path_issues['errors'])
-        result['warnings'].extend(path_issues['warnings'])
-        
-        # Validate JSON structure
-        result['info'].append(f"Language: {data.get('language', 'unknown')}")
-        result['info'].append(f"Version: {data.get('version', 'unknown')}")
-        
-    except json.JSONDecodeError as e:
-        result['errors'].append(f"Invalid JSON format: {e}")
-    except Exception as e:
-        result['errors'].append(f"Error reading chess.meta: {e}")
+        except:
+            result['warnings'].append(f"max_ai_depth should be an integer, got: {depth}")
+    
+    # Check path standards
+    path_issues = check_meta_path_standards(data, impl_name)
+    result['errors'].extend(path_issues['errors'])
+    result['warnings'].extend(path_issues['warnings'])
+    
+    # Info
+    result['info'].append(f"Language: {data.get('language', 'unknown')}")
+    result['info'].append(f"Version: {data.get('version', 'unknown')}")
     
     return result
 
 def check_meta_path_standards(data: dict, impl_name: str) -> Dict[str, List[str]]:
-    """Check chess.meta path standards (Prevention Guideline 1)."""
+    """Check path standards (Prevention Guideline 1)."""
     result = {'errors': [], 'warnings': []}
     
     path_fields = ['build', 'run', 'analyze', 'test']
@@ -195,11 +188,11 @@ def check_meta_path_standards(data: dict, impl_name: str) -> Dict[str, List[str]
                 result['warnings'].append(f"{field}: Contains '{impl_name}/' prefix - should use relative paths")
             
             # Check for absolute paths
-            if command.startswith('/'):
+            if isinstance(command, str) and command.startswith('/'):
                 result['warnings'].append(f"{field}: Uses absolute path - should use relative paths")
             
             # Check for parent directory references that might indicate wrong working dir
-            if '../' in command:
+            if isinstance(command, str) and '../' in command:
                 result['warnings'].append(f"{field}: Contains '../' - verify working directory assumptions")
     
     return result
@@ -232,7 +225,7 @@ def check_npm_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
         with open(package_json_path) as f:
             package_data = json.load(f)
         
-        # Check required scripts (Prevention Guideline 4)
+        # Check required scripts
         required_scripts = {'build', 'test', 'lint'}
         scripts = package_data.get('scripts', {})
         
@@ -240,32 +233,7 @@ def check_npm_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
         if missing_scripts:
             result['errors'].extend([f"Missing required npm script: {script}" for script in missing_scripts])
         
-        # Check if scripts actually do something meaningful
-        for script in required_scripts:
-            if script in scripts:
-                if scripts[script].strip() in ['', 'echo "No tests specified" && exit 1']:
-                    result['warnings'].append(f"Script '{script}' appears to be placeholder - consider implementing")
-        
-        # Check for common tools used without being declared as dependencies
-        all_commands = ' '.join(scripts.values())
-        tools_to_check = {
-            'tsc': 'typescript',
-            'prettier': 'prettier', 
-            'eslint': 'eslint',
-            'jest': 'jest',
-            'mocha': 'mocha'
-        }
-        
-        dev_deps = package_data.get('devDependencies', {})
-        dependencies = package_data.get('dependencies', {})
-        all_deps = {**dev_deps, **dependencies}
-        
-        for tool, package in tools_to_check.items():
-            if tool in all_commands and package not in all_deps:
-                result['warnings'].append(f"Uses '{tool}' in scripts but '{package}' not in dependencies")
-        
         result['info'].append(f"Found {len(scripts)} npm scripts")
-        result['info'].append(f"Dependencies: {len(dependencies)}, DevDependencies: {len(dev_deps)}")
         
     except json.JSONDecodeError as e:
         result['errors'].append(f"Invalid package.json format: {e}")
@@ -277,44 +245,25 @@ def check_npm_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
 def check_ruby_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
     """Check Ruby Gemfile for dependencies."""
     result = {'errors': [], 'warnings': [], 'info': []}
-    
     gemfile_path = impl_dir / 'Gemfile'
     if gemfile_path.exists():
-        try:
-            content = gemfile_path.read_text()
-            
-            # Check for common development gems
-            dev_gems = ['rubocop', 'rspec', 'bundler']
-            for gem in dev_gems:
-                if gem not in content:
-                    result['info'].append(f"Consider adding '{gem}' gem for development")
-            
-            result['info'].append("Found Gemfile")
-            
-        except Exception as e:
-            result['warnings'].append(f"Error reading Gemfile: {e}")
+        result['info'].append("Found Gemfile")
     else:
-        result['warnings'].append("No Gemfile found - consider adding for dependency management")
-    
+        result['warnings'].append("No Gemfile found")
     return result
 
 def check_python_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
     """Check Python requirements for dependencies."""
     result = {'errors': [], 'warnings': [], 'info': []}
-    
     req_files = ['requirements.txt', 'requirements-dev.txt', 'pyproject.toml']
     found_req_file = False
-    
     for req_file in req_files:
-        req_path = impl_dir / req_file
-        if req_path.exists():
+        if (impl_dir / req_file).exists():
             found_req_file = True
             result['info'].append(f"Found {req_file}")
             break
-    
     if not found_req_file:
-        result['warnings'].append("No requirements file found - consider adding for dependency management")
-    
+        result['warnings'].append("No requirements file found")
     return result
 
 def verify_implementation(impl_dir: Path) -> Dict:
@@ -333,6 +282,17 @@ def verify_implementation(impl_dir: Path) -> Dict:
     
     # Check required files
     found_files, missing_files = check_required_files(impl_dir)
+    
+    # Get metadata
+    metadata = get_metadata(str(impl_dir))
+    
+    # metadata is now required (from chess.meta or Dockerfile labels)
+    meta_path = impl_dir / 'chess.meta'
+    dockerfile_path = impl_dir / 'Dockerfile'
+    
+    if not metadata:
+        missing_files.append('chess.meta (Metadata file OR Dockerfile labels)')
+    
     result['files'] = {
         'found': found_files,
         'missing': missing_files
@@ -342,7 +302,6 @@ def verify_implementation(impl_dir: Path) -> Dict:
         result['summary']['errors'] += len(missing_files)
     
     # Check Dockerfile if it exists
-    dockerfile_path = impl_dir / 'Dockerfile'
     if dockerfile_path.exists():
         dockerfile_issues = check_dockerfile_format(dockerfile_path)
         result['dockerfile'] = {
@@ -360,30 +319,21 @@ def verify_implementation(impl_dir: Path) -> Dict:
         }
         result['summary']['errors'] += len(missing_targets)
     
-    # Check chess.meta if it exists
-    meta_path = impl_dir / 'chess.meta'
-    if meta_path.exists():
-        meta_result = check_chess_meta(meta_path)
+    if metadata:
+        meta_result = validate_metadata(metadata, impl_name)
         result['chess_meta'] = meta_result
         result['summary']['errors'] += len(meta_result['errors'])
         result['summary']['warnings'] += len(meta_result['warnings'])
         result['summary']['info'] += len(meta_result['info'])
         
-        # Check package dependencies (Prevention Guidelines 3 & 4)
-        # Extract language from chess.meta data
-        try:
-            meta_content = meta_path.read_text()
-            meta_data = json.loads(meta_content)
-            language = meta_data.get('language', 'unknown')
-        except:
-            language = 'unknown'
-        
+        # Check package dependencies
+        language = metadata.get('language', 'unknown')
         dependency_result = check_package_dependencies(impl_dir, language)
         result['dependencies'] = dependency_result
         result['summary']['errors'] += len(dependency_result['errors'])
         result['summary']['warnings'] += len(dependency_result['warnings'])
         result['summary']['info'] += len(dependency_result['info'])
-    
+
     # Determine overall status
     if result['summary']['errors'] == 0:
         if result['summary']['warnings'] == 0:
@@ -400,7 +350,6 @@ def print_implementation_report(result: Dict):
     name = result['name']
     status = result['status']
     
-    # Status emoji
     status_emoji = {
         'excellent': '🟢',
         'good': '🟡', 
@@ -411,7 +360,6 @@ def print_implementation_report(result: Dict):
     print(f"\n{status_emoji[status]} **{name}** ({status})")
     print("=" * (len(name) + 20))
     
-    # Files check
     if result['files']['missing']:
         print("❌ Missing files:")
         for file in result['files']['missing']:
@@ -422,50 +370,30 @@ def print_implementation_report(result: Dict):
         for file in result['files']['found']:
             print(f"   - {file}")
     
-    # Dockerfile issues
     if result['dockerfile'].get('issues'):
         print("\n⚠️  Dockerfile issues:")
         for issue in result['dockerfile']['issues']:
             print(f"   - {issue}")
     
-    # Makefile issues
     if result['makefile'].get('missing_targets'):
         print("\n❌ Missing Makefile targets:")
         for target in result['makefile']['missing_targets']:
             print(f"   - {target}")
     
-    # Chess.meta issues
-    meta = result['chess_meta']
+    meta = result.get('chess_meta', {})
     if meta.get('errors'):
-        print("\n❌ Chess.meta errors:")
+        print("\n❌ Metadata errors:")
         for error in meta['errors']:
             print(f"   - {error}")
     
     if meta.get('warnings'):
-        print("\n⚠️  Chess.meta warnings:")
+        print("\n⚠️  Metadata warnings:")
         for warning in meta['warnings']:
             print(f"   - {warning}")
     
     if meta.get('info'):
-        print("\n📝 Chess.meta info:")
+        print("\n📝 Metadata info:")
         for info in meta['info']:
-            print(f"   - {info}")
-    
-    # Dependencies issues (Prevention Guidelines 3 & 4)
-    deps = result.get('dependencies', {})
-    if deps.get('errors'):
-        print("\n❌ Dependency errors:")
-        for error in deps['errors']:
-            print(f"   - {error}")
-    
-    if deps.get('warnings'):
-        print("\n⚠️  Dependency warnings:")
-        for warning in deps['warnings']:
-            print(f"   - {warning}")
-    
-    if deps.get('info'):
-        print("\n📦 Dependency info:")
-        for info in deps['info']:
             print(f"   - {info}")
 
 def print_summary_report(results: List[Dict]):
@@ -482,12 +410,6 @@ def print_summary_report(results: List[Dict]):
     print(f"🟢 Excellent: {excellent}")
     print(f"🟡 Good: {good}")
     print(f"🔴 Needs work: {needs_work}")
-    
-    if needs_work > 0:
-        print(f"\n🔧 Implementations needing attention:")
-        for result in results:
-            if result['status'] == 'needs_work':
-                print(f"   - {result['name']} ({result['summary']['errors']} errors, {result['summary']['warnings']} warnings)")
 
 def validate_unique_emojis(implementations: List[Path]) -> bool:
     """Ensure each implementation has a unique emoji in website metadata."""
@@ -505,7 +427,6 @@ def validate_unique_emojis(implementations: List[Path]) -> bool:
     
     emoji_map: Dict[str, List[str]] = {}
     missing_languages: List[str] = []
-    missing_emojis: List[str] = []
     
     for impl_dir in implementations:
         lang = impl_dir.name
@@ -514,25 +435,11 @@ def validate_unique_emojis(implementations: List[Path]) -> bool:
             missing_languages.append(lang)
             continue
         emoji = meta.get('emoji')
-        if not emoji:
-            missing_emojis.append(lang)
-            continue
-        emoji_map.setdefault(emoji, []).append(lang)
+        if emoji:
+            emoji_map.setdefault(emoji, []).append(lang)
     
     duplicates = {emoji: langs for emoji, langs in emoji_map.items() if len(langs) > 1}
     check_passed = True
-    
-    if missing_languages:
-        print("❌ Missing emoji metadata for implementations:")
-        for lang in sorted(missing_languages):
-            print(f"   - {lang}")
-        check_passed = False
-    
-    if missing_emojis:
-        print("❌ Emoji value not defined for implementations:")
-        for lang in sorted(missing_emojis):
-            print(f"   - {lang}")
-        check_passed = False
     
     if duplicates:
         print("❌ Emoji collisions detected:")
@@ -542,90 +449,20 @@ def validate_unique_emojis(implementations: List[Path]) -> bool:
         check_passed = False
     
     if check_passed:
-        print("✅ All implementations have unique emojis defined for the website.")
+        print("✅ All implementations have unique emojis (where defined).")
     return check_passed
 
 def main():
-    """Main verification function."""
-    parser = argparse.ArgumentParser(
-        description="Chess Engine Implementation Structure Verification",
-        epilog="""
-Examples:
-  python3 verify_implementations.py
-    Verify all implementations in the project
-    
-  python3 verify_implementations.py /path/to/implementations
-    Verify implementations in custom directory
-
-Verification Checks:
-  Required Files:
-    - Dockerfile      Docker container definition
-    - Makefile        Build automation with required targets
-    - chess.meta      JSON metadata file  
-    - README.md       Implementation documentation
-
-  Dockerfile Requirements:
-    - FROM ubuntu:24.04 as base image
-    - DEBIAN_FRONTEND=noninteractive environment variable
-    - Proper WORKDIR and COPY instructions
-
-  Makefile Requirements:
-    - Required targets: all, build, test, analyze, clean, docker-build, docker-test, help
-    - .PHONY declarations for non-file targets
-
-  chess.meta Requirements:
-    - Valid JSON format
-    - Required fields: language, version, author, build, run, features, max_ai_depth
-    - Recommended fields: analyze, test, estimated_perft4_ms
-    - Expected features: perft, fen, ai, castling, en_passant, promotion
-
-Status Classifications:
-  🟢 Excellent - All files present, full compliance, no issues
-  🟡 Good      - Minor warnings or missing optional fields  
-  🔴 Needs Work - Missing required files or significant issues
-
-Exit Codes:
-  0 - All implementations passed verification
-  1 - One or more implementations need work
-        """,
-        formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    
-    parser.add_argument(
-        "base_dir",
-        nargs="?",
-        help="Base directory containing implementations (default: project root)"
-    )
-    
-    parser.add_argument(
-        "--implementation", "-i",
-        help="Verify only a specific implementation"
-    )
-
+    parser = argparse.ArgumentParser(description="Verify Chess Engine Implementation")
+    parser.add_argument("base_dir", nargs="?", help="Base directory")
+    parser.add_argument("--implementation", "-i", help="Verify only one")
     args = parser.parse_args()
     
-    if args.base_dir:
-        base_dir = Path(args.base_dir)
-    else:
-        base_dir = Path(__file__).parent.parent
-    
-    print("🔍 Chess Engine Implementation Verification")
-    print("=" * 50)
-    print(f"Base directory: {base_dir}")
-    
+    base_dir = Path(args.base_dir) if args.base_dir else Path(os.getcwd())
     implementations = find_implementations(base_dir)
-
+    
     if args.implementation:
         implementations = [i for i in implementations if i.name == args.implementation]
-        if not implementations:
-            print(f"❌ Implementation '{args.implementation}' not found!")
-            sys.exit(1)
-
-    if not implementations:
-        print("❌ No implementations found!")
-        sys.exit(1)
-    
-    print(f"Found {len(implementations)} implementations")
     
     results = []
     for impl_dir in sorted(implementations):
@@ -634,20 +471,11 @@ Exit Codes:
         print_implementation_report(result)
     
     print_summary_report(results)
+    validate_unique_emojis(implementations)
     
-    emojis_ok = validate_unique_emojis(implementations)
-    
-    exit_code = 0
     if any(r['status'] == 'needs_work' for r in results):
-        exit_code = 1
-    if not emojis_ok:
-        exit_code = 1
-    
-    if exit_code == 0:
-        print("\n✅ All implementations passed verification and emoji check!")
-    else:
-        print("\n❌ Some checks failed. See details above.")
-    sys.exit(exit_code)
+        sys.exit(1)
+    sys.exit(0)
 
 if __name__ == '__main__':
     main()

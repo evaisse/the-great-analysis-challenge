@@ -24,7 +24,7 @@ impl AI {
         }
     }
 
-    pub fn find_best_move(&mut self, board: &Board, depth: u8) -> SearchResult {
+    pub fn find_best_move(&mut self, board: &mut Board, depth: u8) -> SearchResult {
         let start_time = Instant::now();
         self.nodes_evaluated = 0;
         
@@ -44,12 +44,9 @@ impl AI {
         let mut best_eval = if color == Color::White { i32::MIN } else { i32::MAX };
 
         for chess_move in &moves {
-            let mut board_copy = board.get_state().clone();
-            let mut test_board = Board::new();
-            test_board.set_state(board_copy);
-            test_board.make_move(chess_move);
-            
-            let evaluation = self.minimax(&test_board, depth - 1, i32::MIN, i32::MAX, color == Color::Black);
+            board.make_move(chess_move);
+            let evaluation = self.minimax(board, depth - 1, i32::MIN, i32::MAX, color == Color::Black);
+            board.undo_move();
             
             if (color == Color::White && evaluation > best_eval) || 
                (color == Color::Black && evaluation < best_eval) {
@@ -67,7 +64,7 @@ impl AI {
         }
     }
 
-    fn minimax(&mut self, board: &Board, depth: u8, alpha: i32, beta: i32, maximizing: bool) -> i32 {
+    fn minimax(&mut self, board: &mut Board, depth: u8, alpha: i32, beta: i32, maximizing: bool) -> i32 {
         self.nodes_evaluated += 1;
 
         if depth == 0 {
@@ -92,12 +89,10 @@ impl AI {
             let mut current_alpha = alpha;
             
             for chess_move in &moves {
-                let mut board_copy = board.get_state().clone();
-                let mut test_board = Board::new();
-                test_board.set_state(board_copy);
-                test_board.make_move(chess_move);
+                board.make_move(chess_move);
+                let evaluation = self.minimax(board, depth - 1, current_alpha, beta, false);
+                board.undo_move();
                 
-                let evaluation = self.minimax(&test_board, depth - 1, current_alpha, beta, false);
                 max_eval = max_eval.max(evaluation);
                 current_alpha = current_alpha.max(evaluation);
                 
@@ -112,12 +107,10 @@ impl AI {
             let mut current_beta = beta;
             
             for chess_move in &moves {
-                let mut board_copy = board.get_state().clone();
-                let mut test_board = Board::new();
-                test_board.set_state(board_copy);
-                test_board.make_move(chess_move);
+                board.make_move(chess_move);
+                let evaluation = self.minimax(board, depth - 1, alpha, current_beta, true);
+                board.undo_move();
                 
-                let evaluation = self.minimax(&test_board, depth - 1, alpha, current_beta, true);
                 min_eval = min_eval.min(evaluation);
                 current_beta = current_beta.min(evaluation);
                 

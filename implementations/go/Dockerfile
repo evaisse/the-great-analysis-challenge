@@ -1,11 +1,14 @@
 # Use official Go image
 FROM golang:1.23
 
+# Install make
+RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY . .
 
-# Copy and build the application
-RUN cp src/*.go . && go build -ldflags="-s -w" -o chess *.go
+# Build the application
+RUN go build -ldflags="-s -w" -o chess .
 
 # Default command
 CMD ["./chess"]

@@ -13,6 +13,18 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 import argparse
 
+# Ensure repository root is importable
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+# Add scripts directory to path to import shared module
+SCRIPTS_DIR = REPO_ROOT / 'scripts'
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from chess_metadata import get_metadata
+
 class ChessEngineTester:
     def __init__(self, implementation_path: str, metadata: Dict):
         self.path = implementation_path
@@ -194,15 +206,19 @@ class TestSuite:
 def find_implementations(base_dir: str) -> List[Tuple[str, Dict]]:
     """Find all chess implementations with metadata"""
     implementations = []
+    base_path = Path(base_dir)
     
-    for meta_file in Path(base_dir).rglob("chess.meta"):
-        try:
-            with open(meta_file, 'r') as f:
-                metadata = json.load(f)
-                impl_dir = meta_file.parent
-                implementations.append((str(impl_dir), metadata))
-        except Exception as e:
-            print(f"Error loading {meta_file}: {e}")
+    # Look for directories containing a Dockerfile
+    for dockerfile in base_path.rglob("Dockerfile"):
+        impl_dir = dockerfile.parent
+        # Skip top-level Dockerfile if it exists
+        if impl_dir == base_path:
+            continue
+            
+        metadata = get_metadata(str(impl_dir))
+        
+        if metadata:
+            implementations.append((str(impl_dir), metadata))
             
     return implementations
 
@@ -293,40 +309,6 @@ def generate_report(results: Dict[str, Dict]) -> str:
 def main():
     parser = argparse.ArgumentParser(
         description="Chess Engine Protocol Compliance Testing",
-        epilog="""
-Examples:
-  python3 test_harness.py
-    Test all implementations in implementations/ directory
-    
-  python3 test_harness.py --impl implementations/python
-    Test only the Python implementation
-    
-  python3 test_harness.py --test "Basic Movement"
-    Run only the Basic Movement test on all implementations
-    
-  python3 test_harness.py --performance --output report.txt
-    Run performance tests and save report to file
-
-Test Cases:
-  1. Basic Movement      - Standard piece moves (e2e4, e7e5, etc.)
-  2. Castling           - King and rook castling moves  
-  3. En Passant         - Pawn en passant capture
-  4. Checkmate Detection - Fool's mate recognition
-  5. AI Move Generation - AI depth 3 move calculation
-  6. Invalid Move Handling - Error handling for illegal moves
-  7. Pawn Promotion     - Promotion to queen
-  8. Perft Accuracy     - Move generation validation (optional)
-
-Performance Tests:
-  - Move generation speed (average time per move)
-  - AI thinking time at depths 1, 3, and 5
-  - Memory usage during gameplay
-
-Requirements:
-  - Each implementation must have chess.meta file
-  - Build command specified in chess.meta (if needed)
-  - Run command specified in chess.meta
-        """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
@@ -346,7 +328,7 @@ Requirements:
     parser.add_argument(
         "--test", 
         metavar="NAME",
-        help="Run specific test case (e.g., 'Basic Movement', 'Castling')"
+        help="Run specific test case"
     )
     
     parser.add_argument(
@@ -365,12 +347,11 @@ Requirements:
     
     # Find implementations
     if args.impl:
-        meta_path = os.path.join(args.impl, "chess.meta")
-        if os.path.exists(meta_path):
-            with open(meta_path, 'r') as f:
-                implementations = [(args.impl, json.load(f))]
+        metadata = get_metadata(args.impl)
+        if metadata:
+            implementations = [(args.impl, metadata)]
         else:
-            print(f"No chess.meta found in {args.impl}")
+            print(f"No metadata found in {args.impl}")
             return 1
     else:
         implementations = find_implementations(args.dir)
@@ -392,7 +373,7 @@ Requirements:
         tester = ChessEngineTester(impl_path, metadata)
         
         # Build if necessary
-        if "build" in metadata:
+        if "build" in metadata and metadata["build"] != "make build":
             cmd = metadata["build"].split()
             print(f"🔧 Running: {' '.join(cmd)}")
             subprocess.run(cmd, cwd=impl_path, check=True)

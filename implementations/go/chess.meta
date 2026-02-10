@@ -1,8 +1,8 @@
 {
   "language": "go",
-  "version": "1.21",
+  "version": "1.23",
   "author": "AI Implementation",
-  "build": "go build -o chess chess.go",
+  "build": "go build -o chess .",
   "run": "./chess",
   "analyze": "go vet ./... && gofmt -d .",
   "test": "go test ./...",
