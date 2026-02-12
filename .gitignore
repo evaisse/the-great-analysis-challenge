@@ -2,6 +2,7 @@
 *.log
 *.tmp
 __pycache__
+_codeql_detected_source_root
 *_output.txt
 verification_results.txt
 reports/elm-stuff
