@@ -1,1 +1,2 @@
-FROM crystallang/crystal:latest\nWORKDIR /app
+FROM crystallang/crystal:latest
+WORKDIR /app
