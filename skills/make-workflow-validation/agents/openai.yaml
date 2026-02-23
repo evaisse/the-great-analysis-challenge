@@ -1,0 +1,4 @@
+interface:
+  display_name: "Validation Workflow"
+  short_description: "Run full implementation validation via make workflow"
+  default_prompt: "Use $make-workflow-validation to run or explain the full validation workflow for an implementation."
