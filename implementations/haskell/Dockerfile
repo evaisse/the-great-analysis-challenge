@@ -7,8 +7,8 @@ WORKDIR /app
 COPY chess.cabal ./
 COPY src/ src/
 
-# Update and build
-RUN cabal update && cabal build
+# Build
+RUN cabal build
 
 # Find the binary and move it to a predictable location
 RUN find dist-newstyle -name chess -type f -exec cp {} /app/chess_engine \;
