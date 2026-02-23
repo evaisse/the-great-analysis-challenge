@@ -97,7 +97,8 @@ Improve test coverage and test infrastructure.
 
 - **Docker**: **MANDATORY.** All builds, tests, and static analysis MUST run in Docker containers. No other toolchains should be used for implementation-related tasks.
   - **NO EXTERNAL DOWNLOADS**: Dockerfiles MUST NOT download external files, binaries, or toolchains (e.g., via `curl`, `wget`, or `git clone` for tools).
-  - **Exception**: Standard language package managers (e.g., `npm install`, `cargo`, `pip`, `go get`) and system package managers (`apt-get`) are allowed for dependencies.
+  - **Standard Library Only**: The chess engine implementation MUST rely exclusively on the language's standard library. Do not add third-party libraries or packages for engine functionality.
+  - **Exception**: If build tools are missing, use a base image that already provides them. Avoid installing extra packages in Dockerfiles, and never add language package dependencies for the engine.
   - **Requirement**: Prefer using official Docker base images that already contain the necessary toolchain.
 - **Git**: Version control
 - **Make**: Build automation (used to trigger Docker commands)
