@@ -26,7 +26,8 @@ All implementations MUST be developed and verified using Docker. This project en
 - **Analysis/Linting** runs via `docker run --network none` (triggered by `make analyze DIR=<lang>`).
 
 **NO EXTERNAL DOWNLOADS**: Dockerfiles MUST NOT download external files, binaries, or toolchains (e.g., via `curl`, `wget`, or `git clone` for tools). 
-- **Exception**: Standard language package managers (e.g., `npm install`, `cargo`, `pip`, `go get`) and system package managers (`apt-get`) are allowed for dependencies.
+- **Standard Library Only**: The chess engine implementation MUST rely exclusively on the language's standard library. Do not add third-party libraries or packages for engine functionality.
+- **Exception**: If build tools are missing, use a base image that already provides them. Avoid installing extra packages in Dockerfiles, and never add language package dependencies for the engine.
 - **Requirement**: Prefer using official Docker base images that already contain the necessary toolchain to build and run the engine.
 - This ensures a consistent environment and avoids "it works on my machine" issues.
 
