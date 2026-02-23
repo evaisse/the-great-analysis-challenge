@@ -37,7 +37,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing PHP implementation in Docker..."
-	docker run --rm -i chess-php sh -c "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | php chess.php"
+	docker run --network none --rm -i chess-php sh -c "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | php chess.php"
 
 # Help target
 help:

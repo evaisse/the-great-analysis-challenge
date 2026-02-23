@@ -15,7 +15,7 @@ class Board {
     public int $halfmove_clock;
     public int $fullmove_number;
     public array $game_history;
-    public \GMP $zobrist_hash;
+    public int $zobrist_hash;
     public array $position_history;
     public array $irreversible_history;
     
@@ -117,7 +117,7 @@ class Board {
         $target = $this->squares[$move->to_row][$move->to_col];
 
         // 1. Remove moving piece from source
-        $hash = gmp_xor($hash, $zobrist->pieces[$zobrist->get_piece_index($piece, $color)][(7 - $move->from_row) * 8 + $move->from_col]);
+        $hash ^= $zobrist->pieces[$zobrist->get_piece_index($piece, $color)][(7 - $move->from_row) * 8 + $move->from_col];
 
         // 2. Handle capture
         $move->captured_piece = null;
@@ -126,11 +126,11 @@ class Board {
             $captured_col = $move->to_col;
             $captured_piece = $this->squares[$captured_row][$captured_col];
             $move->captured_piece = $captured_piece;
-            $hash = gmp_xor($hash, $zobrist->pieces[$zobrist->get_piece_index($captured_piece[0], $captured_piece[1])][(7 - $captured_row) * 8 + $captured_col]);
+            $hash ^= $zobrist->pieces[$zobrist->get_piece_index($captured_piece[0], $captured_piece[1])][(7 - $captured_row) * 8 + $captured_col];
             $this->squares[$captured_row][$captured_col] = [CHESS_EMPTY, CHESS_WHITE];
         } elseif ($target[0] !== CHESS_EMPTY) {
             $move->captured_piece = $target;
-            $hash = gmp_xor($hash, $zobrist->pieces[$zobrist->get_piece_index($target[0], $target[1])][(7 - $move->to_row) * 8 + $move->to_col]);
+            $hash ^= $zobrist->pieces[$zobrist->get_piece_index($target[0], $target[1])][(7 - $move->to_row) * 8 + $move->to_col];
         }
 
         // 3. Place piece at destination
@@ -138,7 +138,7 @@ class Board {
         if ($move->promotion !== null) {
             $final_piece = $move->promotion;
         }
-        $hash = gmp_xor($hash, $zobrist->pieces[$zobrist->get_piece_index($final_piece, $color)][(7 - $move->to_row) * 8 + $move->to_col]);
+        $hash ^= $zobrist->pieces[$zobrist->get_piece_index($final_piece, $color)][(7 - $move->to_row) * 8 + $move->to_col];
         $this->squares[$move->to_row][$move->to_col] = [$final_piece, $color];
         $this->squares[$move->from_row][$move->from_col] = [CHESS_EMPTY, CHESS_WHITE];
 
@@ -147,17 +147,17 @@ class Board {
             $rook_from_col = $move->to_col > $move->from_col ? 7 : 0;
             $rook_to_col = $move->to_col > $move->from_col ? 5 : 3;
             $rook = $this->squares[$move->from_row][$rook_from_col];
-            $hash = gmp_xor($hash, $zobrist->pieces[$zobrist->get_piece_index($rook[0], $rook[1])][(7 - $move->from_row) * 8 + $rook_from_col]);
-            $hash = gmp_xor($hash, $zobrist->pieces[$zobrist->get_piece_index($rook[0], $rook[1])][(7 - $move->from_row) * 8 + $rook_to_col]);
+            $hash ^= $zobrist->pieces[$zobrist->get_piece_index($rook[0], $rook[1])][(7 - $move->from_row) * 8 + $rook_from_col];
+            $hash ^= $zobrist->pieces[$zobrist->get_piece_index($rook[0], $rook[1])][(7 - $move->from_row) * 8 + $rook_to_col];
             $this->squares[$move->from_row][$rook_to_col] = $this->squares[$move->from_row][$rook_from_col];
             $this->squares[$move->from_row][$rook_from_col] = [CHESS_EMPTY, CHESS_WHITE];
         }
 
         // 5. Update castling rights in hash
-        if ($this->castling_rights->white_kingside) $hash = gmp_xor($hash, $zobrist->castling[0]);
-        if ($this->castling_rights->white_queenside) $hash = gmp_xor($hash, $zobrist->castling[1]);
-        if ($this->castling_rights->black_kingside) $hash = gmp_xor($hash, $zobrist->castling[2]);
-        if ($this->castling_rights->black_queenside) $hash = gmp_xor($hash, $zobrist->castling[3]);
+        if ($this->castling_rights->white_kingside) $hash ^= $zobrist->castling[0];
+        if ($this->castling_rights->white_queenside) $hash ^= $zobrist->castling[1];
+        if ($this->castling_rights->black_kingside) $hash ^= $zobrist->castling[2];
+        if ($this->castling_rights->black_queenside) $hash ^= $zobrist->castling[3];
 
         if ($piece === CHESS_KING) {
             if ($color === CHESS_WHITE) {
@@ -174,24 +174,24 @@ class Board {
         if (($move->from_row === 0 && $move->from_col === 7) || ($move->to_row === 0 && $move->to_col === 7)) $this->castling_rights->black_kingside = false;
         if (($move->from_row === 0 && $move->from_col === 0) || ($move->to_row === 0 && $move->to_col === 0)) $this->castling_rights->black_queenside = false;
 
-        if ($this->castling_rights->white_kingside) $hash = gmp_xor($hash, $zobrist->castling[0]);
-        if ($this->castling_rights->white_queenside) $hash = gmp_xor($hash, $zobrist->castling[1]);
-        if ($this->castling_rights->black_kingside) $hash = gmp_xor($hash, $zobrist->castling[2]);
-        if ($this->castling_rights->black_queenside) $hash = gmp_xor($hash, $zobrist->castling[3]);
+        if ($this->castling_rights->white_kingside) $hash ^= $zobrist->castling[0];
+        if ($this->castling_rights->white_queenside) $hash ^= $zobrist->castling[1];
+        if ($this->castling_rights->black_kingside) $hash ^= $zobrist->castling[2];
+        if ($this->castling_rights->black_queenside) $hash ^= $zobrist->castling[3];
 
         // 6. Update en passant target in hash
         if ($this->en_passant_target !== null) {
-            $hash = gmp_xor($hash, $zobrist->en_passant[$this->en_passant_target[1]]);
+            $hash ^= $zobrist->en_passant[$this->en_passant_target[1]];
         }
         
         $this->en_passant_target = null;
         if ($piece === CHESS_PAWN && abs($move->to_row - $move->from_row) === 2) {
             $this->en_passant_target = [intval(($move->from_row + $move->to_row) / 2), $move->from_col];
-            $hash = gmp_xor($hash, $zobrist->en_passant[$this->en_passant_target[1]]);
+            $hash ^= $zobrist->en_passant[$this->en_passant_target[1]];
         }
 
         // 7. Update side to move and clocks
-        $hash = gmp_xor($hash, $zobrist->side_to_move);
+        $hash ^= $zobrist->side_to_move;
         if ($piece === CHESS_PAWN || ($move->captured_piece !== null && $move->captured_piece[0] !== CHESS_EMPTY)) {
             $this->halfmove_clock = 0;
         } else {

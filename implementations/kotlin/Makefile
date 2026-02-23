@@ -29,7 +29,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Kotlin implementation in Docker..."
-	docker run --rm -i chess-kotlin sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | java -jar build/libs/chess-1.0.0.jar"
+	docker run --network none --rm -i chess-kotlin sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | java -jar build/libs/chess-1.0.0.jar"
 
 # Help target
 help:

@@ -84,13 +84,13 @@ ifdef DIR
 	if [ -z "$$RUN_CMD" ]; then \
 		echo "WARNING: No run command found for '$(DIR)', using basic test"; \
 		$(MAKE) build DIR=$(DIR); \
-		docker run --rm chess-$(DIR) sh -c "cd /app && make test || true"; \
+		docker run --rm --network none chess-$(DIR) sh -c "cd /app && make test || true"; \
 	else \
 		echo "Testing $(DIR) implementation in Docker..."; \
 		$(MAKE) build DIR=$(DIR); \
-		docker run --rm chess-$(DIR) sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | $$RUN_CMD"; \
+		docker run --rm --network none chess-$(DIR) sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | $$RUN_CMD"; \
 		echo "Running internal tests for $(DIR) in Docker..."; \
-		docker run --rm chess-$(DIR) make test; \
+		docker run --rm --network none chess-$(DIR) make test; \
 	fi
 else
 	@echo "Validating website metadata..."
@@ -118,7 +118,7 @@ ifdef DIR
 	@echo "Analyzing $(DIR) implementation in Docker..."
 	@$(MAKE) build DIR=$(DIR)
 	@if [ -f "implementations/$(DIR)/Makefile" ]; then \
-		docker run --rm chess-$(DIR) make analyze; \
+		docker run --rm --network none chess-$(DIR) make analyze; \
 	else \
 		echo "No Makefile found in $(DIR), skipping analysis"; \
 	fi

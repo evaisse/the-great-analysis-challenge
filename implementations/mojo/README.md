@@ -4,7 +4,7 @@ This is a chess engine implementation in [Mojo](https://www.modular.com/mojo), s
 
 ## Current Status
 
-**Demo Implementation**: This is currently a demonstration showing Mojo syntax and the chess engine's expected output format. The full interactive chess engine with AI is implemented in the source files but requires a Mojo runtime to execute.
+**WIP Implementation**: The Docker image now provides a Mojo runtime, but the engine is still in progress and not yet fully spec-compliant.
 
 ## Features (Planned/Implemented)
 
@@ -40,19 +40,21 @@ Mojo brings several advantages to this implementation:
 
 ## Building and Running
 
-### Demo (Current)
+### Docker (Current)
 ```bash
 docker build -t chess-mojo .
-docker run -it chess-mojo
+docker run --network none -it chess-mojo
 ```
+
+Note: The `xanonymous/mojo` image is published for `linux/amd64` only. On Apple Silicon, use `--platform=linux/amd64` when building/running.
 
 ### Via Makefile
 ```bash
-make test-mojo    # Test the demo implementation
-make build-mojo   # Build Docker image
+make build DIR=mojo
+make test DIR=mojo
 ```
 
-### Local (when Mojo is available)
+### Local (if Mojo is installed)
 ```bash
 mojo chess.mojo
 ```
@@ -86,21 +88,14 @@ The chess engine is structured using Mojo's struct-based approach:
 
 ## Testing
 
-The current demo implementation shows the expected behavior:
-
 ```bash
-# Demo test (current)
-make test-mojo
-
-# Expected test when Mojo runtime is available
-echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | mojo chess.mojo
+make test DIR=mojo
 ```
 
 ## Current Limitations
 
-- **Runtime Dependency**: Requires Mojo runtime which is not publicly available in Docker
-- **Demo Mode**: Currently shows expected output rather than interactive gameplay
-- **Full Implementation Ready**: All source code is complete and ready for execution when Mojo becomes available
+- **Runtime Architecture**: `xanonymous/mojo` is `linux/amd64` only (use emulation on ARM hosts).
+- **WIP Engine**: CLI and engine components are still incomplete and may not pass the full test suite.
 
 ## Mojo-Specific Optimizations
 
@@ -123,7 +118,7 @@ The code maintains the same command interface and behavior as other language imp
 ## Future Work
 
 When Mojo becomes more widely available:
-- Update Dockerfile to use official Mojo runtime
+- Switch to an official Mojo runtime image
 - Enable full interactive chess gameplay
 - Add performance benchmarks comparing to other implementations
 - Implement additional optimizations using Mojo's advanced features

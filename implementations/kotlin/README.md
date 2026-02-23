@@ -33,7 +33,7 @@ docker build -t chess-kotlin .
 
 ### Run interactively
 ```bash
-docker run -it chess-kotlin
+docker run --network none -it chess-kotlin
 ```
 
 ## Commands

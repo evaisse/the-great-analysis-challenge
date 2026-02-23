@@ -6,6 +6,7 @@ This repository hosts parallel chess engines implemented per-language to compare
 - Follow `CHESS_ENGINE_SPECS.md` for board state, CLI protocol, AI search (minimax + alpha-beta), and perft targets
 - Ship its own `Dockerfile`, `chess.meta`, and README under `implementations/<language>/`
 - Build, run, and test exclusively through the Docker targets defined in the root `Makefile` and the shared test harness in `test/`
+- **Ensure `Dockerfile` has NO external downloads** (binaries/toolchains) except via standard language package managers; use base images with full toolchains instead.
 
 ## Core Specs
 

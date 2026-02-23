@@ -19,7 +19,7 @@ go build -o chess chess.go
 ### Docker
 ```bash
 docker build -t chess-go .
-echo -e "new\nmove e2e4\nexport\nquit" | docker run -i chess-go
+echo -e "new\nmove e2e4\nexport\nquit" | docker run --network none -i chess-go
 ```
 
 ## Commands

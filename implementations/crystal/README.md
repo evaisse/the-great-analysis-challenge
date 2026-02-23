@@ -44,7 +44,7 @@ crystal build src/chess_engine.cr -o chess_engine
 docker build -t chess-crystal .
 
 # Run in interactive mode
-docker run -it chess-crystal
+docker run --network none -it chess-crystal
 ```
 
 ## Usage

@@ -20,8 +20,8 @@ LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion,zobrist,rep
 LABEL org.chess.max_ai_depth=3
 LABEL org.chess.estimated_perft4_ms=1200
 LABEL org.chess.build="make docker-build"
-LABEL org.chess.run="docker run --rm -i chess-nim"
+LABEL org.chess.run="docker run --network none --rm -i chess-nim"
 LABEL org.chess.test="make docker-test"
-LABEL org.chess.analyze="docker run --rm chess-nim nim check chess.nim"
+LABEL org.chess.analyze="docker run --network none --rm chess-nim nim check chess.nim"
 
 ENTRYPOINT ["./chess"]

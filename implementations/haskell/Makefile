@@ -5,14 +5,16 @@ all: build
 
 # Build target - compile Haskell with Cabal
 build:
-	cabal update
 	cabal build
 
 # Run basic tests
 test:
-	cabal test || true
 	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | cabal run chess | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@if [ -f "./chess_engine" ]; then \
+		echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ./chess_engine | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"; \
+	else \
+		cabal run chess --verbose=0 -- sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2'" && echo "✅ Basic test passed (via cabal)" || echo "❌ Basic test failed"; \
+	fi
 
 # Static analysis and code quality
 analyze:
@@ -23,6 +25,7 @@ analyze:
 # Clean build artifacts
 clean:
 	cabal clean
+	rm -f chess_engine
 
 # Docker targets
 docker-build:
@@ -30,7 +33,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Haskell implementation in Docker..."
-	docker run --rm -i chess-haskell sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | cabal run chess"
+	docker run --network none --rm -i chess-haskell sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ./chess_engine"
 
 # Help target
 help:

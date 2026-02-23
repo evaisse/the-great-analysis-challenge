@@ -30,7 +30,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Swift implementation in Docker..."
-	docker run --rm -i chess-swift sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | .build/release/Chess"
+	docker run --network none --rm -i chess-swift sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | .build/release/Chess"
 
 # Help target
 help:

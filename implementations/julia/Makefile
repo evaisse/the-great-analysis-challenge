@@ -28,7 +28,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Julia implementation in Docker..."
-	docker run --rm -i chess-julia sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | julia --project=. chess.jl"
+	docker run --network none --rm -i chess-julia sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | julia --project=. chess.jl"
 
 # Help target
 help:

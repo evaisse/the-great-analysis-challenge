@@ -30,7 +30,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Rust implementation in Docker..."
-	docker run --rm -i chess-rust sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ./target/release/chess"
+	docker run --network none --rm -i chess-rust sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ./target/release/chess"
 
 # Help target
 help:
