@@ -21,8 +21,9 @@ WORKDIR /app
 # Install make for the test suite
 RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
 
-# Copy the compiled executable and project structure
+# Copy the compiled executable, project structure, and pub cache
 COPY --from=build /app /app
+COPY --from=build /root/.pub-cache /root/.pub-cache
 
 # Set the entrypoint for the container.
 
