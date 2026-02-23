@@ -14,11 +14,6 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# We remove libgmp10 from here as requested.
-# If the binary requires it, it will fail at runtime, 
-# signalling that a native-bignum GHC build is required.
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
-
 COPY --from=builder /app/chess_engine ./
 
 LABEL org.chess.language="haskell"
