@@ -15,6 +15,7 @@ import time
 import sys
 import os
 import threading
+import re
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 import argparse
@@ -402,10 +403,17 @@ class ImplementationTester:
         
         # Phase 1: Build Docker image (includes dependency installation and compilation)
         print("  🔨 Building Docker image (includes analysis and build)...")
+        monitor = PerformanceMonitor()
+        monitor.start_monitoring()
         success, build_time, output = DockerManager.build_image(
             str(self.impl_path), 
             image_name
         )
+        memory_stats = monitor.stop_monitoring()
+        
+        if "memory" not in self.results:
+            self.results["memory"] = {}
+        self.results["memory"]["build"] = memory_stats
         
         self.results["timings"]["build_seconds"] = build_time
         self.results["docker"]["build_time"] = build_time
@@ -450,12 +458,38 @@ class ImplementationTester:
     
     def _run_docker_command(self, image_name: str, command: str) -> Tuple[bool, float]:
         """Run a command inside a Docker container and return (success, time)"""
+        # We wrap the command to capture the peak memory from cgroups
+        # This works on both cgroup v1 and v2 environments inside Docker
+        wrapped_command = f"{command}; PEAK=$(cat /sys/fs/cgroup/memory.peak 2>/dev/null || cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes 2>/dev/null || echo 0); echo \"---MEMORY_PEAK_BYTES: $PEAK---\""
+        
         try:
             start_time = time.time()
-            cmd = ["docker", "run", "--rm", image_name, "sh", "-c", command]
+            cmd = ["docker", "run", "--rm", image_name, "sh", "-c", wrapped_command]
             print(f"    🔧 Running: {command}")
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.docker_timeout//2)
             elapsed = time.time() - start_time
+            
+            # Parse memory peak from output
+            memory_mb = 0
+            if result.stdout:
+                match = re.search(r"---MEMORY_PEAK_BYTES: (\d+)---", result.stdout)
+                if match:
+                    peak_bytes = int(match.group(1))
+                    memory_mb = peak_bytes / (1024 * 1024)
+            
+            # Store memory stats in results
+            phase = "analyze" if "analyze" in command else "test"
+            if "memory" not in self.results:
+                self.results["memory"] = {}
+            
+            # Use a dictionary compatible with the expected format
+            self.results["memory"][phase] = {
+                "memory_mb": memory_mb,
+                "peak_memory_mb": memory_mb,
+                "avg_cpu_percent": 0,
+                "psutil_available": PSUTIL_AVAILABLE,
+                "source": "cgroup"
+            }
             
             success = result.returncode == 0
             if not success:

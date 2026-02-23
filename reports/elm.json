@@ -1,11 +1,11 @@
 [
   {
-    "language": "dart",
-    "path": "implementations/dart",
+    "language": "elm",
+    "path": "implementations/elm",
     "metadata": {
-      "language": "dart",
-      "version": "3.0",
-      "author": "Dart Implementation",
+      "language": "elm",
+      "version": "0.19.1",
+      "author": "Elm Implementation with Node.js Bridge",
       "features": [
         "perft",
         "fen",
@@ -15,16 +15,16 @@
         "promotion"
       ],
       "max_ai_depth": 5,
-      "estimated_perft4_ms": 900,
-      "test": "dart test",
-      "run": "./bin/chess_engine",
-      "build": "make build",
-      "analyze": "make analyze"
+      "estimated_perft4_ms": 1200,
+      "run": "node chess-bridge.js",
+      "build": "npm install",
+      "test": "node chess-bridge.js --test",
+      "analyze": "node chess-bridge.js --check"
     },
     "timings": {
-      "build_seconds": 0.5421569347381592,
-      "analyze_seconds": 1.2766788005828857,
-      "test_seconds": 3.108520030975342
+      "build_seconds": 1.3953700065612793,
+      "analyze_seconds": 0.3793020248413086,
+      "test_seconds": 0.35797786712646484
     },
     "memory": {
       "build": {
@@ -34,24 +34,24 @@
         "psutil_available": false
       },
       "analyze": {
-        "memory_mb": 211.109375,
-        "peak_memory_mb": 211.109375,
+        "memory_mb": 3.5859375,
+        "peak_memory_mb": 3.5859375,
         "avg_cpu_percent": 0,
         "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 450.69140625,
-        "peak_memory_mb": 450.69140625,
+        "memory_mb": 8.91015625,
+        "peak_memory_mb": 8.91015625,
         "avg_cpu_percent": 0,
         "psutil_available": false,
         "source": "cgroup"
       }
     },
     "docker": {
-      "build_time": 0.5421569347381592,
+      "build_time": 1.3953700065612793,
       "build_success": true,
-      "test_time": 3.108520030975342,
+      "test_time": 0.35797786712646484,
       "test_success": true
     },
     "test_results": {
