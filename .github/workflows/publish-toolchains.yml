@@ -1,0 +1,34 @@
+name: Publish Language Toolchains
+on:
+  push:
+    paths:
+      - 'implementations/*/docker-images/**'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Toolchains
+        run: |
+          for dockerfile in implementations/*/docker-images/toolchain/Dockerfile; do
+            lang_dir=$(dirname $(dirname $(dirname "$dockerfile")))
+            lang=$(basename "$lang_dir")
+            image_name="ghcr.io/${{ github.repository_owner }}/tgac-$lang-toolchain"
+            
+            echo "🚀 Building toolchain for $lang..."
+            docker build -t "$image_name:latest" "$(dirname "$dockerfile")"
+            docker push "$image_name:latest"
+          done
