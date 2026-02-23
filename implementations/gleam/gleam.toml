@@ -2,7 +2,7 @@ name = "chess_engine"
 version = "1.0.0"
 
 [dependencies]
-gleam_stdlib = ">= 0.34.0 and < 2.0.0"
+gleam_stdlib = { path = "./vendor/gleam_stdlib" }
 
 [dev-dependencies]
-gleeunit = ">= 1.0.0 and < 2.0.0"
+gleeunit = { path = "./vendor/gleeunit" }

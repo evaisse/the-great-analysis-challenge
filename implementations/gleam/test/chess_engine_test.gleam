@@ -1,6 +1,7 @@
 import gleeunit
 import gleeunit/should
 import gleam/list
+import gleam/option.{None, Some}
 import types.{White, Black}
 import board.{new_game, get_piece}
 import move_generator.{get_legal_moves}
@@ -29,7 +30,7 @@ pub fn new_engine_test() {
 pub fn starting_position_moves_test() {
   let game = new_game()
   let legal_moves = get_legal_moves(game, White)
-  
+
   // Starting position should have 20 legal moves
   legal_moves
   |> list.length
@@ -40,11 +41,11 @@ pub fn starting_position_moves_test() {
 pub fn fen_export_import_test() {
   let game = new_game()
   let fen = export_fen(game)
-  
+
   // Starting position FEN
   fen
   |> should.equal("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-  
+
   // Test importing the same FEN
   case parse_fen(fen) {
     Ok(imported_game) -> {
@@ -58,9 +59,9 @@ pub fn fen_export_import_test() {
 // Test piece placement
 pub fn piece_placement_test() {
   let game = new_game()
-  
+
   // Test white king is at e1
-  case get_piece(game, 4) {  // e1 = 4
+  case get_piece(game, 4) {
     Some(piece) -> {
       piece.piece_type
       |> should.equal(types.King)
@@ -69,9 +70,9 @@ pub fn piece_placement_test() {
     }
     None -> should.fail()
   }
-  
+
   // Test black king is at e8
-  case get_piece(game, 60) {  // e8 = 60
+  case get_piece(game, 60) {
     Some(piece) -> {
       piece.piece_type
       |> should.equal(types.King)

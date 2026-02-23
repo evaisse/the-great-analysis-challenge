@@ -1,15 +1,16 @@
 // FEN parsing and export functionality
 
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/string
 import gleam/int
 import gleam/result
 import types.{
   type Color, type GameState, type CastlingRights, White, Black,
   CastlingRights, GameState, char_to_piece, piece_to_char,
-  algebraic_to_square, square_to_algebraic, no_castling_rights
+  algebraic_to_square, square_to_algebraic, no_castling_rights,
 }
-import board.{get_piece, set_piece}
+import board.{get_piece}
 
 pub fn parse_fen(fen: String) -> Result(GameState, String) {
   let parts = string.split(fen, " ")
@@ -34,9 +35,9 @@ fn parse_fen_parts(
   use color <- result.try(parse_turn(turn))
   use rights <- result.try(parse_castling_rights(castling))
   use en_passant_target <- result.try(parse_en_passant(en_passant))
-  use halfmove_clock <- result.try(parse_int(halfmove, "halfmove"))
-  use fullmove_number <- result.try(parse_int(fullmove, "fullmove"))
-  
+  use halfmove_clock <- result.try(parse_int_field(halfmove))
+  use fullmove_number <- result.try(parse_int_field(fullmove))
+
   Ok(GameState(
     board: board,
     turn: color,
@@ -48,15 +49,17 @@ fn parse_fen_parts(
   ))
 }
 
-fn parse_pieces(pieces: String) -> Result(List(Option(types.Piece)), String) {
+fn parse_pieces(
+  pieces: String,
+) -> Result(List(Option(types.Piece)), String) {
   let ranks = string.split(pieces, "/")
   case list.length(ranks) {
     8 -> {
       ranks
-        |> list.reverse  // FEN starts from rank 8, we need to start from rank 1
-        |> list.try_map(parse_rank)
-        |> result.map(list.flatten)
-        |> result.map_error(fn(_) { "ERROR: Invalid FEN string" })
+      |> list.reverse
+      |> list.try_map(parse_rank)
+      |> result.map(list.flatten)
+      |> result.map_error(fn(_) { "ERROR: Invalid FEN string" })
     }
     _ -> Error("ERROR: Invalid FEN string")
   }
@@ -64,22 +67,26 @@ fn parse_pieces(pieces: String) -> Result(List(Option(types.Piece)), String) {
 
 fn parse_rank(rank: String) -> Result(List(Option(types.Piece)), Nil) {
   rank
-    |> string.to_graphemes
-    |> list.try_fold([], fn(acc, char) {
-      case int.parse(char) {
-        Ok(num) if num >= 1 && num <= 8 -> {
-          let empty_squares = list.repeat(None, num)
-          Ok(list.concat([acc, empty_squares]))
-        }
-        Error(_) -> {
-          case char_to_piece(char) {
-            Some(piece) -> Ok([Some(piece), ..acc])
-            None -> Error(Nil)
+  |> string.to_graphemes
+  |> list.try_fold([], fn(acc, char) {
+    case int.parse(char) {
+      Ok(num) -> {
+        case num >= 1 && num <= 8 {
+          True -> {
+            let empty_squares = list.repeat(None, num)
+            Ok(list.concat([acc, empty_squares]))
           }
+          False -> Error(Nil)
         }
       }
-    })
-    |> result.map(list.reverse)
+      Error(_) -> {
+        case char_to_piece(char) {
+          Some(piece) -> Ok(list.concat([acc, [Some(piece)]]))
+          None -> Error(Nil)
+        }
+      }
+    }
+  })
 }
 
 fn parse_turn(turn: String) -> Result(Color, String) {
@@ -94,12 +101,11 @@ fn parse_castling_rights(castling: String) -> Result(CastlingRights, String) {
   case castling {
     "-" -> Ok(no_castling_rights())
     _ -> {
-      let rights = no_castling_rights()
       let white_kingside = string.contains(castling, "K")
       let white_queenside = string.contains(castling, "Q")
       let black_kingside = string.contains(castling, "k")
       let black_queenside = string.contains(castling, "q")
-      
+
       Ok(CastlingRights(
         white_kingside: white_kingside,
         white_queenside: white_queenside,
@@ -115,15 +121,15 @@ fn parse_en_passant(en_passant: String) -> Result(Option(Int), String) {
     "-" -> Ok(None)
     _ -> {
       algebraic_to_square(en_passant)
-        |> result.map(Some)
-        |> result.map_error(fn(_) { "ERROR: Invalid FEN string" })
+      |> result.map(Some)
+      |> result.map_error(fn(_) { "ERROR: Invalid FEN string" })
     }
   }
 }
 
-fn parse_int(str: String, field: String) -> Result(Int, String) {
+fn parse_int_field(str: String) -> Result(Int, String) {
   int.parse(str)
-    |> result.map_error(fn(_) { "ERROR: Invalid FEN string" })
+  |> result.map_error(fn(_) { "ERROR: Invalid FEN string" })
 }
 
 pub fn export_fen(game_state: GameState) -> String {
@@ -136,41 +142,52 @@ pub fn export_fen(game_state: GameState) -> String {
   let en_passant = export_en_passant(game_state.en_passant_target)
   let halfmove = int.to_string(game_state.halfmove_clock)
   let fullmove = int.to_string(game_state.fullmove_number)
-  
-  pieces <> " " <> turn <> " " <> castling <> " " <> en_passant <> " " <> halfmove <> " " <> fullmove
+
+  pieces
+  <> " "
+  <> turn
+  <> " "
+  <> castling
+  <> " "
+  <> en_passant
+  <> " "
+  <> halfmove
+  <> " "
+  <> fullmove
 }
 
 fn export_pieces(game_state: GameState) -> String {
-  list.range(7, 0)  // Start from rank 8 down to rank 1
-    |> list.map(fn(rank) {
-      list.range(0, 7)  // Files a to h
-        |> list.map(fn(file) {
-          let square = rank * 8 + file
-          get_piece(game_state, square)
-        })
-        |> export_rank
+  list.range(7, 0)
+  |> list.map(fn(rank) {
+    list.range(0, 7)
+    |> list.map(fn(file) {
+      let square = rank * 8 + file
+      get_piece(game_state, square)
     })
-    |> string.join("/")
+    |> export_rank
+  })
+  |> string.join("/")
 }
 
 fn export_rank(rank_pieces: List(Option(types.Piece))) -> String {
-  rank_pieces
-    |> list.fold([], fn(acc, piece) {
-      case acc, piece {
-        [], None -> [1]
-        [head, ..tail], None if is_int(head) -> [head + 1, ..tail]
-        _, None -> [1, ..acc]
-        _, Some(p) -> [piece_to_char(p), ..acc]
+  let #(result, empty_count) =
+    list.fold(rank_pieces, #("", 0), fn(acc, piece) {
+      let #(str, count) = acc
+      case piece {
+        None -> #(str, count + 1)
+        Some(p) -> {
+          let prefix = case count > 0 {
+            True -> str <> int.to_string(count)
+            False -> str
+          }
+          #(prefix <> piece_to_char(p), 0)
+        }
       }
     })
-    |> list.reverse
-    |> list.map(fn(item) {
-      case is_string(item) {
-        True -> item
-        False -> int.to_string(item)
-      }
-    })
-    |> string.join("")
+  case empty_count > 0 {
+    True -> result <> int.to_string(empty_count)
+    False -> result
+  }
 }
 
 fn export_castling_rights(rights: CastlingRights) -> String {
@@ -191,7 +208,7 @@ fn export_castling_rights(rights: CastlingRights) -> String {
     True -> ["q", ..castling_chars]
     False -> castling_chars
   }
-  
+
   case castling_chars {
     [] -> "-"
     _ -> castling_chars |> list.reverse |> string.join("")
@@ -204,10 +221,3 @@ fn export_en_passant(en_passant_target: Option(Int)) -> String {
     Some(square) -> square_to_algebraic(square)
   }
 }
-
-// Helper functions to check types (Gleam doesn't have built-in type checking)
-external fn is_int(value: a) -> Bool =
-  "erlang" "is_integer"
-
-external fn is_string(value: a) -> Bool =
-  "erlang" "is_binary"
