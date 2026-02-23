@@ -1,0 +1,18 @@
+{
+  "name": "chess-javascript",
+  "version": "1.0.0",
+  "description": "JavaScript implementation of the polyglot chess engine",
+  "type": "module",
+  "main": "chess.js",
+  "scripts": {
+    "start": "node chess.js",
+    "build": "echo 'No build step needed'",
+    "test": "node --test test/*.test.js",
+    "lint": "tsc",
+    "analyze": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

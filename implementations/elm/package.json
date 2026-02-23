@@ -9,6 +9,5 @@
     "dev": "npm run build && npm start"
   },
   "dependencies": {
-    "readline": "^1.3.0"
   }
 }

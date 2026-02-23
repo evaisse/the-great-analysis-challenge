@@ -1,13 +1,6 @@
-# Use official Lua image
-FROM nickblah/lua:5.4-alpine
+FROM ghcr.io/evaisse/tgac-lua-toolchain:latest
 
-# Set working directory
-WORKDIR /app
-
-# Copy source code
 COPY . .
-
-# Default command to run the chess engine
 
 LABEL org.chess.language="lua"
 LABEL org.chess.version="5.4"

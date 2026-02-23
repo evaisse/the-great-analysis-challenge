@@ -17,30 +17,30 @@ pub const AI = struct {
 
     pub fn getBestMove(self: *AI, depth: u8) ?board.Move {
         self.nodes_searched = 0;
-        
-        var allocator = std.heap.page_allocator;
+
+        const allocator = std.heap.page_allocator;
         var move_generator = move_gen.MoveGenerator.init(self.board_ref);
-        
-        const legal_moves = move_generator.generateLegalMoves(allocator) catch return null;
-        defer legal_moves.deinit();
-        
+
+        var legal_moves = move_generator.generateLegalMoves(allocator) catch return null;
+        defer legal_moves.deinit(allocator);
+
         if (legal_moves.items.len == 0) return null;
-        
+
         var best_move = legal_moves.items[0];
         var best_score: i32 = if (self.board_ref.white_to_move) -999999 else 999999;
-        
+
         for (legal_moves.items) |move| {
             // Make the move
             const original_state = self.saveGameState();
             self.board_ref.makeMove(move) catch continue;
-            
+
             // Evaluate the position after the move
             const score = self.minimax(depth - 1, -999999, 999999, !self.board_ref.white_to_move);
-            
+
             // Restore the original position
             self.restoreGameState(original_state);
             self.board_ref.undoMove(move);
-            
+
             // Update best move
             if (self.board_ref.white_to_move) {
                 if (score > best_score) {
@@ -54,96 +54,96 @@ pub const AI = struct {
                 }
             }
         }
-        
+
         self.last_evaluation = best_score;
         return best_move;
     }
 
     fn minimax(self: *AI, depth: u8, alpha: i32, beta: i32, maximizing: bool) i32 {
         self.nodes_searched += 1;
-        
+
         if (depth == 0) {
             return self.evaluatePosition();
         }
-        
+
         // Check for game end
         if (self.board_ref.isCheckmate()) {
             return if (maximizing) -100000 else 100000;
         }
-        
+
         if (self.board_ref.isStalemate()) {
             return 0;
         }
-        
-        var allocator = std.heap.page_allocator;
+
+        const allocator = std.heap.page_allocator;
         var move_generator = move_gen.MoveGenerator.init(self.board_ref);
-        
-        const legal_moves = move_generator.generateLegalMoves(allocator) catch return 0;
-        defer legal_moves.deinit();
-        
+
+        var legal_moves = move_generator.generateLegalMoves(allocator) catch return 0;
+        defer legal_moves.deinit(allocator);
+
         if (legal_moves.items.len == 0) {
             return 0; // Stalemate
         }
-        
+
         var current_alpha = alpha;
         var current_beta = beta;
-        
+
         if (maximizing) {
             var max_eval: i32 = -999999;
-            
+
             for (legal_moves.items) |move| {
                 const original_state = self.saveGameState();
                 self.board_ref.makeMove(move) catch continue;
-                
+
                 const eval = self.minimax(depth - 1, current_alpha, current_beta, false);
-                
+
                 self.restoreGameState(original_state);
                 self.board_ref.undoMove(move);
-                
+
                 max_eval = @max(max_eval, eval);
                 current_alpha = @max(current_alpha, eval);
-                
+
                 if (current_beta <= current_alpha) {
                     break; // Beta cutoff
                 }
             }
-            
+
             return max_eval;
         } else {
             var min_eval: i32 = 999999;
-            
+
             for (legal_moves.items) |move| {
                 const original_state = self.saveGameState();
                 self.board_ref.makeMove(move) catch continue;
-                
+
                 const eval = self.minimax(depth - 1, current_alpha, current_beta, true);
-                
+
                 self.restoreGameState(original_state);
                 self.board_ref.undoMove(move);
-                
+
                 min_eval = @min(min_eval, eval);
                 current_beta = @min(current_beta, eval);
-                
+
                 if (current_beta <= current_alpha) {
                     break; // Alpha cutoff
                 }
             }
-            
+
             return min_eval;
         }
     }
 
     pub fn evaluatePosition(self: *AI) i32 {
         var score: i32 = 0;
-        
+
         // Material evaluation
         for (self.board_ref.squares, 0..) |piece, i| {
             if (piece) |p| {
                 var piece_value = self.getPieceValue(p.piece_type);
-                
+
                 // Add positional bonuses
                 piece_value += self.getPositionalBonus(p, @intCast(i));
-                
+
                 if (p.color == .White) {
                     score += piece_value;
                 } else {
@@ -151,7 +151,7 @@ pub const AI = struct {
                 }
             }
         }
-        
+
         return score;
     }
 
@@ -172,12 +172,12 @@ pub const AI = struct {
         const file = square % 8;
         const rank = square / 8;
         var bonus: i32 = 0;
-        
+
         // Center control bonus
         if ((file == 3 or file == 4) and (rank == 3 or rank == 4)) {
             bonus += 10;
         }
-        
+
         // Pawn advancement bonus
         if (piece.piece_type == .Pawn) {
             if (piece.color == .White) {
@@ -186,7 +186,7 @@ pub const AI = struct {
                 bonus += @as(i32, @intCast(7 - rank)) * 5;
             }
         }
-        
+
         // King safety penalty for exposed king
         if (piece.piece_type == .King) {
             // Simplified king safety - penalize king in center during opening/middlegame
@@ -194,7 +194,7 @@ pub const AI = struct {
                 bonus -= 20;
             }
         }
-        
+
         return bonus;
     }
 

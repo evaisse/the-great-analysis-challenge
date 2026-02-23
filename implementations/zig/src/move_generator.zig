@@ -11,38 +11,39 @@ pub const MoveGenerator = struct {
     }
 
     pub fn generateLegalMoves(self: *MoveGenerator, allocator: std.mem.Allocator) !std.ArrayList(board.Move) {
-        var moves = std.ArrayList(board.Move).init(allocator);
-        
+        var moves = std.ArrayList(board.Move).empty;
+        errdefer moves.deinit(allocator);
+
         const current_color = if (self.board_ref.white_to_move) board.PieceColor.White else board.PieceColor.Black;
-        
+
         for (self.board_ref.squares, 0..) |piece, i| {
             if (piece) |p| {
                 if (p.color == current_color) {
-                    try self.generatePieceMoves(@intCast(i), p, &moves);
+                    try self.generatePieceMoves(@intCast(i), p, allocator, &moves);
                 }
             }
         }
-        
+
         return moves;
     }
 
-    fn generatePieceMoves(self: *MoveGenerator, from: u8, piece: board.Piece, moves: *std.ArrayList(board.Move)) !void {
+    fn generatePieceMoves(self: *MoveGenerator, from: u8, piece: board.Piece, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
         switch (piece.piece_type) {
-            .Pawn => try self.generatePawnMoves(from, piece.color, moves),
-            .Knight => try self.generateKnightMoves(from, piece.color, moves),
-            .Bishop => try self.generateBishopMoves(from, piece.color, moves),
-            .Rook => try self.generateRookMoves(from, piece.color, moves),
-            .Queen => try self.generateQueenMoves(from, piece.color, moves),
-            .King => try self.generateKingMoves(from, piece.color, moves),
+            .Pawn => try self.generatePawnMoves(from, piece.color, allocator, moves),
+            .Knight => try self.generateKnightMoves(from, piece.color, allocator, moves),
+            .Bishop => try self.generateBishopMoves(from, piece.color, allocator, moves),
+            .Rook => try self.generateRookMoves(from, piece.color, allocator, moves),
+            .Queen => try self.generateQueenMoves(from, piece.color, allocator, moves),
+            .King => try self.generateKingMoves(from, piece.color, allocator, moves),
         }
     }
 
-    fn generatePawnMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, moves: *std.ArrayList(board.Move)) !void {
+    fn generatePawnMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
         const from_rank = from / 8;
         const from_file = from % 8;
         const direction: i8 = if (color == .White) 1 else -1;
-        const starting_rank = if (color == .White) 1 else 6;
-        const promotion_rank = if (color == .White) 7 else 0;
+        const starting_rank: u8 = if (color == .White) 1 else 6;
+        const promotion_rank: u8 = if (color == .White) 7 else 0;
 
         // Forward moves
         const one_forward = @as(i8, @intCast(from)) + direction * 8;
@@ -51,12 +52,12 @@ pub const MoveGenerator = struct {
             if (self.board_ref.squares[to_square] == null) {
                 if (to_square / 8 == promotion_rank) {
                     // Promotion moves
-                    try moves.append(board.Move{ .from = from, .to = to_square, .promotion_piece = .Queen });
-                    try moves.append(board.Move{ .from = from, .to = to_square, .promotion_piece = .Rook });
-                    try moves.append(board.Move{ .from = from, .to = to_square, .promotion_piece = .Bishop });
-                    try moves.append(board.Move{ .from = from, .to = to_square, .promotion_piece = .Knight });
+                    try moves.append(allocator, board.Move{ .from = from, .to = to_square, .promotion_piece = .Queen });
+                    try moves.append(allocator, board.Move{ .from = from, .to = to_square, .promotion_piece = .Rook });
+                    try moves.append(allocator, board.Move{ .from = from, .to = to_square, .promotion_piece = .Bishop });
+                    try moves.append(allocator, board.Move{ .from = from, .to = to_square, .promotion_piece = .Knight });
                 } else {
-                    try moves.append(board.Move{ .from = from, .to = to_square });
+                    try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                 }
 
                 // Two squares forward from starting position
@@ -65,7 +66,7 @@ pub const MoveGenerator = struct {
                     if (two_forward >= 0 and two_forward < 64) {
                         const to_square_two = @as(u8, @intCast(two_forward));
                         if (self.board_ref.squares[to_square_two] == null) {
-                            try moves.append(board.Move{ .from = from, .to = to_square_two });
+                            try moves.append(allocator, board.Move{ .from = from, .to = to_square_two });
                         }
                     }
                 }
@@ -78,41 +79,37 @@ pub const MoveGenerator = struct {
             const target = @as(i8, @intCast(from)) + move_offset;
             if (target >= 0 and target < 64) {
                 const to_square = @as(u8, @intCast(target));
-                const to_file = to_square % 8;
-                
+
                 // Check file bounds for diagonal captures
                 if ((move_offset == direction * 8 - 1 and from_file > 0) or
-                    (move_offset == direction * 8 + 1 and from_file < 7)) {
-                    
+                    (move_offset == direction * 8 + 1 and from_file < 7))
+                {
                     if (self.board_ref.squares[to_square]) |target_piece| {
                         if (target_piece.color != color) {
                             if (to_square / 8 == promotion_rank) {
                                 // Promotion captures
-                                try moves.append(board.Move{ .from = from, .to = to_square, .promotion_piece = .Queen });
-                                try moves.append(board.Move{ .from = from, .to = to_square, .promotion_piece = .Rook });
-                                try moves.append(board.Move{ .from = from, .to = to_square, .promotion_piece = .Bishop });
-                                try moves.append(board.Move{ .from = from, .to = to_square, .promotion_piece = .Knight });
+                                try moves.append(allocator, board.Move{ .from = from, .to = to_square, .promotion_piece = .Queen });
+                                try moves.append(allocator, board.Move{ .from = from, .to = to_square, .promotion_piece = .Rook });
+                                try moves.append(allocator, board.Move{ .from = from, .to = to_square, .promotion_piece = .Bishop });
+                                try moves.append(allocator, board.Move{ .from = from, .to = to_square, .promotion_piece = .Knight });
                             } else {
-                                try moves.append(board.Move{ .from = from, .to = to_square });
+                                try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                             }
                         }
                     } else if (self.board_ref.en_passant_target == to_square) {
                         // En passant capture
-                        try moves.append(board.Move{ .from = from, .to = to_square, .en_passant = true });
+                        try moves.append(allocator, board.Move{ .from = from, .to = to_square, .en_passant = true });
                     }
                 }
             }
         }
     }
 
-    fn generateKnightMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, moves: *std.ArrayList(board.Move)) !void {
+    fn generateKnightMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
         const from_rank = @as(i8, @intCast(from / 8));
         const from_file = @as(i8, @intCast(from % 8));
-        
-        const knight_moves = [_][2]i8{
-            .{ 2, 1 }, .{ 2, -1 }, .{ -2, 1 }, .{ -2, -1 },
-            .{ 1, 2 }, .{ 1, -2 }, .{ -1, 2 }, .{ -1, -2 }
-        };
+
+        const knight_moves = [_][2]i8{ .{ 2, 1 }, .{ 2, -1 }, .{ -2, 1 }, .{ -2, -1 }, .{ 1, 2 }, .{ 1, -2 }, .{ -1, 2 }, .{ -1, -2 } };
 
         for (knight_moves) |move| {
             const to_rank = from_rank + move[0];
@@ -120,37 +117,34 @@ pub const MoveGenerator = struct {
 
             if (to_rank >= 0 and to_rank < 8 and to_file >= 0 and to_file < 8) {
                 const to_square = @as(u8, @intCast(to_rank)) * 8 + @as(u8, @intCast(to_file));
-                
+
                 if (self.board_ref.squares[to_square]) |target_piece| {
                     if (target_piece.color != color) {
-                        try moves.append(board.Move{ .from = from, .to = to_square });
+                        try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                     }
                 } else {
-                    try moves.append(board.Move{ .from = from, .to = to_square });
+                    try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                 }
             }
         }
     }
 
-    fn generateBishopMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, moves: *std.ArrayList(board.Move)) !void {
+    fn generateBishopMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
         const directions = [_][2]i8{ .{ 1, 1 }, .{ 1, -1 }, .{ -1, 1 }, .{ -1, -1 } };
-        try self.generateSlidingMoves(from, color, &directions, moves);
+        try self.generateSlidingMoves(from, color, &directions, allocator, moves);
     }
 
-    fn generateRookMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, moves: *std.ArrayList(board.Move)) !void {
+    fn generateRookMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
         const directions = [_][2]i8{ .{ 1, 0 }, .{ -1, 0 }, .{ 0, 1 }, .{ 0, -1 } };
-        try self.generateSlidingMoves(from, color, &directions, moves);
+        try self.generateSlidingMoves(from, color, &directions, allocator, moves);
     }
 
-    fn generateQueenMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, moves: *std.ArrayList(board.Move)) !void {
-        const directions = [_][2]i8{
-            .{ 1, 1 }, .{ 1, -1 }, .{ -1, 1 }, .{ -1, -1 },
-            .{ 1, 0 }, .{ -1, 0 }, .{ 0, 1 }, .{ 0, -1 }
-        };
-        try self.generateSlidingMoves(from, color, &directions, moves);
+    fn generateQueenMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
+        const directions = [_][2]i8{ .{ 1, 1 }, .{ 1, -1 }, .{ -1, 1 }, .{ -1, -1 }, .{ 1, 0 }, .{ -1, 0 }, .{ 0, 1 }, .{ 0, -1 } };
+        try self.generateSlidingMoves(from, color, &directions, allocator, moves);
     }
 
-    fn generateSlidingMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, directions: []const [2]i8, moves: *std.ArrayList(board.Move)) !void {
+    fn generateSlidingMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, directions: []const [2]i8, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
         const from_rank = @as(i8, @intCast(from / 8));
         const from_file = @as(i8, @intCast(from % 8));
 
@@ -163,11 +157,11 @@ pub const MoveGenerator = struct {
 
                 if (self.board_ref.squares[to_square]) |target_piece| {
                     if (target_piece.color != color) {
-                        try moves.append(board.Move{ .from = from, .to = to_square });
+                        try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                     }
                     break; // Can't move past any piece
                 } else {
-                    try moves.append(board.Move{ .from = from, .to = to_square });
+                    try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                 }
 
                 rank += direction[0];
@@ -176,14 +170,11 @@ pub const MoveGenerator = struct {
         }
     }
 
-    fn generateKingMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, moves: *std.ArrayList(board.Move)) !void {
+    fn generateKingMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
         const from_rank = @as(i8, @intCast(from / 8));
         const from_file = @as(i8, @intCast(from % 8));
 
-        const king_moves = [_][2]i8{
-            .{ 1, 1 }, .{ 1, -1 }, .{ -1, 1 }, .{ -1, -1 },
-            .{ 1, 0 }, .{ -1, 0 }, .{ 0, 1 }, .{ 0, -1 }
-        };
+        const king_moves = [_][2]i8{ .{ 1, 1 }, .{ 1, -1 }, .{ -1, 1 }, .{ -1, -1 }, .{ 1, 0 }, .{ -1, 0 }, .{ 0, 1 }, .{ 0, -1 } };
 
         for (king_moves) |move| {
             const to_rank = from_rank + move[0];
@@ -191,22 +182,22 @@ pub const MoveGenerator = struct {
 
             if (to_rank >= 0 and to_rank < 8 and to_file >= 0 and to_file < 8) {
                 const to_square = @as(u8, @intCast(to_rank)) * 8 + @as(u8, @intCast(to_file));
-                
+
                 if (self.board_ref.squares[to_square]) |target_piece| {
                     if (target_piece.color != color) {
-                        try moves.append(board.Move{ .from = from, .to = to_square });
+                        try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                     }
                 } else {
-                    try moves.append(board.Move{ .from = from, .to = to_square });
+                    try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                 }
             }
         }
 
         // Castling moves
-        try self.generateCastlingMoves(from, color, moves);
+        try self.generateCastlingMoves(from, color, allocator, moves);
     }
 
-    fn generateCastlingMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, moves: *std.ArrayList(board.Move)) !void {
+    fn generateCastlingMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
         if (self.board_ref.isInCheck(color)) return; // Can't castle out of check
 
         if (color == .White and from == 4) {
@@ -215,11 +206,12 @@ pub const MoveGenerator = struct {
                 self.board_ref.squares[5] == null and
                 self.board_ref.squares[6] == null and
                 self.board_ref.squares[7] != null and
-                self.board_ref.squares[7].?.piece_type == .Rook) {
-                
+                self.board_ref.squares[7].?.piece_type == .Rook)
+            {
+
                 // Check that king doesn't pass through check
                 if (!self.wouldBeInCheck(4, 5, color) and !self.wouldBeInCheck(4, 6, color)) {
-                    try moves.append(board.Move{ .from = from, .to = 6, .castle_king_side = true });
+                    try moves.append(allocator, board.Move{ .from = from, .to = 6, .castle_king_side = true });
                 }
             }
 
@@ -228,11 +220,12 @@ pub const MoveGenerator = struct {
                 self.board_ref.squares[2] == null and
                 self.board_ref.squares[1] == null and
                 self.board_ref.squares[0] != null and
-                self.board_ref.squares[0].?.piece_type == .Rook) {
-                
+                self.board_ref.squares[0].?.piece_type == .Rook)
+            {
+
                 // Check that king doesn't pass through check
                 if (!self.wouldBeInCheck(4, 3, color) and !self.wouldBeInCheck(4, 2, color)) {
-                    try moves.append(board.Move{ .from = from, .to = 2, .castle_queen_side = true });
+                    try moves.append(allocator, board.Move{ .from = from, .to = 2, .castle_queen_side = true });
                 }
             }
         } else if (color == .Black and from == 60) {
@@ -241,11 +234,12 @@ pub const MoveGenerator = struct {
                 self.board_ref.squares[61] == null and
                 self.board_ref.squares[62] == null and
                 self.board_ref.squares[63] != null and
-                self.board_ref.squares[63].?.piece_type == .Rook) {
-                
+                self.board_ref.squares[63].?.piece_type == .Rook)
+            {
+
                 // Check that king doesn't pass through check
                 if (!self.wouldBeInCheck(60, 61, color) and !self.wouldBeInCheck(60, 62, color)) {
-                    try moves.append(board.Move{ .from = from, .to = 62, .castle_king_side = true });
+                    try moves.append(allocator, board.Move{ .from = from, .to = 62, .castle_king_side = true });
                 }
             }
 
@@ -254,11 +248,12 @@ pub const MoveGenerator = struct {
                 self.board_ref.squares[58] == null and
                 self.board_ref.squares[57] == null and
                 self.board_ref.squares[56] != null and
-                self.board_ref.squares[56].?.piece_type == .Rook) {
-                
+                self.board_ref.squares[56].?.piece_type == .Rook)
+            {
+
                 // Check that king doesn't pass through check
                 if (!self.wouldBeInCheck(60, 59, color) and !self.wouldBeInCheck(60, 58, color)) {
-                    try moves.append(board.Move{ .from = from, .to = 58, .castle_queen_side = true });
+                    try moves.append(allocator, board.Move{ .from = from, .to = 58, .castle_queen_side = true });
                 }
             }
         }
@@ -268,16 +263,16 @@ pub const MoveGenerator = struct {
         // Temporarily make the move and check if in check
         const original_piece = self.board_ref.squares[from];
         const captured_piece = self.board_ref.squares[to];
-        
+
         self.board_ref.squares[from] = null;
         self.board_ref.squares[to] = original_piece;
-        
+
         const in_check = self.board_ref.isInCheck(color);
-        
+
         // Restore original position
         self.board_ref.squares[from] = original_piece;
         self.board_ref.squares[to] = captured_piece;
-        
+
         return in_check;
     }
 

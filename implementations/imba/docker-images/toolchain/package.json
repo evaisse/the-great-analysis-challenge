@@ -1,0 +1,13 @@
+{
+  "name": "chess-imba",
+  "version": "1.0.0",
+  "description": "Imba implementation of the polyglot chess engine",
+  "scripts": {
+    "build": "imba build chess.imba --platform node --base . --outdir dist",
+    "start": "node dist/chess.js",
+    "test": "node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "imba": "^2.0.0-alpha.247"
+  }
+}

@@ -1,28 +1,8 @@
-# Build stage
-FROM dart:stable AS build
+FROM ghcr.io/evaisse/tgac-dart-toolchain:latest
 
-WORKDIR /app
-
-# Copy the pubspec files and get dependencies.
-COPY pubspec.* ./
-RUN dart pub get
-
-# Copy the rest of the application source code.
 COPY . .
 
-# Compile the application.
-RUN dart compile exe bin/main.dart -o bin/chess_engine
-
-# Runtime stage
-FROM dart:stable
-
-WORKDIR /app
-
-# Copy the compiled executable, project structure, and pub cache
-COPY --from=build /app /app
-COPY --from=build /root/.pub-cache /root/.pub-cache
-
-# Set the entrypoint for the container.
+RUN dart pub get && dart compile exe bin/main.dart -o bin/chess_engine
 
 LABEL org.chess.language="dart"
 LABEL org.chess.version="3.0"

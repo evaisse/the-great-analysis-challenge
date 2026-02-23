@@ -10,6 +10,7 @@ import os
 import json
 import sys
 import argparse
+import re
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
 from importlib import import_module
@@ -53,6 +54,21 @@ EXPECTED_FEATURES = {
     'perft', 'fen', 'ai', 'castling', 'en_passant', 'promotion'
 }
 
+HASKELL_STDLIB_PACKAGES = {
+    'base', 'containers', 'array', 'time'
+}
+
+KOTLIN_STDLIB_COORDS = {
+    'org.jetbrains.kotlin:kotlin-stdlib',
+    'org.jetbrains.kotlin:kotlin-stdlib-jdk7',
+    'org.jetbrains.kotlin:kotlin-stdlib-jdk8',
+    'org.jetbrains.kotlin:kotlin-stdlib-common',
+}
+
+PYTHON_TOOLING_PACKAGES = {
+    'mypy', 'pylint', 'flake8', 'black', 'bandit', 'pytest', 'coverage', 'ruff', 'isort'
+}
+
 def find_implementations(base_dir: Path) -> List[Path]:
     """Find all implementation directories."""
     implementations_dir = base_dir / 'implementations'
@@ -79,24 +95,39 @@ def check_required_files(impl_dir: Path) -> Tuple[List[str], List[str]]:
 def check_dockerfile_format(dockerfile_path: Path) -> List[str]:
     """Check Dockerfile format and requirements."""
     issues = []
+    impl_name = dockerfile_path.parent.name
+    expected_base = f"FROM ghcr.io/evaisse/tgac-{impl_name}-toolchain:latest"
     
     try:
         content = dockerfile_path.read_text()
+        lines = content.splitlines()
         
-        # Check for basic structure
-        if 'WORKDIR' not in content:
-            issues.append("Dockerfile should have a WORKDIR instruction")
-        
-        if 'COPY' not in content:
-            issues.append("Dockerfile should copy source files")
+        # Check for compact structure: MUST start with the specific toolchain image
+        if not lines or not lines[0].startswith(expected_base):
+            issues.append(f"Dockerfile MUST start with '{expected_base}'")
             
         # Check for essential labels
         if 'LABEL org.chess.language' not in content:
             issues.append("Dockerfile missing LABEL org.chess.language")
             
+        # Check for external downloads (prevention check)
+        if 'apt-get' in content or 'wget' in content or 'curl' in content:
+            issues.append("Dockerfile contains external download commands (apt-get, wget, curl). Move these to toolchain image.")
+
     except Exception as e:
         issues.append(f"Error reading Dockerfile: {e}")
     
+    return issues
+
+
+def check_toolchain_presence(impl_dir: Path) -> List[str]:
+    """Check for colocated toolchain definition."""
+    issues = []
+    toolchain_dockerfile = impl_dir / 'docker-images' / 'toolchain' / 'Dockerfile'
+    
+    if not toolchain_dockerfile.exists():
+        issues.append(f"Missing toolchain definition at {toolchain_dockerfile.relative_to(impl_dir.parent.parent)}")
+        
     return issues
 
 
@@ -217,6 +248,273 @@ def check_package_dependencies(impl_dir: Path, language: str) -> Dict[str, List[
     
     return result
 
+def check_stdlib_only(impl_dir: Path, language: str) -> Dict[str, List[str]]:
+    """Best-effort guardrail: ensure runtime deps stay in the standard library."""
+    result = {'errors': [], 'warnings': [], 'info': []}
+    lang = language.lower()
+
+    if lang in {'typescript', 'javascript', 'imba', 'rescript', 'elm'}:
+        package_json_path = impl_dir / 'package.json'
+        if not package_json_path.exists():
+            result['info'].append("No package.json found")
+            return result
+        try:
+            with open(package_json_path) as f:
+                package_data = json.load(f)
+            dependencies = package_data.get('dependencies', {}) or {}
+            dev_dependencies = package_data.get('devDependencies', {}) or {}
+            if dependencies:
+                result['errors'].append(f"Runtime dependencies found: {', '.join(sorted(dependencies.keys()))}")
+            if dev_dependencies:
+                result['warnings'].append(f"Dev dependencies present: {', '.join(sorted(dev_dependencies.keys()))}")
+        except Exception as e:
+            result['warnings'].append(f"Unable to parse package.json: {e}")
+        return result
+
+    if lang == 'python':
+        req_files = ['requirements.txt', 'requirements-dev.txt', 'requirements-dev.in']
+        found = False
+        for req_file in req_files:
+            req_path = impl_dir / req_file
+            if not req_path.exists():
+                continue
+            found = True
+            packages = []
+            for line in req_path.read_text().splitlines():
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                line = line.split(';', 1)[0].strip()
+                name = re.split(r'[<=>~! ]', line, maxsplit=1)[0].strip()
+                if name:
+                    packages.append(name)
+            if packages:
+                non_tooling = [p for p in packages if not (p in PYTHON_TOOLING_PACKAGES or p.startswith('types-'))]
+                if non_tooling:
+                    result['errors'].append(f"Non-tooling requirements found: {', '.join(sorted(non_tooling))}")
+                else:
+                    result['warnings'].append(f"Tooling requirements present in {req_file}: {', '.join(sorted(packages))}")
+        if not found:
+            result['info'].append("No requirements files found")
+        return result
+
+    if lang == 'ruby':
+        gemfile_path = impl_dir / 'Gemfile'
+        if not gemfile_path.exists():
+            result['info'].append("No Gemfile found")
+            return result
+        in_dev_group = False
+        runtime_gems = []
+        dev_gems = []
+        for line in gemfile_path.read_text().splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#'):
+                continue
+            if stripped.startswith('group ') and ('development' in stripped or 'test' in stripped):
+                in_dev_group = True
+                continue
+            if stripped == 'end':
+                in_dev_group = False
+                continue
+            match = re.search(r'gem\s+[\'"]([^\'"]+)[\'"]', stripped)
+            if match:
+                gem_name = match.group(1)
+                if in_dev_group:
+                    dev_gems.append(gem_name)
+                else:
+                    runtime_gems.append(gem_name)
+        if runtime_gems:
+            result['errors'].append(f"Runtime gems found: {', '.join(sorted(runtime_gems))}")
+        if dev_gems:
+            result['warnings'].append(f"Dev/test gems present: {', '.join(sorted(dev_gems))}")
+        return result
+
+    if lang == 'dart':
+        pubspec_path = impl_dir / 'pubspec.yaml'
+        if not pubspec_path.exists():
+            result['info'].append("No pubspec.yaml found")
+            return result
+        deps = []
+        dev_deps = []
+        current = None
+        for line in pubspec_path.read_text().splitlines():
+            raw = line.rstrip()
+            stripped = raw.strip()
+            if not stripped or stripped.startswith('#'):
+                continue
+            if not raw.startswith(' ') and stripped.endswith(':'):
+                key = stripped[:-1]
+                if key in {'dependencies', 'dev_dependencies'}:
+                    current = key
+                else:
+                    current = None
+                continue
+            if current and raw.startswith('  ') and ':' in stripped:
+                name = stripped.split(':', 1)[0].strip()
+                if current == 'dependencies':
+                    deps.append(name)
+                else:
+                    dev_deps.append(name)
+        deps = [d for d in deps if d != 'sdk']
+        if deps:
+            result['errors'].append(f"Dart dependencies found: {', '.join(sorted(deps))}")
+        if dev_deps:
+            result['warnings'].append(f"Dart dev_dependencies present: {', '.join(sorted(dev_deps))}")
+        return result
+
+    if lang == 'rust':
+        cargo_path = impl_dir / 'Cargo.toml'
+        if not cargo_path.exists():
+            result['info'].append("No Cargo.toml found")
+            return result
+        current = None
+        deps = {'dependencies': [], 'dev-dependencies': [], 'build-dependencies': []}
+        for line in cargo_path.read_text().splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#'):
+                continue
+            if stripped.startswith('[') and stripped.endswith(']'):
+                section = stripped.strip('[]')
+                current = section if section in deps else None
+                continue
+            if current and '=' in stripped:
+                name = stripped.split('=', 1)[0].strip()
+                if name:
+                    deps[current].append(name)
+        if deps['dependencies']:
+            result['errors'].append(f"Rust dependencies found: {', '.join(sorted(deps['dependencies']))}")
+        dev = deps['dev-dependencies'] + deps['build-dependencies']
+        if dev:
+            result['warnings'].append(f"Rust dev/build dependencies present: {', '.join(sorted(dev))}")
+        return result
+
+    if lang == 'go':
+        gomod_path = impl_dir / 'go.mod'
+        if not gomod_path.exists():
+            result['info'].append("No go.mod found")
+            return result
+        requires = []
+        in_block = False
+        for line in gomod_path.read_text().splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith('//'):
+                continue
+            if stripped.startswith('require ('):
+                in_block = True
+                continue
+            if in_block:
+                if stripped == ')':
+                    in_block = False
+                    continue
+                requires.append(stripped.split()[0])
+                continue
+            if stripped.startswith('require '):
+                requires.append(stripped[len('require '):].split()[0])
+        if requires:
+            result['errors'].append(f"Go module dependencies found: {', '.join(sorted(requires))}")
+        return result
+
+    if lang == 'php':
+        composer_path = impl_dir / 'composer.json'
+        if not composer_path.exists():
+            result['info'].append("No composer.json found")
+            return result
+        try:
+            with open(composer_path) as f:
+                data = json.load(f)
+            require = data.get('require', {}) or {}
+            require_dev = data.get('require-dev', {}) or {}
+            runtime = [k for k in require.keys() if k != 'php' and not k.startswith('ext-')]
+            if runtime:
+                result['errors'].append(f"Composer runtime dependencies found: {', '.join(sorted(runtime))}")
+            if require_dev:
+                result['warnings'].append(f"Composer dev dependencies present: {', '.join(sorted(require_dev.keys()))}")
+        except Exception as e:
+            result['warnings'].append(f"Unable to parse composer.json: {e}")
+        return result
+
+    if lang == 'kotlin':
+        gradle_paths = [impl_dir / 'build.gradle.kts', impl_dir / 'build.gradle']
+        gradle_path = next((p for p in gradle_paths if p.exists()), None)
+        if not gradle_path:
+            result['info'].append("No Gradle build file found")
+            return result
+        runtime = []
+        tests = []
+        in_block = False
+        brace_depth = 0
+        for line in gradle_path.read_text().splitlines():
+            stripped = line.strip()
+            if stripped.startswith('dependencies'):
+                if '{' in stripped:
+                    in_block = True
+                    brace_depth += stripped.count('{') - stripped.count('}')
+                continue
+            if in_block:
+                brace_depth += stripped.count('{') - stripped.count('}')
+                if brace_depth <= 0:
+                    in_block = False
+                    continue
+                if stripped.startswith(('implementation', 'api', 'compileOnly', 'runtimeOnly')):
+                    runtime.append(stripped)
+                elif stripped.startswith(('testImplementation', 'testCompileOnly', 'testRuntimeOnly')):
+                    tests.append(stripped)
+        filtered_runtime = []
+        for entry in runtime:
+            if any(coord in entry for coord in KOTLIN_STDLIB_COORDS) or 'kotlin("stdlib' in entry:
+                continue
+            filtered_runtime.append(entry)
+        if filtered_runtime:
+            result['errors'].append("Kotlin runtime dependencies found: " + "; ".join(filtered_runtime))
+        if tests:
+            result['warnings'].append("Kotlin test dependencies present: " + "; ".join(tests))
+        return result
+
+    if lang == 'swift':
+        package_path = impl_dir / 'Package.swift'
+        if not package_path.exists():
+            result['info'].append("No Package.swift found")
+            return result
+        packages = []
+        for line in package_path.read_text().splitlines():
+            stripped = line.strip()
+            if '.package(' in stripped:
+                packages.append(stripped)
+        if packages:
+            result['errors'].append("Swift package dependencies found: " + "; ".join(packages))
+        return result
+
+    if lang == 'haskell':
+        cabal_path = impl_dir / 'chess.cabal'
+        if not cabal_path.exists():
+            result['info'].append("No .cabal file found")
+            return result
+        deps = []
+        collecting = False
+        for line in cabal_path.read_text().splitlines():
+            if line.strip().startswith('build-depends:'):
+                collecting = True
+                rest = line.split(':', 1)[1]
+                deps.extend([d.strip() for d in rest.split(',') if d.strip()])
+                continue
+            if collecting:
+                if line.strip() == '' or not line.startswith(' '):
+                    collecting = False
+                    continue
+                deps.extend([d.strip() for d in line.split(',') if d.strip()])
+        packages = []
+        for dep in deps:
+            name = dep.split()[0].strip()
+            if name:
+                packages.append(name)
+        non_std = [p for p in packages if p not in HASKELL_STDLIB_PACKAGES]
+        if non_std:
+            result['errors'].append(f"Haskell dependencies found: {', '.join(sorted(set(non_std)))}")
+        return result
+
+    result['info'].append(f"No stdlib-only checks implemented for {language}")
+    return result
+
 def check_npm_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
     """Check NPM package.json for required scripts and dependencies."""
     result = {'errors': [], 'warnings': [], 'info': []}
@@ -288,6 +586,11 @@ def verify_implementation(impl_dir: Path) -> Dict:
     # Check required files
     found_files, missing_files = check_required_files(impl_dir)
     
+    # Check toolchain
+    toolchain_issues = check_toolchain_presence(impl_dir)
+    result['toolchain'] = {'issues': toolchain_issues}
+    result['summary']['errors'] += len(toolchain_issues)
+
     # Get metadata from Dockerfile labels
     metadata = get_metadata(str(impl_dir))
     
@@ -336,6 +639,13 @@ def verify_implementation(impl_dir: Path) -> Dict:
         result['summary']['warnings'] += len(dependency_result['warnings'])
         result['summary']['info'] += len(dependency_result['info'])
 
+        # Enforce stdlib-only rule (best-effort)
+        stdlib_result = check_stdlib_only(impl_dir, language)
+        result['stdlib_only'] = stdlib_result
+        result['summary']['errors'] += len(stdlib_result['errors'])
+        result['summary']['warnings'] += len(stdlib_result['warnings'])
+        result['summary']['info'] += len(stdlib_result['info'])
+
     # Determine overall status
     if result['summary']['errors'] == 0:
         if result['summary']['warnings'] == 0:
@@ -377,6 +687,11 @@ def print_implementation_report(result: Dict):
         for issue in result['dockerfile']['issues']:
             print(f"   - {issue}")
     
+    if result['toolchain'].get('issues'):
+        print("\n❌ Toolchain issues:")
+        for issue in result['toolchain']['issues']:
+            print(f"   - {issue}")
+    
     if result['makefile'].get('missing_targets'):
         print("\n❌ Missing Makefile targets:")
         for target in result['makefile']['missing_targets']:
@@ -396,6 +711,34 @@ def print_implementation_report(result: Dict):
     if meta.get('info'):
         print("\n📝 Metadata info:")
         for info in meta['info']:
+            print(f"   - {info}")
+
+    deps = result.get('dependencies', {})
+    if deps.get('errors'):
+        print("\n❌ Dependency check errors:")
+        for error in deps['errors']:
+            print(f"   - {error}")
+    if deps.get('warnings'):
+        print("\n⚠️  Dependency check warnings:")
+        for warning in deps['warnings']:
+            print(f"   - {warning}")
+    if deps.get('info'):
+        print("\n📝 Dependency check info:")
+        for info in deps['info']:
+            print(f"   - {info}")
+
+    stdlib_result = result.get('stdlib_only', {})
+    if stdlib_result.get('errors'):
+        print("\n❌ Standard library rule violations:")
+        for error in stdlib_result['errors']:
+            print(f"   - {error}")
+    if stdlib_result.get('warnings'):
+        print("\n⚠️  Standard library rule warnings:")
+        for warning in stdlib_result['warnings']:
+            print(f"   - {warning}")
+    if stdlib_result.get('info'):
+        print("\n📝 Standard library rule info:")
+        for info in stdlib_result['info']:
             print(f"   - {info}")
 
 def print_summary_report(results: List[Dict]):

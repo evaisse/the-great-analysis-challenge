@@ -26,7 +26,7 @@ pub const Piece = struct {
     }
 
     pub fn toChar(self: Piece) u8 {
-        const base_char = switch (self.piece_type) {
+        const base_char: u8 = switch (self.piece_type) {
             .Pawn => 'p',
             .Knight => 'n',
             .Bishop => 'b',
@@ -87,7 +87,7 @@ pub const Board = struct {
             .halfmove_clock = 0,
             .fullmove_number = 1,
         };
-        
+
         board.setupStartingPosition();
         return board;
     }
@@ -125,52 +125,53 @@ pub const Board = struct {
     }
 
     pub fn display(self: *Board, writer: anytype) !void {
-        try writer.print("  a b c d e f g h\n");
-        
+        try writer.print("  a b c d e f g h\n", .{});
+
         var rank: i8 = 7;
         while (rank >= 0) : (rank -= 1) {
             try writer.print("{} ", .{rank + 1});
-            
+
             var file: u8 = 0;
             while (file < 8) : (file += 1) {
                 const square = @as(u8, @intCast(rank)) * 8 + file;
                 if (self.squares[square]) |piece| {
                     try writer.print("{c} ", .{piece.toChar()});
                 } else {
-                    try writer.print(". ");
+                    try writer.print(". ", .{});
                 }
             }
-            
+
             try writer.print("{}\n", .{rank + 1});
         }
-        
-        try writer.print("  a b c d e f g h\n\n");
-        
+
+        try writer.print("  a b c d e f g h\n\n", .{});
+
         if (self.white_to_move) {
-            try writer.print("White to move\n");
+            try writer.print("White to move\n", .{});
         } else {
-            try writer.print("Black to move\n");
+            try writer.print("Black to move\n", .{});
         }
     }
 
     pub fn makeMove(self: *Board, move: Move) !void {
         const from_piece = self.squares[move.from] orelse return error.NoPieceAtSource;
-        
+
         // Validate that it's the correct color's turn
         if ((self.white_to_move and from_piece.color != .White) or
-            (!self.white_to_move and from_piece.color != .Black)) {
+            (!self.white_to_move and from_piece.color != .Black))
+        {
             return error.WrongColorPiece;
         }
-        
+
         // Basic move validation would go here
         if (!self.isMoveLegal(move)) {
             return error.IllegalMove;
         }
-        
+
         // Store captured piece for undo
         var updated_move = move;
         updated_move.captured_piece = self.squares[move.to];
-        
+
         // Handle special moves
         if (from_piece.piece_type == .King) {
             // Handle castling
@@ -195,7 +196,7 @@ pub const Board = struct {
                 self.squares[59] = Piece.init(.Rook, .Black);
                 updated_move.castle_queen_side = true;
             }
-            
+
             // Update castling rights
             if (from_piece.color == .White) {
                 self.castling_rights.white_king_side = false;
@@ -205,7 +206,7 @@ pub const Board = struct {
                 self.castling_rights.black_queen_side = false;
             }
         }
-        
+
         // Handle en passant
         if (from_piece.piece_type == .Pawn and self.en_passant_target == move.to) {
             updated_move.en_passant = true;
@@ -215,7 +216,7 @@ pub const Board = struct {
                 self.squares[move.to + 8] = null; // Remove white pawn
             }
         }
-        
+
         // Update en passant target for next move
         self.en_passant_target = null;
         if (from_piece.piece_type == .Pawn) {
@@ -225,17 +226,17 @@ pub const Board = struct {
                 self.en_passant_target = move.from - 8;
             }
         }
-        
+
         // Make the move
         self.squares[move.from] = null;
-        
+
         // Handle promotion
         if (move.promotion_piece) |promotion| {
             self.squares[move.to] = Piece.init(promotion, from_piece.color);
         } else {
             self.squares[move.to] = from_piece;
         }
-        
+
         // Update castling rights for rook moves
         if (from_piece.piece_type == .Rook) {
             if (move.from == 0) self.castling_rights.white_queen_side = false;
@@ -243,18 +244,18 @@ pub const Board = struct {
             if (move.from == 56) self.castling_rights.black_queen_side = false;
             if (move.from == 63) self.castling_rights.black_king_side = false;
         }
-        
+
         // Update move counters
         if (from_piece.piece_type == .Pawn or updated_move.captured_piece != null) {
             self.halfmove_clock = 0;
         } else {
             self.halfmove_clock += 1;
         }
-        
+
         if (!self.white_to_move) {
             self.fullmove_number += 1;
         }
-        
+
         self.white_to_move = !self.white_to_move;
     }
 
@@ -265,10 +266,10 @@ pub const Board = struct {
             Piece.init(.Pawn, moved_piece.color)
         else
             moved_piece;
-        
+
         // Restore captured piece
         self.squares[move.to] = move.captured_piece;
-        
+
         // Handle special move reversals
         if (move.castle_king_side) {
             if (moved_piece.color == .White) {
@@ -287,7 +288,7 @@ pub const Board = struct {
                 self.squares[59] = null;
             }
         }
-        
+
         // Handle en passant reversal
         if (move.en_passant) {
             if (moved_piece.color == .White) {
@@ -296,13 +297,13 @@ pub const Board = struct {
                 self.squares[move.to + 8] = Piece.init(.Pawn, .White);
             }
         }
-        
+
         // Restore en passant target
         self.en_passant_target = move.en_passant_target;
-        
+
         // Switch turn back
         self.white_to_move = !self.white_to_move;
-        
+
         // Note: For full undo support, we'd need to store and restore
         // castling rights, halfmove clock, and fullmove number
     }
@@ -310,12 +311,12 @@ pub const Board = struct {
     pub fn isMoveLegal(self: *Board, move: Move) bool {
         // Basic validation - detailed implementation would check all chess rules
         const from_piece = self.squares[move.from] orelse return false;
-        
+
         // Can't capture your own piece
         if (self.squares[move.to]) |to_piece| {
             if (from_piece.color == to_piece.color) return false;
         }
-        
+
         // Basic piece movement validation would go here
         // For now, we'll do minimal validation
         return true;
@@ -332,9 +333,9 @@ pub const Board = struct {
                 }
             }
         }
-        
+
         const king_square = king_pos orelse return false;
-        
+
         // Check if any enemy piece attacks the king
         for (self.squares, 0..) |piece, i| {
             if (piece) |p| {
@@ -345,7 +346,7 @@ pub const Board = struct {
                 }
             }
         }
-        
+
         return false;
     }
 
@@ -355,34 +356,34 @@ pub const Board = struct {
         const from_rank = from / 8;
         const to_file = to % 8;
         const to_rank = to / 8;
-        
+
         switch (piece.piece_type) {
             .Pawn => {
                 const direction: i8 = if (piece.color == .White) 1 else -1;
                 const attack_rank = @as(i8, @intCast(from_rank)) + direction;
-                
+
                 if (attack_rank == to_rank) {
                     return (from_file > 0 and to_file == from_file - 1) or
-                           (from_file < 7 and to_file == from_file + 1);
+                        (from_file < 7 and to_file == from_file + 1);
                 }
                 return false;
             },
             .Knight => {
                 const file_diff = @as(i8, @intCast(to_file)) - @as(i8, @intCast(from_file));
                 const rank_diff = @as(i8, @intCast(to_rank)) - @as(i8, @intCast(from_rank));
-                
+
                 return (file_diff == 2 and (rank_diff == 1 or rank_diff == -1)) or
-                       (file_diff == -2 and (rank_diff == 1 or rank_diff == -1)) or
-                       (rank_diff == 2 and (file_diff == 1 or file_diff == -1)) or
-                       (rank_diff == -2 and (file_diff == 1 or file_diff == -1));
+                    (file_diff == -2 and (rank_diff == 1 or rank_diff == -1)) or
+                    (rank_diff == 2 and (file_diff == 1 or file_diff == -1)) or
+                    (rank_diff == -2 and (file_diff == 1 or file_diff == -1));
             },
             .King => {
                 const file_diff = @as(i8, @intCast(to_file)) - @as(i8, @intCast(from_file));
                 const rank_diff = @as(i8, @intCast(to_rank)) - @as(i8, @intCast(from_rank));
-                
+
                 return (file_diff >= -1 and file_diff <= 1) and
-                       (rank_diff >= -1 and rank_diff <= 1) and
-                       (file_diff != 0 or rank_diff != 0);
+                    (rank_diff >= -1 and rank_diff <= 1) and
+                    (file_diff != 0 or rank_diff != 0);
             },
             else => {
                 // For bishop, rook, queen - simplified implementation
@@ -395,7 +396,7 @@ pub const Board = struct {
         if (!self.isInCheck(if (self.white_to_move) .White else .Black)) {
             return false;
         }
-        
+
         // Check if any legal move exists
         // Simplified - would need full move generation
         return false; // Placeholder
@@ -405,7 +406,7 @@ pub const Board = struct {
         if (self.isInCheck(if (self.white_to_move) .White else .Black)) {
             return false;
         }
-        
+
         // Check if any legal move exists
         // Simplified - would need full move generation
         return false; // Placeholder
