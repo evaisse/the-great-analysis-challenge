@@ -40,12 +40,24 @@ class Zobrist {
   int getPieceIndex(Piece piece) {
     int idx = 0;
     switch (piece.type) {
-      case PieceType.pawn: idx = 0; break;
-      case PieceType.knight: idx = 1; break;
-      case PieceType.bishop: idx = 2; break;
-      case PieceType.rook: idx = 3; break;
-      case PieceType.queen: idx = 4; break;
-      case PieceType.king: idx = 5; break;
+      case PieceType.pawn:
+        idx = 0;
+        break;
+      case PieceType.knight:
+        idx = 1;
+        break;
+      case PieceType.bishop:
+        idx = 2;
+        break;
+      case PieceType.rook:
+        idx = 3;
+        break;
+      case PieceType.queen:
+        idx = 4;
+        break;
+      case PieceType.king:
+        idx = 5;
+        break;
     }
     if (piece.color == PieceColor.black) {
       idx += 6;

@@ -5,12 +5,12 @@ class DrawDetection {
   static bool isDrawByRepetition(Board board) {
     final currentHash = board.zobristHash;
     int count = 1;
-    
+
     final history = board.positionHistory;
     final halfmoveClock = board.get_halfmoveClock_val();
-    
+
     final startIdx = max(0, history.length - halfmoveClock);
-    
+
     for (int i = history.length - 1; i >= startIdx; i--) {
       if (history[i] == currentHash) {
         count++;
@@ -19,7 +19,7 @@ class DrawDetection {
         }
       }
     }
-    
+
     return false;
   }
 

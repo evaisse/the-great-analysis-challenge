@@ -53,7 +53,8 @@ class AI {
 
     final moves = board.generateMoves();
     if (moves.isEmpty) {
-      final playerColor = board.turn == 'w' ? PieceColor.white : PieceColor.black;
+      final playerColor =
+          board.turn == 'w' ? PieceColor.white : PieceColor.black;
       if (board.isKingInCheck(playerColor)) {
         return maximizingPlayer ? -100000 : 100000;
       } else {
