@@ -37,7 +37,13 @@ struct Piece {
 struct Move: Equatable {
     let from: (Int, Int)
     let to: (Int, Int)
-    let promotionPiece: PieceType? = nil
+    let promotionPiece: PieceType?
+
+    init(from: (Int, Int), to: (Int, Int), promotionPiece: PieceType? = nil) {
+        self.from = from
+        self.to = to
+        self.promotionPiece = promotionPiece
+    }
 
     static func == (lhs: Move, rhs: Move) -> Bool {
         return lhs.from.0 == rhs.from.0 && lhs.from.1 == rhs.from.1 &&
@@ -109,7 +115,6 @@ struct Board {
         }
         return moves.filter { move in
             var boardCopy = self
-            let capturedPiece = boardCopy.pieces[move.to.0][move.to.1]
             boardCopy.makeMove(move)
             return !boardCopy.isInCheck(color: currentPlayer)
         }
@@ -382,33 +387,11 @@ struct Board {
         return !isInCheck(color: currentPlayer) && generateMoves().isEmpty
     }
 
-    mutating func makeMove(_ move: Move) {
-        let gameState = GameState(whiteKingSideCastle: whiteKingSideCastle, whiteQueenSideCastle: whiteQueenSideCastle, blackKingSideCastle: blackKingSideCastle, blackQueenSideCastle: blackQueenSideCastle, enPassantTarget: enPassantTarget)
-        history.append(gameState)
-}
-
-extension Board: CustomStringConvertible {
-    var description: String {
-        var result = "  a b c d e f g h\n"
-        for i in (0...7).reversed() {
-            result += "\(i + 1) "
-            for j in 0...7 {
-                if let piece = pieces[i][j] {
-                    result += "\(piece.character) "
-                } else {
-                    result += ". "
-                }
-            }
-            result += "\(i + 1)\n"
-        }
-        result += "  a b c d e f g h\n\n"
-        result += "\(currentPlayer == .white ? "White" : "Black") to move"
-        return result
-    }
-}
-
-        let piece = pieces[move.from.0][move.from.1]
-        // Handle castling
+        mutating func makeMove(_ move: Move) {
+            let gameState = GameState(whiteKingSideCastle: whiteKingSideCastle, whiteQueenSideCastle: whiteQueenSideCastle, blackKingSideCastle: blackKingSideCastle, blackQueenSideCastle: blackQueenSideCastle, enPassantTarget: enPassantTarget)
+            history.append(gameState)
+    
+            let piece = pieces[move.from.0][move.from.1]        // Handle castling
         if piece?.type == .king {
             if move.to.1 - move.from.1 == 2 { // Kingside
                 pieces[move.from.0][5] = pieces[move.from.0][7]
@@ -420,7 +403,7 @@ extension Board: CustomStringConvertible {
         }
 
         // Handle en passant
-        if piece?.type == .pawn && move.to == enPassantTarget {
+        if piece?.type == .pawn, let target = enPassantTarget, move.to == target {
             pieces[move.from.0][move.to.1] = nil
         }
 
@@ -636,6 +619,26 @@ extension Board: CustomStringConvertible {
     }
 }
 
+extension Board: CustomStringConvertible {
+    var description: String {
+        var result = "  a b c d e f g h\n"
+        for i in (0...7).reversed() {
+            result += "\(i + 1) "
+            for j in 0...7 {
+                if let piece = pieces[i][j] {
+                    result += "\(piece.character) "
+                } else {
+                    result += ". "
+                }
+            }
+            result += "\(i + 1)\n"
+        }
+        result += "  a b c d e f g h\n\n"
+        result += "\(currentPlayer == .white ? "White" : "Black") to move"
+        return result
+    }
+}
+
 func minimax(board: inout Board, depth: Int, alpha: inout Int, beta: inout Int, maximizingPlayer: Bool) -> Int {
     if depth == 0 {
         return board.evaluate()
@@ -782,11 +785,14 @@ func parseMove(_ moveString: String) -> Move? {
     let toRow = movePart[movePart.index(movePart.startIndex, offsetBy: 3)]
 
     guard let fromColIndex = "abcdefgh".firstIndex(of: Character(fromCol))?.utf16Offset(in: "abcdefgh"),
-          let fromRowIndex = Int(String(fromRow)) - 1,
+          let fromRowVal = Int(String(fromRow)),
           let toColIndex = "abcdefgh".firstIndex(of: Character(toCol))?.utf16Offset(in: "abcdefgh"),
-          let toRowIndex = Int(String(toRow)) - 1 else {
+          let toRowVal = Int(String(toRow)) else {
         return nil
     }
+
+    let fromRowIndex = fromRowVal - 1
+    let toRowIndex = toRowVal - 1
 
     var promotionPiece: PieceType?
     if let promotionChar = promotionChar {
