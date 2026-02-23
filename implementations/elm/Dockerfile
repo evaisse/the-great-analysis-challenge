@@ -1,24 +1,15 @@
 # Use official Node image
-FROM node:22-slim
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gzip \
-    make \
-    && rm -rf /var/lib/apt/lists/*
+FROM node:22-alpine
 
 WORKDIR /app
 
 # Create Elm wrapper for demo mode
 RUN mkdir -p /usr/local/bin \
-    && echo '#!/bin/bash' > /usr/local/bin/elm \
-    && echo 'if [[ "$1" == "--version" ]]; then echo "0.19.1 (demo mode)"; exit 0; fi' >> /usr/local/bin/elm \
-    && echo 'if [[ "$1" == "make" ]]; then' >> /usr/local/bin/elm \
+    && echo '#!/bin/sh' > /usr/local/bin/elm \
+    && echo 'if [ "$1" = "--version" ]; then echo "0.19.1 (demo mode)"; exit 0; fi' >> /usr/local/bin/elm \
+    && echo 'if [ "$1" = "make" ]; then' >> /usr/local/bin/elm \
     && echo '  for arg in "$@"; do' >> /usr/local/bin/elm \
-    && echo '    if [[ "$arg" == --output=* ]]; then' >> /usr/local/bin/elm \
-    && echo '      OUTPUT_FILE="${arg#--output=}"' >> /usr/local/bin/elm \
-    && echo '      break' >> /usr/local/bin/elm \
-    && echo '    fi' >> /usr/local/bin/elm \
+    && echo '    case "$arg" in --output=*) OUTPUT_FILE="${arg#--output=}"; break ;; esac' >> /usr/local/bin/elm \
     && echo '  done' >> /usr/local/bin/elm \
     && echo '  cat > "$OUTPUT_FILE" << '"'"'EOF'"'"'' >> /usr/local/bin/elm \
     && echo '// Elm Chess Engine Demo Module' >> /usr/local/bin/elm \

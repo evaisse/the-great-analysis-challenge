@@ -1,15 +1,5 @@
-# Use Ubuntu base image
-FROM ubuntu:24.04
-
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    openjdk-21-jdk \
-    kotlin \
-    make \
-    && rm -rf /var/lib/apt/lists/*
+# Use official Kotlin image
+FROM zenika/kotlin:1.9-jdk21
 
 # Set working directory
 WORKDIR /app
@@ -25,21 +15,12 @@ RUN mkdir -p build/classes build/libs && \
 CMD ["java", "-jar", "build/libs/chess-1.0.0.jar"]
 
 LABEL org.chess.language="kotlin"
-
 LABEL org.chess.version="1.9.10"
-
 LABEL org.chess.author="Kotlin Implementation"
-
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
-
 LABEL org.chess.max_ai_depth=5
-
 LABEL org.chess.estimated_perft4_ms=500
-
-LABEL org.chess.run="docker run --network none --rm -i chess-kotlin"
-
-LABEL org.chess.build="make docker-build"
-
-LABEL org.chess.test="make docker-test"
-
-LABEL org.chess.analyze="docker run --network none --rm chess-kotlin make analyze"
+LABEL org.chess.run="java -jar build/libs/chess-1.0.0.jar"
+LABEL org.chess.build="kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar"
+LABEL org.chess.test="java -jar build/libs/chess-1.0.0.jar --test"
+LABEL org.chess.analyze="kotlinc src/main/kotlin/*.kt"

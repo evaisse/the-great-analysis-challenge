@@ -80,16 +80,18 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
+	@$(MAKE) build DIR=$(DIR)
 	@RUN_CMD=$$(./scripts/get_metadata.py implementations/$(DIR) --field run); \
-	if [ -z "$$RUN_CMD" ]; then \
-		echo "WARNING: No run command found for '$(DIR)', using basic test"; \
-		$(MAKE) build DIR=$(DIR); \
-		docker run --rm --network none chess-$(DIR) sh -c "cd /app && make test || true"; \
-	else \
+	TEST_CMD=$$(./scripts/get_metadata.py implementations/$(DIR) --field test); \
+	if [ -n "$$RUN_CMD" ]; then \
 		echo "Testing $(DIR) implementation in Docker..."; \
-		$(MAKE) build DIR=$(DIR); \
 		docker run --rm --network none chess-$(DIR) sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | $$RUN_CMD"; \
+	fi; \
+	if [ -n "$$TEST_CMD" ]; then \
 		echo "Running internal tests for $(DIR) in Docker..."; \
+		docker run --rm --network none chess-$(DIR) sh -c "cd /app && $$TEST_CMD"; \
+	elif [ -f "implementations/$(DIR)/Makefile" ]; then \
+		echo "Running legacy internal tests for $(DIR) via make..."; \
 		docker run --rm --network none chess-$(DIR) make test; \
 	fi
 else
@@ -115,12 +117,16 @@ ifdef DIR
 		echo "ERROR: Implementation '$(DIR)' not found"; \
 		exit 1; \
 	fi
-	@echo "Analyzing $(DIR) implementation in Docker..."
 	@$(MAKE) build DIR=$(DIR)
-	@if [ -f "implementations/$(DIR)/Makefile" ]; then \
+	@ANALYZE_CMD=$$(./scripts/get_metadata.py implementations/$(DIR) --field analyze); \
+	if [ -n "$$ANALYZE_CMD" ]; then \
+		echo "Analyzing $(DIR) implementation in Docker..."; \
+		docker run --rm --network none chess-$(DIR) sh -c "cd /app && $$ANALYZE_CMD"; \
+	elif [ -f "implementations/$(DIR)/Makefile" ]; then \
+		echo "Analyzing $(DIR) implementation via legacy make..."; \
 		docker run --rm --network none chess-$(DIR) make analyze; \
 	else \
-		echo "No Makefile found in $(DIR), skipping analysis"; \
+		echo "No analysis command found for $(DIR), skipping"; \
 	fi
 else
 	@echo "Running static analysis for all implementations..."
