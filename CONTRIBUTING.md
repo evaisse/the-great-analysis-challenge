@@ -96,6 +96,9 @@ Improve test coverage and test infrastructure.
 ### Prerequisites
 
 - **Docker**: **MANDATORY.** All builds, tests, and static analysis MUST run in Docker containers. No other toolchains should be used for implementation-related tasks.
+  - **NO EXTERNAL DOWNLOADS**: Dockerfiles MUST NOT download external files, binaries, or toolchains (e.g., via `curl`, `wget`, or `git clone` for tools).
+  - **Exception**: Standard language package managers (e.g., `npm install`, `cargo`, `pip`, `go get`) and system package managers (`apt-get`) are allowed for dependencies.
+  - **Requirement**: Prefer using official Docker base images that already contain the necessary toolchain.
 - **Git**: Version control
 - **Make**: Build automation (used to trigger Docker commands)
 
@@ -202,7 +205,7 @@ Follow these steps to add a new language implementation:
 
    docker-test: docker-build
        # Replace <run_command> with your language's executable, e.g. 'python main.py', './chess', etc.
-       docker run --rm -i chess-$(shell basename $(PWD)) sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | <run_command>"
+       docker run --rm --network none -i chess-$(shell basename $(PWD)) sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | <run_command>"
    ```
 
    **`README.md`** - Implementation documentation (see existing implementations for template)
@@ -248,13 +251,13 @@ Implement the chess engine components in this order:
    make docker-build
 
    # Basic test
-   echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | docker run -i chess-<language>
+   echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | docker run --network none -i chess-<language>
 
    # AI test
-   echo -e "new\nai 3\nquit" | docker run -i chess-<language>
+   echo -e "new\nai 3\nquit" | docker run --network none -i chess-<language>
 
    # Perft test (should return 197281)
-   echo -e "new\nperft 4\nquit" | docker run -i chess-<language>
+   echo -e "new\nperft 4\nquit" | docker run --network none -i chess-<language>
    ```
 
 2. **Run automated tests:**

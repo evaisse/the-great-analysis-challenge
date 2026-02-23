@@ -36,7 +36,7 @@ nim compile --opt:speed chess.nim
 ### Docker
 ```bash
 docker build -t chess-nim .
-docker run -it chess-nim
+docker run --network none -it chess-nim
 ```
 
 ## Testing

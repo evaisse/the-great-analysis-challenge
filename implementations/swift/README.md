@@ -45,7 +45,7 @@ docker build -t chess-engine .
 
 ### Run interactively
 ```bash
-docker run -it chess-engine
+docker run --network none -it chess-engine
 ```
 
 ### Using Docker Compose
@@ -60,10 +60,10 @@ docker-compose run chess-dev
 ### Example Docker commands
 ```bash
 # Quick game
-echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run -i chess-engine
+echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run --network none -i chess-engine
 
 # Interactive play
-docker run -it chess-engine
+docker run --network none -it chess-engine
 
 # Build and run in one command
 docker-compose up --build chess-engine

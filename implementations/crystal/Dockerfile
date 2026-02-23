@@ -29,6 +29,6 @@ LABEL org.chess.estimated_perft4_ms=800
 LABEL org.chess.build="make docker-build"
 LABEL org.chess.run="./chess_engine"
 LABEL org.chess.test="make docker-test"
-LABEL org.chess.analyze="docker run --rm chess-crystal make analyze"
+LABEL org.chess.analyze="docker run --network none --rm chess-crystal make analyze"
 
 CMD ["./chess_engine"]

@@ -72,7 +72,7 @@ make docker-build
 make docker-test
 
 # Run interactively
-docker run -it chess-php
+docker run --network none -it chess-php
 ```
 
 ## Project Structure

@@ -30,7 +30,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing ReScript implementation in Docker..."
-	docker run --rm -i chess-rescript sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | node lib/es6/src/Chess.js"
+	docker run --network none --rm -i chess-rescript sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | node lib/es6/src/Chess.js"
 
 # Help target
 help:

@@ -283,7 +283,7 @@ class ChessEngine {
     }
     
     private function handle_hash(): void {
-        echo "Hash: " . str_pad(gmp_strval($this->board->zobrist_hash, 16), 16, "0", STR_PAD_LEFT) . "\n";
+        echo "Hash: " . sprintf('%016x', $this->board->zobrist_hash) . "\n";
     }
 
     private function handle_draws(): void {
@@ -298,9 +298,9 @@ class ChessEngine {
     private function handle_history(): void {
         echo "Position History (" . (count($this->board->position_history) + 1) . " positions):\n";
         foreach ($this->board->position_history as $i => $h) {
-            echo "  $i: " . str_pad(gmp_strval($h, 16), 16, "0", STR_PAD_LEFT) . "\n";
+            echo "  $i: " . sprintf('%016x', $h) . "\n";
         }
-        echo "  " . count($this->board->position_history) . ": " . str_pad(gmp_strval($this->board->zobrist_hash, 16), 16, "0", STR_PAD_LEFT) . " (current)\n";
+        echo "  " . count($this->board->position_history) . ": " . sprintf('%016x', $this->board->zobrist_hash) . " (current)\n";
     }
 
     private function handle_status(): void {

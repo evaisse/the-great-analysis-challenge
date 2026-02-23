@@ -14,7 +14,7 @@ class DrawDetection {
         $start_idx = max(0, $history_len - $halfmove_clock);
         
         for ($i = $history_len - 1; $i >= $start_idx; $i--) {
-            if (gmp_cmp($history[$i], $current_hash) === 0) {
+            if ($history[$i] === $current_hash) {
                 $count++;
                 if ($count >= 3) {
                     return true;

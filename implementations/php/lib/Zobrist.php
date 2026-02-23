@@ -6,7 +6,7 @@ require_once __DIR__ . '/constants.php';
 
 class Zobrist {
     public array $pieces;
-    public \GMP $side_to_move;
+    public int $side_to_move;
     public array $castling;
     public array $en_passant;
 
@@ -24,16 +24,16 @@ class Zobrist {
         $this->castling = array_fill(0, 4, null);
         $this->en_passant = array_fill(0, 8, null);
 
-        $state = gmp_init("0x123456789ABCDEF0");
-        $mask64 = gmp_init("0xFFFFFFFFFFFFFFFF");
+        $state = 0x123456789ABCDEF0;
 
-        $next_rand = function() use (&$state, $mask64) {
+        $next_rand = function() use (&$state) {
             // state ^= state << 13
-            $state = gmp_xor($state, gmp_and(gmp_mul($state, gmp_pow(2, 13)), $mask64));
+            $state ^= ($state << 13);
             // state ^= state >> 7
-            $state = gmp_xor($state, gmp_div($state, gmp_pow(2, 7)));
+            // Need to handle logical vs arithmetic shift if needed, but for Zobrist bits it's fine
+            $state ^= ($state >> 7) & 0x01FFFFFFFFFFFFFF;
             // state ^= state << 17
-            $state = gmp_xor($state, gmp_and(gmp_mul($state, gmp_pow(2, 17)), $mask64));
+            $state ^= ($state << 17);
             return $state;
         };
 
@@ -70,8 +70,8 @@ class Zobrist {
         return $idx;
     }
 
-    public function compute_hash($board): \GMP {
-        $hash = gmp_init(0);
+    public function compute_hash($board): int {
+        $hash = 0;
         
         for ($row = 0; $row < 8; $row++) {
             for ($col = 0; $col < 8; $col++) {
@@ -79,24 +79,24 @@ class Zobrist {
                 if ($piece !== CHESS_EMPTY) {
                     $square = (7 - $row) * 8 + $col; // a1=0
                     $idx = $this->get_piece_index($piece, $color);
-                    $hash = gmp_xor($hash, $this->pieces[$idx][$square]);
+                    $hash ^= $this->pieces[$idx][$square];
                 }
             }
         }
 
         if ($board->current_player === CHESS_BLACK) {
-            $hash = gmp_xor($hash, $this->side_to_move);
+            $hash ^= $this->side_to_move;
         }
 
         $rights = $board->castling_rights;
-        if ($rights->white_kingside) $hash = gmp_xor($hash, $this->castling[0]);
-        if ($rights->white_queenside) $hash = gmp_xor($hash, $this->castling[1]);
-        if ($rights->black_kingside) $hash = gmp_xor($hash, $this->castling[2]);
-        if ($rights->black_queenside) $hash = gmp_xor($hash, $this->castling[3]);
+        if ($rights->white_kingside) $hash ^= $this->castling[0];
+        if ($rights->white_queenside) $hash ^= $this->castling[1];
+        if ($rights->black_kingside) $hash ^= $this->castling[2];
+        if ($rights->black_queenside) $hash ^= $this->castling[3];
 
         $ep = $board->en_passant_target;
         if ($ep !== null) {
-            $hash = gmp_xor($hash, $this->en_passant[$ep[1]]);
+            $hash ^= $this->en_passant[$ep[1]];
         }
 
         return $hash;

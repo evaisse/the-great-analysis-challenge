@@ -30,7 +30,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Ruby implementation in Docker..."
-	docker run --rm -i chess-ruby sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ruby chess.rb"
+	docker run --network none --rm -i chess-ruby sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ruby chess.rb"
 
 # Help target
 help:

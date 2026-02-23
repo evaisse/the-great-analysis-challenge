@@ -28,6 +28,9 @@
 2. **Docker-Mandatory**: ALL operations for language implementations (build, test, lint, format, validate) MUST run inside Docker containers.
    - **DO NOT** use local toolchains (e.g., local `python`, `cargo`, `go`, `npm`) to modify or verify implementations.
    - **ALWAYS** use `make build DIR=<lang>`, `make test DIR=<lang>`, and `make analyze DIR=<lang>` from the project root.
+   - **NO EXTERNAL DOWNLOADS**: Dockerfiles MUST NOT download external files, binaries, or toolchains (e.g., via `curl`, `wget`, or `git clone` for tools).
+     - **Exception**: Standard language package managers (e.g., `npm install`, `cargo`, `pip`, `go get`) and system package managers (`apt-get`) are allowed for dependencies.
+     - **Requirement**: Prefer using official Docker base images that already contain the necessary toolchain to build and run the engine.
    - This ensures a consistent environment and avoids "it works on my machine" issues.
 3. **Standardized I/O**: Command-line interface via stdin/stdout with defined protocol
 4. **Consistent Testing**: Pass automated test suite defined in `test/test_suite.json`
@@ -125,13 +128,13 @@
    docker build -t chess-<language> .
 
    # Basic test
-   echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | docker run -i chess-<language>
+   echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | docker run --network none -i chess-<language>
 
    # AI test
-   echo -e "new\nai 3\nquit" | docker run -i chess-<language>
+   echo -e "new\nai 3\nquit" | docker run --network none -i chess-<language>
 
    # Perft test
-   echo -e "new\nperft 4\nquit" | docker run -i chess-<language>
+   echo -e "new\nperft 4\nquit" | docker run --network none -i chess-<language>
    ```
 
 6. **Verify Test Suite Compliance**
@@ -259,7 +262,7 @@ All implementations must pass tests in `test/test_suite.json`:
 Test interactively:
 
 ```bash
-docker run -it chess-<language>
+docker run --network none -it chess-<language>
 
 # In the chess engine:
 > help
@@ -278,10 +281,10 @@ docker run -it chess-<language>
 time make build-<language>
 
 # Perft benchmark
-echo -e "new\nperft 4\nquit" | time docker run -i chess-<language>
+echo -e "new\nperft 4\nquit" | time docker run --network none -i chess-<language>
 
 # AI performance
-echo -e "new\nai 5\nquit" | time docker run -i chess-<language>
+echo -e "new\nai 5\nquit" | time docker run --network none -i chess-<language>
 ```
 
 ## Integration Checklist

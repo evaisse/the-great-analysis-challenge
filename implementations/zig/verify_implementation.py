@@ -119,7 +119,7 @@ def verify_zig_implementation():
         print("   1. Install Zig compiler (zig version 0.13.0 or later)")
         print("   2. Run: cd zig && zig build")
         print("   3. Test: cd zig && zig run src/main.zig")
-        print("   4. Docker: docker build -t chess-zig . && docker run -it chess-zig")
+        print("   4. Docker: docker build -t chess-zig . && docker run --network none -it chess-zig")
     else:
         print("\n❌ Implementation verification failed. Please fix the issues above.")
     

@@ -44,10 +44,10 @@ bundle exec rubocop
 docker build -t chess-ruby .
 
 # Run the chess engine
-docker run -it chess-ruby
+docker run --network none -it chess-ruby
 
 # Run static analysis
-docker run --rm chess-ruby bundle exec rubocop
+docker run --network none --rm chess-ruby bundle exec rubocop
 ```
 
 ## 🎮 **Usage**

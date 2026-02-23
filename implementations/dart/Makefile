@@ -32,7 +32,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Dart implementation in Docker..."
-	docker run --rm -i chess-dart sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ./bin/chess_engine"
+	docker run --network none --rm -i chess-dart sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ./bin/chess_engine"
 
 # Help target
 help:

@@ -22,8 +22,13 @@ This document provides essential guidelines for implementing a chess engine acco
 All implementations MUST be developed and verified using Docker. This project enforces a "zero-local-toolchain" policy for implementations:
 
 - **Builds** happen during `docker build`.
-- **Tests** run via `docker run` (triggered by `make test DIR=<lang>`).
-- **Analysis/Linting** runs via `docker run` (triggered by `make analyze DIR=<lang>`).
+- **Tests** run via `docker run --network none` (triggered by `make test DIR=<lang>`).
+- **Analysis/Linting** runs via `docker run --network none` (triggered by `make analyze DIR=<lang>`).
+
+**NO EXTERNAL DOWNLOADS**: Dockerfiles MUST NOT download external files, binaries, or toolchains (e.g., via `curl`, `wget`, or `git clone` for tools). 
+- **Exception**: Standard language package managers (e.g., `npm install`, `cargo`, `pip`, `go get`) and system package managers (`apt-get`) are allowed for dependencies.
+- **Requirement**: Prefer using official Docker base images that already contain the necessary toolchain to build and run the engine.
+- This ensures a consistent environment and avoids "it works on my machine" issues.
 
 ### 2. Project Structure
 ```
@@ -76,7 +81,7 @@ docker-build:
 	docker build -t chess-$(shell basename $(PWD)) .
 
 docker-test: docker-build
-	docker run --rm -i chess-$(shell basename $(PWD)) sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | <run_command>"
+	docker run --rm --network none -i chess-$(shell basename $(PWD)) sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | <run_command>"
 ```
 
 ### 3. Essential Commands
@@ -261,10 +266,10 @@ Before submitting, ensure your implementation:
 docker build -t chess-<language> -f <language>/Dockerfile <language>
 
 # Test basic moves
-echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | docker run -i chess-<language>
+echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | docker run --network none -i chess-<language>
 
 # Test AI
-echo -e "new\nai 3\nquit" | docker run -i chess-<language>
+echo -e "new\nai 3\nquit" | docker run --network none -i chess-<language>
 
 # Use Makefile
 make test-<language>

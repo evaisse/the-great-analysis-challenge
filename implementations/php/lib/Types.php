@@ -15,6 +15,7 @@ class Move {
     public ?int $promotion;
     public bool $is_castling;
     public bool $is_en_passant;
+    public ?array $captured_piece = null;
     
     public function __construct(
         int $from_row,
@@ -72,9 +73,9 @@ class IrreversibleState {
     public CastlingRights $castling_rights;
     public ?array $en_passant_target;
     public int $halfmove_clock;
-    public \GMP $zobrist_hash;
+    public int $zobrist_hash;
 
-    public function __construct(CastlingRights $cr, ?array $ep, int $hc, \GMP $zh) {
+    public function __construct(CastlingRights $cr, ?array $ep, int $hc, int $zh) {
         $this->castling_rights = $cr;
         $this->en_passant_target = $ep;
         $this->halfmove_clock = $hc;
@@ -87,11 +88,11 @@ class GameState {
     public ?array $en_passant_target;
     public int $halfmove_clock;
     public int $fullmove_number;
-    public \GMP $zobrist_hash;
+    public int $zobrist_hash;
     public array $position_history;
     public array $irreversible_history;
 
-    public function __construct(CastlingRights $cr, ?array $ep, int $hc, int $fn, \GMP $zh, array $ph, array $ih) {
+    public function __construct(CastlingRights $cr, ?array $ep, int $hc, int $fn, int $zh, array $ph, array $ih) {
         $this->castling_rights = $cr;
         $this->en_passant_target = $ep;
         $this->halfmove_clock = $hc;

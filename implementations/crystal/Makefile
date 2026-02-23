@@ -35,7 +35,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Crystal implementation in Docker..."
-	docker run --rm -i chess-crystal sh -c "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | ./chess_engine"
+	docker run --network none --rm -i chess-crystal sh -c "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | ./chess_engine"
 
 # Help target
 help:

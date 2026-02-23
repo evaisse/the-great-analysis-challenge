@@ -1,5 +1,5 @@
 # Use official Haskell image
-FROM haskell:9.6
+FROM haskell:9.6 AS builder
 
 WORKDIR /app
 
@@ -7,10 +7,23 @@ WORKDIR /app
 COPY chess.cabal ./
 COPY src/ src/
 
-# Install dependencies and build
+# Update and build
 RUN cabal update && cabal build
 
-# Run the chess engine
+# Find the binary and move it to a predictable location
+RUN find dist-newstyle -name chess -type f -exec cp {} /app/chess_engine \;
+
+# Final stage
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# We remove libgmp10 from here as requested.
+# If the binary requires it, it will fail at runtime, 
+# signalling that a native-bignum GHC build is required.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/chess_engine ./
 
 LABEL org.chess.language="haskell"
 LABEL org.chess.version="9.0"
@@ -18,9 +31,9 @@ LABEL org.chess.author="Haskell Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1000
-LABEL org.chess.run="./chess"
+LABEL org.chess.run="./chess_engine"
 LABEL org.chess.build="cabal build"
 LABEL org.chess.test="cabal test"
 LABEL org.chess.analyze="hlint . && cabal check"
 
-CMD ["cabal", "run", "chess"]
+CMD ["./chess_engine"]

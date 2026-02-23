@@ -27,7 +27,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Lua implementation in Docker..."
-	docker run --rm -i chess-lua sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | lua5.4 chess.lua"
+	docker run --network none --rm -i chess-lua sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | lua5.4 chess.lua"
 
 # Help target
 help:

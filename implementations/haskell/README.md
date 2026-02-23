@@ -43,7 +43,7 @@ cabal run chess
 
 ```bash
 docker build -t chess-haskell .
-docker run -it chess-haskell
+docker run --network none -it chess-haskell
 ```
 
 ## Architecture

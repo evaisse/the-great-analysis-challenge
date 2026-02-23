@@ -49,7 +49,7 @@ make docker-test
 Run interactively:
 
 ```bash
-docker run -it chess-lua
+docker run --network none -it chess-lua
 ```
 
 ### Local Development

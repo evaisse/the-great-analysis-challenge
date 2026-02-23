@@ -24,4 +24,4 @@ docker-build:
 	docker build -t chess-imba .
 
 docker-test: docker-build
-	docker run --rm -i chess-imba sh -c "echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | node dist/chess.js"
+	docker run --network none --rm -i chess-imba sh -c "echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | node dist/chess.js"

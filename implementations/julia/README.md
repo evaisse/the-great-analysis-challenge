@@ -22,7 +22,7 @@ julia chess.jl
 
 ```bash
 docker build -t chess-julia .
-docker run -it chess-julia
+docker run --network none -it chess-julia
 ```
 
 ## Commands

@@ -35,7 +35,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Python implementation in Docker..."
-	docker run --rm -i chess-python sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | python3 chess.py"
+	docker run --network none --rm --network none -i chess-python sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | python3 chess.py"
 
 # Help target
 help:

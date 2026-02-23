@@ -20,7 +20,7 @@ python3 chess.py
 
 # Run with Docker
 docker build -t chess-python .
-docker run -it chess-python
+docker run --network none -it chess-python
 
 # Run static analysis
 python3 analyze.py
@@ -96,13 +96,13 @@ EOF
 docker build -t chess-python .
 
 # Run chess engine
-docker run -it chess-python
+docker run --network none -it chess-python
 
 # Run static analysis
-docker run --rm chess-python ./analyze
+docker run --network none --rm chess-python ./analyze
 
 # Run specific analysis tool
-docker run --rm chess-python python3 -m mypy .
+docker run --network none --rm chess-python python3 -m mypy .
 ```
 
 ## Compliance

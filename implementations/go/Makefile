@@ -32,7 +32,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Go implementation in Docker..."
-	docker run --rm -i chess-go sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ./chess"
+	docker run --network none --rm -i chess-go sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | ./chess"
 
 # Help target
 help:
