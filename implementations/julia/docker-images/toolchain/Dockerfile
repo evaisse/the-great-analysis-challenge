@@ -1,1 +1,2 @@
-FROM jfrog.int.bourso.net/web-v-docker/julia:1.11-bookworm\nWORKDIR /app
+FROM julia:1.11-bookworm
+WORKDIR /app
