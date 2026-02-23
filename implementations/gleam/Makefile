@@ -30,7 +30,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Gleam implementation in Docker..."
-	docker run --rm -i chess-gleam sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | gleam run"
+	docker run --network none --rm -i chess-gleam sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | gleam run"
 
 # Help target
 help:

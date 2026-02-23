@@ -1,5 +1,6 @@
 // Core chess types and data structures
 
+import gleam/option.{type Option, None, Some}
 import gleam/string
 import gleam/int
 
@@ -110,7 +111,7 @@ pub fn char_to_piece(char: String) -> Option(Piece) {
     "P" -> Ok(Pawn)
     _ -> Error(Nil)
   }
-  
+
   case piece_type {
     Ok(pt) -> {
       let color = case char == upper_char {
@@ -159,7 +160,12 @@ pub fn algebraic_to_square(algebraic: String) -> Result(Square, Nil) {
             _ -> Error(Nil)
           }
           let rank = case int.parse(rank_char) {
-            Ok(r) if r >= 1 && r <= 8 -> Ok(r - 1)
+            Ok(r) -> {
+              case r >= 1 && r <= 8 {
+                True -> Ok(r - 1)
+                False -> Error(Nil)
+              }
+            }
             _ -> Error(Nil)
           }
           case file, rank {

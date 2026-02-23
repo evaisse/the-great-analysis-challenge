@@ -1,43 +1,16 @@
-FROM ubuntu:24.04
-
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies and Erlang from Ubuntu repositories
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    ca-certificates \
-    build-essential \
-    erlang \
-    erlang-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Gleam
-RUN GLEAM_VERSION="1.3.1" \
-    && case "$(uname -m)" in \
-        x86_64) ARCH="x86_64-unknown-linux-musl" ;; \
-        aarch64|arm64) ARCH="aarch64-unknown-linux-musl" ;; \
-        *) echo "Unsupported architecture" && exit 1 ;; \
-    esac \
-    && wget "https://github.com/gleam-lang/gleam/releases/download/v${GLEAM_VERSION}/gleam-v${GLEAM_VERSION}-${ARCH}.tar.gz" \
-    && tar -xzf "gleam-v${GLEAM_VERSION}-${ARCH}.tar.gz" \
-    && mv gleam /usr/local/bin/ \
-    && rm "gleam-v${GLEAM_VERSION}-${ARCH}.tar.gz" \
-    && chmod +x /usr/local/bin/gleam
+# Use official Gleam image with Erlang
+FROM jfrog.int.bourso.net/web-v-docker/ghcr.io/gleam-lang/gleam:v1.3.1-erlang
 
 WORKDIR /app
 
-# Copy project files
+# Copy project files (deps are vendored via path dependencies)
 COPY . .
 
-# Download dependencies and build
-RUN gleam deps download && gleam build
-
-# Set the default command
+# Build (no network needed, deps are vendored)
+RUN gleam build
 
 LABEL org.chess.language="gleam"
-LABEL org.chess.version="1.2.1"
+LABEL org.chess.version="1.3.1"
 LABEL org.chess.author="Gleam Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5

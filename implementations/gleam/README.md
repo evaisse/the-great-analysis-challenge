@@ -31,7 +31,7 @@ docker build -t chess-gleam .
 
 ### Run interactively
 ```bash
-docker run -it chess-gleam
+docker run --network none -it chess-gleam
 ```
 
 ## Commands

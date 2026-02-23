@@ -4,18 +4,17 @@ import gleam/io
 import gleam/string
 import gleam/list
 import gleam/int
-import gleam/result
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 
 @external(erlang, "io", "get_line")
 fn get_line(prompt: String) -> String
 
 import types.{
   type GameState, type Move, White, Black,
-  algebraic_to_square, square_to_algebraic, opposite_color
+  algebraic_to_square, square_to_algebraic,
 }
 import board.{new_game, display_board, make_move, undo_move, get_piece}
-import move_generator.{get_legal_moves, is_in_check, is_checkmate, is_stalemate}
+import move_generator.{get_legal_moves, is_in_check}
 import fen.{parse_fen, export_fen}
 import ai.{find_best_move}
 import perft.{perft}
@@ -37,7 +36,7 @@ pub fn main() {
 fn game_loop(engine: ChessEngine) -> Nil {
   let input = get_line("")
   let command = string.trim(input)
-  
+
   case command {
     "quit" -> Nil
     _ -> {
@@ -79,7 +78,7 @@ fn handle_move(engine: ChessEngine, move_str: String) -> ChessEngine {
         True -> Some(string.slice(move_str, 4, 1))
         False -> None
       }
-      
+
       case algebraic_to_square(from_str), algebraic_to_square(to_str) {
         Ok(from_square), Ok(to_square) -> {
           case get_piece(engine.game_state, from_square) {
@@ -94,19 +93,35 @@ fn handle_move(engine: ChessEngine, move_str: String) -> ChessEngine {
                   engine
                 }
                 True -> {
-                  let legal_moves = get_legal_moves(engine.game_state, engine.game_state.turn)
-                  let matching_move = find_matching_move(legal_moves, from_square, to_square, promotion_str)
-                  
+                  let legal_moves =
+                    get_legal_moves(
+                      engine.game_state,
+                      engine.game_state.turn,
+                    )
+                  let matching_move =
+                    find_matching_move(
+                      legal_moves,
+                      from_square,
+                      to_square,
+                      promotion_str,
+                    )
+
                   case matching_move {
                     None -> {
-                      case is_in_check(engine.game_state, engine.game_state.turn) {
+                      case
+                        is_in_check(
+                          engine.game_state,
+                          engine.game_state.turn,
+                        )
+                      {
                         True -> io.println("ERROR: King would be in check")
                         False -> io.println("ERROR: Illegal move")
                       }
                       engine
                     }
                     Some(chess_move) -> {
-                      let new_state = make_move(engine.game_state, chess_move)
+                      let new_state =
+                        make_move(engine.game_state, chess_move)
                       io.println("OK: " <> move_str)
                       io.println(display_board(new_state))
                       check_game_end(new_state)
@@ -127,20 +142,37 @@ fn handle_move(engine: ChessEngine, move_str: String) -> ChessEngine {
   }
 }
 
-fn find_matching_move(moves: List(Move), from: Int, to: Int, promotion_str: Option(String)) -> Option(Move) {
+fn find_matching_move(
+  moves: List(Move),
+  from: Int,
+  to: Int,
+  promotion_str: Option(String),
+) -> Option(Move) {
   list.find(moves, fn(chess_move) {
-    chess_move.from == from && chess_move.to == to &&
-    case chess_move.promotion, promotion_str {
-      Some(types.Queen), None -> True
-      Some(types.Queen), Some("Q") | Some(types.Queen), Some("q") -> True
-      Some(types.Rook), Some("R") | Some(types.Rook), Some("r") -> True
-      Some(types.Bishop), Some("B") | Some(types.Bishop), Some("b") -> True
-      Some(types.Knight), Some("N") | Some(types.Knight), Some("n") -> True
-      None, None -> True
-      _, _ -> False
-    }
+    chess_move.from == from
+    && chess_move.to == to
+    && is_promotion_match(chess_move.promotion, promotion_str)
   })
-  |> result.to_option
+  |> option.from_result
+}
+
+fn is_promotion_match(
+  move_promotion: Option(types.PieceType),
+  requested: Option(String),
+) -> Bool {
+  case move_promotion, requested {
+    Some(types.Queen), None -> True
+    Some(types.Queen), Some("Q") -> True
+    Some(types.Queen), Some("q") -> True
+    Some(types.Rook), Some("R") -> True
+    Some(types.Rook), Some("r") -> True
+    Some(types.Bishop), Some("B") -> True
+    Some(types.Bishop), Some("b") -> True
+    Some(types.Knight), Some("N") -> True
+    Some(types.Knight), Some("n") -> True
+    None, None -> True
+    _, _ -> False
+  }
 }
 
 fn handle_undo(engine: ChessEngine) -> ChessEngine {
@@ -158,7 +190,7 @@ fn handle_undo(engine: ChessEngine) -> ChessEngine {
   }
 }
 
-fn handle_new(engine: ChessEngine) -> ChessEngine {
+fn handle_new(_engine: ChessEngine) -> ChessEngine {
   let new_state = new_game()
   io.println("New game started")
   io.println(display_board(new_state))
@@ -171,35 +203,48 @@ fn handle_ai(engine: ChessEngine, depth_str: String) -> ChessEngine {
       io.println("ERROR: AI depth must be 1-5")
       engine
     }
-    Ok(depth) if depth < 1 || depth > 5 -> {
-      io.println("ERROR: AI depth must be 1-5")
-      engine
-    }
     Ok(depth) -> {
-      let result = find_best_move(engine.game_state, depth)
-      case result.best_move {
-        None -> {
-          io.println("ERROR: No legal moves available")
+      case depth < 1 || depth > 5 {
+        True -> {
+          io.println("ERROR: AI depth must be 1-5")
           engine
         }
-        Some(chess_move) -> {
-          let move_str = square_to_algebraic(chess_move.from) <>
-                        square_to_algebraic(chess_move.to) <>
-                        case chess_move.promotion {
-                          Some(types.Queen) -> "Q"
-                          Some(types.Rook) -> "R"
-                          Some(types.Bishop) -> "B"
-                          Some(types.Knight) -> "N"
-                          _ -> ""
-                        }
-          
-          let new_state = make_move(engine.game_state, chess_move)
-          io.println("AI: " <> move_str <> " (depth=" <> int.to_string(depth) <> 
-                    ", eval=" <> int.to_string(result.evaluation) <> 
-                    ", time=" <> int.to_string(result.time_ms) <> "ms)")
-          io.println(display_board(new_state))
-          check_game_end(new_state)
-          ChessEngine(new_state)
+        False -> {
+          let result = find_best_move(engine.game_state, depth)
+          case result.best_move {
+            None -> {
+              io.println("ERROR: No legal moves available")
+              engine
+            }
+            Some(chess_move) -> {
+              let move_str =
+                square_to_algebraic(chess_move.from)
+                <> square_to_algebraic(chess_move.to)
+                <> case chess_move.promotion {
+                  Some(types.Queen) -> "Q"
+                  Some(types.Rook) -> "R"
+                  Some(types.Bishop) -> "B"
+                  Some(types.Knight) -> "N"
+                  _ -> ""
+                }
+
+              let new_state = make_move(engine.game_state, chess_move)
+              io.println(
+                "AI: "
+                <> move_str
+                <> " (depth="
+                <> int.to_string(depth)
+                <> ", eval="
+                <> int.to_string(result.evaluation)
+                <> ", time="
+                <> int.to_string(result.time_ms)
+                <> "ms)",
+              )
+              io.println(display_board(new_state))
+              check_game_end(new_state)
+              ChessEngine(new_state)
+            }
+          }
         }
       }
     }
@@ -238,22 +283,33 @@ fn handle_perft(engine: ChessEngine, depth_str: String) -> ChessEngine {
       io.println("ERROR: Invalid perft depth")
       engine
     }
-    Ok(depth) if depth < 1 -> {
-      io.println("ERROR: Invalid perft depth")
-      engine
-    }
     Ok(depth) -> {
-      let nodes = perft(engine.game_state, depth)
-      io.println("Perft(" <> int.to_string(depth) <> "): " <> 
-                int.to_string(nodes) <> " nodes (0ms)")
-      engine
+      case depth < 1 {
+        True -> {
+          io.println("ERROR: Invalid perft depth")
+          engine
+        }
+        False -> {
+          let nodes = perft(engine.game_state, depth)
+          io.println(
+            "Perft("
+            <> int.to_string(depth)
+            <> "): "
+            <> int.to_string(nodes)
+            <> " nodes (0ms)",
+          )
+          engine
+        }
+      }
     }
   }
 }
 
 fn handle_help(engine: ChessEngine) -> ChessEngine {
   io.println("Available commands:")
-  io.println("  move <from><to>[promotion] - Make a move (e.g., e2e4, e7e8Q)")
+  io.println(
+    "  move <from><to>[promotion] - Make a move (e.g., e2e4, e7e8Q)",
+  )
   io.println("  undo - Undo the last move")
   io.println("  new - Start a new game")
   io.println("  ai <depth> - Let AI make a move (depth 1-5)")
@@ -269,7 +325,7 @@ fn handle_help(engine: ChessEngine) -> ChessEngine {
 fn check_game_end(game_state: GameState) -> Nil {
   let color = game_state.turn
   let legal_moves = get_legal_moves(game_state, color)
-  
+
   case list.is_empty(legal_moves) {
     False -> Nil
     True -> {
