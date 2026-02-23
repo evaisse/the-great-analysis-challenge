@@ -1,21 +1,8 @@
-# Use official Crystal image
-FROM jfrog.int.bourso.net/web-v-docker/crystallang/crystal:latest
+FROM ghcr.io/evaisse/tgac-crystal-toolchain:latest
 
-# Set working directory
-WORKDIR /app
+COPY . .
 
-# Copy source files
-COPY Makefile ./
-COPY shard.yml ./
-COPY src/ ./src/
-
-# Build the application
 RUN crystal build src/chess_engine.cr --release -o chess_engine
-
-# Make executable
-RUN chmod +x chess_engine
-
-# Default command
 
 LABEL org.chess.language="crystal"
 LABEL org.chess.version="1.14.0"

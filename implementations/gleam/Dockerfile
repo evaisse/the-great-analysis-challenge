@@ -1,12 +1,7 @@
-# Use official Gleam image with Erlang
-FROM jfrog.int.bourso.net/web-v-docker/ghcr.io/gleam-lang/gleam:v1.3.1-erlang
+FROM ghcr.io/evaisse/tgac-gleam-toolchain:latest
 
-WORKDIR /app
-
-# Copy project files (deps are vendored via path dependencies)
 COPY . .
 
-# Build (no network needed, deps are vendored)
 RUN gleam build
 
 LABEL org.chess.language="gleam"

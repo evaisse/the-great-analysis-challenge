@@ -1,9 +1,5 @@
-# Use official Julia image
-FROM jfrog.int.bourso.net/web-v-docker/julia:1.11-bookworm
+FROM ghcr.io/evaisse/tgac-julia-toolchain:latest
 
-WORKDIR /app
-
-# Copy source files
 COPY . .
 
 LABEL org.chess.language="julia"
@@ -17,5 +13,4 @@ LABEL org.chess.build="julia --project=. -e 'using Pkg; Pkg.instantiate()'"
 LABEL org.chess.test="julia --project=. test/runtests.jl"
 LABEL org.chess.analyze="julia --project=. -e 'using Pkg; Pkg.precompile()'"
 
-# Default command
 CMD ["julia", "chess.jl"]

@@ -1,13 +1,8 @@
-# Use official Go image
-FROM golang:1.23
+FROM ghcr.io/evaisse/tgac-go-toolchain:latest
 
-WORKDIR /app
 COPY . .
 
-# Build the application
 RUN go build -ldflags="-s -w" -o chess .
-
-# Default command
 
 LABEL org.chess.language="go"
 LABEL org.chess.version="1.23"

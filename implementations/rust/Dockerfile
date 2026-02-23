@@ -1,21 +1,8 @@
-# Build stage
-FROM rust:1.84-slim AS builder
+FROM ghcr.io/evaisse/tgac-rust-toolchain:latest
 
-WORKDIR /app
 COPY . .
 
-# Build the application
 RUN cargo build --release
-
-# Runtime stage
-FROM rust:1.84-slim
-
-WORKDIR /app
-
-# Copy the compiled binary and source code from the builder stage
-COPY --from=builder /app /app
-
-# Default command
 
 LABEL org.chess.language="rust"
 LABEL org.chess.version="1.70"

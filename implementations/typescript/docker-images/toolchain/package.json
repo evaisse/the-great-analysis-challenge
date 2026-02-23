@@ -1,0 +1,22 @@
+{
+  "name": "typescript",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/chess.js",
+    "dev": "tsc && node dist/chess.js",
+    "chess": "npm run build && npm start",
+    "test": "npm run build && node test/basic.test.js",
+    "lint": "echo \"No linter configured yet\" && exit 0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "typescript": "^5.9.2",
+    "prettier": "^3.0.0"
+  }
+}

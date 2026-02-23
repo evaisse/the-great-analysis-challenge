@@ -1,16 +1,6 @@
-# Use official PHP image
-FROM php:8.3-cli
+FROM ghcr.io/evaisse/tgac-php-toolchain:latest
 
-# Set working directory
-WORKDIR /app
-
-# Copy composer.json if it exists
-COPY composer.json* ./
-
-# Copy source code
 COPY . .
-
-# Default command to run the chess engine
 
 LABEL org.chess.language="php"
 LABEL org.chess.version="8.3"

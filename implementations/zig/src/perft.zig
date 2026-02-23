@@ -1,6 +1,7 @@
 const std = @import("std");
 const board = @import("board.zig");
 const move_gen = @import("move_generator.zig");
+const io = @import("io_helper.zig");
 
 pub const Perft = struct {
     board_ref: *board.Board,
@@ -13,80 +14,80 @@ pub const Perft = struct {
 
     pub fn perft(self: *Perft, depth: u8) u64 {
         if (depth == 0) return 1;
-        
-        var allocator = std.heap.page_allocator;
+
+        const allocator = std.heap.page_allocator;
         var move_generator = move_gen.MoveGenerator.init(self.board_ref);
-        
-        const legal_moves = move_generator.generateLegalMoves(allocator) catch return 0;
-        defer legal_moves.deinit();
-        
+
+        var legal_moves = move_generator.generateLegalMoves(allocator) catch return 0;
+        defer legal_moves.deinit(allocator);
+
         var nodes: u64 = 0;
-        
+
         for (legal_moves.items) |move| {
             // Save game state
             const original_state = self.saveGameState();
-            
+
             // Make the move
             self.board_ref.makeMove(move) catch continue;
-            
+
             // Recursively count nodes
             nodes += self.perft(depth - 1);
-            
+
             // Restore game state
             self.restoreGameState(original_state);
             self.board_ref.undoMove(move);
         }
-        
+
         return nodes;
     }
 
     pub fn perftDivide(self: *Perft, depth: u8) !void {
-        var allocator = std.heap.page_allocator;
+        const allocator = std.heap.page_allocator;
         var move_generator = move_gen.MoveGenerator.init(self.board_ref);
-        
-        const legal_moves = move_generator.generateLegalMoves(allocator) catch return;
-        defer legal_moves.deinit();
-        
+
+        var legal_moves = move_generator.generateLegalMoves(allocator) catch return;
+        defer legal_moves.deinit(allocator);
+
         var total_nodes: u64 = 0;
-        const stdout = std.io.getStdOut().writer();
-        
+        const stdout = io.stdoutWriter();
+
         for (legal_moves.items) |move| {
             // Save game state
             const original_state = self.saveGameState();
-            
+
             // Make the move
             self.board_ref.makeMove(move) catch continue;
-            
+
             // Count nodes for this move
             const nodes = if (depth > 1) self.perft(depth - 1) else 1;
             total_nodes += nodes;
-            
+
             // Print move and node count
             const move_str = self.moveToString(move);
             try stdout.print("{s}: {}\n", .{ move_str, nodes });
-            
+
             // Restore game state
             self.restoreGameState(original_state);
             self.board_ref.undoMove(move);
         }
-        
+
         try stdout.print("\nTotal: {}\n", .{total_nodes});
     }
 
     fn moveToString(self: *Perft, move: board.Move) []const u8 {
         _ = self;
         var buffer: [6]u8 = undefined;
-        
+
         const from_file = @as(u8, 'a') + (move.from % 8);
         const from_rank = @as(u8, '1') + (move.from / 8);
         const to_file = @as(u8, 'a') + (move.to % 8);
         const to_rank = @as(u8, '1') + (move.to / 8);
-        
+
         buffer[0] = from_file;
         buffer[1] = from_rank;
         buffer[2] = to_file;
         buffer[3] = to_rank;
-        
+
         var len: usize = 4;
         if (move.promotion_piece) |piece| {
             buffer[4] = switch (piece) {
@@ -98,7 +99,7 @@ pub const Perft = struct {
             };
             len = 5;
         }
-        
+
         return buffer[0..len];
     }
 
