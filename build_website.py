@@ -374,6 +374,7 @@ def generate_comparison_table(all_data: List[Dict[str, Any]], stats_context: Dic
     html += '<th>build (ms)</th>\n'
     html += '<th>test (ms)</th>\n'
     html += '<th>analyze (ms)</th>\n'
+    html += '<th>memory (mb)</th>\n'
     html += '<th>features</th>\n'
     html += '<th>source</th>\n'
     html += '</tr>\n</thead>\n<tbody>\n'
@@ -398,6 +399,17 @@ def generate_comparison_table(all_data: List[Dict[str, Any]], stats_context: Dic
         test_disp, test_sort = fmt_time(timings.get('test_seconds'))
         analyze_disp, analyze_sort = fmt_time(timings.get('analyze_seconds'))
 
+        # Extract peak memory
+        memory_data = performance.get('memory', {})
+        peak_memory = 0
+        for phase in ['build', 'test', 'analyze']:
+            phase_mem = memory_data.get(phase, {})
+            if isinstance(phase_mem, dict):
+                peak_memory = max(peak_memory, phase_mem.get('peak_memory_mb', 0))
+        
+        mem_disp = f"{int(round(peak_memory))}" if peak_memory > 0 else "—"
+        mem_sort = str(peak_memory)
+
         features = meta.get('features', []) if isinstance(meta.get('features'), list) else []
         feature_summary = ', '.join(features) if features else 'n/a'
         feature_sort = ' '.join(sorted(features)) if features else ''
@@ -420,6 +432,7 @@ def generate_comparison_table(all_data: List[Dict[str, Any]], stats_context: Dic
         html += f'<td class="numeric" data-sort="{build_sort}">{build_disp}</td>\n'
         html += f'<td class="numeric" data-sort="{test_sort}">{test_disp}</td>\n'
         html += f'<td class="numeric" data-sort="{analyze_sort}">{analyze_disp}</td>\n'
+        html += f'<td class="numeric" data-sort="{mem_sort}">{mem_disp}</td>\n'
         html += f'<td data-sort="{feature_sort}">{feature_summary}</td>\n'
         html += f'<td data-sort="{repo_url}"><a href="{repo_url}" target="_blank" rel="noopener">view repo</a></td>\n'
         html += '</tr>\n'

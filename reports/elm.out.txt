@@ -8,74 +8,52 @@ Testing elm implementation
 Path: implementations/elm
 ============================================================
 🧹 Clearing build cache...
+🔧 Running: make clean
 ✅ Local cache cleared with make clean
 ✅ Cache clearing completed
-🔍 Running static analysis...
-✅ Analysis completed in 0.72s
-🔨 Building implementation...
-❌ Build failed in 0.85s
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (includes analysis and build)...
+  🔧 Running: docker build -t chess-elm .
+  ✅ Docker build completed in 1.40s
+  🔍 Running static analysis...
+    🔧 Running: make analyze
+  ♟️  Running chess engine tests...
+    🔧 Running: make test
+  ✅ All Docker tests passed (build: 1.4s, analyze: 0.4s, test: 0.4s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:11:43
+Generated: 2026-02-23 16:08:28
 ================================================================================
 
 PERFORMANCE SUMMARY
 --------------------------------------------------------------------------------
 Language     Status     Analyze  Build    Test     Memory     Tests   
 --------------------------------------------------------------------------------
-elm          failed         0.7s     0.8s     0.0s        0MB 0/0     
+elm          completed      0.4s     1.4s     0.4s        9MB 3/3     
 
 ============================================================
 DETAILED RESULTS: ELM
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.72s
-  Build Seconds: 0.85s
+  Build Seconds: 1.40s
+  Analyze Seconds: 0.38s
+  Test Seconds: 0.36s
 
 MEMORY USAGE:
-  Analyze: Peak 0.0MB, Avg 0.0MB
   Build: Peak 0.0MB, Avg 0.0MB
+  Analyze: Peak 3.6MB, Avg 0.0MB
+  Test: Peak 8.9MB, Avg 0.0MB
 
-ERRORS:
-  ❌ Analysis warnings: -- TYPE MISMATCH ----------------------------------------- src/MoveGenerator.elm
+CHESS ENGINE TESTS: 3 passed, 0 failed
 
-The 2nd argument to `setPiece` is not what I expect:
-
-477|                 |> setPiece move.to (Just finalPiece)
-                                          ^^^^^^^^^^^^^^^
-This `Just` call produces:
-
-    Maybe { color : Color, pieceType : PieceType }
-
-But `setPiece` needs the 2nd argument to be:
-
-    Square
-
-Hint: I always figure out the argument types from left to right. If an argument
-is acceptable, I assume it is
-  ❌ Build failed: -- TYPE MISMATCH ----------------------------------------- src/MoveGenerator.elm
-
-The 2nd argument to `setPiece` is not what I expect:
-
-477|                 |> setPiece move.to (Just finalPiece)
-                                          ^^^^^^^^^^^^^^^
-This `Just` call produces:
-
-    Maybe { color : Color, pieceType : PieceType }
-
-But `setPiece` needs the 2nd argument to be:
-
-    Square
-
-Hint: I always figure out the argument types from left to right. If an argument
-is acceptable, I assume it is
-  ❌ Test failed: Build failed with exit code 2
+DOCKER TESTS:
+  Build: ✅ (1.40s)
+  Test: ✅ (0.36s)
 
 ================================================================================
+📄 JSON results saved to reports/elm.json (1 valid benchmark(s))
 
-📄 Text report saved to benchmark_reports/performance_report_elm.txt
-📄 JSON results saved to benchmark_reports/performance_data_elm.json
-
-❌ 1 implementation(s) failed testing
+✅ All 1 implementation(s) completed successfully
