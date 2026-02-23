@@ -1,13 +1,6 @@
 # Use official Ruby image
 FROM ruby:3.4-slim-bookworm
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    git \
-    make \
-    && rm -rf /var/lib/apt/lists/*
-
 # Set working directory
 WORKDIR /app
 
