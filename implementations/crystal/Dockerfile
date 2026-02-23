@@ -1,9 +1,6 @@
 # Use official Crystal image
 FROM jfrog.int.bourso.net/web-v-docker/crystallang/crystal:latest
 
-# Install make for the test suite
-RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
-
 # Set working directory
 WORKDIR /app
 
@@ -26,9 +23,9 @@ LABEL org.chess.author="Crystal Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=800
-LABEL org.chess.build="make docker-build"
+LABEL org.chess.build="crystal build src/chess_engine.cr --release -o chess_engine"
 LABEL org.chess.run="./chess_engine"
-LABEL org.chess.test="make docker-test"
-LABEL org.chess.analyze="docker run --network none --rm chess-crystal make analyze"
+LABEL org.chess.test="crystal spec"
+LABEL org.chess.analyze="crystal tool format --check"
 
 CMD ["./chess_engine"]

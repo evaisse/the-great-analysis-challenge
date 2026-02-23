@@ -18,9 +18,6 @@ FROM dart:stable
 
 WORKDIR /app
 
-# Install make for the test suite
-RUN apt-get update && apt-get install -y make && rm -rf /var/lib/apt/lists/*
-
 # Copy the compiled executable, project structure, and pub cache
 COPY --from=build /app /app
 COPY --from=build /root/.pub-cache /root/.pub-cache
@@ -34,5 +31,6 @@ LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=900
 LABEL org.chess.test="dart test"
+LABEL org.chess.analyze="dart analyze"
 
 CMD ["./bin/chess_engine"]
