@@ -3,9 +3,9 @@
 # Default target - build the chess engine
 all: build
 
-# Build target - compile Haskell with Cabal
+# Build target - compile Haskell with GHC
 build:
-	cabal build
+	ghc -O2 --make src/Main.hs -o chess_engine -isrc
 
 # Run basic tests
 test:
@@ -13,19 +13,18 @@ test:
 	@if [ -f "./chess_engine" ]; then \
 		echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ./chess_engine | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"; \
 	else \
-		cabal run chess --verbose=0 -- sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2'" && echo "✅ Basic test passed (via cabal)" || echo "❌ Basic test failed"; \
+		ghc -O2 --make src/Main.hs -o chess_engine -isrc && \
+		echo -e "new\\nmove e2e4\\nmove e7e5\\nexport\\nquit" | ./chess_engine | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2' && echo "✅ Basic test passed" || echo "❌ Basic test failed"; \
 	fi
 
 # Static analysis and code quality
 analyze:
 	@echo "Running Haskell static analysis..."
 	hlint src/ || true
-	cabal check || true
 
 # Clean build artifacts
 clean:
-	cabal clean
-	rm -f chess_engine
+	rm -f src/*.o src/*.hi chess_engine
 
 # Docker targets
 docker-build:

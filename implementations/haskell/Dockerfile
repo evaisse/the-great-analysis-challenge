@@ -4,14 +4,10 @@ FROM haskell:9.6 AS builder
 WORKDIR /app
 
 # Copy project files
-COPY chess.cabal ./
 COPY src/ src/
 
-# Build
-RUN cabal build
-
-# Find the binary and move it to a predictable location
-RUN find dist-newstyle -name chess -type f -exec cp {} /app/chess_engine \;
+# Build directly with GHC (much faster for projects without external deps)
+RUN ghc -O2 --make src/Main.hs -o chess_engine -i/app/src
 
 # Final stage
 FROM debian:bookworm-slim
