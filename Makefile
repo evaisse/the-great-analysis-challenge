@@ -210,3 +210,9 @@ analyze-tools:
 	@echo "Running Python tooling static analysis..."
 	@python3 scripts/analyze_python_tools.py
 
+# Install git hooks
+install-hooks:
+	@chmod +x scripts/setup-hooks.sh scripts/pre-commit.sh
+	@./scripts/setup-hooks.sh
+
+
