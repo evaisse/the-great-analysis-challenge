@@ -28,8 +28,6 @@ help:
 	@echo ""
 	@echo "Other commands:"
 	@echo "  make list-implementations - List all available implementations"
-	@echo "  make website             - Generate static website in docs/"
-	@echo "  make validate-website-metadata - Validate website metadata completeness"
 	@echo "  make analyze-tools       - Static analysis for Python tooling (outside implementations)"
 	@echo "  make help                - Show this help message"
 	@echo ""
@@ -37,7 +35,6 @@ help:
 
 # List all available implementations
 list-implementations:
-	@echo "Available implementations:"
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo "  - $$impl"; \
 	done
@@ -95,8 +92,6 @@ ifdef DIR
 		docker run --rm --network none chess-$(DIR) make test; \
 	fi
 else
-	@echo "Validating website metadata..."
-	@./workflow validate-website-metadata
 	@echo "Running all tests in Docker containers..."
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
@@ -182,8 +177,6 @@ ifdef DIR
 	'
 else
 	@echo "Running workflow for all implementations..."
-	@echo "Validating website metadata..."
-	@./workflow validate-website-metadata
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
 		echo "==================== Workflow $$impl ===================="; \
@@ -212,18 +205,8 @@ else
 	@echo "Cleaned up successfully"
 endif
 
-# Generate static website
-website:
-	@echo "Generating static website..."
-	@python3 build_website.py
-	@echo "Website generated in docs/"
-	@echo "To preview: cd docs && python3 -m http.server 8080"
-
-# Validate website metadata completeness
-validate-website-metadata:
-	@./workflow validate-website-metadata
-
 # Static analysis for Python tooling outside implementations directory
 analyze-tools:
 	@echo "Running Python tooling static analysis..."
 	@python3 scripts/analyze_python_tools.py
+

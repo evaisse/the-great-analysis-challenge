@@ -756,47 +756,6 @@ def print_summary_report(results: List[Dict]):
     print(f"🟡 Good: {good}")
     print(f"🔴 Needs work: {needs_work}")
 
-def validate_unique_emojis(implementations: List[Path]) -> bool:
-    """Ensure each implementation has a unique emoji in website metadata."""
-    print("\n" + "="*50)
-    print("🎨 EMOJI ASSIGNMENT CHECK")
-    print("="*50)
-    
-    try:
-        build_website = import_module('build_website')
-        stats_data = build_website.load_language_statistics()
-        language_metadata = build_website.get_language_metadata(stats_data)
-    except Exception as exc:
-        print(f"❌ Unable to load language metadata: {exc}")
-        return False
-    
-    emoji_map: Dict[str, List[str]] = {}
-    missing_languages: List[str] = []
-    
-    for impl_dir in implementations:
-        lang = impl_dir.name
-        meta = language_metadata.get(lang)
-        if not meta:
-            missing_languages.append(lang)
-            continue
-        emoji = meta.get('emoji')
-        if emoji:
-            emoji_map.setdefault(emoji, []).append(lang)
-    
-    duplicates = {emoji: langs for emoji, langs in emoji_map.items() if len(langs) > 1}
-    check_passed = True
-    
-    if duplicates:
-        print("❌ Emoji collisions detected:")
-        for emoji, langs in duplicates.items():
-            joined = ', '.join(sorted(langs))
-            print(f"   - {emoji} used by {joined}")
-        check_passed = False
-    
-    if check_passed:
-        print("✅ All implementations have unique emojis (where defined).")
-    return check_passed
-
 def main():
     parser = argparse.ArgumentParser(description="Verify Chess Engine Implementation")
     parser.add_argument("base_dir", nargs="?", help="Base directory")
@@ -816,7 +775,6 @@ def main():
         print_implementation_report(result)
     
     print_summary_report(results)
-    validate_unique_emojis(implementations)
     
     if any(r['status'] == 'needs_work' for r in results):
         sys.exit(1)

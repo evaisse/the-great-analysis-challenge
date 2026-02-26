@@ -7,7 +7,45 @@ import os
 import json
 import re
 import subprocess
+import glob
+from pathlib import Path
+from typing import Dict, List, Any
 
+# Add scripts directory to path to import shared module
+SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'scripts')
+if os.path.exists(SCRIPTS_DIR):
+    import sys
+    sys.path.insert(0, SCRIPTS_DIR)
+    try:
+        from chess_metadata import get_metadata
+    except ImportError:
+        def get_metadata(impl_dir): return {}
+else:
+    def get_metadata(impl_dir): return {}
+
+CUSTOM_EMOJIS: Dict[str, str] = {
+    'python': '🐍',
+    'crystal': '💠',
+    'dart': '🎯',
+    'elm': '🌳',
+    'gleam': '✨',
+    'go': '🐹',
+    'haskell': '📐',
+    'imba': '🪶',
+    'javascript': '🟨',
+    'julia': '🔮',
+    'kotlin': '🧡',
+    'lua': '🪐',
+    'mojo': '🔥',
+    'nim': '🦊',
+    'php': '🐘',
+    'rescript': '🧠',
+    'ruby': '❤️',
+    'rust': '🦀',
+    'swift': '🐦',
+    'typescript': '📘',
+    'zig': '⚡'
+}
 
 def find_project_root():
     """Find the project root directory."""
@@ -20,6 +58,50 @@ def find_project_root():
         current_dir = os.path.dirname(current_dir)
     return None
 
+def count_lines_of_code(impl_path: str) -> Dict[str, int]:
+    """Count lines of code for an implementation."""
+    extensions = {
+        'crystal': ['.cr'],
+        'dart': ['.dart'],
+        'elm': ['.elm'],
+        'gleam': ['.gleam'],
+        'go': ['.go'],
+        'haskell': ['.hs'],
+        'julia': ['.jl'],
+        'kotlin': ['.kt'],
+        'lua': ['.lua'],
+        'mojo': ['.mojo', '.🔥'],
+        'nim': ['.nim'],
+        'php': ['.php'],
+        'python': ['.py'],
+        'rescript': ['.res', '.resi'],
+        'ruby': ['.rb'],
+        'rust': ['.rs'],
+        'swift': ['.swift'],
+        'typescript': ['.ts'],
+        'zig': ['.zig']
+    }
+
+    lang_name = os.path.basename(impl_path)
+    exts = extensions.get(lang_name, [])
+    total_loc = 0
+    file_count = 0
+
+    src_dir = os.path.join(impl_path, 'src')
+    if not os.path.exists(src_dir):
+        src_dir = impl_path
+
+    for ext in exts:
+        pattern = f"{src_dir}/**/*{ext}"
+        for file in glob.glob(pattern, recursive=True):
+            try:
+                with open(file, 'r', encoding='utf-8', errors='ignore') as handle:
+                    total_loc += len(handle.readlines())
+                    file_count += 1
+            except Exception:
+                continue
+
+    return {'loc': total_loc, 'files': file_count}
 
 def load_performance_data():
     """Load performance benchmark data from individual files"""
@@ -35,7 +117,6 @@ def load_performance_data():
         return []
     
     # Load individual performance data files
-    import glob
     data_files = [
         path for path in glob.glob(os.path.join(benchmark_dir, '*.json'))
         if not path.endswith('performance_data.json')
@@ -59,7 +140,6 @@ def load_performance_data():
         print(f"✅ Loaded performance data for {len(performance_data)} implementations")
     
     return performance_data
-
 
 def classify_implementation_status(impl_data):
     """Classify implementation status based on benchmark results and metadata"""
@@ -100,16 +180,8 @@ def classify_implementation_status(impl_data):
     else:
         return 'needs_work'
 
-
 def format_time(seconds):
-    """Format time duration in milliseconds for better precision
-    
-    Args:
-        seconds: Time in seconds, or None if data is not available
-        
-    Returns:
-        Formatted time string or "-" if data is missing
-    """
+    """Format time duration in milliseconds for better precision"""
     if seconds is None:
         return "-"
     elif seconds == 0:
@@ -122,7 +194,6 @@ def format_time(seconds):
             return f"{ms:.1f}ms"
         else:
             return f"{ms:.0f}ms"
-
 
 def get_verification_status():
     """Get current verification status by running verify_implementations.py"""
@@ -137,7 +208,6 @@ def get_verification_status():
         
         # Parse verification output for status
         verification_data = {}
-        current_lang = None
         
         for line in result.stdout.split('\n'):
             if '**' in line and ('excellent' in line or 'good' in line or 'needs work' in line):
@@ -150,17 +220,15 @@ def get_verification_status():
                     status = 'needs_work'
                 
                 # Extract language name (between ** markers)
-                import re
                 match = re.search(r'\*\*([^*]+)\*\*', line)
                 if match:
-                    language = match.group(1).strip()
+                    language = match.group(1).strip().lower()
                     verification_data[language] = status
         
         return verification_data
     except Exception as e:
         print(f"⚠️ Could not run verification: {e}")
         return {}
-
 
 def update_readme() -> bool:
     """Update README status table and check if it was modified."""
@@ -169,10 +237,7 @@ def update_readme() -> bool:
     try:
         performance_data = load_performance_data()
         verification_data = get_verification_status()
-        
-        # If we have verification data, use it as the source of truth
-        if verification_data:
-            print(f"✅ Using verification data for {len(verification_data)} implementations")
+        project_root = find_project_root() or os.getcwd()
         
         # Generate status table
         status_emoji = {
@@ -183,15 +248,11 @@ def update_readme() -> bool:
         
         # Create combined data set prioritizing verification results
         combined_data = {}
-        
-        # Start with performance data structure
         for impl_data in performance_data:
             language = impl_data.get('language', '').lower()
             combined_data[language] = impl_data
         
-        # Dynamically discover all implementations from directory
-        import os
-        impl_dir = "implementations"
+        impl_dir = os.path.join(project_root, "implementations")
         all_languages = []
         if os.path.exists(impl_dir):
             all_languages = sorted([
@@ -199,11 +260,8 @@ def update_readme() -> bool:
                 if os.path.isdir(os.path.join(impl_dir, name))
             ])
         
-        # If discovery fails or directory is empty, we have a critical error
         if not all_languages:
             print("❌ Error: Could not discover any implementations")
-            print(f"   Check that {impl_dir}/ directory exists and contains implementation subdirectories")
-            # Don't use fallback - this indicates a real problem
             return False
         
         for lang in all_languages:
@@ -218,69 +276,68 @@ def update_readme() -> bool:
         table_rows = []
         for language in sorted(all_languages):
             impl_data = combined_data.get(language, {})
+            impl_path = os.path.join(impl_dir, language)
             
-            # Use verification status if available, otherwise classify from benchmark data
+            # Metadata & Stats
+            meta = get_metadata(impl_path)
+            loc_data = count_lines_of_code(impl_path)
+            
+            # Status
             if verification_data and language in verification_data:
                 status = verification_data[language]
             else:
                 status = classify_implementation_status(impl_data)
             
             emoji = status_emoji.get(status, '❓')
+            lang_emoji = CUSTOM_EMOJIS.get(language, '📦')
             
+            # Timings
             timings = impl_data.get('timings', {})
-            # Use None as default instead of 0 to distinguish missing data from zero time
             analyze_time = format_time(timings.get('analyze_seconds'))
             build_time = format_time(timings.get('build_seconds'))
             test_time = format_time(timings.get('test_seconds'))
             
-            table_rows.append(f"| {language.title()} | {emoji} | {analyze_time} | {build_time} | {test_time} |")
+            # Memory
+            memory_data = impl_data.get('memory', {})
+            peak_memory = 0
+            for phase in ['build', 'test', 'analyze']:
+                phase_mem = memory_data.get(phase, {})
+                if isinstance(phase_mem, dict):
+                    peak_memory = max(peak_memory, phase_mem.get('peak_memory_mb', 0))
+            mem_disp = f"{int(round(peak_memory))}" if peak_memory > 0 else "-"
+
+            # Features
+            features = meta.get('features', []) if isinstance(meta.get('features'), list) else []
+            feature_summary = ', '.join(features) if features else '-'
+            
+            lang_name = f"{lang_emoji} {language.title()}"
+            table_rows.append(f"| {lang_name} | {emoji} | {loc_data['loc']} | {build_time} | {test_time} | {analyze_time} | {mem_disp} MB | {feature_summary} |")
         
         # Create table content
         table_header = """
-| Language | Status | Analysis Time | Build Time | Test Time |
-|----------|--------|---------------|------------|-----------|"""
+| Language | Status | LOC | Build | Test | Analyze | Memory | Features |
+|----------|--------|-----|-------|------|---------|--------|----------|"""
         
         new_table = table_header + "\n" + "\n".join(table_rows)
         
-        # Update README.md - ensure we're working with the project root README
-        readme_path = os.path.join(os.getcwd(), "README.md")
+        readme_path = os.path.join(project_root, "README.md")
         
-        # If we're running from a subdirectory, find the project root
-        if not os.path.exists(readme_path):
-            # Look for the root directory by finding .git or workflow files
-            current_dir = os.getcwd()
-            while current_dir != '/':
-                potential_readme = os.path.join(current_dir, "README.md")
-                if (os.path.exists(potential_readme) and 
-                    (os.path.exists(os.path.join(current_dir, ".git")) or 
-                     os.path.exists(os.path.join(current_dir, "implementations")))):
-                    readme_path = potential_readme
-                    break
-                current_dir = os.path.dirname(current_dir)
-        
-        print(f"📄 Using README path: {readme_path}")
         if os.path.exists(readme_path):
             with open(readme_path, 'r') as f:
                 content = f.read()
             
-            # Validate this is the correct README by checking for our project markers
             if "The Great Analysis Challenge" not in content:
                 print("⚠️ Warning: README doesn't contain expected project title")
-                print("⚠️ This might be the wrong README file")
                 return False
             
             if "<!-- status-table-start -->" not in content:
                 print("⚠️ Warning: README doesn't contain status table markers")
-                print("⚠️ Skipping update to avoid overwriting wrong content")
                 return False
             
-            # Find and replace the status table
             pattern = r'(<!-- status-table-start -->).*?(<!-- status-table-end -->)'
             replacement = f'\\1\n{new_table}\n\\2'
-            
             new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
             
-            # Additional safety check
             if new_content == content:
                 print("⚠️ No changes detected in README content")
                 return False
@@ -293,23 +350,13 @@ def update_readme() -> bool:
             print(f"❌ README.md not found at {readme_path}")
             return False
         
-        # Check if README was modified
-        cmd = ["git", "diff", "--quiet", "README.md"]
-        print(f"🔧 Running: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, check=False)
-        readme_changed = result.returncode != 0
-        
-        if readme_changed:
-            print("✅ README.md has been updated")
-        else:
-            print("⚠️ README.md was not modified")
-        
-        return readme_changed
+        return True
         
     except Exception as e:
         print(f"Error updating README: {e}")
+        import traceback
+        traceback.print_exc()
         return False
-
 
 def write_github_output(key: str, value: str):
     """Write to GitHub Actions output file."""
@@ -320,13 +367,11 @@ def write_github_output(key: str, value: str):
     else:
         print(f"Would set GitHub output: {key}={value}")
 
-
 def main(args):
     """Main function for update-readme command."""
     readme_changed = update_readme()
     write_github_output("changed", str(readme_changed).lower())
     return 0
-
 
 if __name__ == "__main__":
     import argparse

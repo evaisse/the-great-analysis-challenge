@@ -2,8 +2,6 @@
 
 A comprehensive project implementing identical chess engines across **different programming languages** to compare their approaches, performance, and unique paradigms.
 
-🌐 **[View Interactive Website](https://evaisse.github.io/the-great-analysis-challenge/)** - Complete comparison table and source code explorer
-
 ## 📚 Available Implementations
 
 All implementations have complete feature parity with the following features:
@@ -15,36 +13,32 @@ All implementations have complete feature parity with the following features:
 - ✅ **en_passant** - Special pawn capture rules
 - ✅ **promotion** - Pawn advancement to other pieces
 
-### Working Implementations (7 languages)
+<!-- status-table-start -->
 
-All implementations are fully working with complete feature support and produce benchmark timing results:
-
-- Dart
-- Lua
-- PHP
-- Python
-- Ruby
-- Rust
-- TypeScript
-
-### Work In Progress (12 languages)
-
-These implementations are available in the `implementations-wip/` directory and have various issues preventing them from producing benchmark results. See [implementations-wip/README.md](./implementations-wip/README.md) for details:
-
-- Crystal (no compiler on test host)
-- Elm (no compiler + type errors)
-- Gleam (no compiler on test host)
-- Go (build structure mismatch)
-- Haskell (network issues)
-- Julia (slow package installation)
-- Kotlin (Gradle wrapper issue)
-- Mojo (no compiler + Docker issues)
-- Nim (no compiler on test host)
-- ReScript (no compiler + deprecated config)
-- Swift (folder structure mismatch)
-- Zig (no compiler on test host)
-
-📊 **For detailed performance metrics, build times, and comprehensive comparisons**, visit the [Interactive Website](https://evaisse.github.io/the-great-analysis-challenge/).
+| Language | Status | LOC | Build | Test | Analyze | Memory | Features |
+|----------|--------|-----|-------|------|---------|--------|----------|
+| 💠 Crystal | 🔴 | 1692 | - | - | - | - MB | - |
+| 🎯 Dart | 🟢 | 1444 | 542ms | 3109ms | 1277ms | 451 MB | - |
+| 🌳 Elm | 🟢 | 1663 | 1395ms | 358ms | 379ms | 9 MB | - |
+| ✨ Gleam | 🔴 | 1917 | - | - | - | - MB | - |
+| 🐹 Go | 🔴 | 1883 | - | - | - | - MB | - |
+| 📐 Haskell | 🔴 | 1085 | - | - | - | - MB | - |
+| 🪶 Imba | 🔴 | 0 | - | - | - | - MB | - |
+| 🟨 Javascript | 🔴 | 0 | - | - | - | - MB | - |
+| 🔮 Julia | 🔴 | 1369 | - | - | - | - MB | - |
+| 🧡 Kotlin | 🔴 | 1524 | - | - | - | - MB | - |
+| 🪐 Lua | 🟢 | 1074 | 432ms | 264ms | 316ms | - MB | - |
+| 🔥 Mojo | 🔴 | 275 | - | - | - | - MB | - |
+| 🦊 Nim | 🔴 | 1105 | - | - | - | - MB | - |
+| 🐘 Php | 🟢 | 1660 | 711ms | 241ms | 460ms | - MB | - |
+| 🐍 Python | 🔴 | 2064 | 103ms | 597ms | 209ms | - MB | - |
+| 🧠 Rescript | 🔴 | 1678 | - | - | - | - MB | - |
+| ❤️ Ruby | 🔴 | 1906 | 354ms | 1850ms | 1661ms | - MB | - |
+| 🦀 Rust | 🔴 | 1852 | 567ms | 518ms | 899ms | - MB | - |
+| 🐦 Swift | 🔴 | 811 | - | - | - | - MB | - |
+| 📘 Typescript | 🟢 | 1773 | 448ms | 945ms | 1919ms | - MB | - |
+| ⚡ Zig | 🔴 | 1589 | - | - | - | - MB | - |
+<!-- status-table-end -->
 
 ## 🚀 Quick Start
 
