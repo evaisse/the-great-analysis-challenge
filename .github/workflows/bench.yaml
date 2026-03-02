@@ -112,8 +112,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Resolve benchmark timeout
+        id: benchmark-timeout
+        run: |
+          timeout_seconds=300
+          if [ "${{ matrix.engine }}" = "mojo" ]; then
+            timeout_seconds=600
+          fi
+          echo "seconds=${timeout_seconds}" >> "$GITHUB_OUTPUT"
+          echo "Using timeout ${timeout_seconds}s for ${{ matrix.engine }}"
+
       - name: Run benchmark for ${{ matrix.name }}
-        run: ./workflow run-benchmark ${{ matrix.engine }} --timeout 300
+        run: ./workflow run-benchmark ${{ matrix.engine }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }}
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
