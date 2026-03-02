@@ -1,1 +1,2 @@
-FROM modular/mojo:latest\nWORKDIR /app
+FROM modular/mojo:latest
+WORKDIR /app

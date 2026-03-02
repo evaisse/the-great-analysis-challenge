@@ -1,1 +1,2 @@
-FROM nimlang/nim:latest-alpine\nWORKDIR /app
+FROM nimlang/nim:latest-alpine
+WORKDIR /app
