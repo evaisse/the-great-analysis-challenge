@@ -1,2 +1,2 @@
-FROM modular/mojo:latest
+FROM modular/max-full:latest
 WORKDIR /app
