@@ -3,8 +3,7 @@
 all: build
 
 build:
-	npm install
-	npm run build
+	imba build chess.imba --platform node --base . --outdir dist
 
 test:
 	# No internal tests yet, but required for compliance

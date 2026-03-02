@@ -6,8 +6,44 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish:
+  discover:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: generate
+        name: Generate Toolchain Matrix
+        run: |
+          mapfile -t languages < <(
+            find implementations \
+              -mindepth 1 \
+              -maxdepth 1 \
+              -type d \
+              -exec test -f "{}/docker-images/toolchain/Dockerfile" \; \
+              -printf "%f\n" | sort
+          )
+
+          if [ "${#languages[@]}" -eq 0 ]; then
+            echo 'matrix={"language":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          matrix_json=$(
+            printf '%s\n' "${languages[@]}" \
+              | jq -R . \
+              | jq -cs '{language: .}'
+          )
+          echo "matrix=$matrix_json" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Publish ${{ matrix.language }} toolchain
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
     permissions:
       contents: read
       packages: write
@@ -21,14 +57,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Toolchains
+      - name: Build and Push Toolchain
         run: |
-          for dockerfile in implementations/*/docker-images/toolchain/Dockerfile; do
-            lang_dir=$(dirname $(dirname $(dirname "$dockerfile")))
-            lang=$(basename "$lang_dir")
-            image_name="ghcr.io/${{ github.repository_owner }}/tgac-$lang-toolchain"
-            
-            echo "🚀 Building toolchain for $lang..."
-            docker build -t "$image_name:latest" "$(dirname "$dockerfile")"
-            docker push "$image_name:latest"
-          done
+          lang="${{ matrix.language }}"
+          dockerfile="implementations/$lang/docker-images/toolchain/Dockerfile"
+          image_name="ghcr.io/${{ github.repository_owner }}/tgac-$lang-toolchain"
+
+          echo "Building toolchain for $lang..."
+          docker build -t "$image_name:latest" "$(dirname "$dockerfile")"
+          docker push "$image_name:latest"
