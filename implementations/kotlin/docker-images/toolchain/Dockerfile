@@ -1,2 +1,2 @@
-FROM zenika/kotlin:1.9-jdk21
+FROM zenika/kotlin:latest
 WORKDIR /app
