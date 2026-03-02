@@ -1,0 +1,14 @@
+{
+  "name": "chess-bun",
+  "version": "1.0.0",
+  "description": "Bun JavaScript implementation of the polyglot chess engine",
+  "type": "module",
+  "main": "chess.js",
+  "scripts": {
+    "start": "bun run chess.js",
+    "build": "bun --version",
+    "test": "bun test",
+    "lint": "bun --version",
+    "analyze": "bun --version"
+  }
+}

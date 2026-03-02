@@ -8,53 +8,63 @@ Testing mojo implementation
 Path: implementations/mojo
 ============================================================
 🧹 Clearing build cache...
+🔧 Running: make clean
 ✅ Local cache cleared with make clean
 ✅ Cache clearing completed
-🔍 Running static analysis...
-✅ Analysis completed in 0.03s
-🔨 Building implementation...
-✅ Build completed in 0.03s
-♟️  Running chess client tests...
-🐳 Running Docker tests...
-  Building Docker image...
-  ✅ Docker build completed in 0.56s
-  ❌ Docker test failed in 0.25s
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (includes analysis and build)...
+  🔧 Running: docker build -t chess-mojo .
+  ❌ Docker build failed in 4.33s
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:11:46
+Generated: 2026-03-02 23:26:53
 ================================================================================
 
 PERFORMANCE SUMMARY
 --------------------------------------------------------------------------------
 Language     Status     Analyze  Build    Test     Memory     Tests   
 --------------------------------------------------------------------------------
-mojo         completed      0.0s     0.0s     0.0s        0MB 0/0     
+mojo         completed      0.0s     4.3s     0.0s        0MB 0/1     
 
 ============================================================
 DETAILED RESULTS: MOJO
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.03s
-  Build Seconds: 0.03s
+  Build Seconds: 4.33s
 
 MEMORY USAGE:
-  Analyze: Peak 0.0MB, Avg 0.0MB
   Build: Peak 0.0MB, Avg 0.0MB
 
+CHESS ENGINE TESTS: 0 passed, 1 failed
+  Failed tests:
+    ❌ docker_build
+
 DOCKER TESTS:
-  Build: ✅ (0.56s)
-  Test: ❌ (0.25s)
+  Build: ❌ (4.33s)
+  Test: ❌ (0.00s)
 
 ERRORS:
-  ❌ Failed to start chess engine
-  ❌ Docker test failed: timeout: failed to run command 'make': No such file or directory
+  ❌ Docker build failed: #0 building with "orbstack" instance using docker driver
 
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile:
+#1 transferring dockerfile: 512B done
+#1 DONE 0.3s
+
+#2 [internal] load metadata for ghcr.io/evaisse/tgac-mojo-toolchain:latest
+#2 ERROR: unexpected status from HEAD request to https://ghcr.io/v2/evaisse/tgac-mojo-toolchain/manifests/latest: 403 Certificateincident
+------
+ > [internal] load metadata for ghcr.io/evaisse/tgac-mojo-toolchain:latest:
+------
+Dockerf
 
 ================================================================================
+⚠️  No valid benchmarks to save to JSON
 
-📄 Text report saved to benchmark_reports/performance_report_mojo.txt
-📄 JSON results saved to benchmark_reports/performance_data_mojo.json
+⚠️  Skipped 1 incomplete/failed benchmark(s):
+   - mojo: missing test_seconds
 
 ✅ All 1 implementation(s) completed successfully
