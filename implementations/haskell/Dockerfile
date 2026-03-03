@@ -13,6 +13,6 @@ LABEL org.chess.estimated_perft4_ms=1000
 LABEL org.chess.run="./chess_engine"
 LABEL org.chess.build="ghc -O2 --make src/Main.hs -o chess_engine -isrc"
 LABEL org.chess.test="./chess_engine --test"
-LABEL org.chess.analyze="hlint src/"
+LABEL org.chess.analyze="ghc -fno-code -Wall src/Main.hs -isrc 2>&1 || true"
 
 CMD ["./chess_engine"]

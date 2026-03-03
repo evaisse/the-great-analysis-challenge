@@ -1,10 +1,10 @@
 // Performance testing utilities
 
+import board.{make_move}
 import gleam/list
 import gleam/option.{Some}
-import types.{type GameState}
-import board.{make_move}
 import move_generator.{get_legal_moves}
+import types.{type GameState}
 
 pub fn perft(game_state: GameState, depth: Int) -> Int {
   case depth <= 0 {

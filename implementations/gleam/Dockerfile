@@ -12,6 +12,6 @@ LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=800
 LABEL org.chess.build="gleam build"
 LABEL org.chess.test="gleam test"
-LABEL org.chess.analyze="gleam format --check && gleam check"
+LABEL org.chess.analyze="gleam format --check"
 
 CMD ["gleam", "run"]

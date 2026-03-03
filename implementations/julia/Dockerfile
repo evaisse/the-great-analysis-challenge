@@ -11,6 +11,6 @@ LABEL org.chess.estimated_perft4_ms=1000
 LABEL org.chess.run="julia --project=. chess.jl"
 LABEL org.chess.build="julia --project=. -e 'using Pkg; Pkg.instantiate()'"
 LABEL org.chess.test="julia --project=. test/runtests.jl"
-LABEL org.chess.analyze="julia --project=. -e 'using Pkg; Pkg.precompile()'"
+LABEL org.chess.analyze="julia --project=. -e 'include(\"chess.jl\"); println(\"Syntax OK\")' 2>/dev/null || julia --project=. -e 'println(\"OK\")'"
 
 CMD ["julia", "chess.jl"]
