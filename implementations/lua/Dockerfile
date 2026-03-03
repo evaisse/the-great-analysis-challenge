@@ -1,5 +1,7 @@
 FROM ghcr.io/evaisse/tgac-lua-toolchain:latest
 
+RUN apk add --no-cache make
+
 COPY . .
 
 LABEL org.chess.language="lua"
