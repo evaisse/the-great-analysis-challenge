@@ -1,6 +1,8 @@
 /** @import { GameState, Move, Piece, Color, PieceType } from './types.js' */
 
 export const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+/** @type {PieceType[]} */
+const PROMOTION_PIECES = ['q', 'r', 'b', 'n'];
 
 export class ChessEngine {
     constructor() {
@@ -150,7 +152,7 @@ export class ChessEngine {
         /**
          * @param {number} tr
          * @param {number} tc
-         * @param {PieceType | undefined} promotion
+         * @param {PieceType} [promotion]
          * @returns {boolean}
          */
         const addMove = (tr, tc, promotion) => {
@@ -170,7 +172,7 @@ export class ChessEngine {
             const pushIdx = index + dir * 8;
             if (pushIdx >= 0 && pushIdx < 64 && !this.state.board[pushIdx]) {
                 if (r + dir === promRank) {
-                    ['q', 'r', 'b', 'n'].forEach(p => addMove(r + dir, c, p));
+                    PROMOTION_PIECES.forEach(p => addMove(r + dir, c, p));
                 } else {
                     addMove(r + dir, c);
                     if (r === startRank && !this.state.board[index + dir * 16]) {
@@ -185,7 +187,7 @@ export class ChessEngine {
                     const target = this.state.board[targetIdx];
                     if ((target && target.color !== piece.color) || targetIdx === this.state.enPassant) {
                         if (r + dir === promRank) {
-                            ['q', 'r', 'b', 'n'].forEach(p => addMove(r + dir, c + dc, p));
+                            PROMOTION_PIECES.forEach(p => addMove(r + dir, c + dc, p));
                         } else {
                             addMove(r + dir, c + dc);
                         }
