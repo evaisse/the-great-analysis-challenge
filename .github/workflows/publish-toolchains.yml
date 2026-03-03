@@ -2,7 +2,7 @@ name: Publish Language Toolchains
 on:
   push:
     paths:
-      - 'implementations/*/docker-images/**'
+      - 'implementations/*/docker-images/toolchain/**'
   workflow_dispatch:
 
 jobs:
