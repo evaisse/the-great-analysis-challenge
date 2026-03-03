@@ -10,7 +10,7 @@
     "start": "node lib/es6/src/Chess.js",
     "chess": "npm run build && npm start"
   },
-  "dependencies": {
+  "devDependencies": {
     "rescript": "^11.1.0",
     "@rescript/core": "^1.3.0"
   }
