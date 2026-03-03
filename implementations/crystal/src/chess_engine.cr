@@ -20,13 +20,13 @@ class ChessEngine
     loop do
       input = gets
       break unless input
-      
+
       line = input.strip
       next if line.empty?
-      
+
       parts = line.split(/\s+/)
       command = parts[0].downcase
-      
+
       case command
       when "new"
         @game_state = FEN.starting_position
@@ -112,18 +112,18 @@ class ChessEngine
   private def make_move(move_str : String)
     from_square = algebraic_to_square(move_str[0..1])
     to_square = algebraic_to_square(move_str[2..3])
-    
+
     unless from_square && to_square
       puts "ERROR: Invalid move format"
       return
     end
-    
+
     legal_moves = @move_generator.get_legal_moves(@game_state, @game_state.turn)
-    
+
     matching_moves = legal_moves.select do |move|
       move.from == from_square && move.to == to_square
     end
-    
+
     if matching_moves.empty?
       # Provide more specific error for the harness if possible
       if @move_generator.generate_moves(@game_state, @game_state.turn).any? { |m| m.from == from_square && m.to == to_square }
@@ -133,7 +133,7 @@ class ChessEngine
       end
       return
     end
-    
+
     chosen_move = if move_str.size == 5
                     promotion_char = move_str[4].upcase
                     promotion_type = PieceType.from_char(promotion_char)
@@ -141,10 +141,10 @@ class ChessEngine
                   else
                     matching_moves.first
                   end
-    
+
     if chosen_move
       @game_state = Board.make_move(@game_state, chosen_move)
-      
+
       # Check for game end
       over, message = Board.is_game_over(@game_state)
       if over
@@ -168,11 +168,11 @@ class ChessEngine
 
   private def make_ai_move(depth : Int32)
     result = @ai.search(@game_state, depth, @game_state.turn.white?)
-    
+
     if best_move = result.best_move
       move_str = best_move.to_s
       @game_state = Board.make_move(@game_state, best_move)
-      
+
       over, message = Board.is_game_over(@game_state)
       if over
         puts "AI: #{move_str} (#{message})"

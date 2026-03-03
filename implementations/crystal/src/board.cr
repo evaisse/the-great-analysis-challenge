@@ -5,33 +5,33 @@ require "./types"
 class Board
   def self.initial_position : GameState
     board = Array(Piece?).new(64, nil)
-    
+
     # White pieces (bottom ranks)
     pieces = [
       PieceType::Rook, PieceType::Knight, PieceType::Bishop, PieceType::Queen,
-      PieceType::King, PieceType::Bishop, PieceType::Knight, PieceType::Rook
+      PieceType::King, PieceType::Bishop, PieceType::Knight, PieceType::Rook,
     ]
-    
+
     # Place white pieces
     pieces.each_with_index do |piece_type, i|
       board[i] = Piece.new(piece_type, Color::White)
     end
-    
+
     # White pawns
     8.times do |i|
       board[8 + i] = Piece.new(PieceType::Pawn, Color::White)
     end
-    
+
     # Black pawns
     8.times do |i|
       board[48 + i] = Piece.new(PieceType::Pawn, Color::Black)
     end
-    
+
     # Place black pieces
     pieces.each_with_index do |piece_type, i|
       board[56 + i] = Piece.new(piece_type, Color::Black)
     end
-    
+
     GameState.new(board)
   end
 
@@ -72,11 +72,11 @@ class Board
     new_state.position_history << game_state.hash
 
     piece = new_state.board[move.from].not_nil!
-    
+
     # Move piece
     new_state.board[move.to] = piece
     new_state.board[move.from] = nil
-    
+
     # Handle special moves
     if move.is_castling
       rank = piece.color.white? ? 0 : 7
@@ -85,50 +85,50 @@ class Board
                            else
                              {rank * 8, rank * 8 + 3}
                            end
-      
+
       rook = new_state.board[rook_from]
       if rook
         new_state.board[rook_to] = rook
         new_state.board[rook_from] = nil
       end
     end
-    
+
     if move.is_en_passant
       captured_pawn_square = piece.color.white? ? move.to - 8 : move.to + 8
       new_state.board[captured_pawn_square] = nil
     end
-    
+
     if promotion = move.promotion
       new_state.board[move.to] = Piece.new(promotion, piece.color)
     end
-    
+
     # Update en passant target
     new_state.en_passant_target = nil
     if piece.type.pawn? && (move.to - move.from).abs == 16
       new_state.en_passant_target = piece.color.white? ? move.from + 8 : move.from - 8
     end
-    
+
     # Update castling rights
     new_state.castling_rights = update_castling_rights(new_state.castling_rights, move, piece)
-    
+
     # Update clocks
     if move.captured || piece.type.pawn?
       new_state.halfmove_clock = 0
     else
       new_state.halfmove_clock += 1
     end
-    
+
     if piece.color.black?
       new_state.fullmove_number += 1
     end
-    
+
     # Switch turn
     new_state.turn = piece.color.opposite
     new_state.move_history << move
-    
+
     # Update hash
     new_state.hash = Zobrist.calculate_hash(new_state)
-    
+
     new_state
   end
 
@@ -137,7 +137,7 @@ class Board
     new_white_queenside = rights.white_queenside
     new_black_kingside = rights.black_kingside
     new_black_queenside = rights.black_queenside
-    
+
     # King moves
     if piece.type.king?
       if piece.color.white?
@@ -148,7 +148,7 @@ class Board
         new_black_queenside = false
       end
     end
-    
+
     # Rook moves or captures
     case move.from
     when 0
@@ -160,7 +160,7 @@ class Board
     when 63
       new_black_kingside = false
     end
-    
+
     case move.to
     when 0
       new_white_queenside = false
@@ -171,7 +171,7 @@ class Board
     when 63
       new_black_kingside = false
     end
-    
+
     CastlingRights.new(new_white_kingside, new_white_queenside, new_black_kingside, new_black_queenside)
   end
 
@@ -192,7 +192,7 @@ class Board
     if is_draw_by_fifty_moves(game_state)
       return {true, "DRAW: by 50-move rule"}
     end
-    
+
     if is_draw_by_repetition(game_state)
       return {true, "DRAW: by repetition"}
     end
@@ -200,17 +200,17 @@ class Board
     if insufficient_material?(game_state)
       return {true, "DRAW: by insufficient material"}
     end
-    
+
     {false, nil}
   end
 
   private def self.insufficient_material?(game_state : GameState) : Bool
     pieces = game_state.board.compact
-    return true if pieces.size <= 2  # Only kings
-    
+    return true if pieces.size <= 2 # Only kings
+
     # King vs King + Bishop/Knight
     return true if pieces.size == 3 && pieces.any? { |p| p.type.bishop? || p.type.knight? }
-    
+
     false
   end
 end

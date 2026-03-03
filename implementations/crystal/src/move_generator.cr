@@ -5,14 +5,14 @@ require "./types"
 class MoveGenerator
   def generate_moves(game_state : GameState, color : Color) : Array(Move)
     moves = Array(Move).new
-    
+
     64.times do |square|
       piece = game_state.board[square]
       if piece && piece.color == color
         moves.concat(generate_piece_moves(game_state, square, piece))
       end
     end
-    
+
     moves
   end
 
@@ -38,10 +38,10 @@ class MoveGenerator
     direction = color.white? ? 8 : -8
     start_rank = color.white? ? 1 : 6
     promotion_rank = color.white? ? 7 : 0
-    
+
     rank = from // 8
     file = from % 8
-    
+
     # One square forward
     one_forward = from + direction
     if valid_square?(one_forward) && !game_state.board[one_forward]
@@ -53,7 +53,7 @@ class MoveGenerator
       else
         moves << Move.new(from, one_forward, PieceType::Pawn)
       end
-      
+
       # Two squares forward from starting position
       if rank == start_rank
         two_forward = from + 2 * direction
@@ -62,12 +62,12 @@ class MoveGenerator
         end
       end
     end
-    
+
     # Captures
     [direction - 1, direction + 1].each do |offset|
       to = from + offset
       to_file = to % 8
-      
+
       if valid_square?(to) && (to_file - file).abs == 1
         target = game_state.board[to]
         if target && target.color != color
@@ -82,7 +82,7 @@ class MoveGenerator
         end
       end
     end
-    
+
     # En passant
     if target = game_state.en_passant_target
       expected_rank = color.white? ? 4 : 3
@@ -95,7 +95,7 @@ class MoveGenerator
         end
       end
     end
-    
+
     moves
   end
 
@@ -103,11 +103,11 @@ class MoveGenerator
     moves = Array(Move).new
     offsets = [-17, -15, -10, -6, 6, 10, 15, 17]
     file = from % 8
-    
+
     offsets.each do |offset|
       to = from + offset
       to_file = to % 8
-      
+
       if valid_square?(to) && (to_file - file).abs <= 2
         target = game_state.board[to]
         if !target
@@ -117,25 +117,25 @@ class MoveGenerator
         end
       end
     end
-    
+
     moves
   end
 
   private def generate_sliding_moves(game_state : GameState, from : Square, color : Color, directions : Array(Int32), piece_type : PieceType) : Array(Move)
     moves = Array(Move).new
-    
+
     directions.each do |direction|
       to = from + direction
       prev_file = from % 8
-      
+
       while valid_square?(to)
         to_file = to % 8
-        
+
         # Check for wrapping
         if direction % 8 != 0
           break if (to_file - prev_file).abs != 1
         end
-        
+
         target = game_state.board[to]
         if !target
           moves << Move.new(from, to, piece_type)
@@ -145,12 +145,12 @@ class MoveGenerator
           end
           break
         end
-        
+
         prev_file = to_file
         to += direction
       end
     end
-    
+
     moves
   end
 
@@ -170,11 +170,11 @@ class MoveGenerator
     moves = Array(Move).new
     offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
     file = from % 8
-    
+
     offsets.each do |offset|
       to = from + offset
       to_file = to % 8
-      
+
       if valid_square?(to) && (to_file - file).abs <= 1
         target = game_state.board[to]
         if !target
@@ -184,16 +184,16 @@ class MoveGenerator
         end
       end
     end
-    
+
     # Castling
     moves.concat(generate_castling_moves(game_state, from, color))
-    
+
     moves
   end
 
   private def generate_castling_moves(game_state : GameState, from : Square, color : Color) : Array(Move)
     moves = Array(Move).new
-    
+
     case {color, from}
     when {Color::White, 4}
       # White kingside
@@ -206,7 +206,7 @@ class MoveGenerator
          !square_attacked?(game_state, 6, Color::Black)
         moves << Move.new(4, 6, PieceType::King, nil, nil, true)
       end
-      
+
       # White queenside
       if game_state.castling_rights.white_queenside &&
          !game_state.board[3] &&
@@ -229,7 +229,7 @@ class MoveGenerator
          !square_attacked?(game_state, 62, Color::White)
         moves << Move.new(60, 62, PieceType::King, nil, nil, true)
       end
-      
+
       # Black queenside
       if game_state.castling_rights.black_queenside &&
          !game_state.board[59] &&
@@ -242,7 +242,7 @@ class MoveGenerator
         moves << Move.new(60, 58, PieceType::King, nil, nil, true)
       end
     end
-    
+
     moves
   end
 
@@ -282,11 +282,11 @@ class MoveGenerator
     moves = Array(Move).new
     offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
     file = from % 8
-    
+
     offsets.each do |offset|
       to = from + offset
       to_file = to % 8
-      
+
       if valid_square?(to) && (to_file - file).abs <= 1
         target = game_state.board[to]
         if !target
@@ -312,14 +312,14 @@ class MoveGenerator
   def get_legal_moves(game_state : GameState, color : Color) : Array(Move)
     pseudo_legal_moves = generate_moves(game_state, color)
     legal_moves = Array(Move).new
-    
+
     pseudo_legal_moves.each do |move|
       new_state = Board.make_move(game_state, move)
       unless in_check?(new_state, color)
         legal_moves << move
       end
     end
-    
+
     legal_moves
   end
 
