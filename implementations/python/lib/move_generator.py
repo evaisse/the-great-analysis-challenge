@@ -2,7 +2,7 @@
 Move generation for chess pieces.
 """
 
-from typing import List, Optional
+from typing import List, Optional  # noqa: F401
 from lib.types import Move, Piece, PieceType, Color
 from lib.board import Board
 

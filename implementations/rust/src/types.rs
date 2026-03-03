@@ -77,7 +77,7 @@ impl Piece {
         Self { piece_type, color }
     }
 
-    pub fn to_char(&self) -> char {
+    pub fn to_char(self) -> char {
         let ch = match self.piece_type {
             PieceType::King => 'K',
             PieceType::Queen => 'Q',
@@ -213,13 +213,13 @@ impl GameState {
         board[6] = Some(Piece::new(PieceType::Knight, Color::White));
         board[7] = Some(Piece::new(PieceType::Rook, Color::White));
         
-        for i in 8..16 {
-            board[i] = Some(Piece::new(PieceType::Pawn, Color::White));
+        for cell in board[8..16].iter_mut() {
+            *cell = Some(Piece::new(PieceType::Pawn, Color::White));
         }
         
         // Black pieces
-        for i in 48..56 {
-            board[i] = Some(Piece::new(PieceType::Pawn, Color::Black));
+        for cell in board[48..56].iter_mut() {
+            *cell = Some(Piece::new(PieceType::Pawn, Color::Black));
         }
         
         board[56] = Some(Piece::new(PieceType::Rook, Color::Black));

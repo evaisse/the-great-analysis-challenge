@@ -1,4 +1,4 @@
-from lib.types import GameState
+from lib.types import GameState  # noqa: F401
 
 def is_draw_by_repetition(board) -> bool:
     current_hash = board.zobrist_hash

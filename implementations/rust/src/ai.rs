@@ -12,6 +12,7 @@ pub struct AI {
 pub struct SearchResult {
     pub best_move: Option<Move>,
     pub evaluation: i32,
+    #[allow(dead_code)]
     pub nodes: u64,
     pub time_ms: u128,
 }

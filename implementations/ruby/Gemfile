@@ -6,7 +6,7 @@ ruby '>= 3.0.0'
 
 # Development, testing, and static analysis
 group :development, :test do
+  gem 'rspec', '~> 3.12'
   gem 'rubocop', '~> 1.50'
   gem 'rubocop-performance', '~> 1.18'
-  gem 'rspec', '~> 3.12'
 end

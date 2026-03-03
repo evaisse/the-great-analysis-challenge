@@ -51,12 +51,12 @@ module Chess
       8.times do |row|
         8.times do |col|
           piece = board.piece_at(row, col)
-          if piece
-            # Map row 0-7 (rank 8-1) to square 0-63 (a1-h8)
-            square = (7 - row) * 8 + col
-            idx = piece_index(piece)
-            hash_val ^= @pieces[idx][square]
-          end
+          next unless piece
+
+          # Map row 0-7 (rank 8-1) to square 0-63 (a1-h8)
+          square = ((7 - row) * 8) + col
+          idx = piece_index(piece)
+          hash_val ^= @pieces[idx][square]
         end
       end
 

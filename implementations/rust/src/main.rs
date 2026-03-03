@@ -239,7 +239,7 @@ impl ChessEngine {
 
     fn handle_ai(&mut self, depth_str: &str) {
         let depth = match depth_str.parse::<u8>() {
-            Ok(d) if d >= 1 && d <= 5 => d,
+            Ok(d) if (1..=5).contains(&d) => d,
             _ => {
                 println!("ERROR: AI depth must be 1-5");
                 return;
