@@ -5,7 +5,7 @@ all: build
 
 # Build target - check syntax
 build:
-	lua5.4 -l chess.lua 2>&1 > /dev/null || lua5.4 -e "assert(loadfile('chess.lua'))"
+	luac -p chess.lua && echo 'Build OK'
 
 # Run basic tests
 test:
@@ -15,7 +15,7 @@ test:
 # Static analysis and code quality
 analyze:
 	@echo "Running Lua static analysis..."
-	lua5.4 -l chess.lua 2>&1 || lua5.4 -e "assert(loadfile('chess.lua'))"
+	luac -p chess.lua && echo 'Syntax OK'
 
 # Clean build artifacts
 clean:

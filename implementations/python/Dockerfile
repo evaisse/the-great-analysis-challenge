@@ -1,5 +1,7 @@
 FROM ghcr.io/evaisse/tgac-python-toolchain:latest
 
+RUN pip install --quiet pbr
+
 COPY . .
 
 LABEL org.chess.language="python"

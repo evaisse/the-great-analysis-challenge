@@ -1,5 +1,7 @@
 FROM ghcr.io/evaisse/tgac-rust-toolchain:latest
 
+RUN rustup component add clippy
+
 COPY . .
 
 RUN cargo build --release

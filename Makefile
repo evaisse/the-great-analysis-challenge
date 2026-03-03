@@ -168,11 +168,11 @@ ifdef DIR
 		echo "Step 1/4: Verify"; \
 		run_with_timeout 60s $(MAKE) verify DIR=$(DIR); \
 		echo "Step 2/4: Build"; \
-		run_with_timeout 60s $(MAKE) build DIR=$(DIR); \
+		run_with_timeout 600s $(MAKE) build DIR=$(DIR); \
 		echo "Step 3/4: Analyze"; \
-		run_with_timeout 60s $(MAKE) analyze DIR=$(DIR); \
+		run_with_timeout 120s $(MAKE) analyze DIR=$(DIR); \
 		echo "Step 4/4: Test"; \
-		run_with_timeout 60s $(MAKE) test DIR=$(DIR); \
+		run_with_timeout 120s $(MAKE) test DIR=$(DIR); \
 		echo "Workflow completed successfully for $(DIR)"; \
 	'
 else

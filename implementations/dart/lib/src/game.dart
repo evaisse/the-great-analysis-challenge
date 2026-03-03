@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:chess_engine/chess_engine.dart';
 
 class Game {
@@ -22,7 +21,8 @@ class Game {
 
   void move(String moveStr) {
     final legalMoves = board.generateMoves();
-    final move = legalMoves.firstWhereOrNull((m) => m.toString() == moveStr);
+    final matching = legalMoves.where((m) => m.toString() == moveStr);
+    final move = matching.isEmpty ? null : matching.first;
 
     if (move == null) {
       throw Exception('ERROR: Illegal move');

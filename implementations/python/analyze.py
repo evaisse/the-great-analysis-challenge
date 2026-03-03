@@ -7,20 +7,34 @@ import subprocess
 import sys
 import os
 
+
 def run_analysis():
     """Run static analysis tools."""
     print("🔍 Running Python static analysis...")
     print("=" * 50)
-    
+
     tools = [
-        ("mypy", ["python3", "-m", "mypy", ".", "--ignore-missing-imports", "--no-strict-optional"]),
-        ("flake8", ["python3", "-m", "flake8", ".", "--max-line-length=100", "--ignore=E203,W503,W293,F541"]),
+        (
+            "mypy",
+            ["python3", "-m", "mypy", ".", "--ignore-missing-imports", "--no-strict-optional"],
+        ),
+        (
+            "flake8",
+            [
+                "python3",
+                "-m",
+                "flake8",
+                ".",
+                "--max-line-length=100",
+                "--ignore=E203,W503,W293,F541",
+            ],
+        ),
         ("black", ["python3", "-m", "black", "--check", "--diff", "."]),
-        ("bandit", ["python3", "-m", "bandit", "-r", ".", "-f", "txt"])
+        ("bandit", ["python3", "-m", "bandit", "-r", ".", "-f", "txt"]),
     ]
-    
+
     all_passed = True
-    
+
     for name, cmd in tools:
         print(f"\n📝 Running {name}...")
         try:
@@ -44,11 +58,12 @@ def run_analysis():
         except Exception as e:
             print(f"❌ {name}: ERROR - {e}")
             all_passed = False
-    
+
     print(f"\n{'✅ All checks passed!' if all_passed else '❌ Some issues found'}")
     print("📊 Analysis complete!")
-    
+
     return 0 if all_passed else 1
+
 
 if __name__ == "__main__":
     sys.exit(run_analysis())

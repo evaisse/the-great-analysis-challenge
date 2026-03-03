@@ -2,6 +2,8 @@ FROM ghcr.io/evaisse/tgac-javascript-toolchain:latest
 
 COPY . .
 
+RUN npm install
+
 LABEL org.chess.language="javascript"
 LABEL org.chess.version="1.0.0"
 LABEL org.chess.author="JavaScript Implementation"

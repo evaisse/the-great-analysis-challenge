@@ -8,7 +8,7 @@
     "start": "node chess.js",
     "build": "echo 'No build step needed'",
     "test": "node --test test/*.test.js",
-    "lint": "tsc",
+    "lint": "tsc -p jsconfig.json",
     "analyze": "tsc"
   },
   "devDependencies": {
