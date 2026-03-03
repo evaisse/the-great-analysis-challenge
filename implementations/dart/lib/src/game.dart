@@ -1,4 +1,3 @@
-
 import 'package:chess_engine/chess_engine.dart';
 
 class Game {
