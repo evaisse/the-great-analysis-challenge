@@ -5,17 +5,17 @@ all: build
 
 # Build target - check syntax
 build:
-	lua5.4 -l chess.lua 2>&1 > /dev/null || lua5.4 -e "assert(loadfile('chess.lua'))"
+	lua -l chess.lua 2>&1 > /dev/null || lua -e "assert(loadfile('chess.lua'))"
 
 # Run basic tests
 test:
 	@echo "Running basic functionality test..."
-	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | lua5.4 chess.lua | grep "FEN: " | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
+	@echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | lua chess.lua | grep "FEN: " | tail -1 | grep -q "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2" && echo "✅ Basic test passed" || echo "❌ Basic test failed"
 
 # Static analysis and code quality
 analyze:
 	@echo "Running Lua static analysis..."
-	lua5.4 -l chess.lua 2>&1 || lua5.4 -e "assert(loadfile('chess.lua'))"
+	lua -l chess.lua 2>&1 || lua -e "assert(loadfile('chess.lua'))"
 
 # Clean build artifacts
 clean:
@@ -27,7 +27,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing Lua implementation in Docker..."
-	docker run --network none --rm -i chess-lua sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | lua5.4 chess.lua"
+	docker run --network none --rm -i chess-lua sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | lua chess.lua"
 
 # Help target
 help:

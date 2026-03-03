@@ -2,7 +2,7 @@ FROM ghcr.io/evaisse/tgac-rescript-toolchain:latest
 
 COPY . .
 
-RUN npm run build
+RUN npm install && npm run build
 
 LABEL org.chess.language="rescript"
 LABEL org.chess.version="10.0"

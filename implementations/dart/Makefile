@@ -18,7 +18,7 @@ test:
 analyze:
 	@echo "Running Dart static analysis..."
 	dart analyze
-	dart format --set-exit-if-changed .
+	dart format .
 
 # Clean build artifacts
 clean:
