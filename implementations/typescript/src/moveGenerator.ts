@@ -1,5 +1,6 @@
 import { Board } from "./board";
 import { Move, Piece, Color, Square, PieceType } from "./types";
+import { KING_ATTACKS, KNIGHT_ATTACKS, RAY_TABLES } from "./attackTables";
 
 export class MoveGenerator {
   private board: Board;
@@ -143,18 +144,10 @@ export class MoveGenerator {
 
   private generateKnightMoves(from: Square, piece: Piece): Move[] {
     const moves: Move[] = [];
-    const offsets = [-17, -15, -10, -6, 6, 10, 15, 17];
-    const file = from % 8;
-
-    offsets.forEach((offset) => {
-      const to = from + offset;
-      const toFile = to % 8;
-
-      if (this.isValidSquare(to) && Math.abs(toFile - file) <= 2) {
-        const target = this.board.getPiece(to);
-        if (!target || target.color !== piece.color) {
-          moves.push({ from, to, piece: "N", captured: target?.type });
-        }
+    KNIGHT_ATTACKS[from].forEach((to) => {
+      const target = this.board.getPiece(to);
+      if (!target || target.color !== piece.color) {
+        moves.push({ from, to, piece: "N", captured: target?.type });
       }
     });
 
@@ -184,18 +177,10 @@ export class MoveGenerator {
     includeCastling: boolean = true,
   ): Move[] {
     const moves: Move[] = [];
-    const offsets = [-9, -8, -7, -1, 1, 7, 8, 9];
-    const file = from % 8;
-
-    offsets.forEach((offset) => {
-      const to = from + offset;
-      const toFile = to % 8;
-
-      if (this.isValidSquare(to) && Math.abs(toFile - file) <= 1) {
-        const target = this.board.getPiece(to);
-        if (!target || target.color !== piece.color) {
-          moves.push({ from, to, piece: "K", captured: target?.type });
-        }
+    KING_ATTACKS[from].forEach((to) => {
+      const target = this.board.getPiece(to);
+      if (!target || target.color !== piece.color) {
+        moves.push({ from, to, piece: "K", captured: target?.type });
       }
     });
 
@@ -274,24 +259,9 @@ export class MoveGenerator {
     isDiagonal: boolean | null,
   ): Move[] {
     const moves: Move[] = [];
-    const file = from % 8;
-
-    directions.forEach((direction) => {
-      let to = from + direction;
-      let prevFile = file;
-
-      while (this.isValidSquare(to)) {
-        const toFile = to % 8;
-
-        const fileDiff = Math.abs(toFile - prevFile);
-        if (Math.abs(direction) % 8 === 0) {
-          // Vertical moves: file must stay the same
-          if (fileDiff !== 0) break;
-        } else {
-          // Horizontal or diagonal moves: file must change by 1
-          if (fileDiff !== 1) break;
-        }
-
+    for (const direction of directions) {
+      const rayTable = RAY_TABLES.get(direction)!;
+      for (const to of rayTable[from]) {
         const target = this.board.getPiece(to);
         if (!target) {
           moves.push({ from, to, piece: piece.type, captured: undefined });
@@ -301,11 +271,8 @@ export class MoveGenerator {
         } else {
           break;
         }
-
-        prevFile = toFile;
-        to += direction;
       }
-    });
+    }
 
     return moves;
   }
