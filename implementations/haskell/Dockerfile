@@ -1,6 +1,7 @@
 FROM ghcr.io/evaisse/tgac-haskell-toolchain:latest
 
 COPY src/ src/
+COPY Makefile .
 
 RUN ghc -O2 --make src/Main.hs -o chess_engine -i/app/src
 

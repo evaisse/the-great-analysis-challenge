@@ -1,5 +1,7 @@
 FROM ghcr.io/evaisse/tgac-dart-toolchain:latest
 
+RUN apt-get update && apt-get install -y --no-install-recommends make && rm -rf /var/lib/apt/lists/*
+
 COPY . .
 
 RUN dart pub get && dart compile exe bin/main.dart -o bin/chess_engine

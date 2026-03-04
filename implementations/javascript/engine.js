@@ -1,10 +1,14 @@
 /** @import { GameState, Move, Piece, Color, PieceType } from './types.js' */
 
 export const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+/** @type {PieceType[]} */
+const PROMOTION_PIECES = ['q', 'r', 'b', 'n'];
 
 export class ChessEngine {
     constructor() {
+        /** @type {GameState} */
         this.state = this.parseFen(INITIAL_FEN);
+        /** @type {GameState[]} */
         this.history = [];
     }
 
@@ -125,6 +129,7 @@ export class ChessEngine {
      * @returns {Move[]}
      */
     generateMoves() {
+        /** @type {Move[]} */
         const moves = [];
         for (let i = 0; i < 64; i++) {
             const piece = this.state.board[i];
@@ -144,6 +149,12 @@ export class ChessEngine {
         const r = Math.floor(index / 8);
         const c = index % 8;
 
+        /**
+         * @param {number} tr
+         * @param {number} tc
+         * @param {PieceType} [promotion]
+         * @returns {boolean}
+         */
         const addMove = (tr, tc, promotion) => {
             if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
                 moves.push({ from: index, to: tr * 8 + tc, promotion });
@@ -161,7 +172,7 @@ export class ChessEngine {
             const pushIdx = index + dir * 8;
             if (pushIdx >= 0 && pushIdx < 64 && !this.state.board[pushIdx]) {
                 if (r + dir === promRank) {
-                    ['q', 'r', 'b', 'n'].forEach(p => addMove(r + dir, c, p));
+                    PROMOTION_PIECES.forEach(p => addMove(r + dir, c, p));
                 } else {
                     addMove(r + dir, c);
                     if (r === startRank && !this.state.board[index + dir * 16]) {
@@ -176,7 +187,7 @@ export class ChessEngine {
                     const target = this.state.board[targetIdx];
                     if ((target && target.color !== piece.color) || targetIdx === this.state.enPassant) {
                         if (r + dir === promRank) {
-                            ['q', 'r', 'b', 'n'].forEach(p => addMove(r + dir, c + dc, p));
+                            PROMOTION_PIECES.forEach(p => addMove(r + dir, c + dc, p));
                         } else {
                             addMove(r + dir, c + dc);
                         }
@@ -362,7 +373,10 @@ export class ChessEngine {
 
     undo() {
         if (this.history.length > 0) {
-            this.state = this.history.pop();
+            const previousState = this.history.pop();
+            if (previousState) {
+                this.state = previousState;
+            }
         }
     }
 

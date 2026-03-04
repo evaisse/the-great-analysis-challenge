@@ -59,6 +59,8 @@ struct GameState {
     let blackKingSideCastle: Bool
     let blackQueenSideCastle: Bool
     let enPassantTarget: (Int, Int)?
+    let halfmoveClock: Int
+    let fullmoveNumber: Int
 }
 
 // Represents the game board
@@ -70,6 +72,8 @@ struct Board {
     var blackKingSideCastle: Bool = true
     var blackQueenSideCastle: Bool = true
     var enPassantTarget: (Int, Int)? = nil
+    var halfmoveClock: Int = 0
+    var fullmoveNumber: Int = 1
     var history: [GameState] = []
 
     init() {
@@ -77,6 +81,8 @@ struct Board {
     }
 
     mutating func setupBoard() {
+        pieces = Array(repeating: Array(repeating: nil, count: 8), count: 8)
+
         // Set up the white pieces
         pieces[0] = [
             Piece(type: .rook, color: .white),
@@ -102,6 +108,16 @@ struct Board {
             Piece(type: .knight, color: .black),
             Piece(type: .rook, color: .black),
         ]
+
+        currentPlayer = .white
+        whiteKingSideCastle = true
+        whiteQueenSideCastle = true
+        blackKingSideCastle = true
+        blackQueenSideCastle = true
+        enPassantTarget = nil
+        halfmoveClock = 0
+        fullmoveNumber = 1
+        history = []
     }
 
     func generateMoves() -> [Move] {
@@ -387,11 +403,23 @@ struct Board {
         return !isInCheck(color: currentPlayer) && generateMoves().isEmpty
     }
 
-        mutating func makeMove(_ move: Move) {
-            let gameState = GameState(whiteKingSideCastle: whiteKingSideCastle, whiteQueenSideCastle: whiteQueenSideCastle, blackKingSideCastle: blackKingSideCastle, blackQueenSideCastle: blackQueenSideCastle, enPassantTarget: enPassantTarget)
-            history.append(gameState)
-    
-            let piece = pieces[move.from.0][move.from.1]        // Handle castling
+    mutating func makeMove(_ move: Move) {
+        let gameState = GameState(
+            whiteKingSideCastle: whiteKingSideCastle,
+            whiteQueenSideCastle: whiteQueenSideCastle,
+            blackKingSideCastle: blackKingSideCastle,
+            blackQueenSideCastle: blackQueenSideCastle,
+            enPassantTarget: enPassantTarget,
+            halfmoveClock: halfmoveClock,
+            fullmoveNumber: fullmoveNumber
+        )
+        history.append(gameState)
+
+        let movingColor = currentPlayer
+        let piece = pieces[move.from.0][move.from.1]
+        let capturedPiece = pieces[move.to.0][move.to.1]
+
+        // Handle castling
         if piece?.type == .king {
             if move.to.1 - move.from.1 == 2 { // Kingside
                 pieces[move.from.0][5] = pieces[move.from.0][7]
@@ -434,9 +462,19 @@ struct Board {
 
         // Update en passant target
         if piece?.type == .pawn && abs(move.to.0 - move.from.0) == 2 {
-            enPassantTarget = ( (move.from.0 + move.to.0) / 2, move.from.1)
+            enPassantTarget = ((move.from.0 + move.to.0) / 2, move.from.1)
         } else {
             enPassantTarget = nil
+        }
+
+        if piece?.type == .pawn || capturedPiece != nil {
+            halfmoveClock = 0
+        } else {
+            halfmoveClock += 1
+        }
+
+        if movingColor == .black {
+            fullmoveNumber += 1
         }
 
         currentPlayer = (currentPlayer == .white) ? .black : .white
@@ -524,6 +562,8 @@ struct Board {
             blackKingSideCastle = lastState.blackKingSideCastle
             blackQueenSideCastle = lastState.blackQueenSideCastle
             enPassantTarget = lastState.enPassantTarget
+            halfmoveClock = lastState.halfmoveClock
+            fullmoveNumber = lastState.fullmoveNumber
         }
     }
 
@@ -567,7 +607,7 @@ struct Board {
             fen += " -"
         }
 
-        fen += " 0 1"
+        fen += " \(halfmoveClock) \(fullmoveNumber)"
         return fen
     }
 
@@ -616,6 +656,11 @@ struct Board {
         } else {
             enPassantTarget = nil
         }
+
+        halfmoveClock = parts.count > 4 ? Int(parts[4]) ?? 0 : 0
+        fullmoveNumber = parts.count > 5 ? Int(parts[5]) ?? 1 : 1
+
+        history = []
     }
 }
 
