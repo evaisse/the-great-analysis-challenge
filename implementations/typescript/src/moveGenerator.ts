@@ -259,9 +259,8 @@ export class MoveGenerator {
     isDiagonal: boolean | null,
   ): Move[] {
     const moves: Move[] = [];
-    directions.forEach((direction) => {
-      const rayTable = RAY_TABLES.get(direction);
-      if (!rayTable) return;
+    for (const direction of directions) {
+      const rayTable = RAY_TABLES.get(direction)!;
       for (const to of rayTable[from]) {
         const target = this.board.getPiece(to);
         if (!target) {
@@ -273,7 +272,7 @@ export class MoveGenerator {
           break;
         }
       }
-    });
+    }
 
     return moves;
   }
