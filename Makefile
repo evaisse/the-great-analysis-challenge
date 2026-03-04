@@ -2,10 +2,13 @@
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 # Convention over Configuration: This Makefile is 100% implementation-agnostic
 
-.PHONY: all image test-chess-engine test build analyze clean help website analyze-tools list-implementations verify workflow validate-website-metadata install-hooks
+.PHONY: all image test-chess-engine test build analyze clean help website analyze-tools list-implementations verify workflow validate-website-metadata install-hooks benchmark-stress benchmark-concurrency
 
 # Auto-discover all implementations with Dockerfiles
 IMPLEMENTATIONS := $(shell find implementations -mindepth 1 -maxdepth 1 -type d -exec test -f {}/Dockerfile \; -exec basename {} \; 2>/dev/null | sort)
+TRACK ?= v1
+PROFILE ?= quick
+TIMEOUT ?= 1800
 
 # Default target
 all: image build test test-chess-engine
@@ -21,7 +24,12 @@ help:
 	@echo "  make build [DIR=<impl>]             - Run compilation command(s) only"
 	@echo "  make analyze [DIR=<impl>]           - Run static analysis/lint command(s) only"
 	@echo "  make test [DIR=<impl>]              - Run internal implementation test command(s) only"
-	@echo "  make test-chess-engine [DIR=<impl>] - Run shared chess engine suite only"
+	@echo "  make test-chess-engine [DIR=<impl>] [TRACK=v1|v2-foundation|v2-functional|v2-system|v2-full]"
+	@echo "                                     - Run shared chess engine suite only"
+	@echo "  make benchmark-stress [DIR=<impl>] [TRACK=...] [PROFILE=quick|full] [TIMEOUT=<s>]"
+	@echo "                                     - Run performance benchmark suite with normalized metrics"
+	@echo "  make benchmark-concurrency [DIR=<impl>] [PROFILE=quick|full]"
+	@echo "                                     - Run concurrency safety harness"
 	@echo "  make verify [DIR=<impl>]            - Verify implementation structure"
 	@echo "  make workflow [DIR=<impl>]          - Run full workflow (verify, image, build, analyze, test, test-chess-engine)"
 	@echo "  make clean [DIR=<impl>]             - Clean implementation image(s)"
@@ -157,7 +165,11 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
-	@python3 test/test_harness_docker.py --impl implementations/$(DIR) --image chess-$(DIR)
+	@echo "Running chess engine harness for $(DIR) (track=$(TRACK))..."
+	@python3 test/test_harness.py \
+		--impl implementations/$(DIR) \
+		--track $(TRACK) \
+		--docker-image chess-$(DIR)
 else
 	@echo "Running shared chess engine suite for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
@@ -253,3 +265,42 @@ analyze-tools:
 install-hooks:
 	@chmod +x scripts/setup-hooks.sh scripts/pre-commit.sh
 	@./scripts/setup-hooks.sh
+
+# Performance benchmark suite with optional track/profile
+benchmark-stress:
+ifndef DIR
+	@echo "ERROR: DIR is required (e.g. make benchmark-stress DIR=python TRACK=v2-foundation PROFILE=quick)"
+	@exit 1
+endif
+	@if [ ! -d "implementations/$(DIR)" ]; then \
+		echo "ERROR: Implementation '$(DIR)' not found"; \
+		exit 1; \
+	fi
+	@$(MAKE) build DIR=$(DIR)
+	@mkdir -p reports
+	@echo "Running stress benchmark for $(DIR) (track=$(TRACK), profile=$(PROFILE), timeout=$(TIMEOUT)s)..."
+	@python3 test/performance_test.py \
+		--impl implementations/$(DIR) \
+		--track $(TRACK) \
+		--profile $(PROFILE) \
+		--timeout $(TIMEOUT) \
+		--json reports/$(DIR).json
+
+# Concurrency safety harness
+benchmark-concurrency:
+ifndef DIR
+	@echo "ERROR: DIR is required (e.g. make benchmark-concurrency DIR=python PROFILE=quick)"
+	@exit 1
+endif
+	@if [ ! -d "implementations/$(DIR)" ]; then \
+		echo "ERROR: Implementation '$(DIR)' not found"; \
+		exit 1; \
+	fi
+	@$(MAKE) build DIR=$(DIR)
+	@mkdir -p reports
+	@echo "Running concurrency harness for $(DIR) (profile=$(PROFILE))..."
+	@python3 test/concurrency_harness.py \
+		--impl implementations/$(DIR) \
+		--profile $(PROFILE) \
+		--skip-build \
+		--output reports/$(DIR)-concurrency.json

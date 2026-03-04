@@ -23,6 +23,30 @@ All implementations must support the following commands via stdin/stdout:
 | `help` | `help` | Display available commands | `help` |
 | `quit` | `quit` | Exit the program | `quit` |
 
+### 1.1.1 Next-Level Track V2 (Progressive)
+
+The repository supports an additional progressive `v2` track used for stress and extended benchmarking.
+
+`v1` remains mandatory and backward-compatible. `v2` adds commands and validations in staged suites:
+- `v2-foundation`
+- `v2-functional`
+- `v2-system`
+- `v2-full`
+
+Additional command surface expected in `v2` includes:
+- `hash`, `draws`, `history`
+- `go movetime <ms>`, `go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]`, `go infinite`, `stop`
+- `pgn load|save|show|moves|variation enter|variation exit|comment`
+- UCI mode commands (`uci`, `isready`, `setoption`, `position`, `go`, `stop`, `quit`)
+- `new960 [n]`, `position960`
+- `trace on|off`, `trace level`, `trace export`, `trace report`, `trace chrome`, `trace reset`
+- `concurrency quick|full`
+
+Track orchestration is handled by shared tooling:
+- `python3 test/test_harness.py --track <track>`
+- `python3 test/performance_test.py --track <track> --profile <quick|full>`
+- `python3 test/concurrency_harness.py --profile <quick|full>`
+
 ### 1.2 Output Format
 
 #### Board Display
@@ -63,6 +87,15 @@ AI: <move> (depth=<n>, eval=<score>, time=<ms>)
 
 # FEN export
 FEN: <fen_string>
+
+# Hash command (v2)
+HASH: <hex64>
+
+# Draw state command (v2)
+DRAWS: repetition=<n>; halfmove=<n>; draw=<true|false>; reason=<none|repetition|fifty_moves>
+
+# Concurrency command (v2)
+CONCURRENCY: <json>
 ```
 
 ## 2. Chess Rules Implementation

@@ -9,7 +9,10 @@ Usage:
 Commands:
     detect-changes          - Detect changed implementations
     generate-matrix         - Generate GitHub matrix for parallel jobs
-    run-benchmark          - Run benchmark for a specific implementation
+    run-benchmark           - Run benchmark for a specific implementation
+    test-chess-engine       - Run shared chess engine harness for a track
+    benchmark-stress        - Run stress benchmark suite with track/profile
+    benchmark-concurrency   - Run concurrency safety harness
     verify-implementations - Run structure verification and count results
     validate-results       - Validate benchmark result JSON files
     combine-results        - Combine benchmark artifacts
@@ -328,6 +331,127 @@ class WorkflowTool:
         except Exception as e:
             print(f"❌ Benchmark failed for {impl_name}: {e}")
             return False
+
+    def test_chess_engine(self, impl_name: str, track: str = "v1", docker_image: Optional[str] = None) -> bool:
+        """Run shared chess-engine harness for a specific track."""
+        print(f"🧪 Running chess-engine harness for {impl_name} (track={track})...")
+
+        if not impl_name:
+            print("Error: Implementation name required")
+            return False
+
+        impl_dir = f"implementations/{impl_name}"
+        if not os.path.exists(impl_dir):
+            print(f"❌ Implementation directory not found: {impl_dir}")
+            return False
+
+        image = docker_image or f"chess-{impl_name}-test"
+        cmd = [
+            "python3",
+            "test/test_harness.py",
+            "--impl",
+            impl_dir,
+            "--track",
+            track,
+            "--docker-image",
+            image,
+        ]
+
+        result = self.run_command(cmd, timeout=300, check=False, show_output=True)
+        if result.returncode == 0:
+            print(f"✅ test-chess-engine succeeded for {impl_name} ({track})")
+            return True
+
+        print(f"❌ test-chess-engine failed for {impl_name} ({track})")
+        return False
+
+    def benchmark_stress(self, impl_name: str, track: str = "v1", profile: str = "quick", timeout: int = 300) -> bool:
+        """Run stress benchmark suite."""
+        print(f"🏁 Running stress benchmark for {impl_name} (track={track}, profile={profile})...")
+
+        if not impl_name:
+            print("Error: Implementation name required")
+            return False
+
+        impl_dir = f"implementations/{impl_name}"
+        if not os.path.exists(impl_dir):
+            print(f"❌ Implementation directory not found: {impl_dir}")
+            return False
+
+        reports_dir = Path("reports")
+        reports_dir.mkdir(exist_ok=True)
+        text_output = reports_dir / f"{impl_name}.out.txt"
+        json_output = reports_dir / f"{impl_name}.json"
+
+        cmd = [
+            "python3",
+            "test/performance_test.py",
+            "--impl",
+            impl_dir,
+            "--track",
+            track,
+            "--profile",
+            profile,
+            "--timeout",
+            str(timeout),
+            "--json",
+            str(json_output),
+        ]
+
+        result = self.run_command(
+            cmd,
+            timeout=timeout + 120,
+            check=False,
+            stream_output=True,
+            output_file=str(text_output),
+        )
+
+        if result.returncode == 0:
+            print(f"✅ benchmark-stress completed for {impl_name}")
+            return True
+
+        print(f"❌ benchmark-stress failed for {impl_name} (exit code: {result.returncode})")
+        return False
+
+    def benchmark_concurrency(self, impl_name: str, profile: str = "quick", docker_image: Optional[str] = None) -> bool:
+        """Run concurrency safety harness."""
+        print(f"🧵 Running concurrency benchmark for {impl_name} (profile={profile})...")
+
+        if not impl_name:
+            print("Error: Implementation name required")
+            return False
+
+        impl_dir = f"implementations/{impl_name}"
+        if not os.path.exists(impl_dir):
+            print(f"❌ Implementation directory not found: {impl_dir}")
+            return False
+
+        reports_dir = Path("reports")
+        reports_dir.mkdir(exist_ok=True)
+        image = docker_image or f"chess-{impl_name}"
+        output = reports_dir / f"{impl_name}-concurrency.json"
+
+        cmd = [
+            "python3",
+            "test/concurrency_harness.py",
+            "--impl",
+            impl_dir,
+            "--profile",
+            profile,
+            "--skip-build",
+            "--docker-image",
+            image,
+            "--output",
+            str(output),
+        ]
+
+        result = self.run_command(cmd, timeout=420, check=False, show_output=True)
+        if result.returncode == 0:
+            print(f"✅ benchmark-concurrency completed for {impl_name}")
+            return True
+
+        print(f"❌ benchmark-concurrency failed for {impl_name}")
+        return False
     
     def analyze_python_tools(self) -> bool:
         """Run static analysis over Python tooling outside implementations."""
@@ -866,6 +990,25 @@ def main():
     benchmark_parser.add_argument('impl_name', nargs='?', help='Implementation name')
     benchmark_parser.add_argument('--timeout', type=int, default=60, help='Timeout in seconds')
     benchmark_parser.add_argument('--all', action='store_true', help='Run benchmarks on all implementations')
+
+    # test-chess-engine command
+    test_engine_parser = subparsers.add_parser('test-chess-engine', help='Run shared chess-engine harness')
+    test_engine_parser.add_argument('impl_name', help='Implementation name')
+    test_engine_parser.add_argument('--track', default='v1', help='Track name (v1, v2-foundation, v2-functional, v2-system, v2-full)')
+    test_engine_parser.add_argument('--docker-image', help='Docker image name (default: chess-<impl>-test)')
+
+    # benchmark-stress command
+    stress_parser = subparsers.add_parser('benchmark-stress', help='Run stress benchmark suite')
+    stress_parser.add_argument('impl_name', help='Implementation name')
+    stress_parser.add_argument('--track', default='v1', help='Track name (v1, v2-foundation, v2-functional, v2-system, v2-full)')
+    stress_parser.add_argument('--profile', default='quick', choices=['quick', 'full'], help='Benchmark profile')
+    stress_parser.add_argument('--timeout', type=int, default=300, help='Timeout in seconds')
+
+    # benchmark-concurrency command
+    concurrency_parser = subparsers.add_parser('benchmark-concurrency', help='Run concurrency safety harness')
+    concurrency_parser.add_argument('impl_name', help='Implementation name')
+    concurrency_parser.add_argument('--profile', default='quick', choices=['quick', 'full'], help='Concurrency profile')
+    concurrency_parser.add_argument('--docker-image', help='Docker image name (default: chess-<impl>)')
     
     # analyze-python-tools command
     subparsers.add_parser('analyze-python-tools', help='Static analysis for repository Python tooling')
@@ -957,6 +1100,18 @@ def main():
             except NameError:
                 success = tool.run_benchmark(args.impl_name, args.timeout)
                 return 0 if success else 1
+
+        elif args.command == 'test-chess-engine':
+            success = tool.test_chess_engine(args.impl_name, args.track, args.docker_image)
+            return 0 if success else 1
+
+        elif args.command == 'benchmark-stress':
+            success = tool.benchmark_stress(args.impl_name, args.track, args.profile, args.timeout)
+            return 0 if success else 1
+
+        elif args.command == 'benchmark-concurrency':
+            success = tool.benchmark_concurrency(args.impl_name, args.profile, args.docker_image)
+            return 0 if success else 1
         
         elif args.command == 'analyze-python-tools':
             success = tool.analyze_python_tools()

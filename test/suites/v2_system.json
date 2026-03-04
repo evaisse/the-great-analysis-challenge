@@ -1,0 +1,63 @@
+{
+  "version": "2.0",
+  "track": "v2-system",
+  "description": "System stress tests (tracing and concurrency safety with fixtures)",
+  "test_categories": {
+    "system_trace": {
+      "description": "Tracing command surface",
+      "required": true,
+      "tests": [
+        {
+          "id": "trace_report",
+          "name": "Trace Report",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "new"},
+            {"cmd": "ai 1"},
+            {"cmd": "trace report"}
+          ],
+          "expected_patterns": ["TRACE"],
+          "timeout": 8000
+        }
+      ]
+    },
+    "system_concurrency": {
+      "description": "Concurrency contract with fixture-backed command replay",
+      "required": true,
+      "tests": [
+        {
+          "id": "concurrency_quick_fixture",
+          "name": "Concurrency Quick Fixture",
+          "commands": [
+            {"fixture_file": "test/fixtures/concurrency/commands_quick.txt"}
+          ],
+          "expected_patterns": [
+            "CONCURRENCY:",
+            "\"profile\":\"quick\"",
+            "\"deterministic\":true",
+            "\"invariant_errors\":0",
+            "\"deadlocks\":0",
+            "\"timeouts\":0"
+          ],
+          "timeout": 20000
+        },
+        {
+          "id": "concurrency_full_fixture",
+          "name": "Concurrency Full Fixture",
+          "commands": [
+            {"fixture_file": "test/fixtures/concurrency/commands_full.txt"}
+          ],
+          "expected_patterns": [
+            "CONCURRENCY:",
+            "\"profile\":\"full\"",
+            "\"deterministic\":true",
+            "\"invariant_errors\":0",
+            "\"deadlocks\":0",
+            "\"timeouts\":0"
+          ],
+          "timeout": 60000
+        }
+      ]
+    }
+  }
+}

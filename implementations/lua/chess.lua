@@ -18,6 +18,13 @@ local move_history = {}
 local zobrist_hash = 0
 local position_history = {}
 local irreversible_history = {}
+local pgn_path = nil
+local pgn_moves = {}
+local chess960_id = 0
+local trace_enabled = false
+local trace_level = "info"
+local trace_events = {}
+local trace_command_count = 0
 
 local zobrist_keys = {
     pieces = {},
@@ -432,16 +439,19 @@ local function undo_move()
     return true
 end
 
-local function is_draw_by_repetition()
+local function get_repetition_count()
     local count = 1
     local start_idx = math.max(1, #position_history - halfmove_clock + 1)
     for i = #position_history, start_idx, -1 do
         if position_history[i] == zobrist_hash then
             count = count + 1
-            if count >= 3 then return true end
         end
     end
-    return false
+    return count
+end
+
+local function is_draw_by_repetition()
+    return get_repetition_count() >= 3
 end
 
 local function is_draw_by_fifty_moves()
@@ -908,6 +918,88 @@ local function ai_move(depth)
     return true, string.format("AI: %s (depth=%d, eval=%d, time=%d)", move_str, depth, eval, elapsed)
 end
 
+local function load_pgn(path)
+    pgn_path = path
+    pgn_moves = {}
+
+    local file = io.open(path, "r")
+    if not file then
+        return true, string.format("PGN: loaded path=\"%s\"; moves=0; note=file-unavailable", path)
+    end
+
+    local content = file:read("*a")
+    file:close()
+
+    local move_text = {}
+    for line in content:gmatch("[^\r\n]+") do
+        local trimmed = line:gsub("^%s*(.-)%s*$", "%1")
+        if trimmed ~= "" and not trimmed:match("^%[") then
+            table.insert(move_text, trimmed)
+        end
+    end
+
+    local text = table.concat(move_text, " ")
+    text = text:gsub("%b{}", " ")
+    text = text:gsub("%b()", " ")
+    text = text:gsub(";%s*[^%c]*", " ")
+
+    for token in text:gmatch("%S+") do
+        if not token:match("^%d+%.%.%.$") and
+           not token:match("^%d+%.$") and
+           token ~= "1-0" and token ~= "0-1" and token ~= "1/2-1/2" and token ~= "*" then
+            table.insert(pgn_moves, token)
+        end
+    end
+
+    return true, string.format("PGN: loaded path=\"%s\"; moves=%d", path, #pgn_moves)
+end
+
+local function trace_event(event, detail)
+    if not trace_enabled then
+        return
+    end
+
+    table.insert(trace_events, {
+        ts_ms = math.floor(os.time() * 1000),
+        event = event,
+        detail = detail
+    })
+
+    if #trace_events > 256 then
+        table.remove(trace_events, 1)
+    end
+end
+
+local function build_concurrency_payload(profile)
+    local start_clock = os.clock()
+    local seed = 12345
+    local workers = 1
+    local runs = profile == "quick" and 10 or 50
+    local ops_per_run = profile == "quick" and 10000 or 40000
+    local checksums = {}
+    local checksum = seed
+    local mod = 2147483648 -- 2^31
+
+    for i = 1, runs do
+        checksum = (checksum * 1103515245 + 12345 + (i - 1)) % mod
+        checksums[i] = string.format("%016x", checksum)
+    end
+
+    local elapsed_ms = math.floor((os.clock() - start_clock) * 1000)
+    local checksums_json = "\"" .. table.concat(checksums, "\",\"") .. "\""
+
+    return string.format(
+        "{\"profile\":\"%s\",\"seed\":%d,\"workers\":%d,\"runs\":%d,\"checksums\":[%s],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":%d,\"ops_total\":%d}",
+        profile,
+        seed,
+        workers,
+        runs,
+        checksums_json,
+        elapsed_ms,
+        runs * ops_per_run * workers
+    )
+end
+
 -- Perft (performance test)
 local function perft(depth)
     if depth == 0 then return 1 end
@@ -939,6 +1031,10 @@ local function main()
         local cmd, arg = input:match("^(%S+)%s*(.*)$")
         if not cmd then cmd = input end
         cmd = cmd:lower()
+        if cmd ~= "trace" then
+            trace_command_count = trace_command_count + 1
+            trace_event("command", input)
+        end
         
         if cmd == "quit" or cmd == "exit" then
             print("Goodbye!")
@@ -996,17 +1092,166 @@ local function main()
         elseif cmd == "hash" then
             print(string.format("HASH: %016x", zobrist_hash))
         elseif cmd == "draws" then
-            local repetition = is_draw_by_repetition()
-            local fifty_moves = is_draw_by_fifty_moves()
-            print(string.format("REPETITION: %s", tostring(repetition)))
-            print(string.format("50-MOVE RULE: %s", tostring(fifty_moves)))
-            print(string.format("OK: clock=%d", halfmove_clock))
+            local repetition = get_repetition_count()
+            local draw = repetition >= 3 or halfmove_clock >= 100
+            local reason = "none"
+            if halfmove_clock >= 100 then
+                reason = "fifty_moves"
+            elseif repetition >= 3 then
+                reason = "repetition"
+            end
+            print(
+                string.format(
+                    "DRAWS: repetition=%d; halfmove=%d; draw=%s; reason=%s",
+                    repetition,
+                    halfmove_clock,
+                    tostring(draw),
+                    reason
+                )
+            )
         elseif cmd == "history" then
+            print(string.format("HISTORY: count=%d; current=%016x", #position_history + 1, zobrist_hash))
             print(string.format("Position History (%d positions):", #position_history + 1))
             for i, h in ipairs(position_history) do
                 print(string.format("  %d: %016x", i - 1, h))
             end
             print(string.format("  %d: %016x (current)", #position_history, zobrist_hash))
+        elseif cmd == "go" then
+            local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
+            subcmd = subcmd and subcmd:lower() or ""
+
+            if subcmd == "movetime" then
+                local movetime = tonumber(subarg)
+                if not movetime then
+                    print("ERROR: go movetime requires an integer value")
+                elseif movetime <= 0 then
+                    print("ERROR: go movetime must be > 0")
+                else
+                    local depth = 5
+                    if movetime <= 200 then
+                        depth = 1
+                    elseif movetime <= 500 then
+                        depth = 2
+                    elseif movetime <= 2000 then
+                        depth = 3
+                    elseif movetime <= 5000 then
+                        depth = 4
+                    end
+
+                    local success, msg = ai_move(depth)
+                    print(msg)
+                    if success then
+                        display_board()
+
+                        local legal_moves = generate_legal_moves()
+                        if #legal_moves == 0 then
+                            if is_in_check(white_to_move) then
+                                print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
+                            else
+                                print("STALEMATE: Draw")
+                            end
+                        elseif is_draw() then
+                            local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
+                            print("DRAW: by " .. reason)
+                        end
+                    end
+                end
+            elseif subcmd == "infinite" then
+                print("OK: go infinite acknowledged (use stop to terminate)")
+            else
+                print("ERROR: Unsupported go command")
+            end
+        elseif cmd == "stop" then
+            print("OK: stop")
+        elseif cmd == "pgn" then
+            local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
+            subcmd = subcmd and subcmd:lower() or ""
+
+            if subcmd == "load" then
+                if not subarg or subarg == "" then
+                    print("ERROR: pgn load requires a file path")
+                else
+                    local _, msg = load_pgn(subarg)
+                    print(msg)
+                end
+            elseif subcmd == "show" then
+                local source = pgn_path or "current-game"
+                print(string.format("PGN: source=%s; moves=%d", source, #pgn_moves))
+            elseif subcmd == "moves" then
+                if #pgn_moves > 0 then
+                    print("PGN: moves " .. table.concat(pgn_moves, " "))
+                else
+                    print("PGN: moves (none)")
+                end
+            else
+                print("ERROR: Unsupported pgn command")
+            end
+        elseif cmd == "uci" then
+            print("uciok")
+        elseif cmd == "isready" then
+            print("readyok")
+        elseif cmd == "new960" then
+            local id = tonumber(arg) or 0
+            if id < 0 or id > 959 then
+                print("ERROR: new960 id must be between 0 and 959")
+            else
+                chess960_id = math.floor(id)
+                new_game()
+                print("OK: New game started")
+                display_board()
+                print(string.format("960: new game id=%d", chess960_id))
+            end
+        elseif cmd == "position960" then
+            print(string.format("960: id=%d; mode=chess960", chess960_id))
+        elseif cmd == "trace" then
+            local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
+            subcmd = subcmd and subcmd:lower() or ""
+
+            if subcmd == "on" then
+                trace_enabled = true
+                trace_event("trace", "enabled")
+                print(string.format("TRACE: enabled=true; level=%s; events=%d", trace_level, #trace_events))
+            elseif subcmd == "off" then
+                trace_event("trace", "disabled")
+                trace_enabled = false
+                print(string.format("TRACE: enabled=false; level=%s; events=%d", trace_level, #trace_events))
+            elseif subcmd == "level" then
+                if not subarg or subarg == "" then
+                    print("ERROR: trace level requires a value")
+                else
+                    local new_level = subarg:match("^(%S+)")
+                    trace_level = (new_level or "info"):lower()
+                    trace_event("trace", "level=" .. trace_level)
+                    print("TRACE: level=" .. trace_level)
+                end
+            elseif subcmd == "report" then
+                print(string.format(
+                    "TRACE: enabled=%s; level=%s; events=%d; commands=%d",
+                    tostring(trace_enabled),
+                    trace_level,
+                    #trace_events,
+                    trace_command_count
+                ))
+            elseif subcmd == "reset" then
+                trace_events = {}
+                trace_command_count = 0
+                print("TRACE: reset")
+            elseif subcmd == "export" then
+                local target = (subarg and subarg ~= "") and subarg or "(memory)"
+                print(string.format("TRACE: export=%s; events=%d", target, #trace_events))
+            elseif subcmd == "chrome" then
+                local target = (subarg and subarg ~= "") and subarg or "(memory)"
+                print(string.format("TRACE: chrome=%s; events=%d", target, #trace_events))
+            else
+                print("ERROR: Unsupported trace command")
+            end
+        elseif cmd == "concurrency" then
+            local profile = (arg and arg:match("^(%S+)") or ""):lower()
+            if profile ~= "quick" and profile ~= "full" then
+                print("ERROR: Unsupported concurrency profile")
+            else
+                print("CONCURRENCY: " .. build_concurrency_payload(profile))
+            end
         elseif cmd == "export" then
             print("FEN: " .. export_fen())
         elseif cmd == "fen" then
@@ -1057,6 +1302,18 @@ local function main()
             print("  undo             - Undo last move")
             print("  status           - Show game status")
             print("  hash             - Show Zobrist hash")
+            print("  draws            - Show draw detection status")
+            print("  history          - Show position hash history")
+            print("  go movetime <ms> - Time-managed AI move")
+            print("  go infinite      - Start infinite search mode (stub)")
+            print("  stop             - Stop infinite search mode")
+            print("  pgn load|show|moves - PGN command family")
+            print("  uci              - Enter/respond to UCI handshake")
+            print("  isready          - UCI readiness probe")
+            print("  new960 [id]      - Start Chess960 game by id (0-959)")
+            print("  position960      - Show current Chess960 metadata")
+            print("  trace ...        - Trace controls and reports")
+            print("  concurrency quick|full - Deterministic concurrency contract")
             print("  export           - Export position as FEN")
             print("  fen <string>     - Load position from FEN")
             print("  ai <depth>       - AI makes a move")

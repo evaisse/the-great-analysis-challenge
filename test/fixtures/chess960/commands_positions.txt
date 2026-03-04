@@ -1,0 +1,7 @@
+# Chess960 fixture-driven command replay
+new960 0
+position960
+new960 518
+position960
+new960 959
+position960

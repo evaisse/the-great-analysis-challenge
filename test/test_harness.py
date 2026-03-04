@@ -25,10 +25,19 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from chess_metadata import get_metadata
 
+TRACK_TO_SUITE = {
+    "v1": "test/test_suite.json",
+    "v2-foundation": "test/suites/v2_foundation.json",
+    "v2-functional": "test/suites/v2_functional.json",
+    "v2-system": "test/suites/v2_system.json",
+    "v2-full": "test/suites/v2_full.json",
+}
+
 class ChessEngineTester:
-    def __init__(self, implementation_path: str, metadata: Dict):
+    def __init__(self, implementation_path: str, metadata: Dict, docker_image: Optional[str] = None):
         self.path = implementation_path
         self.metadata = metadata
+        self.docker_image = docker_image
         self.process = None
         self.results = {
             "passed": [],
@@ -42,21 +51,70 @@ class ChessEngineTester:
         run_command = self.metadata.get("run", "").split()
         if not run_command:
             raise ValueError(f"No run command specified for {self.path}")
-            
+
+        command = run_command
+        if self.docker_image:
+            run_command_shell = self.metadata.get("run", "")
+            command = [
+                "docker",
+                "run",
+                "--rm",
+                "--network",
+                "none",
+                "-i",
+                "-v",
+                f"{REPO_ROOT}:/repo:ro",
+                self.docker_image,
+                "sh",
+                "-c",
+                f"cd /app && {run_command_shell}",
+            ]
+
         try:
             self.process = subprocess.Popen(
-                run_command,
+                command,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=0,
-                cwd=self.path
+                cwd=self.path if not self.docker_image else None,
             )
+            self._drain_startup_output()
         except Exception as e:
             self.results["errors"].append(f"Failed to start: {e}")
             return False
         return True
+
+    def _drain_startup_output(self, max_wait: float = 1.5, quiet_window: float = 0.2):
+        """Drain banner/board output emitted at startup before first command."""
+        if not self.process or not self.process.stdout:
+            return
+
+        try:
+            import fcntl
+            import os
+            import select
+
+            fd = self.process.stdout.fileno()
+            fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+            try:
+                fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+                start = time.time()
+                last_data = start
+                while time.time() - start < max_wait:
+                    ready, _, _ = select.select([self.process.stdout], [], [], 0.05)
+                    if ready:
+                        chunk = self.process.stdout.read(1024)
+                        if chunk:
+                            last_data = time.time()
+                    if time.time() - last_data >= quiet_window:
+                        break
+            finally:
+                fcntl.fcntl(fd, fcntl.F_SETFL, fl)
+        except Exception:
+            # Startup drainage is best-effort; ignore portability/runtime errors.
+            return
     
     def send_command(self, command: str, timeout: float = 10.0) -> str:
         """Send command and get response with non-blocking reads"""
@@ -84,12 +142,16 @@ class ChessEngineTester:
             
             start_time = time.time()
             output_lines = []
+            end_seen_at = None
             
             # Keywords that signal the end of an engine response
             end_keywords = [
                 "OK:", "ERROR:", "CHECKMATE:", "STALEMATE:", 
                 "FEN:", "AI:", "EVALUATION:", "HASH:", 
-                "REPETITION:", "DRAW:"
+                "REPETITION:", "DRAW:", "DRAWS:", "CONCURRENCY:",
+                "960:",
+                "UCIOK", "READYOK", "BESTMOVE", "INFO ", "ID NAME", "ID AUTHOR",
+                "PGN", "TRACE",
             ]
             
             while time.time() - start_time < timeout:
@@ -105,14 +167,12 @@ class ChessEngineTester:
                         stripped_line = line.strip()
                         output_lines.append(stripped_line)
                         if any(kw in stripped_line.upper() for kw in end_keywords):
-                            break
-                else:
-                    # If we already have some output and it's been a while, 
-                    # we might have missed a keyword or the command doesn't have one
-                    if output_lines and (time.time() - start_time > 0.5):
-                        # For commands like 'help' or others that don't follow protocol strictly
-                        # but we still want to wait a bit for the full output
-                        pass
+                            end_seen_at = time.time()
+
+                # Give a short grace period after an end marker so trailing lines
+                # from the same response (e.g. board + metadata) are captured.
+                if end_seen_at is not None and (time.time() - end_seen_at) >= 0.12:
+                    break
 
             return "\n".join(output_lines)
             
@@ -157,6 +217,38 @@ class TestSuite:
         except Exception as e:
             print(f"Error loading test suite: {e}")
 
+    def _resolve_commands(self, cmd_info) -> List[str]:
+        """Resolve one command entry into one or more concrete commands."""
+        if isinstance(cmd_info, str):
+            return [cmd_info]
+
+        if not isinstance(cmd_info, dict):
+            return [str(cmd_info)]
+
+        if "fixture_file" in cmd_info:
+            fixture_path = Path(cmd_info["fixture_file"])
+            if not fixture_path.is_absolute():
+                fixture_path = REPO_ROOT / fixture_path
+
+            line_template = cmd_info.get("line_template", "{line}")
+            try:
+                with fixture_path.open("r", encoding="utf-8") as handle:
+                    commands = []
+                    for idx, raw_line in enumerate(handle):
+                        line = raw_line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        commands.append(line_template.format(line=line, index=idx))
+                    return commands
+            except Exception as exc:
+                # Surface fixture issues as synthetic commands, so the test fails with context.
+                return [f"__FIXTURE_ERROR__: {fixture_path}: {exc}"]
+
+        cmd = cmd_info.get("cmd", "")
+        if not cmd:
+            return []
+        return [cmd]
+
     def run_test(self, tester: ChessEngineTester, test: Dict) -> bool:
         """Run a single test case from the suite definition"""
         try:
@@ -165,14 +257,10 @@ class TestSuite:
             
             commands = test.get("commands", [])
             for cmd_info in commands:
-                # Support both simple string and dict command formats
-                if isinstance(cmd_info, dict):
-                    cmd = cmd_info.get("cmd", "")
-                else:
-                    cmd = cmd_info
-                    
-                output = tester.send_command(cmd, test.get("timeout", 1000) / 1000.0)
-                all_output.append(output)
+                resolved_commands = self._resolve_commands(cmd_info)
+                for cmd in resolved_commands:
+                    output = tester.send_command(cmd, test.get("timeout", 1000) / 1000.0)
+                    all_output.append(output)
                 
             elapsed = time.time() - start_time
             full_output = "\n".join(all_output)
@@ -320,6 +408,30 @@ def main():
     )
     
     parser.add_argument(
+        "--suite",
+        metavar="FILE",
+        help="Path to a suite JSON file (defaults to v1 suite)"
+    )
+
+    parser.add_argument(
+        "--track",
+        choices=sorted(TRACK_TO_SUITE.keys()),
+        help="Named track to run (overridden by --suite when both are provided)"
+    )
+
+    parser.add_argument(
+        "--docker-image",
+        metavar="IMAGE",
+        help="Run engine inside this Docker image (docker run -i IMAGE ...)"
+    )
+
+    parser.add_argument(
+        "--category",
+        metavar="ID",
+        help="Only run tests from one category id"
+    )
+
+    parser.add_argument(
         "--impl", 
         metavar="PATH",
         help="Test specific implementation directory"
@@ -344,6 +456,12 @@ def main():
     )
     
     args = parser.parse_args()
+
+    suite_path = args.suite
+    if not suite_path and args.track:
+        suite_path = TRACK_TO_SUITE[args.track]
+    if not suite_path:
+        suite_path = TRACK_TO_SUITE["v1"]
     
     # Find implementations
     if args.impl:
@@ -363,17 +481,20 @@ def main():
     print(f"Found {len(implementations)} implementation(s)")
     
     # Test each implementation
-    suite = TestSuite()
+    suite = TestSuite(suite_path)
     all_results = {}
     
     for impl_path, metadata in implementations:
         print(f"\nTesting {metadata.get('language', 'Unknown')} implementation at {impl_path}")
         print("-" * 40)
         
-        tester = ChessEngineTester(impl_path, metadata)
+        docker_image = args.docker_image
+        if not docker_image and args.impl:
+            docker_image = f"chess-{Path(args.impl).name}"
+        tester = ChessEngineTester(impl_path, metadata, docker_image=docker_image)
         
         # Build if necessary
-        if "build" in metadata and metadata["build"] != "make build":
+        if not tester.docker_image and "build" in metadata and metadata["build"] != "make build":
             cmd = metadata["build"]
             print(f"🔧 Running: {cmd}")
             subprocess.run(cmd, cwd=impl_path, check=True, shell=True)
@@ -398,6 +519,8 @@ def main():
         else:
             # Run all tests
             for test in suite.tests:
+                if args.category and test.get("category") != args.category:
+                    continue
                 if test.get("optional") and test["name"] not in metadata.get("features", []):
                     continue
                     

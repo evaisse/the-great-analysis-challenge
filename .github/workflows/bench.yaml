@@ -125,6 +125,24 @@ jobs:
       - name: Run benchmark for ${{ matrix.name }}
         run: ./workflow run-benchmark ${{ matrix.engine }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }}
 
+      - name: Resolve stress profile
+        id: stress-profile
+        run: |
+          profile="quick"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            profile="full"
+          fi
+          echo "value=${profile}" >> "$GITHUB_OUTPUT"
+          echo "Using stress profile ${profile}"
+
+      - name: Run v2 stress benchmark (non-blocking)
+        continue-on-error: true
+        run: ./workflow benchmark-stress ${{ matrix.engine }} --track v2-full --profile ${{ steps.stress-profile.outputs.value }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }}
+
+      - name: Run concurrency benchmark (non-blocking)
+        continue-on-error: true
+        run: ./workflow benchmark-concurrency ${{ matrix.engine }} --profile quick
+
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         with:

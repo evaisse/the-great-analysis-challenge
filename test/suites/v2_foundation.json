@@ -1,0 +1,66 @@
+{
+  "version": "2.0",
+  "track": "v2-foundation",
+  "description": "Foundation stress tests (hashing, draw state, time-managed search)",
+  "test_categories": {
+    "foundation_hash": {
+      "description": "Zobrist/hash command contract",
+      "required": true,
+      "tests": [
+        {
+          "id": "hash_baseline",
+          "name": "Hash Command Baseline",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "hash"}
+          ],
+          "expected_patterns": ["HASH:"],
+          "timeout": 3000
+        },
+        {
+          "id": "hash_after_move",
+          "name": "Hash Command After Move",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e2e4"},
+            {"cmd": "hash"}
+          ],
+          "expected_patterns": ["HASH:"],
+          "timeout": 3000
+        }
+      ]
+    },
+    "foundation_draws": {
+      "description": "Draw state command contract",
+      "required": true,
+      "tests": [
+        {
+          "id": "draws_command",
+          "name": "Draws Command",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "draws"}
+          ],
+          "expected_patterns": ["DRAWS:"],
+          "timeout": 3000
+        }
+      ]
+    },
+    "foundation_time_management": {
+      "description": "Time-managed search command contract",
+      "required": true,
+      "tests": [
+        {
+          "id": "go_movetime",
+          "name": "Go Movetime",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "go movetime 200"}
+          ],
+          "expected_patterns": ["AI:"],
+          "timeout": 8000
+        }
+      ]
+    }
+  }
+}

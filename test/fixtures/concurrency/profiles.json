@@ -1,0 +1,42 @@
+{
+  "profiles": {
+    "quick": {
+      "command": "concurrency quick",
+      "timeout_seconds": 120,
+      "required_fields": [
+        "profile",
+        "seed",
+        "workers",
+        "runs",
+        "checksums",
+        "deterministic",
+        "invariant_errors",
+        "deadlocks",
+        "timeouts",
+        "elapsed_ms",
+        "ops_total"
+      ],
+      "expected_zero_fields": ["invariant_errors", "deadlocks", "timeouts"],
+      "require_deterministic": true
+    },
+    "full": {
+      "command": "concurrency full",
+      "timeout_seconds": 300,
+      "required_fields": [
+        "profile",
+        "seed",
+        "workers",
+        "runs",
+        "checksums",
+        "deterministic",
+        "invariant_errors",
+        "deadlocks",
+        "timeouts",
+        "elapsed_ms",
+        "ops_total"
+      ],
+      "expected_zero_fields": ["invariant_errors", "deadlocks", "timeouts"],
+      "require_deterministic": true
+    }
+  }
+}

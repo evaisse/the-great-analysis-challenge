@@ -2,7 +2,7 @@ FROM ghcr.io/evaisse/tgac-dart-toolchain:latest
 
 COPY . .
 
-RUN dart pub get && dart compile exe bin/main.dart -o bin/chess_engine
+RUN dart compile exe bin/main.dart -o bin/chess_engine
 
 LABEL org.chess.language="dart"
 LABEL org.chess.version="3.0"

@@ -4,6 +4,9 @@
 
 ## Vue d'ensemble
 
+Document directeur du programme:
+- [Next Level Track V2](./next-level.md)
+
 | # | PRD | LOC/lang | LOC total (×7) | Stress principal |
 |---|---|---|---|---|
 | **P1 — Fort impact build** |
@@ -18,6 +21,7 @@
 | 07 | [Zobrist + répétition + 50 coups](./07-zobrist-hashing-repetition.md) | +500–1 200 | ~3 500–8 400 | Types numériques 64 bits, grandes tables const |
 | 08 | [Chess960](./08-chess960.md) | +600–1 600 | ~4 200–11 200 | Refactoring profond, re-analyse de code existant |
 | 09 | [Tracing structuré](./09-structured-tracing-diagnostics.md) | +500–1 500 | ~3 500–10 500 | Transversal (touche tous les fichiers), decorators/macros |
+| 10 | [Next Level Track V2](./next-level.md) | (programme) | (programme) | Rollout track, benchmarks normalisés, gating progressif |
 
 ## Estimations cumulées
 

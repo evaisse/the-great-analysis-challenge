@@ -1,0 +1,93 @@
+{
+  "version": "2.0",
+  "track": "v2-functional",
+  "description": "Functional breadth tests with fixture-driven PGN/UCI/Chess960 replay",
+  "test_categories": {
+    "functional_pgn": {
+      "description": "PGN command surface with real game fixtures",
+      "required": true,
+      "tests": [
+        {
+          "id": "pgn_show",
+          "name": "PGN Show",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e2e4"},
+            {"cmd": "move e7e5"},
+            {"cmd": "pgn show"}
+          ],
+          "expected_patterns": ["PGN"],
+          "timeout": 5000
+        },
+        {
+          "id": "pgn_fixture_morphy",
+          "name": "PGN Fixture Morphy",
+          "commands": [
+            {"fixture_file": "test/fixtures/pgn/commands_load_show.txt"}
+          ],
+          "expected_patterns": ["PGN: loaded", "PGN: source=", "PGN: moves"],
+          "timeout": 8000
+        },
+        {
+          "id": "pgn_fixture_byrne_fischer",
+          "name": "PGN Fixture Byrne-Fischer",
+          "commands": [
+            {"fixture_file": "test/fixtures/pgn/commands_load_second_game.txt"}
+          ],
+          "expected_patterns": ["PGN: loaded", "PGN: source="],
+          "timeout": 8000
+        }
+      ]
+    },
+    "functional_uci": {
+      "description": "UCI handshake surface with transcript fixtures",
+      "required": true,
+      "tests": [
+        {
+          "id": "uci_handshake",
+          "name": "UCI Handshake",
+          "commands": [
+            {"cmd": "uci"},
+            {"cmd": "isready"}
+          ],
+          "expected_patterns": ["uciok", "readyok"],
+          "timeout": 5000
+        },
+        {
+          "id": "uci_fixture_handshake",
+          "name": "UCI Fixture Handshake",
+          "commands": [
+            {"fixture_file": "test/fixtures/uci/handshake.txt"}
+          ],
+          "expected_patterns": ["uciok", "readyok"],
+          "timeout": 5000
+        }
+      ]
+    },
+    "functional_chess960": {
+      "description": "Chess960 command surface with fixture-driven position IDs",
+      "required": true,
+      "tests": [
+        {
+          "id": "new960_position",
+          "name": "New960 Position",
+          "commands": [
+            {"cmd": "new960"},
+            {"cmd": "position960"}
+          ],
+          "expected_patterns": ["960"],
+          "timeout": 5000
+        },
+        {
+          "id": "new960_fixture_positions",
+          "name": "Chess960 Fixture Positions",
+          "commands": [
+            {"fixture_file": "test/fixtures/chess960/commands_positions.txt"}
+          ],
+          "expected_patterns": ["960: id=0", "960: id=518", "960: id=959"],
+          "timeout": 8000
+        }
+      ]
+    }
+  }
+}

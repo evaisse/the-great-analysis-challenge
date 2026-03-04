@@ -1,0 +1,4 @@
+# Alternate PGN fixture to stress parser breadth
+new
+pgn load /repo/test/fixtures/pgn/byrne_fischer_1956.pgn
+pgn show

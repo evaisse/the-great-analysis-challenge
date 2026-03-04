@@ -1,0 +1,208 @@
+{
+  "version": "2.0",
+  "track": "v2-full",
+  "description": "Full next-level track (foundation + functional + system with fixtures)",
+  "test_categories": {
+    "foundation_hash": {
+      "description": "Zobrist/hash command contract",
+      "required": true,
+      "tests": [
+        {
+          "id": "hash_baseline",
+          "name": "Hash Command Baseline",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "hash"}
+          ],
+          "expected_patterns": ["HASH:"],
+          "timeout": 3000
+        },
+        {
+          "id": "hash_after_move",
+          "name": "Hash Command After Move",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e2e4"},
+            {"cmd": "hash"}
+          ],
+          "expected_patterns": ["HASH:"],
+          "timeout": 3000
+        }
+      ]
+    },
+    "foundation_draws": {
+      "description": "Draw state command contract",
+      "required": true,
+      "tests": [
+        {
+          "id": "draws_command",
+          "name": "Draws Command",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "draws"}
+          ],
+          "expected_patterns": ["DRAWS:"],
+          "timeout": 3000
+        }
+      ]
+    },
+    "foundation_time_management": {
+      "description": "Time-managed search command contract",
+      "required": true,
+      "tests": [
+        {
+          "id": "go_movetime",
+          "name": "Go Movetime",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "go movetime 200"}
+          ],
+          "expected_patterns": ["AI:"],
+          "timeout": 8000
+        }
+      ]
+    },
+    "functional_pgn": {
+      "description": "PGN command surface with real game fixtures",
+      "required": true,
+      "tests": [
+        {
+          "id": "pgn_show",
+          "name": "PGN Show",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e2e4"},
+            {"cmd": "move e7e5"},
+            {"cmd": "pgn show"}
+          ],
+          "expected_patterns": ["PGN"],
+          "timeout": 5000
+        },
+        {
+          "id": "pgn_fixture_morphy",
+          "name": "PGN Fixture Morphy",
+          "commands": [
+            {"fixture_file": "test/fixtures/pgn/commands_load_show.txt"}
+          ],
+          "expected_patterns": ["PGN: loaded", "PGN: source=", "PGN: moves"],
+          "timeout": 8000
+        },
+        {
+          "id": "pgn_fixture_byrne_fischer",
+          "name": "PGN Fixture Byrne-Fischer",
+          "commands": [
+            {"fixture_file": "test/fixtures/pgn/commands_load_second_game.txt"}
+          ],
+          "expected_patterns": ["PGN: loaded", "PGN: source="],
+          "timeout": 8000
+        }
+      ]
+    },
+    "functional_uci": {
+      "description": "UCI handshake surface with transcript fixtures",
+      "required": true,
+      "tests": [
+        {
+          "id": "uci_handshake",
+          "name": "UCI Handshake",
+          "commands": [
+            {"cmd": "uci"},
+            {"cmd": "isready"}
+          ],
+          "expected_patterns": ["uciok", "readyok"],
+          "timeout": 5000
+        },
+        {
+          "id": "uci_fixture_handshake",
+          "name": "UCI Fixture Handshake",
+          "commands": [
+            {"fixture_file": "test/fixtures/uci/handshake.txt"}
+          ],
+          "expected_patterns": ["uciok", "readyok"],
+          "timeout": 5000
+        }
+      ]
+    },
+    "functional_chess960": {
+      "description": "Chess960 command surface with fixture-driven position IDs",
+      "required": true,
+      "tests": [
+        {
+          "id": "new960_position",
+          "name": "New960 Position",
+          "commands": [
+            {"cmd": "new960"},
+            {"cmd": "position960"}
+          ],
+          "expected_patterns": ["960"],
+          "timeout": 5000
+        },
+        {
+          "id": "new960_fixture_positions",
+          "name": "Chess960 Fixture Positions",
+          "commands": [
+            {"fixture_file": "test/fixtures/chess960/commands_positions.txt"}
+          ],
+          "expected_patterns": ["960: id=0", "960: id=518", "960: id=959"],
+          "timeout": 8000
+        }
+      ]
+    },
+    "system_trace": {
+      "description": "Tracing command surface",
+      "required": true,
+      "tests": [
+        {
+          "id": "trace_report",
+          "name": "Trace Report",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "new"},
+            {"cmd": "ai 1"},
+            {"cmd": "trace report"}
+          ],
+          "expected_patterns": ["TRACE"],
+          "timeout": 8000
+        }
+      ]
+    },
+    "system_concurrency": {
+      "description": "Concurrency contract with fixture-backed command replay",
+      "required": true,
+      "tests": [
+        {
+          "id": "concurrency_quick_fixture",
+          "name": "Concurrency Quick Fixture",
+          "commands": [
+            {"fixture_file": "test/fixtures/concurrency/commands_quick.txt"}
+          ],
+          "expected_patterns": [
+            "CONCURRENCY:",
+            "\"profile\":\"quick\"",
+            "\"deterministic\":true",
+            "\"invariant_errors\":0",
+            "\"deadlocks\":0",
+            "\"timeouts\":0"
+          ],
+          "timeout": 20000
+        },
+        {
+          "id": "concurrency_full_fixture",
+          "name": "Concurrency Full Fixture",
+          "commands": [
+            {"fixture_file": "test/fixtures/concurrency/commands_full.txt"}
+          ],
+          "expected_patterns": [
+            "CONCURRENCY:",
+            "\"profile\":\"full\"",
+            "\"deterministic\":true",
+            "\"invariant_errors\":0",
+            "\"deadlocks\":0",
+            "\"timeouts\":0"
+          ],
+          "timeout": 60000
+        }
+      ]
+    }
+  }
+}

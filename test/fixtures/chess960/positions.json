@@ -1,0 +1,36 @@
+{
+  "cases": [
+    {
+      "id": 0,
+      "description": "Classical placement as baseline compatibility",
+      "expected": {
+        "bishops_on_opposite_colors": true,
+        "king_between_rooks": true
+      }
+    },
+    {
+      "id": 7,
+      "description": "Low-index randomized setup",
+      "expected": {
+        "bishops_on_opposite_colors": true,
+        "king_between_rooks": true
+      }
+    },
+    {
+      "id": 518,
+      "description": "Middle-index setup frequently used in examples",
+      "expected": {
+        "bishops_on_opposite_colors": true,
+        "king_between_rooks": true
+      }
+    },
+    {
+      "id": 959,
+      "description": "High-index boundary setup",
+      "expected": {
+        "bishops_on_opposite_colors": true,
+        "king_between_rooks": true
+      }
+    }
+  ]
+}

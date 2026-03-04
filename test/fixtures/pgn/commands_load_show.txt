@@ -1,0 +1,5 @@
+# PGN fixture-driven smoke script
+new
+pgn load /repo/test/fixtures/pgn/morphy_opera_1858.pgn
+pgn show
+pgn moves
