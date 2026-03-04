@@ -1,4 +1,4 @@
-# Chess Engine Implementation Specification v1.0
+# Chess Engine Implementation Specification v1.x (+ progressive v2 track)
 
 ## Overview
 
@@ -33,14 +33,35 @@ The repository supports an additional progressive `v2` track used for stress and
 - `v2-system`
 - `v2-full`
 
-Additional command surface expected in `v2` includes:
-- `hash`, `draws`, `history`
-- `go movetime <ms>`, `go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]`, `go infinite`, `stop`
-- `pgn load|save|show|moves|variation enter|variation exit|comment`
-- UCI mode commands (`uci`, `isready`, `setoption`, `position`, `go`, `stop`, `quit`)
-- `new960 [n]`, `position960`
-- `trace on|off`, `trace level`, `trace export`, `trace report`, `trace chrome`, `trace reset`
+Current enforced `v2` command surface (core set: `dart,lua,php,python,go`) is:
+
+Foundation (`v2-foundation`):
+- `hash`
+- `draws`
+- `history`
+- `go movetime <ms>`
+- `go infinite`
+- `stop`
+
+Functional (`v2-functional`):
+- `pgn load <file>`
+- `pgn show`
+- `pgn moves`
+- `uci`
+- `isready`
+- `new960 [n]`
+- `position960`
+
+System (`v2-system` / stress tooling):
+- `trace on|off`
+- `trace level <level>`
+- `trace report`
+- `trace reset`
+- `trace export <file>`
+- `trace chrome <file>`
 - `concurrency quick|full`
+
+Roadmap commands such as UCI extended state-machine commands and richer PGN editing commands may be added progressively, but are not part of the current blocking core contract.
 
 Track orchestration is handled by shared tooling:
 - `python3 test/test_harness.py --track <track>`
@@ -94,9 +115,41 @@ HASH: <hex64>
 # Draw state command (v2)
 DRAWS: repetition=<n>; halfmove=<n>; draw=<true|false>; reason=<none|repetition|fifty_moves>
 
+# History command (v2)
+HISTORY: count=<n>; current=<hex64>
+
+# Trace command family (v2)
+TRACE: ...
+
 # Concurrency command (v2)
 CONCURRENCY: <json>
 ```
+
+#### Concurrency JSON Contract (v2)
+
+`concurrency quick` and `concurrency full` must emit:
+
+```json
+{
+  "profile": "quick|full",
+  "seed": 12345,
+  "workers": 1,
+  "runs": 10,
+  "checksums": ["..."],
+  "deterministic": true,
+  "invariant_errors": 0,
+  "deadlocks": 0,
+  "timeouts": 0,
+  "elapsed_ms": 123,
+  "ops_total": 100000
+}
+```
+
+Required invariants for passing system stress checks:
+- `deterministic` must be `true`
+- `invariant_errors = 0`
+- `deadlocks = 0`
+- `timeouts = 0`
 
 ## 2. Chess Rules Implementation
 
@@ -229,7 +282,7 @@ rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3
 
 ### 5.1 Automated Test Cases
 
-Each implementation must pass these test sequences:
+Each implementation must pass these `v1` test sequences:
 
 #### Test 1: Basic Movement
 ```
@@ -304,6 +357,25 @@ Expected: 197281 (number of positions after 4 plies from start)
 | Perft(4) | 1000ms |
 | AI depth 3 | 2000ms |
 | AI depth 5 | 10000ms |
+
+### 5.3 Track-Based V2 Suites
+
+The progressive v2 suites are defined under `test/suites/`:
+- `v2_foundation.json`
+- `v2_functional.json`
+- `v2_system.json`
+- `v2_full.json`
+
+They are executed through:
+```bash
+python3 test/test_harness.py --track <v1|v2-foundation|v2-functional|v2-system|v2-full>
+```
+
+Fixture-heavy validation assets are under `test/fixtures/` and currently cover:
+- PGN fixture loading/replay commands
+- UCI handshake transcripts
+- Chess960 fixture-driven position IDs
+- Concurrency quick/full profile commands
 
 ## 6. Error Handling
 
@@ -405,6 +477,7 @@ An implementation is considered compliant if it:
 ## 10. Version History
 
 - v1.0 (2024): Initial specification
+- v1.1 (2026): Added progressive v2 track contracts, staged command surface, and concurrency/trace output requirements.
 
 ---
 
