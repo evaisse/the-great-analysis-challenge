@@ -57,6 +57,16 @@ def _run_with_shell(image: str, shell: str, command: str) -> subprocess.Complete
     )
 
 
+def _shell_missing(stderr: str | None, shell: str) -> bool:
+    if not stderr:
+        return False
+    stderr_lower = stderr.lower()
+    return shell in stderr_lower and (
+        "executable file not found in $path" in stderr_lower
+        or "no such file or directory" in stderr_lower
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a metadata phase in Docker")
     parser.add_argument("--impl", required=True, help="Implementation name or path")
@@ -98,15 +108,11 @@ def main() -> int:
     print(f"Running {args.phase} for {impl_name} in Docker...")
     print(f"Command: {command}")
 
-    # Prefer bash when available, but keep non-login shell execution (-c) so image PATH is preserved.
-    # Fall back to sh when bash is not available in the runtime image.
-    result = _run_with_shell(image, "bash", command)
-
-    if result.returncode != 0:
-        stderr_lower = (result.stderr or "").lower()
-        bash_missing = "executable file not found in $path" in stderr_lower and "bash" in stderr_lower
-        if bash_missing:
-            result = _run_with_shell(image, "sh", command)
+    # Use non-login shell execution (-c) so image PATH is preserved.
+    # Try sh first for maximum compatibility with runtime entrypoints, then fall back to bash.
+    result = _run_with_shell(image, "sh", command)
+    if result.returncode != 0 and _shell_missing(result.stderr, "sh"):
+        result = _run_with_shell(image, "bash", command)
 
     if result.stdout:
         sys.stdout.write(result.stdout)
