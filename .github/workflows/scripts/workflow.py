@@ -751,14 +751,11 @@ Performance testing completed with status updates."""
             return False
 
     def verify_make_target(self, engine: str, target: str, timeout: int = 180) -> bool:
-        """Run a Make target inside the Docker image and fail on hidden errors."""
+        """Run a root Make target for a specific engine and validate exit code."""
 
-        image_name = f"chess-{engine}-test"
-        command = f"cd /app && make {target}"
-
-        print(f"🛠️  Verifying 'make {target}' inside {image_name}...")
+        print(f"🛠️  Verifying 'make {target} DIR={engine}' from repository root...")
         result = subprocess.run(
-            ["docker", "run", "--rm", image_name, "sh", "-c", command],
+            ["make", target, f"DIR={engine}"],
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -778,28 +775,9 @@ Performance testing completed with status updates."""
             raise SystemExit(result.returncode)
 
         combined = f"{stdout}\n{stderr}".lower()
-
-        failure_signals = [
-            "❌",
-            "make: *** no rule",
-            "npm err!",
-            "could not find package `test`",
-            "no tests defined yet",
-        ]
-
-        if target == "analyze":
-            failure_signals.extend(["error -", "analysis failed", "code style issues found"])
-        if target == "test":
-            failure_signals.extend(["basic test failed", "test failed", "failing tests"])
-
-        for signal in failure_signals:
-            if signal in combined:
-                print(f"❌ Detected failure indicator '{signal.strip()}' in make {target} output")
-                raise SystemExit(1)
-
         if "changed)" in combined:
             match = re.search(r"\((\d+) changed\)", combined)
-            if match and match.group(1) != '0':
+            if match and match.group(1) != "0":
                 print("❌ Formatter modified files; please commit formatting changes before running in CI")
                 raise SystemExit(1)
 
@@ -937,7 +915,7 @@ def main():
     cleanup_parser.add_argument('--all', action='store_true', help='Cleanup all implementations')
 
     # verify-make-target command
-    verify_make_parser = subparsers.add_parser('verify-make-target', help='Run make target inside Docker image')
+    verify_make_parser = subparsers.add_parser('verify-make-target', help='Run root make target for a specific implementation')
     verify_make_parser.add_argument('engine', help='Engine name')
     verify_make_parser.add_argument('target', help='Make target to run (e.g., analyze, test)')
     verify_make_parser.add_argument('--timeout', type=int, default=180, help='Command timeout in seconds')

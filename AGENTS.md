@@ -27,7 +27,7 @@
 1. **Specification Compliance**: All implementations MUST follow `CHESS_ENGINE_SPECS.md`
 2. **Docker-Mandatory**: ALL operations for language implementations (build, test, lint, format, validate) MUST run inside Docker containers.
    - **DO NOT** use local toolchains (e.g., local `python`, `cargo`, `go`, `npm`) to modify or verify implementations.
-   - **ALWAYS** use `make build DIR=<lang>`, `make test DIR=<lang>`, and `make analyze DIR=<lang>` from the project root.
+   - **ALWAYS** use `make image DIR=<lang>`, `make build DIR=<lang>`, `make test DIR=<lang>`, `make test-chess-engine DIR=<lang>`, and `make analyze DIR=<lang>` from the project root.
    - **NO EXTERNAL DOWNLOADS**: Dockerfiles MUST NOT download external files, binaries, or toolchains (e.g., via `curl`, `wget`, or `git clone` for tools).
      - **Exception**: Standard language package managers (e.g., `npm install`, `cargo`, `pip`, `go get`) and system package managers (`apt-get`) are allowed for dependencies.
      - **Requirement**: Prefer using official Docker base images that already contain the necessary toolchain to build and run the engine.
@@ -139,7 +139,7 @@
 
 6. **Verify Test Suite Compliance**
 
-   - Run automated tests: `make test-<language>`
+   - Run automated tests: `make test-chess-engine DIR=<language>`
    - Check all test categories pass (basic, special_moves, game_end, ai, fen)
    - Validate perft(4) returns 197281
    - Ensure AI makes legal moves at all depths
@@ -171,9 +171,8 @@
    - Update language list
 
 10. **Update Makefile** (if not already present)
-    - Add `test-<language>` target
-    - Add `build-<language>` target
-    - Add to `LANGUAGES` list
+    - Ensure implementation metadata labels expose `org.chess.build`, `org.chess.test`, `org.chess.analyze`, `org.chess.run`
+    - Ensure implementation Makefile supports local `build`, `test`, and `analyze` targets
     - Follow existing patterns
 
 ### Phase 5: Integration (15-30 minutes)
@@ -185,8 +184,8 @@
     - Check test results
 
 12. **Final Validation**
-    - Clean build: `docker rmi chess-<language>; make build-<language>`
-    - Full test: `make test-<language>`
+    - Clean build: `docker rmi chess-<language>; make image DIR=<language> && make build DIR=<language>`
+    - Full test: `make test DIR=<language> && make test-chess-engine DIR=<language>`
     - Check output format matches spec
     - Verify error handling
 
@@ -278,7 +277,7 @@ docker run --network none -it chess-<language>
 
 ```bash
 # Compilation time
-time make build-<language>
+time make build DIR=<language>
 
 # Perft benchmark
 echo -e "new\nperft 4\nquit" | time docker run --network none -i chess-<language>

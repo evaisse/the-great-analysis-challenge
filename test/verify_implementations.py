@@ -41,12 +41,12 @@ REQUIRED_MAKEFILE_TARGETS = {
 
 # Required metadata fields
 REQUIRED_META_FIELDS = {
-    'language', 'version', 'author', 'build', 'run', 'features', 'max_ai_depth'
+    'language', 'version', 'author', 'build', 'run', 'test', 'analyze', 'features', 'max_ai_depth'
 }
 
 # Optional but recommended metadata fields
 RECOMMENDED_META_FIELDS = {
-    'analyze', 'test', 'estimated_perft4_ms'
+    'estimated_perft4_ms'
 }
 
 # Expected features in metadata

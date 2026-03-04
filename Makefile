@@ -2,13 +2,13 @@
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 # Convention over Configuration: This Makefile is 100% implementation-agnostic
 
-.PHONY: all test build analyze clean help website analyze-tools list-implementations verify workflow validate-website-metadata
+.PHONY: all image test-chess-engine test build analyze clean help website analyze-tools list-implementations verify workflow validate-website-metadata install-hooks
 
 # Auto-discover all implementations with Dockerfiles
 IMPLEMENTATIONS := $(shell find implementations -mindepth 1 -maxdepth 1 -type d -exec test -f {}/Dockerfile \; -exec basename {} \; 2>/dev/null | sort)
 
 # Default target
-all: build test
+all: image build test test-chess-engine
 
 # Help command
 help:
@@ -17,19 +17,21 @@ help:
 	@echo "ALL COMMANDS RUN INSIDE DOCKER CONTAINERS"
 	@echo ""
 	@echo "Convention-based commands (use DIR parameter):"
-	@echo "  make build [DIR=<impl>]    - Build implementation(s)"
-	@echo "  make test [DIR=<impl>]     - Test implementation(s)"
-	@echo "  make analyze [DIR=<impl>]  - Analyze implementation(s)"
-	@echo "  make verify [DIR=<impl>]   - Verify implementation structure"
-	@echo "  make workflow [DIR=<impl>] - Run full workflow (verify, build, analyze, test)"
-	@echo "  make clean [DIR=<impl>]    - Clean implementation(s)"
+	@echo "  make image [DIR=<impl>]             - Build Docker image(s) only"
+	@echo "  make build [DIR=<impl>]             - Run compilation command(s) only"
+	@echo "  make analyze [DIR=<impl>]           - Run static analysis/lint command(s) only"
+	@echo "  make test [DIR=<impl>]              - Run internal implementation test command(s) only"
+	@echo "  make test-chess-engine [DIR=<impl>] - Run shared chess engine suite only"
+	@echo "  make verify [DIR=<impl>]            - Verify implementation structure"
+	@echo "  make workflow [DIR=<impl>]          - Run full workflow (verify, image, build, analyze, test, test-chess-engine)"
+	@echo "  make clean [DIR=<impl>]             - Clean implementation image(s)"
 	@echo ""
 	@echo "If DIR is omitted, the command runs for ALL implementations."
 	@echo ""
 	@echo "Other commands:"
 	@echo "  make list-implementations - List all available implementations"
-	@echo "  make analyze-tools       - Static analysis for Python tooling (outside implementations)"
-	@echo "  make help                - Show this help message"
+	@echo "  make analyze-tools        - Static analysis for Python tooling (outside implementations)"
+	@echo "  make help                 - Show this help message"
 	@echo ""
 	@echo "Available implementations: $(IMPLEMENTATIONS)"
 
@@ -39,7 +41,34 @@ list-implementations:
 		echo "  - $$impl"; \
 	done
 
-# Build target
+# Build docker image target
+image:
+ifdef DIR
+	@if [ ! -d "implementations/$(DIR)" ]; then \
+		echo "ERROR: Implementation '$(DIR)' not found"; \
+		exit 1; \
+	fi
+	@if [ ! -f "implementations/$(DIR)/Dockerfile" ]; then \
+		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
+		exit 1; \
+	fi
+	@echo "Building image for $(DIR) implementation in Docker..."
+	@docker build -t chess-$(DIR) -f implementations/$(DIR)/Dockerfile implementations/$(DIR)
+else
+	@echo "Building images for all implementations in Docker..."
+	@for impl in $(IMPLEMENTATIONS); do \
+		echo ""; \
+		echo "==================== Building image $$impl ===================="; \
+		if ! $(MAKE) image DIR=$$impl; then \
+			echo "Image build failed for $$impl. Stopping."; \
+			exit 1; \
+		fi; \
+	done
+	@echo ""
+	@echo "Image build complete for all implementations"
+endif
+
+# Build (compilation only) target
 build:
 ifdef DIR
 	@if [ ! -d "implementations/$(DIR)" ]; then \
@@ -50,23 +79,48 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
-	@echo "Building $(DIR) implementation in Docker..."
-	@docker build -t chess-$(DIR) -f implementations/$(DIR)/Dockerfile implementations/$(DIR)
+	@python3 scripts/run_metadata_phase.py --impl implementations/$(DIR) --phase build --image chess-$(DIR)
 else
-	@echo "Building all implementations in Docker..."
+	@echo "Running build phase for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
-		echo "==================== Building $$impl ===================="; \
+		echo "==================== Build $$impl ===================="; \
 		if ! $(MAKE) build DIR=$$impl; then \
 			echo "Build failed for $$impl. Stopping."; \
 			exit 1; \
 		fi; \
 	done
 	@echo ""
-	@echo "Build complete for all implementations"
+	@echo "Build phase complete for all implementations"
 endif
 
-# Test target
+# Analyze (lint/static checks only) target
+analyze:
+ifdef DIR
+	@if [ ! -d "implementations/$(DIR)" ]; then \
+		echo "ERROR: Implementation '$(DIR)' not found"; \
+		exit 1; \
+	fi
+	@if [ ! -f "implementations/$(DIR)/Dockerfile" ]; then \
+		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
+		exit 1; \
+	fi
+	@python3 scripts/run_metadata_phase.py --impl implementations/$(DIR) --phase analyze --image chess-$(DIR)
+else
+	@echo "Running analysis phase for all implementations..."
+	@for impl in $(IMPLEMENTATIONS); do \
+		echo ""; \
+		echo "==================== Analyze $$impl ===================="; \
+		if ! $(MAKE) analyze DIR=$$impl; then \
+			echo "Analyze failed for $$impl. Stopping."; \
+			exit 1; \
+		fi; \
+	done
+	@echo ""
+	@echo "Analysis phase complete for all implementations"
+endif
+
+# Test (implementation internal tests only) target
 test:
 ifdef DIR
 	@if [ ! -d "implementations/$(DIR)" ]; then \
@@ -77,64 +131,45 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
-	@$(MAKE) build DIR=$(DIR)
-	@RUN_CMD=$$(./scripts/get_metadata.py implementations/$(DIR) --field run); \
-	TEST_CMD=$$(./scripts/get_metadata.py implementations/$(DIR) --field test); \
-	if [ -n "$$RUN_CMD" ]; then \
-		echo "Testing $(DIR) implementation in Docker..."; \
-		docker run --rm --network none chess-$(DIR) sh -c "cd /app && printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | $$RUN_CMD"; \
-	fi; \
-	if [ -n "$$TEST_CMD" ]; then \
-		echo "Running internal tests for $(DIR) in Docker..."; \
-		docker run --rm --network none chess-$(DIR) sh -c "cd /app && $$TEST_CMD"; \
-	elif [ -f "implementations/$(DIR)/Makefile" ]; then \
-		echo "Running legacy internal tests for $(DIR) via make..."; \
-		docker run --rm --network none chess-$(DIR) make test; \
-	fi
+	@python3 scripts/run_metadata_phase.py --impl implementations/$(DIR) --phase test --image chess-$(DIR)
 else
-	@echo "Running all tests in Docker containers..."
+	@echo "Running internal tests for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
-		echo "==================== Testing $$impl ===================="; \
+		echo "==================== Test $$impl ===================="; \
 		if ! $(MAKE) test DIR=$$impl; then \
-			echo "Tests failed for $$impl. Stopping."; \
+			echo "Internal tests failed for $$impl. Stopping."; \
 			exit 1; \
 		fi; \
 	done
 	@echo ""
-	@echo "Tests complete for all implementations"
+	@echo "Internal tests complete for all implementations"
 endif
 
-# Analyze target
-analyze:
+# Shared chess engine protocol + behavior tests target
+test-chess-engine:
 ifdef DIR
 	@if [ ! -d "implementations/$(DIR)" ]; then \
 		echo "ERROR: Implementation '$(DIR)' not found"; \
 		exit 1; \
 	fi
-	@$(MAKE) build DIR=$(DIR)
-	@ANALYZE_CMD=$$(./scripts/get_metadata.py implementations/$(DIR) --field analyze); \
-	if [ -n "$$ANALYZE_CMD" ]; then \
-		echo "Analyzing $(DIR) implementation in Docker..."; \
-		docker run --rm --network none chess-$(DIR) sh -c "cd /app && $$ANALYZE_CMD"; \
-	elif [ -f "implementations/$(DIR)/Makefile" ]; then \
-		echo "Analyzing $(DIR) implementation via legacy make..."; \
-		docker run --rm --network none chess-$(DIR) make analyze; \
-	else \
-		echo "No analysis command found for $(DIR), skipping"; \
+	@if [ ! -f "implementations/$(DIR)/Dockerfile" ]; then \
+		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
+		exit 1; \
 	fi
+	@python3 test/test_harness_docker.py --impl implementations/$(DIR) --image chess-$(DIR)
 else
-	@echo "Running static analysis for all implementations..."
+	@echo "Running shared chess engine suite for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
 		echo ""; \
-		echo "==================== Analyzing $$impl ===================="; \
-		if ! $(MAKE) analyze DIR=$$impl; then \
-			echo "Analysis failed for $$impl. Stopping."; \
+		echo "==================== Chess Engine Suite $$impl ===================="; \
+		if ! $(MAKE) test-chess-engine DIR=$$impl; then \
+			echo "Chess engine suite failed for $$impl. Stopping."; \
 			exit 1; \
 		fi; \
 	done
 	@echo ""
-	@echo "Analysis complete for all implementations"
+	@echo "Shared chess engine suite complete for all implementations"
 endif
 
 # Verify target
@@ -165,14 +200,18 @@ ifdef DIR
 				"$$TIMEOUT_CMD" "$$@"; \
 			fi; \
 		}; \
-		echo "Step 1/4: Verify"; \
+		echo "Step 1/6: Verify"; \
 		run_with_timeout 60s $(MAKE) verify DIR=$(DIR); \
-		echo "Step 2/4: Build"; \
-		run_with_timeout 60s $(MAKE) build DIR=$(DIR); \
-		echo "Step 3/4: Analyze"; \
-		run_with_timeout 60s $(MAKE) analyze DIR=$(DIR); \
-		echo "Step 4/4: Test"; \
-		run_with_timeout 60s $(MAKE) test DIR=$(DIR); \
+		echo "Step 2/6: Image"; \
+		run_with_timeout 600s $(MAKE) image DIR=$(DIR); \
+		echo "Step 3/6: Build"; \
+		run_with_timeout 300s $(MAKE) build DIR=$(DIR); \
+		echo "Step 4/6: Analyze"; \
+		run_with_timeout 300s $(MAKE) analyze DIR=$(DIR); \
+		echo "Step 5/6: Internal tests"; \
+		run_with_timeout 300s $(MAKE) test DIR=$(DIR); \
+		echo "Step 6/6: Chess engine suite"; \
+		run_with_timeout 600s $(MAKE) test-chess-engine DIR=$(DIR); \
 		echo "Workflow completed successfully for $(DIR)"; \
 	'
 else
@@ -214,5 +253,3 @@ analyze-tools:
 install-hooks:
 	@chmod +x scripts/setup-hooks.sh scripts/pre-commit.sh
 	@./scripts/setup-hooks.sh
-
-

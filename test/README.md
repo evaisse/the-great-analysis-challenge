@@ -23,10 +23,9 @@ test/
 **Purpose**: Comprehensive performance benchmarking with timing and memory analysis.
 
 **Key Features**:
-- ⏱️ **Timing Measurement**: Separate timing for analyze, build, and test phases
+- ⏱️ **Timing Measurement**: Separate timing for image, build, analyze, and chess-engine test phases
 - 💾 **Memory Monitoring**: Peak and average memory usage tracking (when psutil available)
-- 🧹 **Cache Clearing**: Uses `make clean` for consistent testing environment
-- 🐳 **Docker Integration**: Build and test Docker containers
+- 🐳 **Docker Integration**: Uses root Make Docker targets only
 - 📊 **Detailed Reporting**: Text and JSON output formats
 
 **Command Line Usage**:
@@ -257,7 +256,11 @@ pip3 install psutil
 
 ## 💡 Testing Best Practices
 
-### 1. Clean Environment
+### 1. Keep Phase Separation Intact
+- `make image`: Docker image build only
+- `make build`: compilation only
+- `make analyze`: lint/static checks only
+- `make test-chess-engine`: shared engine suite only
 - Run `make clean` before testing for consistent results
 - Use performance_test.py which automatically clears cache
 

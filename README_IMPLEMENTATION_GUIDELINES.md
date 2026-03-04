@@ -21,9 +21,11 @@ This document provides essential guidelines for implementing a chess engine acco
 
 All implementations MUST be developed and verified using Docker. This project enforces a "zero-local-toolchain" policy for implementations:
 
-- **Builds** happen during `docker build`.
-- **Tests** run via `docker run --network none` (triggered by `make test DIR=<lang>`).
-- **Analysis/Linting** runs via `docker run --network none` (triggered by `make analyze DIR=<lang>`).
+- **Image creation** runs via `make image DIR=<lang>`.
+- **Compilation-only build** runs via `make build DIR=<lang>`.
+- **Internal implementation tests** run via `make test DIR=<lang>`.
+- **Shared chess engine compliance tests** run via `make test-chess-engine DIR=<lang>`.
+- **Analysis/Linting** runs via `make analyze DIR=<lang>`.
 
 **NO EXTERNAL DOWNLOADS**: Dockerfiles MUST NOT download external files, binaries, or toolchains (e.g., via `curl`, `wget`, or `git clone` for tools). 
 - **Standard Library Only**: The chess engine implementation MUST rely exclusively on the language's standard library. Do not add third-party libraries or packages for engine functionality.
@@ -193,11 +195,11 @@ LABEL org.chess.estimated_perft4_ms=1000
 - `org.chess.max_ai_depth`: Maximum supported AI search depth
 - `org.chess.estimated_perft4_ms`: Estimated time for perft(4) in milliseconds
 
-**Optional command labels:**
-- `org.chess.build`: Command to build/compile (defaults to `make build`)
-- `org.chess.run`: Command to run engine (inferred from `CMD` if missing)
-- `org.chess.test`: Command to run tests (defaults to `make test`)
-- `org.chess.analyze`: Command for static analysis (defaults to `make analyze`)
+**Command labels (required unless noted):**
+- `org.chess.build`: **Required**. Compilation-only command (no tests, no lint).
+- `org.chess.test`: **Required**. Internal implementation tests only.
+- `org.chess.analyze`: **Required**. Static analysis/lint command (format check allowed, no tests).
+- `org.chess.run`: Command to run engine (inferred from `CMD` if missing).
 
 ## Testing Requirements
 
@@ -219,7 +221,9 @@ Expected: 197281 positions
 
 All implementations must be testable via Docker:
 ```bash
-make test-<language>
+make image DIR=<language>
+make test DIR=<language>
+make test-chess-engine DIR=<language>
 ```
 
 ## Language-Specific Guidelines
@@ -273,7 +277,11 @@ echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | docker run --network none -i
 echo -e "new\nai 3\nquit" | docker run --network none -i chess-<language>
 
 # Use Makefile
-make test-<language>
+make image DIR=<language>
+make build DIR=<language>
+make analyze DIR=<language>
+make test DIR=<language>
+make test-chess-engine DIR=<language>
 ```
 
 ## Need Help?

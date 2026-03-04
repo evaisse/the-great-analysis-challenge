@@ -10,10 +10,16 @@ def get_dockerfile_metadata(dockerfile_path: Path) -> Dict[str, Any]:
     if dockerfile_path.exists():
         try:
             content = dockerfile_path.read_text()
-            # Match LABEL org.chess.key="value" or LABEL org.chess.key=value
-            matches = re.findall(r'LABEL\s+org\.chess\.([a-z0-9_.]+)\s*=\s*(?:"([^"]*)"|([^\s\n]*))', content)
-            for key, val_quoted, val_unquoted in matches:
-                val = val_quoted if val_quoted else val_unquoted
+            # Match LABEL org.chess.key="value" (supports escaped quotes) or unquoted values.
+            label_pattern = re.compile(
+                r'LABEL\s+org\.chess\.([a-z0-9_.]+)\s*=\s*("(?:(?:\\.)|[^"])*"|[^\s\n]+)'
+            )
+            for key, raw_val in label_pattern.findall(content):
+                if raw_val.startswith('"') and raw_val.endswith('"'):
+                    val = raw_val[1:-1]
+                    val = val.replace(r'\"', '"').replace(r'\\', '\\')
+                else:
+                    val = raw_val
                 
                 # Handle lists (like features)
                 if key == 'features' and val:
@@ -37,10 +43,6 @@ def get_dockerfile_metadata(dockerfile_path: Path) -> Dict[str, Any]:
                     else: # Shell format
                         metadata['run'] = cmd_match.group(2).strip()
                         
-            # Default commands if not specified
-            if 'build' not in metadata: metadata['build'] = 'make build'
-            if 'test' not in metadata: metadata['test'] = 'make test'
-            if 'analyze' not in metadata: metadata['analyze'] = 'make analyze'
                     
         except Exception:
             pass
