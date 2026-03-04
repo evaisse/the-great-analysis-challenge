@@ -28,7 +28,7 @@ This repository hosts parallel chess engines implemented per-language to compare
 
 ## Build, Test, and Automation
 
-- [Makefile](Makefile): Canonical Docker build/test targets (e.g., `make build-<lang>`, `make test-<lang>`).
+- [Makefile](Makefile): Canonical Docker targets (e.g., `make image DIR=<lang>`, `make build DIR=<lang>`, `make test-chess-engine DIR=<lang>`).
 - [test/test_suite.json](test/test_suite.json): Declarative test definitions covering movement, special rules, AI, and FEN requirements.
 - [test/test_harness.py](test/test_harness.py): Runner invoked by the Make targets and CI workflows.
 - [.github/workflows/bench.yaml](.github/workflows/bench.yaml): CI entry point for benchmarking and regression checks.

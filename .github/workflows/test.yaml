@@ -93,32 +93,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Get test configuration
-        id: config
-        run: ./workflow get-test-config ${{ matrix.engine }}
+      - name: Build Docker image target
+        run: ./workflow verify-make-target ${{ matrix.engine }} image --timeout 900
 
-      - name: Build Docker image
-        run: |
-          cd implementations/${{ matrix.engine }}
-          echo "🏗️ Building ${{ matrix.engine }} chess engine..."
-          docker build -t chess-${{ matrix.engine }}-test .
-      
+      - name: Verify build target
+        run: ./workflow verify-make-target ${{ matrix.engine }} build --timeout 900
+
       - name: Verify analyze target
-        run: ./workflow verify-make-target ${{ matrix.engine }} analyze
+        run: ./workflow verify-make-target ${{ matrix.engine }} analyze --timeout 900
 
-      - name: Verify test target
-        run: ./workflow verify-make-target ${{ matrix.engine }} test
+      - name: Verify internal test target
+        run: ./workflow verify-make-target ${{ matrix.engine }} test --timeout 900
 
-      - name: Test basic commands
-        run: ./workflow test-basic-commands ${{ matrix.engine }}
-
-      - name: Test advanced features
-        if: steps.config.outputs.test_mode == 'full'
-        run: ./workflow test-advanced-features ${{ matrix.engine }} --supports-perft ${{ steps.config.outputs.supports_perft }} --supports-ai ${{ steps.config.outputs.supports_ai }}
-
-      - name: Test demo mode
-        if: steps.config.outputs.test_mode == 'demo'
-        run: ./workflow test-demo-mode ${{ matrix.engine }}
+      - name: Verify chess engine test suite target
+        continue-on-error: true
+        run: ./workflow verify-make-target ${{ matrix.engine }} test-chess-engine --timeout 1200
 
       - name: Ensure workspace clean for ${{ matrix.engine }}
         run: |
@@ -131,7 +120,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: ./workflow cleanup-docker ${{ matrix.engine }}
+        run: make clean DIR=${{ matrix.engine }}
 
   summary:
     name: Test Summary

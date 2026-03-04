@@ -46,18 +46,27 @@ All implementations have complete feature parity with the following features:
 # List all available implementations
 make list-implementations
 
-# Build a specific implementation
+# Build Docker image for a specific implementation
+make image DIR=go
+
+# Run compilation only for a specific implementation
 make build DIR=go
 
-# Test a specific implementation
+# Run internal implementation tests only
 make test DIR=ruby
+
+# Run shared chess engine suite only
+make test-chess-engine DIR=ruby
 
 # Analyze a specific implementation
 make analyze DIR=python
 
 # Build and test all implementations
-make build-all
-make test-all
+make image
+make build
+make analyze
+make test
+make test-chess-engine
 
 # Test from within an implementation directory
 cd implementations/<language> && make docker-test
@@ -96,5 +105,5 @@ Each implementation follows identical specifications:
 - **AI Algorithm**: [AI_ALGORITHM_SPEC.md](./AI_ALGORITHM_SPEC.md) - Deterministic move selection algorithm
 - **Standardized Commands**: Identical interface across all languages
 - **Docker Support**: Containerized testing and deployment
-- **Makefile Targets**: `build`, `test`, `analyze`, `docker-test`
+- **Makefile Targets**: `image`, `build`, `analyze`, `test`, `test-chess-engine`, `docker-test`
 - **Metadata**: Structured information in `chess.meta` files

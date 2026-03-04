@@ -1,7 +1,5 @@
 FROM ghcr.io/evaisse/tgac-swift-toolchain:latest
 
-RUN apt-get update && apt-get install -y --no-install-recommends make && rm -rf /var/lib/apt/lists/*
-
 COPY . .
 
 RUN swift build -c release
