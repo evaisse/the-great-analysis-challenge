@@ -3,33 +3,32 @@ module AI where
 import Types
 import Board
 import qualified MoveGenerator as MG
-import Data.List (maximumBy, minimumBy)
-import Data.Maybe (fromMaybe)
+import qualified Eval.Mod as Eval
 
 -- AI move selection with minimax and alpha-beta pruning
-findBestMoveAI :: GameState -> Int -> (Move, Int, Int)  -- (move, evaluation, nodes)
-findBestMoveAI gs depth =
+findBestMoveAI :: GameState -> Int -> Bool -> (Move, Int, Int)  -- (move, evaluation, nodes)
+findBestMoveAI gs depth useRichEval =
   case MG.generateAllLegalMoves gs of
     [] -> error "No legal moves available"
     moves ->
       let isMaximizing = currentPlayer gs == White
-          (bestMove, bestEval, nodes) = alphaBetaRoot moves gs depth isMaximizing (-100000) 100000 0
+          (bestMove, bestEval, nodes) = alphaBetaRoot moves gs depth useRichEval isMaximizing (-100000) 100000 0
       in (bestMove, bestEval, nodes)
 
 -- Alpha-beta search from root
-alphaBetaRoot :: [Move] -> GameState -> Int -> Bool -> Int -> Int -> Int -> (Move, Int, Int)
-alphaBetaRoot [] _ _ _ _ _ nodes = error "No moves to evaluate"
-alphaBetaRoot (firstMove:otherMoves) gs depth isMaximizing alpha beta nodes =
+alphaBetaRoot :: [Move] -> GameState -> Int -> Bool -> Bool -> Int -> Int -> Int -> (Move, Int, Int)
+alphaBetaRoot [] _ _ _ _ _ _ nodes = error "No moves to evaluate"
+alphaBetaRoot (firstMove:otherMoves) gs depth useRichEval isMaximizing alpha beta nodes =
   let newState = makeMove gs firstMove
-      (eval, nodeCount) = alphaBeta newState (depth - 1) (not isMaximizing) alpha beta
+      (eval, nodeCount) = alphaBeta newState (depth - 1) useRichEval (not isMaximizing) alpha beta
       totalNodes = nodes + nodeCount + 1
-  in searchBest firstMove eval totalNodes otherMoves gs depth isMaximizing alpha beta
+  in searchBest firstMove eval totalNodes otherMoves gs depth useRichEval isMaximizing alpha beta
 
-searchBest :: Move -> Int -> Int -> [Move] -> GameState -> Int -> Bool -> Int -> Int -> (Move, Int, Int)
-searchBest bestMove bestEval totalNodes [] _ _ _ _ _ = (bestMove, bestEval, totalNodes)
-searchBest bestMove bestEval totalNodes (move:otherMoves) gs depth isMaximizing alpha beta =
+searchBest :: Move -> Int -> Int -> [Move] -> GameState -> Int -> Bool -> Bool -> Int -> Int -> (Move, Int, Int)
+searchBest bestMove bestEval totalNodes [] _ _ _ _ _ _ = (bestMove, bestEval, totalNodes)
+searchBest bestMove bestEval totalNodes (move:otherMoves) gs depth useRichEval isMaximizing alpha beta =
   let newState = makeMove gs move
-      (eval, nodeCount) = alphaBeta newState (depth - 1) (not isMaximizing) alpha beta
+      (eval, nodeCount) = alphaBeta newState (depth - 1) useRichEval (not isMaximizing) alpha beta
       newTotalNodes = totalNodes + nodeCount + 1
       (newBest, newBestEval, newAlpha, newBeta) = 
         if isMaximizing
@@ -41,80 +40,42 @@ searchBest bestMove bestEval totalNodes (move:otherMoves) gs depth isMaximizing 
              else (bestMove, bestEval, alpha, beta)
   in if newBeta <= newAlpha
      then (newBest, newBestEval, newTotalNodes)  -- Prune
-     else searchBest newBest newBestEval newTotalNodes otherMoves gs depth isMaximizing newAlpha newBeta
+     else searchBest newBest newBestEval newTotalNodes otherMoves gs depth useRichEval isMaximizing newAlpha newBeta
 
 -- Main minimax with alpha-beta pruning
-alphaBeta :: GameState -> Int -> Bool -> Int -> Int -> (Int, Int)  -- (evaluation, nodes)
-alphaBeta gs depth isMaximizing alpha beta
-  | depth == 0 || isGameOver gs = (evaluatePositionAI gs, 1)
-  | isMaximizing = maximizeAlphaBeta (MG.generateAllLegalMoves gs) gs depth alpha beta (-100000) 1
-  | otherwise = minimizeAlphaBeta (MG.generateAllLegalMoves gs) gs depth alpha beta 100000 1
+alphaBeta :: GameState -> Int -> Bool -> Bool -> Int -> Int -> (Int, Int)  -- (evaluation, nodes)
+alphaBeta gs depth useRichEval isMaximizing alpha beta
+  | depth == 0 || isGameOver gs = (evaluatePositionAI useRichEval gs, 1)
+  | isMaximizing = maximizeAlphaBeta (MG.generateAllLegalMoves gs) gs depth useRichEval alpha beta (-100000) 1
+  | otherwise = minimizeAlphaBeta (MG.generateAllLegalMoves gs) gs depth useRichEval alpha beta 100000 1
 
-maximizeAlphaBeta :: [Move] -> GameState -> Int -> Int -> Int -> Int -> Int -> (Int, Int)
-maximizeAlphaBeta [] _ _ _ _ maxEval nodes = (maxEval, nodes)
-maximizeAlphaBeta (move:otherMoves) gs depth alpha beta maxEval nodes =
+maximizeAlphaBeta :: [Move] -> GameState -> Int -> Bool -> Int -> Int -> Int -> Int -> (Int, Int)
+maximizeAlphaBeta [] _ _ _ _ _ maxEval nodes = (maxEval, nodes)
+maximizeAlphaBeta (move:otherMoves) gs depth useRichEval alpha beta maxEval nodes =
   let newState = makeMove gs move
-      (eval, childNodes) = alphaBeta newState (depth - 1) False alpha beta
+      (eval, childNodes) = alphaBeta newState (depth - 1) useRichEval False alpha beta
       newMaxEval = max maxEval eval
       newAlpha = max alpha eval
       newNodes = nodes + childNodes
   in if beta <= newAlpha
      then (newMaxEval, newNodes)  -- Beta cutoff
-     else maximizeAlphaBeta otherMoves gs depth newAlpha beta newMaxEval newNodes
+     else maximizeAlphaBeta otherMoves gs depth useRichEval newAlpha beta newMaxEval newNodes
 
-minimizeAlphaBeta :: [Move] -> GameState -> Int -> Int -> Int -> Int -> Int -> (Int, Int)
-minimizeAlphaBeta [] _ _ _ _ minEval nodes = (minEval, nodes)
-minimizeAlphaBeta (move:otherMoves) gs depth alpha beta minEval nodes =
+minimizeAlphaBeta :: [Move] -> GameState -> Int -> Bool -> Int -> Int -> Int -> Int -> (Int, Int)
+minimizeAlphaBeta [] _ _ _ _ _ minEval nodes = (minEval, nodes)
+minimizeAlphaBeta (move:otherMoves) gs depth useRichEval alpha beta minEval nodes =
   let newState = makeMove gs move
-      (eval, childNodes) = alphaBeta newState (depth - 1) True alpha beta
+      (eval, childNodes) = alphaBeta newState (depth - 1) useRichEval True alpha beta
       newMinEval = min minEval eval
       newBeta = min beta eval
       newNodes = nodes + childNodes
   in if newBeta <= alpha
      then (newMinEval, newNodes)  -- Alpha cutoff
-     else minimizeAlphaBeta otherMoves gs depth alpha newBeta newMinEval newNodes
+     else minimizeAlphaBeta otherMoves gs depth useRichEval alpha newBeta newMinEval newNodes
 
 -- Enhanced position evaluation (using MoveGenerator functions)
-evaluatePositionAI :: GameState -> Int
-evaluatePositionAI gs
-  | isCheckmate gs = if currentPlayer gs == White then -100000 else 100000
-  | isStalemate gs = 0
-  | otherwise = 
-      MG.materialBalance gs + 
-      MG.positionalBonus gs +
-      kingSafetyBonus gs +
-      mobilityBonus gs
-
-kingSafetyBonus :: GameState -> Int
-kingSafetyBonus gs =
-  let whiteKingSafety = case findKing gs White of
-        Just kingPos -> if isSquareExposed gs kingPos then -20 else 0
-        Nothing -> 0
-      blackKingSafety = case findKing gs Black of
-        Just kingPos -> if isSquareExposed gs kingPos then 20 else 0
-        Nothing -> 0
-  in whiteKingSafety + blackKingSafety
-
-mobilityBonus :: GameState -> Int
-mobilityBonus gs =
-  let whiteMobility = length (MG.generateAllLegalMoves gs)
-      blackMobility = length (MG.generateAllLegalMoves (makeMove gs (Move (Square 0 0) (Square 0 0) Nothing)))  -- Simplified
-  in if currentPlayer gs == White 
-     then whiteMobility - blackMobility
-     else blackMobility - whiteMobility
-
-isSquareExposed :: GameState -> Square -> Bool
-isSquareExposed gs square =
-  let adjacentSquares = [Square (col + dc) (row + dr) | 
-        Square col row <- [square],
-        (dc, dr) <- [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)],
-        col + dc >= 0 && col + dc <= 7 && row + dr >= 0 && row + dr <= 7]
-      hasProtection = any (\sq -> case getPiece gs sq of
-        Just (Piece color _) -> color == (case getPiece gs square of
-          Just (Piece c _) -> c
-          Nothing -> White)  -- Default
-        Nothing -> False) adjacentSquares
-  in not hasProtection
+evaluatePositionAI :: Bool -> GameState -> Int
+evaluatePositionAI useRichEval = Eval.evaluatePosition useRichEval
 
 isGameOver :: GameState -> Bool
 isGameOver gs = isCheckmate gs || isStalemate gs
