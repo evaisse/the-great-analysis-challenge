@@ -38,6 +38,25 @@ def docker_image_exists(image: str) -> bool:
     return result.returncode == 0
 
 
+def _run_with_shell(image: str, shell: str, command: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--network",
+            "none",
+            image,
+            shell,
+            "-c",
+            f"cd /app && {command}",
+        ],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a metadata phase in Docker")
     parser.add_argument("--impl", required=True, help="Implementation name or path")
@@ -79,19 +98,21 @@ def main() -> int:
     print(f"Running {args.phase} for {impl_name} in Docker...")
     print(f"Command: {command}")
 
-    docker_cmd = [
-        "docker",
-        "run",
-        "--rm",
-        "--network",
-        "none",
-        image,
-        "sh",
-        "-lc",
-        f"cd /app && {command}",
-    ]
+    # Prefer bash when available, but keep non-login shell execution (-c) so image PATH is preserved.
+    # Fall back to sh when bash is not available in the runtime image.
+    result = _run_with_shell(image, "bash", command)
 
-    result = subprocess.run(docker_cmd, check=False)
+    if result.returncode != 0:
+        stderr_lower = (result.stderr or "").lower()
+        bash_missing = "executable file not found in $path" in stderr_lower and "bash" in stderr_lower
+        if bash_missing:
+            result = _run_with_shell(image, "sh", command)
+
+    if result.stdout:
+        sys.stdout.write(result.stdout)
+    if result.stderr:
+        sys.stderr.write(result.stderr)
+
     return result.returncode
 
 

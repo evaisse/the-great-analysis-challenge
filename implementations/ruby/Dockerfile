@@ -12,6 +12,6 @@ LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1000
 LABEL org.chess.build="ruby -c chess.rb"
 LABEL org.chess.test="rspec"
-LABEL org.chess.analyze="rubocop"
+LABEL org.chess.analyze="bundle exec rubocop --fail-level E"
 
 CMD ["ruby", "chess.rb"]

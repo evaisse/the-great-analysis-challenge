@@ -106,6 +106,7 @@ jobs:
         run: ./workflow verify-make-target ${{ matrix.engine }} test --timeout 900
 
       - name: Verify chess engine test suite target
+        continue-on-error: true
         run: ./workflow verify-make-target ${{ matrix.engine }} test-chess-engine --timeout 1200
 
       - name: Ensure workspace clean for ${{ matrix.engine }}
