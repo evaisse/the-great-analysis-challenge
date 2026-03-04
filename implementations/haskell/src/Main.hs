@@ -11,16 +11,21 @@ import Data.Maybe (fromMaybe, isJust, fromJust)
 import Control.Monad (when)
 import qualified Control.Exception
 import Data.Time (getCurrentTime, diffUTCTime)
+import System.Environment (getArgs)
+import qualified Eval.Mod as Eval
 
 -- Main game state
 data ChessEngine = ChessEngine
   { gameState :: GameState
   , moveHistory :: [GameState]
+  , richEvalEnabled :: Bool
   }
 
 main :: IO ()
 main = do
-  let engine = ChessEngine initialGameState []
+  args <- getArgs
+  let useRichEval = "--rich-eval" `elem` args
+  let engine = ChessEngine initialGameState [] useRichEval
   putStrLn $ displayBoard (gameState engine)
   gameLoop engine
 
@@ -59,13 +64,14 @@ processCommand engine ["help"] = do
   putStrLn "  fen <string>               - Load position from FEN"
   putStrLn "  export                     - Export current position as FEN"
   putStrLn "  eval                       - Display position evaluation"
+  putStrLn "  rich-eval on|off           - Enable/disable rich evaluation"
   putStrLn "  perft <depth>              - Performance test (move count)"
   putStrLn "  help                       - Display available commands"
   putStrLn "  quit                       - Exit the program"
   return (Just engine)
 
 processCommand engine ["new"] = do
-  let newEngine = ChessEngine initialGameState []
+  let newEngine = ChessEngine initialGameState [] (richEvalEnabled engine)
   putStrLn $ displayBoard (gameState newEngine)
   return (Just newEngine)
 
@@ -79,7 +85,7 @@ processCommand engine ["move", moveStr] = do
       if isValidMove gs move
         then do
           let newState = makeMove gs move
-          let newEngine = ChessEngine newState (gs : moveHistory engine)
+          let newEngine = ChessEngine newState (gs : moveHistory engine) (richEvalEnabled engine)
           putStrLn $ "OK: " ++ moveStr
           putStrLn $ displayBoard newState
           return (Just newEngine)
@@ -101,7 +107,7 @@ processCommand engine ["undo"] = do
       putStrLn "ERROR: No moves to undo"
       return (Just engine)
     (prevState:restHistory) -> do
-      let newEngine = ChessEngine prevState restHistory
+      let newEngine = ChessEngine prevState restHistory (richEvalEnabled engine)
       putStrLn $ displayBoard prevState
       return (Just newEngine)
 
@@ -115,11 +121,11 @@ processCommand engine ["ai", depthStr] = do
           return (Just engine)
         else do
           startTime <- getCurrentTime
-          let (bestMove, evaluation, nodes) = findBestMoveAI gs depth
+          let (bestMove, evaluation, nodes) = findBestMoveAI gs depth (richEvalEnabled engine)
           endTime <- getCurrentTime
           let timeTaken = round $ 1000 * realToFrac (diffUTCTime endTime startTime)
           let newState = makeMove gs bestMove
-          let newEngine = ChessEngine newState (gs : moveHistory engine)
+          let newEngine = ChessEngine newState (gs : moveHistory engine) (richEvalEnabled engine)
           putStrLn $ "AI: " ++ MG.formatMove bestMove ++ 
                     " (depth=" ++ show depth ++ 
                     ", eval=" ++ show evaluation ++ 
@@ -136,7 +142,7 @@ processCommand engine ["fen", fenStr] = do
       putStrLn "ERROR: Invalid FEN string"
       return (Just engine)
     Just newState -> do
-      let newEngine = ChessEngine newState []
+      let newEngine = ChessEngine newState [] (richEvalEnabled engine)
       putStrLn $ displayBoard newState
       return (Just newEngine)
 
@@ -147,9 +153,21 @@ processCommand engine ["export"] = do
 
 processCommand engine ["eval"] = do
   let gs = gameState engine
-  let evaluation = MG.evaluatePosition gs
+  let evaluation = Eval.evaluatePosition (richEvalEnabled engine) gs
   putStrLn $ "Evaluation: " ++ show evaluation ++ " (positive = White advantage)"
   return (Just engine)
+
+processCommand engine ["rich-eval", mode] =
+  case mode of
+    "on" -> do
+      putStrLn "Rich evaluation enabled"
+      return (Just engine{richEvalEnabled = True})
+    "off" -> do
+      putStrLn "Rich evaluation disabled"
+      return (Just engine{richEvalEnabled = False})
+    _ -> do
+      putStrLn "ERROR: Use 'rich-eval on' or 'rich-eval off'"
+      return (Just engine)
 
 processCommand engine ["perft", depthStr] = do
   case reads depthStr of
