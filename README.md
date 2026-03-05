@@ -22,7 +22,7 @@ All implementations have complete feature parity with the following features:
 | 🎯 Dart | 🟡 | [1739](implementations/dart/bin/main.dart) | 542ms | 3109ms | 1277ms | 451 MB | - |
 | 🌳 Elm | 🟢 | [1663](implementations/elm/src/ChessEngine.elm) | 1395ms | 358ms | 379ms | 9 MB | - |
 | ✨ Gleam | 🟢 | [1917](implementations/gleam/src/chess_engine.gleam) | 288ms | 777ms | 333ms | 110 MB | - |
-| 🐹 Go | 🟢 | [2237](implementations/go/chess.go) | 202ms | 1039ms | 1145ms | 115 MB | - |
+| 🐹 Go | 🟢 | [2237](implementations/go/chess.go) | 443ms | 1085ms | 1150ms | 115 MB | - |
 | 📐 Haskell | 🟢 | [1085](implementations/haskell/src/Main.hs) | 423ms | 229ms | 217ms | 115 MB | - |
 | 🪶 Imba | 🟡 | [700](implementations/imba/chess.imba) | 322ms | 195ms | 209ms | 110 MB | - |
 | 🟨 Javascript | 🟡 | [682](implementations/javascript/chess.js) | 200ms | 191ms | 192ms | 110 MB | - |
