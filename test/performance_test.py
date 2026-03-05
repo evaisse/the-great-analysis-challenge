@@ -4,7 +4,7 @@ Chess Engine Performance Testing Script
 
 This script runs comprehensive performance tests against chess engine implementations:
 - Clears Docker build cache
-- Measures analyze, build, and test timing
+- Measures task timing for build, analyze, test, and test-chess-engine
 - Monitors memory consumption
 - Uses existing test harness for consistent chess client testing
 """
@@ -160,6 +160,7 @@ class ImplementationTester:
             "size": {},
             "normalized": {},
             "docker": {},
+            "task_results": {},
             "test_results": {},
             "errors": [],
             "status": "pending"
@@ -440,7 +441,7 @@ class ImplementationTester:
             self.results["errors"].append(f"Chess test error: {str(e)}")
     
     def _run_docker_tests(self):
-        """Run all tests via Docker (build, analyze, test)"""
+        """Run benchmark tasks via Docker plus shared harness."""
         print("🐳 Running comprehensive Docker-based tests...")
         
         if not (self.impl_path / "Dockerfile").exists():
@@ -450,8 +451,8 @@ class ImplementationTester:
             
         image_name = f"chess-{self.language.lower()}"
         
-        # Phase 1: Build Docker image (includes dependency installation and compilation)
-        print("  🔨 Building Docker image (includes analysis and build)...")
+        # Phase 1: Build Docker image (prerequisite for task execution)
+        print("  🔨 Building Docker image (prerequisite)...")
         monitor = PerformanceMonitor()
         monitor.start_monitoring()
         success, build_time, output = DockerManager.build_image(
@@ -459,64 +460,113 @@ class ImplementationTester:
             image_name
         )
         memory_stats = monitor.stop_monitoring()
-        
+
         if "memory" not in self.results:
             self.results["memory"] = {}
-        self.results["memory"]["build"] = memory_stats
-        
-        self.results["timings"]["build_seconds"] = build_time
+        self.results["memory"]["image"] = memory_stats
+
+        self.results["timings"]["image_build_seconds"] = build_time
         self.results["docker"]["build_time"] = build_time
         self.results["docker"]["build_success"] = success
-        
+        self.results["docker"]["image_build_time"] = build_time
+        self.results["docker"]["image_build_success"] = success
+
+        # Default task outcomes for reporting consistency
+        self.results["task_results"] = {
+            "make_build": False,
+            "make_analyze": False,
+            "make_test": False,
+            "make_test_chess_engine": False,
+        }
+
         if success:
             print(f"  ✅ Docker build completed in {build_time:.2f}s")
-            
-            # Phase 2: Run analysis inside container  
-            print("  🔍 Running static analysis...")
-            analyze_success, analyze_time = self._run_docker_command(image_name, "make analyze")
+
+            # Phase 2: make build
+            print("  🔧 Running task: make build")
+            make_build_success, make_build_time = self._run_docker_command(
+                image_name,
+                "make build",
+                phase="build",
+            )
+            self.results["timings"]["build_seconds"] = make_build_time
+            self.results["docker"]["make_build_time"] = make_build_time
+            self.results["docker"]["make_build_success"] = make_build_success
+            self.results["task_results"]["make_build"] = make_build_success
+
+            # Phase 3: make analyze
+            print("  🔧 Running task: make analyze")
+            analyze_success, analyze_time = self._run_docker_command(
+                image_name,
+                "make analyze",
+                phase="analyze",
+            )
             self.results["timings"]["analyze_seconds"] = analyze_time
-            
-            # Phase 3: Run tests inside container
-            print("  ♟️  Running chess engine tests...")
-            test_success, test_time = self._run_docker_command(image_name, "make test")
+            self.results["docker"]["make_analyze_time"] = analyze_time
+            self.results["docker"]["make_analyze_success"] = analyze_success
+            self.results["task_results"]["make_analyze"] = analyze_success
+
+            # Phase 4: make test
+            print("  🔧 Running task: make test")
+            test_success, test_time = self._run_docker_command(
+                image_name,
+                "make test",
+                phase="test",
+            )
             self.results["timings"]["test_seconds"] = test_time
-            self.results["timings"]["test_v1_seconds"] = test_time
+            self.results["timings"]["test_internal_seconds"] = test_time
             self.results["docker"]["test_time"] = test_time
             self.results["docker"]["test_success"] = test_success
+            self.results["docker"]["make_test_time"] = test_time
+            self.results["docker"]["make_test_success"] = test_success
+            self.results["task_results"]["make_test"] = test_success
 
-            track_test_success = True
-            track_test_time = 0.0
-            if self.track != "v1":
-                print(f"  🧪 Running shared track suite ({self.track})...")
-                track_test_success, track_test_time = self._run_track_suite(image_name, self.track)
-                self.results["timings"][f"test_{self.track.replace('-', '_')}_seconds"] = track_test_time
-                self.results["docker"]["track_test_time"] = track_test_time
-                self.results["docker"]["track_test_success"] = track_test_success
-            
-            # Overall success if all phases passed
-            overall_success = success and analyze_success and test_success and track_test_success
+            # Phase 5: make test-chess-engine equivalent via shared harness
+            print(f"  🔧 Running task: make test-chess-engine (track={self.track})")
+            track_test_success, track_test_time = self._run_track_suite(image_name, self.track)
+            self.results["timings"]["test_chess_engine_seconds"] = track_test_time
+            self.results["timings"][f"test_{self.track.replace('-', '_')}_seconds"] = track_test_time
+            self.results["docker"]["test_chess_engine_time"] = track_test_time
+            self.results["docker"]["test_chess_engine_success"] = track_test_success
+            self.results["docker"]["track_test_time"] = track_test_time
+            self.results["docker"]["track_test_success"] = track_test_success
+            self.results["task_results"]["make_test_chess_engine"] = track_test_success
+
+            # Overall success if all benchmark tasks passed
+            overall_success = (
+                success
+                and make_build_success
+                and analyze_success
+                and test_success
+                and track_test_success
+            )
             if overall_success:
-                extra = ""
-                if self.track != "v1":
-                    extra = f", track-{self.track}: {track_test_time:.1f}s"
                 print(
                     "  ✅ All Docker tests passed "
-                    f"(build: {build_time:.1f}s, analyze: {analyze_time:.1f}s, "
-                    f"test: {test_time:.1f}s{extra})"
+                    f"(image: {build_time:.1f}s, make build: {make_build_time:.1f}s, "
+                    f"make analyze: {analyze_time:.1f}s, make test: {test_time:.1f}s, "
+                    f"make test-chess-engine: {track_test_time:.1f}s)"
                 )
                 # Set traditional result fields for compatibility
-                passed_phases = ["docker_build", "docker_analyze", "docker_test"]
-                if self.track != "v1":
-                    passed_phases.append(f"track_{self.track}")
-                self.results["test_results"]["passed"] = passed_phases
+                self.results["test_results"]["passed"] = [
+                    "make_build",
+                    "make_analyze",
+                    "make_test",
+                    "make_test_chess_engine",
+                ]
                 self.results["test_results"]["failed"] = []
             else:
                 failed_phases = []
-                if not success: failed_phases.append("build") 
-                if not analyze_success: failed_phases.append("analyze")
-                if not test_success: failed_phases.append("test")
-                if not track_test_success and self.track != "v1":
-                    failed_phases.append(f"track_{self.track}")
+                if not success:
+                    failed_phases.append("image")
+                if not make_build_success:
+                    failed_phases.append("make_build")
+                if not analyze_success:
+                    failed_phases.append("make_analyze")
+                if not test_success:
+                    failed_phases.append("make_test")
+                if not track_test_success:
+                    failed_phases.append("make_test_chess_engine")
                 print(f"  ❌ Docker tests failed in phases: {', '.join(failed_phases)}")
                 self.results["test_results"]["passed"] = []
                 self.results["test_results"]["failed"] = failed_phases
@@ -525,10 +575,16 @@ class ImplementationTester:
             print(f"  ❌ Docker build failed in {build_time:.2f}s")
             self.results["errors"].append(f"Docker build failed: {output[:500]}")
             self.results["test_results"]["passed"] = []
-            self.results["test_results"]["failed"] = ["docker_build"]
-    
-    def _run_docker_command(self, image_name: str, command: str) -> Tuple[bool, float]:
-        """Run a command inside a Docker container and return (success, time)"""
+            self.results["test_results"]["failed"] = ["image"]
+
+    def _run_docker_command(
+        self,
+        image_name: str,
+        command: str,
+        phase: str = "test",
+        timeout_seconds: Optional[int] = None,
+    ) -> Tuple[bool, float]:
+        """Run a command inside a Docker container and return (success, time)."""
         # We wrap the command to capture the peak memory from cgroups
         # This works on both cgroup v1 and v2 environments inside Docker
         wrapped_command = f"{command}; PEAK=$(cat /sys/fs/cgroup/memory.peak 2>/dev/null || cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes 2>/dev/null || echo 0); echo \"---MEMORY_PEAK_BYTES: $PEAK---\""
@@ -537,7 +593,8 @@ class ImplementationTester:
             start_time = time.time()
             cmd = ["docker", "run", "--rm", image_name, "sh", "-c", wrapped_command]
             print(f"    🔧 Running: {command}")
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.docker_timeout//2)
+            effective_timeout = timeout_seconds if timeout_seconds is not None else max(10, self.docker_timeout // 2)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=effective_timeout)
             elapsed = time.time() - start_time
             
             # Parse memory peak from output
@@ -549,7 +606,6 @@ class ImplementationTester:
                     memory_mb = peak_bytes / (1024 * 1024)
             
             # Store memory stats in results
-            phase = "analyze" if "analyze" in command else "test"
             if "memory" not in self.results:
                 self.results["memory"] = {}
             
@@ -627,34 +683,46 @@ def generate_performance_report(results: List[Dict]) -> str:
     
     # Summary table
     report.append("PERFORMANCE SUMMARY")
-    report.append("-" * 80)
-    report.append(f"{'Language':<12} {'Status':<10} {'LOC':<8} {'Analyze':<8} {'Build':<8} {'Test':<8} {'Memory':<10} {'Tests':<8}")
-    report.append("-" * 80)
+    report.append("-" * 118)
+    report.append(
+        f"{'Language':<12} {'Status':<10} {'LOC':<8} "
+        f"{'Build':<9} {'Analyze':<9} {'Test':<9} {'Test-CE':<10} "
+        f"{'Memory':<10} {'Tasks':<8}"
+    )
+    report.append("-" * 118)
     
     for result in sorted(results, key=lambda x: x.get("language", "")):
         lang = result.get("language", "Unknown")[:11]
         status = result.get("status", "unknown")[:9]
         
-        analyze_time = result.get("timings", {}).get("analyze_seconds", 0)
         build_time = result.get("timings", {}).get("build_seconds", 0)
+        analyze_time = result.get("timings", {}).get("analyze_seconds", 0)
         test_time = result.get("timings", {}).get("test_seconds", 0)
+        test_chess_engine_time = result.get("timings", {}).get("test_chess_engine_seconds", 0)
         source_loc = result.get("size", {}).get("source_loc", 0)
         
         peak_memory = max([
             result.get("memory", {}).get("analyze", {}).get("peak_memory_mb", 0),
             result.get("memory", {}).get("build", {}).get("peak_memory_mb", 0),
-            result.get("memory", {}).get("test", {}).get("peak_memory_mb", 0)
+            result.get("memory", {}).get("test", {}).get("peak_memory_mb", 0),
+            result.get("memory", {}).get("image", {}).get("peak_memory_mb", 0)
         ])
-        
-        test_results = result.get("test_results", {})
-        passed = len(test_results.get("passed", []))
-        failed = len(test_results.get("failed", []))
-        
+
+        task_results = result.get("task_results", {})
+        task_order = [
+            "make_build",
+            "make_analyze",
+            "make_test",
+            "make_test_chess_engine",
+        ]
+        passed = sum(1 for key in task_order if task_results.get(key) is True)
+        total = len(task_order)
+
         report.append(
             f"{lang:<12} {status:<10} "
             f"{source_loc:<8} "
-            f"{analyze_time:>7.1f}s {build_time:>7.1f}s {test_time:>7.1f}s "
-            f"{peak_memory:>8.0f}MB {passed}/{passed+failed:<6}"
+            f"{build_time:>7.1f}s {analyze_time:>7.1f}s {test_time:>7.1f}s {test_chess_engine_time:>8.1f}s "
+            f"{peak_memory:>8.0f}MB {passed}/{total:<6}"
         )
     
     # Detailed results
@@ -716,13 +784,27 @@ def generate_performance_report(results: List[Dict]) -> str:
         docker = result.get("docker", {})
         if docker:
             report.append(f"\nDOCKER TESTS:")
-            build_success = docker.get("build_success", False)
-            build_time = docker.get("build_time", 0)
-            test_success = docker.get("test_success", False)
-            test_time = docker.get("test_time", 0)
-            
-            report.append(f"  Build: {'✅' if build_success else '❌'} ({build_time:.2f}s)")
-            report.append(f"  Test: {'✅' if test_success else '❌'} ({test_time:.2f}s)")
+            image_build_success = docker.get("image_build_success", docker.get("build_success", False))
+            image_build_time = docker.get("image_build_time", docker.get("build_time", 0))
+            make_build_success = docker.get("make_build_success", False)
+            make_build_time = docker.get("make_build_time", 0)
+            make_analyze_success = docker.get("make_analyze_success", False)
+            make_analyze_time = docker.get("make_analyze_time", 0)
+            make_test_success = docker.get("make_test_success", docker.get("test_success", False))
+            make_test_time = docker.get("make_test_time", docker.get("test_time", 0))
+            make_test_chess_success = docker.get("test_chess_engine_success", docker.get("track_test_success", False))
+            make_test_chess_time = docker.get("test_chess_engine_time", docker.get("track_test_time", 0))
+
+            report.append(f"  Image build: {'✅' if image_build_success else '❌'} ({image_build_time:.2f}s)")
+            report.append(f"  make build: {'✅' if make_build_success else '❌'} ({make_build_time:.2f}s)")
+            report.append(f"  make analyze: {'✅' if make_analyze_success else '❌'} ({make_analyze_time:.2f}s)")
+            report.append(f"  make test: {'✅' if make_test_success else '❌'} ({make_test_time:.2f}s)")
+            report.append(
+                "  make test-chess-engine "
+                f"(track={result.get('track', 'v1')}): "
+                f"{'✅' if make_test_chess_success else '❌'} "
+                f"({make_test_chess_time:.2f}s)"
+            )
         
         # Errors
         errors = result.get("errors", [])
@@ -756,12 +838,14 @@ Examples:
 
 Test Phases (All Docker-based):
   1. Cache Clearing   - Clears local build artifacts  
-  2. Docker Build     - Builds implementation container (includes dependencies and compilation)
-  3. Static Analysis  - Runs 'make analyze' inside container
-  4. Chess Testing    - Runs 'make test' inside container for protocol compliance
+  2. Docker Build     - Builds implementation container (prerequisite)
+  3. Build Task       - Runs 'make build' inside container
+  4. Static Analysis  - Runs 'make analyze' inside container
+  5. Internal Tests   - Runs 'make test' inside container
+  6. Shared Suite     - Runs 'make test-chess-engine' equivalent for selected track
 
 Performance Metrics:
-  - Timing: Docker build, analysis, and test phase measurements
+  - Timing: Docker image + make build/analyze/test/test-chess-engine measurements
   - Memory: Peak and average memory usage (requires psutil)  
   - Chess Tests: Protocol compliance and correctness via containers
   - Container: Build and execution times for each implementation
