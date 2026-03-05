@@ -1,8 +1,3 @@
-Running Gleam static analysis...
-gleam format --check || true
-gleam check
-gleam build
-⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -11,55 +6,92 @@ Found 1 implementation(s) to test
 Testing gleam implementation
 Path: implementations/gleam
 ============================================================
+📏 Source size: 0 LOC across 0 files
 🧹 Clearing build cache...
 🔧 Running: make clean
 ⚠️  make clean returned non-zero exit code: make: gleam: No such file or directory
-make: *** [clean] Error 1
+make: *** [Makefile:24: clean] Error 127
 
 ✅ Cache clearing completed
-🔍 Running static analysis...
-🔧 Running: make analyze
-✅ Analysis completed in 0.04s
-🔨 Building implementation...
-🔧 Running: make build
-❌ Build failed in 0.02s
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (prerequisite)...
+  🔧 Running: docker build -t chess-gleam .
+  ✅ Docker build completed in 1.04s
+  🔧 Running task: make build
+    🔧 Running: make build
+  🔧 Running task: make analyze
+    🔧 Running: make analyze
+  🔧 Running task: make test
+    🔧 Running: make test
+  🔧 Running task: make test-chess-engine (track=v2-full)
+  ❌ Docker tests failed in phases: make_test_chess_engine
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-23 00:51:26
+Generated: 2026-03-05 16:16:36
 ================================================================================
 
 PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-gleam        failed         0.0s     0.0s     0.0s        0MB 0/0     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+gleam        completed  0        0.4s/18MB          0.4s/7MB           0.9s/74MB          53.0s/62MB                1/1              0/14              
 
 ============================================================
 DETAILED RESULTS: GLEAM
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.04s
-  Build Seconds: 0.02s
+  docker build image: 1.04s
+  make build: 0.39s
+  make analyze: 0.39s
+  make test: 0.89s
+  make test-chess-engine: 52.96s
+  make test (internal mirror): 0.89s
+  test v2 full seconds: 52.96s
+
+SOURCE SIZE:
+  Source LOC: 0 (files: 0)
 
 MEMORY USAGE:
-  Analyze: Peak 0.0MB, Avg 0.0MB
-  Build: Peak 0.0MB, Avg 0.0MB
+  Image: Peak 115.8MB, Avg 86.7MB
+  Build: Peak 18.3MB, Avg 0.0MB
+  Analyze: Peak 7.2MB, Avg 0.0MB
+  Test: Peak 74.5MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.5MB, Avg 61.1MB
+
+CHESS ENGINE TESTS: 0 passed, 1 failed
+  Failed tests:
+    ❌ make_test_chess_engine
+
+DOCKER TESTS:
+  Image build: ✅ (1.04s)
+  make build: ✅ (0.39s)
+  make analyze: ✅ (0.39s)
+  make test: ✅ (0.89s)
+  make test-chess-engine (track=v2-full): ❌ (52.96s)
+  make test score: 1/1
+  make test-chess-engine score: 0/14
 
 ERRORS:
-  ❌ Analysis warnings: /bin/sh: gleam: command not found
-make: gleam: No such file or directory
-make: *** [analyze] Error 1
+  ❌ track v2-full suite failed: Found 1 implementation(s)
+Loaded 14 tests from test/suites/v2_full.json
 
-  ❌ Build failed: make: gleam: No such file or directory
-make: *** [build] Error 1
-
-  ❌ Test failed: Build failed with exit code 2
+Testing gleam implementation at implementations/gleam
+----------------------------------------
+Running test: Hash Command Baseline ✗
+Running test: Hash Command After Move ✗
+Running test: Draws Command ✗
+Running test: Go Movetime ✗
+Running test: PGN Show ✗
+Running test: PGN Fixture Morphy ✗
+Running test: PGN Fixture Byrne-Fischer ✗
+Running test: UCI Handshake ✗
+Running test: UCI Fixture Handshake ✗
+Running test: New960 Posit
 
 ================================================================================
+📄 JSON results saved to reports/gleam.json (1 valid benchmark(s))
 
-📄 Text report saved to benchmark_reports/performance_report_gleam.txt
-📄 JSON results saved to benchmark_reports/performance_data_gleam.json
-
-❌ 1 implementation(s) failed testing
+✅ All 1 implementation(s) completed successfully

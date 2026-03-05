@@ -6,9 +6,6 @@
       "language": "python",
       "version": "3.11",
       "author": "Python Implementation",
-      "build": "python3 -m py_compile chess.py",
-      "run": "python3 chess.py",
-      "analyze": "python3 analyze.py",
       "features": [
         "perft",
         "fen",
@@ -18,98 +15,118 @@
         "promotion"
       ],
       "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000
+      "estimated_perft4_ms": 1000,
+      "benchmark.build": "skip",
+      "build": "python3 -m py_compile chess.py",
+      "test": "python3 test_engine.py",
+      "analyze": "python3 -m py_compile chess.py lib/*.py",
+      "run": "python3 chess.py"
     },
+    "track": "v2-full",
+    "profile": "quick",
     "timings": {
-      "analyze_seconds": 0.20895004272460938,
-      "build_seconds": 0.10319304466247559,
-      "test_seconds": 0.5967466831207275
+      "image_build_seconds": 0.3643982410430908,
+      "build_seconds": null,
+      "analyze_seconds": 0.19943857192993164,
+      "test_seconds": 0.18501043319702148,
+      "test_internal_seconds": 0.18501043319702148,
+      "test_chess_engine_seconds": 8.397082090377808,
+      "test_v2_full_seconds": 8.397082090377808
     },
     "memory": {
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false
+      "image": {
+        "memory_mb": 115.796875,
+        "peak_memory_mb": 115.796875,
+        "avg_memory_mb": 92.0537109375,
+        "avg_cpu_percent": 0.0,
+        "samples": 4,
+        "psutil_available": true
       },
       "build": {
         "memory_mb": 0,
         "peak_memory_mb": 0,
         "avg_cpu_percent": 0,
-        "psutil_available": false
+        "psutil_available": true,
+        "source": "skipped"
+      },
+      "analyze": {
+        "memory_mb": 6.328125,
+        "peak_memory_mb": 6.328125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
       },
       "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
+        "memory_mb": 4.671875,
+        "peak_memory_mb": 4.671875,
         "avg_cpu_percent": 0,
-        "psutil_available": false
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test_chess_engine": {
+        "memory_mb": 31.8046875,
+        "peak_memory_mb": 61.453125,
+        "avg_memory_mb": 59.14641203703704,
+        "avg_cpu_percent": 0.0,
+        "samples": 81,
+        "psutil_available": true
       }
     },
+    "size": {
+      "source_loc": 2373,
+      "source_files": 12
+    },
+    "normalized": {
+      "build_ms_per_kloc": 0.0,
+      "analyze_ms_per_kloc": 84.04491021067494,
+      "runtime_ms_per_kloc": 77.96478432238578
+    },
     "docker": {
-      "build_time": 0.7242679595947266,
+      "build_time": 0.3643982410430908,
       "build_success": true,
-      "test_time": 0.7838959693908691,
-      "test_success": true
+      "image_build_time": 0.3643982410430908,
+      "image_build_success": true,
+      "make_build_skipped": true,
+      "make_build_time": null,
+      "make_build_success": true,
+      "make_analyze_time": 0.19943857192993164,
+      "make_analyze_success": true,
+      "test_time": 0.18501043319702148,
+      "test_success": true,
+      "make_test_time": 0.18501043319702148,
+      "make_test_success": true,
+      "test_chess_engine_time": 8.397082090377808,
+      "test_chess_engine_success": true,
+      "track_test_time": 8.397082090377808,
+      "track_test_success": true
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      },
+      "make_test_chess_engine": {
+        "passed": 14,
+        "failed": 0,
+        "errors": 0,
+        "total": 14
+      }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
-        {
-          "test": "Basic Movement",
-          "output": "\n\n\n\n\n"
-        },
-        {
-          "test": "Castling",
-          "output": "\n\n"
-        },
-        {
-          "test": "En Passant",
-          "output": "\n\n"
-        },
-        {
-          "test": "Checkmate Detection",
-          "output": "\n\n\n\n"
-        },
-        {
-          "test": "AI Move Generation",
-          "output": "\n"
-        },
-        {
-          "test": "Invalid Move Handling",
-          "output": "\n"
-        },
-        {
-          "test": "Pawn Promotion",
-          "output": "\n\n"
-        }
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
       ],
-      "performance": {},
-      "errors": [
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe",
-        "Command error: [Errno 32] Broken pipe"
-      ]
+      "failed": []
     },
     "errors": [],
     "status": "completed"

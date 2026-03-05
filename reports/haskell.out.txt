@@ -1,4 +1,3 @@
-⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -7,48 +6,95 @@ Found 1 implementation(s) to test
 Testing haskell implementation
 Path: implementations/haskell
 ============================================================
+📏 Source size: 1085 LOC across 7 files
 🧹 Clearing build cache...
-⚠️  make clean returned non-zero exit code: make: cabal: No such file or directory
-make: *** [clean] Error 1
-
+🔧 Running: make clean
+✅ Local cache cleared with make clean
 ✅ Cache clearing completed
-🔍 Running static analysis...
-✅ Analysis completed in 0.04s
-🔨 Building implementation...
-❌ Build failed in 0.01s
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (prerequisite)...
+  🔧 Running: docker build -t chess-haskell .
+  ✅ Docker build completed in 1.03s
+  🔧 Running task: make build
+    🔧 Running: make build
+  🔧 Running task: make analyze
+    🔧 Running: make analyze
+  🔧 Running task: make test
+    🔧 Running: make test
+  🔧 Running task: make test-chess-engine (track=v2-full)
+  ❌ Docker tests failed in phases: make_test_chess_engine
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:11:44
+Generated: 2026-03-05 16:17:30
 ================================================================================
 
 PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-haskell      failed         0.0s     0.0s     0.0s        0MB 0/0     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+haskell      completed  1085     0.3s/38MB          0.2s/7MB           0.2s/6MB           52.8s/62MB                1/1              0/14              
 
 ============================================================
 DETAILED RESULTS: HASKELL
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.04s
-  Build Seconds: 0.01s
+  docker build image: 1.03s
+  make build: 0.35s
+  make analyze: 0.22s
+  make test: 0.23s
+  make test-chess-engine: 52.81s
+  make test (internal mirror): 0.23s
+  test v2 full seconds: 52.81s
+
+SOURCE SIZE:
+  Source LOC: 1085 (files: 7)
+
+NORMALIZED METRICS:
+  Build: 320.01 ms/KLOC
+  Analyze: 207.06 ms/KLOC
+  Runtime: 212.13 ms/KLOC
 
 MEMORY USAGE:
-  Analyze: Peak 0.0MB, Avg 0.0MB
-  Build: Peak 0.0MB, Avg 0.0MB
+  Image: Peak 116.2MB, Avg 105.5MB
+  Build: Peak 37.6MB, Avg 0.0MB
+  Analyze: Peak 7.1MB, Avg 0.0MB
+  Test: Peak 6.3MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.6MB, Avg 61.2MB
+
+CHESS ENGINE TESTS: 0 passed, 1 failed
+  Failed tests:
+    ❌ make_test_chess_engine
+
+DOCKER TESTS:
+  Image build: ✅ (1.03s)
+  make build: ✅ (0.35s)
+  make analyze: ✅ (0.22s)
+  make test: ✅ (0.23s)
+  make test-chess-engine (track=v2-full): ❌ (52.81s)
+  make test score: 1/1
+  make test-chess-engine score: 0/14
 
 ERRORS:
-  ❌ Build failed: make: cabal: No such file or directory
-make: *** [build] Error 1
+  ❌ track v2-full suite failed: Found 1 implementation(s)
+Loaded 14 tests from test/suites/v2_full.json
 
-  ❌ Test failed: Build failed with exit code 2
+Testing haskell implementation at implementations/haskell
+----------------------------------------
+Running test: Hash Command Baseline ✗
+Running test: Hash Command After Move ✗
+Running test: Draws Command ✗
+Running test: Go Movetime ✗
+Running test: PGN Show ✗
+Running test: PGN Fixture Morphy ✗
+Running test: PGN Fixture Byrne-Fischer ✗
+Running test: UCI Handshake ✗
+Running test: UCI Fixture Handshake ✗
+Running test: New960 P
 
 ================================================================================
+📄 JSON results saved to reports/haskell.json (1 valid benchmark(s))
 
-📄 Text report saved to benchmark_reports/performance_report_haskell.txt
-📄 JSON results saved to benchmark_reports/performance_data_haskell.json
-
-❌ 1 implementation(s) failed testing
+✅ All 1 implementation(s) completed successfully

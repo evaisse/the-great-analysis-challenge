@@ -1,4 +1,3 @@
-⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -7,64 +6,111 @@ Found 1 implementation(s) to test
 Testing mojo implementation
 Path: implementations/mojo
 ============================================================
+📏 Source size: 0 LOC across 0 files
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
 ✅ Cache clearing completed
 🐳 Running all tests via Docker (ensures consistent environment)
 🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (includes analysis and build)...
+  🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-mojo .
-  ❌ Docker build failed in 4.33s
+  ✅ Docker build completed in 3.69s
+  🔧 Running task: make build
+    🔧 Running: make build
+  🔧 Running task: make analyze
+    🔧 Running: make analyze
+  🔧 Running task: make test
+    🔧 Running: make test
+  🔧 Running task: make test-chess-engine (track=v2-full)
+  ❌ Docker tests failed in phases: make_build, make_analyze, make_test, make_test_chess_engine
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-02 23:26:53
+Generated: 2026-03-05 16:21:32
 ================================================================================
 
 PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-mojo         completed      0.0s     4.3s     0.0s        0MB 0/1     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+mojo         completed  0        9.7s/-MB           9.9s/-MB           10.1s/-MB          10.4s/62MB                0/1              0/49              
 
 ============================================================
 DETAILED RESULTS: MOJO
 ============================================================
 
 TIMING BREAKDOWN:
-  Build Seconds: 4.33s
+  docker build image: 3.69s
+  make build: 9.67s
+  make analyze: 9.89s
+  make test: 10.15s
+  make test-chess-engine: 10.40s
+  make test (internal mirror): 10.15s
+  test v2 full seconds: 10.40s
+
+SOURCE SIZE:
+  Source LOC: 0 (files: 0)
 
 MEMORY USAGE:
+  Image: Peak 114.3MB, Avg 111.8MB
   Build: Peak 0.0MB, Avg 0.0MB
+  Analyze: Peak 0.0MB, Avg 0.0MB
+  Test: Peak 0.0MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.6MB, Avg 59.7MB
 
-CHESS ENGINE TESTS: 0 passed, 1 failed
+CHESS ENGINE TESTS: 0 passed, 4 failed
   Failed tests:
-    ❌ docker_build
+    ❌ make_build
+    ❌ make_analyze
+    ❌ make_test
+    ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Build: ❌ (4.33s)
-  Test: ❌ (0.00s)
+  Image build: ✅ (3.69s)
+  make build: ❌ (9.67s)
+  make analyze: ❌ (9.89s)
+  make test: ❌ (10.15s)
+  make test-chess-engine (track=v2-full): ❌ (10.40s)
+  make test score: 0/1
+  make test-chess-engine score: 0/49
 
 ERRORS:
-  ❌ Docker build failed: #0 building with "orbstack" instance using docker driver
+  ❌ make build failed: 16:21:01.573 INFO: Metrics initialized.
+Usage: python -m max.entrypoints.pipelines serve [OPTIONS]
+Try 'python -m max.entrypoints.pipelines serve --help' for help.
 
-#1 [internal] load build definition from Dockerfile
-#1 transferring dockerfile:
-#1 transferring dockerfile: 512B done
-#1 DONE 0.3s
+Error: No such option: -c
 
-#2 [internal] load metadata for ghcr.io/evaisse/tgac-mojo-toolchain:latest
-#2 ERROR: unexpected status from HEAD request to https://ghcr.io/v2/evaisse/tgac-mojo-toolchain/manifests/latest: 403 Certificateincident
-------
- > [internal] load metadata for ghcr.io/evaisse/tgac-mojo-toolchain:latest:
-------
-Dockerf
+  ❌ make analyze failed: 16:21:11.307 INFO: Metrics initialized.
+Usage: python -m max.entrypoints.pipelines serve [OPTIONS]
+Try 'python -m max.entrypoints.pipelines serve --help' for help.
+
+Error: No such option: -c
+
+  ❌ make test failed: 16:21:21.541 INFO: Metrics initialized.
+Usage: python -m max.entrypoints.pipelines serve [OPTIONS]
+Try 'python -m max.entrypoints.pipelines serve --help' for help.
+
+Error: No such option: -c
+
+  ❌ track v2-full suite failed: Found 1 implementation(s)
+Loaded 14 tests from test/suites/v2_full.json
+
+Testing mojo implementation at implementations/mojo
+----------------------------------------
+Running test: Hash Command Baseline ✗
+Running test: Hash Command After Move ✗
+Running test: Draws Command ✗
+Running test: Go Movetime ✗
+Running test: PGN Show ✗
+Running test: PGN Fixture Morphy ✗
+Running test: PGN Fixture Byrne-Fischer ✗
+Running test: UCI Handshake ✗
+Running test: UCI Fixture Handshake ✗
+Running test: New960 Positio
 
 ================================================================================
-⚠️  No valid benchmarks to save to JSON
-
-⚠️  Skipped 1 incomplete/failed benchmark(s):
-   - mojo: missing test_seconds
+📄 JSON results saved to reports/mojo.json (1 valid benchmark(s))
 
 ✅ All 1 implementation(s) completed successfully

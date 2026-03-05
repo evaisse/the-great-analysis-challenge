@@ -13,58 +13,69 @@ Path: implementations/rust
 ✅ Cache clearing completed
 🐳 Running all tests via Docker (ensures consistent environment)
 🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (includes analysis and build)...
+  🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-rust .
-  ✅ Docker build completed in 13.97s
-  🔍 Running static analysis...
+  ✅ Docker build completed in 0.40s
+  🔧 Running task: make build
+    🔧 Running: make build
+  🔧 Running task: make analyze
     🔧 Running: make analyze
-  ♟️  Running chess engine tests...
+  🔧 Running task: make test
     🔧 Running: make test
-  🧪 Running shared track suite (v2-full)...
-  ❌ Docker tests failed in phases: track_v2-full
+  🔧 Running task: make test-chess-engine (track=v2-full)
+  ❌ Docker tests failed in phases: make_test_chess_engine
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-05 09:11:27
+Generated: 2026-03-05 16:14:31
 ================================================================================
 
 PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     LOC      Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-rust         completed  1852         0.2s    14.0s     0.2s      110MB 0/1     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+rust         completed  1852     0.2s/7MB           0.2s/6MB           0.2s/7MB           8.3s/62MB                 1/1              2/14              
 
 ============================================================
 DETAILED RESULTS: RUST
 ============================================================
 
 TIMING BREAKDOWN:
-  Build Seconds: 13.97s
-  Analyze Seconds: 0.20s
-  Test Seconds: 0.19s
-  Test V1 Seconds: 0.19s
-  Test V2 Full Seconds: 8.33s
+  docker build image: 0.40s
+  make build: 0.18s
+  make analyze: 0.19s
+  make test: 0.18s
+  make test-chess-engine: 8.34s
+  make test (internal mirror): 0.18s
+  test v2 full seconds: 8.34s
 
 SOURCE SIZE:
   Source LOC: 1852 (files: 9)
 
 NORMALIZED METRICS:
-  Build: 7545.59 ms/KLOC
-  Analyze: 106.13 ms/KLOC
-  Runtime: 101.43 ms/KLOC
+  Build: 96.12 ms/KLOC
+  Analyze: 101.95 ms/KLOC
+  Runtime: 98.97 ms/KLOC
 
 MEMORY USAGE:
-  Build: Peak 109.9MB, Avg 108.6MB
-  Analyze: Peak 6.6MB, Avg 0.0MB
+  Image: Peak 110.5MB, Avg 89.9MB
+  Build: Peak 7.0MB, Avg 0.0MB
+  Analyze: Peak 6.4MB, Avg 0.0MB
   Test: Peak 7.0MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.7MB, Avg 59.3MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
-    ❌ track_v2-full
+    ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Build: ✅ (13.97s)
-  Test: ✅ (0.19s)
+  Image build: ✅ (0.40s)
+  make build: ✅ (0.18s)
+  make analyze: ✅ (0.19s)
+  make test: ✅ (0.18s)
+  make test-chess-engine (track=v2-full): ❌ (8.34s)
+  make test score: 1/1
+  make test-chess-engine score: 2/14
 
 ERRORS:
   ❌ track v2-full suite failed: Found 1 implementation(s)

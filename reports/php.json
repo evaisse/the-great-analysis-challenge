@@ -16,6 +16,7 @@
       ],
       "max_ai_depth": 5,
       "estimated_perft4_ms": 1500,
+      "benchmark.build": "skip",
       "build": "php -l chess.php",
       "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | php chess.php",
       "analyze": "find . -name '*.php' -exec php -l {} \\;",
@@ -24,50 +25,50 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 3.3928427696228027,
-      "build_seconds": 0.3261697292327881,
-      "analyze_seconds": 0.3352184295654297,
-      "test_seconds": 0.21174860000610352,
-      "test_internal_seconds": 0.21174860000610352,
-      "test_chess_engine_seconds": 8.350319147109985,
-      "test_v2_full_seconds": 8.350319147109985
+      "image_build_seconds": 23.937764883041382,
+      "build_seconds": null,
+      "analyze_seconds": 0.33243775367736816,
+      "test_seconds": 0.2040719985961914,
+      "test_internal_seconds": 0.2040719985961914,
+      "test_chess_engine_seconds": 8.348442077636719,
+      "test_v2_full_seconds": 8.348442077636719
     },
     "memory": {
       "image": {
-        "memory_mb": 114.1484375,
-        "peak_memory_mb": 114.1484375,
-        "avg_memory_mb": 111.4625946969697,
+        "memory_mb": 17.5390625,
+        "peak_memory_mb": 116.390625,
+        "avg_memory_mb": 115.09618506493507,
         "avg_cpu_percent": 0.0,
-        "samples": 33,
+        "samples": 231,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 8.7578125,
-        "peak_memory_mb": 8.7578125,
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
         "avg_cpu_percent": 0,
         "psutil_available": true,
-        "source": "cgroup"
+        "source": "skipped"
       },
       "analyze": {
-        "memory_mb": 9.20703125,
-        "peak_memory_mb": 9.20703125,
+        "memory_mb": 9.1796875,
+        "peak_memory_mb": 9.1796875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 8.74609375,
-        "peak_memory_mb": 8.74609375,
+        "memory_mb": 9.24609375,
+        "peak_memory_mb": 9.24609375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.55078125,
-        "peak_memory_mb": 61.44921875,
-        "avg_memory_mb": 59.488818359375,
+        "memory_mb": 32.28515625,
+        "peak_memory_mb": 61.921875,
+        "avg_memory_mb": 59.56336805555556,
         "avg_cpu_percent": 0.0,
-        "samples": 80,
+        "samples": 81,
         "psutil_available": true
       }
     },
@@ -76,26 +77,27 @@
       "source_files": 10
     },
     "normalized": {
-      "build_ms_per_kloc": 161.7905402940417,
-      "analyze_ms_per_kloc": 166.27898291935998,
-      "runtime_ms_per_kloc": 105.03402778080532
+      "build_ms_per_kloc": 0.0,
+      "analyze_ms_per_kloc": 164.89967940345642,
+      "runtime_ms_per_kloc": 101.22618977985685
     },
     "docker": {
-      "build_time": 3.3928427696228027,
+      "build_time": 23.937764883041382,
       "build_success": true,
-      "image_build_time": 3.3928427696228027,
+      "image_build_time": 23.937764883041382,
       "image_build_success": true,
-      "make_build_time": 0.3261697292327881,
+      "make_build_skipped": true,
+      "make_build_time": null,
       "make_build_success": true,
-      "make_analyze_time": 0.3352184295654297,
+      "make_analyze_time": 0.33243775367736816,
       "make_analyze_success": true,
-      "test_time": 0.21174860000610352,
+      "test_time": 0.2040719985961914,
       "test_success": true,
-      "make_test_time": 0.21174860000610352,
+      "make_test_time": 0.2040719985961914,
       "make_test_success": true,
-      "test_chess_engine_time": 8.350319147109985,
+      "test_chess_engine_time": 8.348442077636719,
       "test_chess_engine_success": true,
-      "track_test_time": 8.350319147109985,
+      "track_test_time": 8.348442077636719,
       "track_test_success": true
     },
     "task_results": {

@@ -24,43 +24,51 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.2819831371307373,
-      "build_seconds": 0.18298935890197754,
-      "analyze_seconds": 0.21647119522094727,
-      "test_seconds": 0.17933058738708496,
-      "test_internal_seconds": 0.17933058738708496,
-      "test_chess_engine_seconds": 8.44266676902771,
-      "test_v2_full_seconds": 8.44266676902771
+      "image_build_seconds": 0.22490215301513672,
+      "build_seconds": 0.20010662078857422,
+      "analyze_seconds": 0.1976633071899414,
+      "test_seconds": 0.18343400955200195,
+      "test_internal_seconds": 0.18343400955200195,
+      "test_chess_engine_seconds": 8.444345235824585,
+      "test_v2_full_seconds": 8.444345235824585
     },
     "memory": {
       "image": {
-        "memory_mb": 110.6875,
-        "peak_memory_mb": 110.6875,
-        "avg_memory_mb": 83.359375,
+        "memory_mb": 111.1328125,
+        "peak_memory_mb": 111.1328125,
+        "avg_memory_mb": 83.84895833333333,
         "avg_cpu_percent": 0.0,
         "samples": 3,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 7.32421875,
-        "peak_memory_mb": 7.32421875,
+        "memory_mb": 6.56640625,
+        "peak_memory_mb": 6.56640625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 7.12890625,
-        "peak_memory_mb": 7.12890625,
+        "memory_mb": 4.83203125,
+        "peak_memory_mb": 4.83203125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 6.5703125,
-        "peak_memory_mb": 6.5703125,
+        "memory_mb": 6.33203125,
+        "peak_memory_mb": 6.33203125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
+      },
+      "test_chess_engine": {
+        "memory_mb": 31.83203125,
+        "peak_memory_mb": 61.8671875,
+        "avg_memory_mb": 59.57540967987805,
+        "avg_cpu_percent": 0.0,
+        "samples": 82,
+        "psutil_available": true
       }
     },
     "size": {
@@ -68,26 +76,27 @@
       "source_files": 17
     },
     "normalized": {
-      "build_ms_per_kloc": 91.63212764245245,
-      "analyze_ms_per_kloc": 108.39819490282787,
-      "runtime_ms_per_kloc": 89.79999368406858
+      "build_ms_per_kloc": 100.20361581801413,
+      "analyze_ms_per_kloc": 98.98012378064166,
+      "runtime_ms_per_kloc": 91.85478695643563
     },
     "docker": {
-      "build_time": 0.2819831371307373,
+      "build_time": 0.22490215301513672,
       "build_success": true,
-      "image_build_time": 0.2819831371307373,
+      "image_build_time": 0.22490215301513672,
       "image_build_success": true,
-      "make_build_time": 0.18298935890197754,
+      "make_build_skipped": false,
+      "make_build_time": 0.20010662078857422,
       "make_build_success": true,
-      "make_analyze_time": 0.21647119522094727,
+      "make_analyze_time": 0.1976633071899414,
       "make_analyze_success": true,
-      "test_time": 0.17933058738708496,
+      "test_time": 0.18343400955200195,
       "test_success": true,
-      "make_test_time": 0.17933058738708496,
+      "make_test_time": 0.18343400955200195,
       "make_test_success": true,
-      "test_chess_engine_time": 8.44266676902771,
+      "test_chess_engine_time": 8.444345235824585,
       "test_chess_engine_success": false,
-      "track_test_time": 8.44266676902771,
+      "track_test_time": 8.444345235824585,
       "track_test_success": false
     },
     "task_results": {
@@ -95,6 +104,19 @@
       "make_analyze": true,
       "make_test": true,
       "make_test_chess_engine": false
+    },
+    "scores": {
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      },
+      "make_test_chess_engine": {
+        "passed": 2,
+        "failed": 12,
+        "errors": 0,
+        "total": 14
+      }
     },
     "test_results": {
       "passed": [],

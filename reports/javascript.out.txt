@@ -13,58 +13,67 @@ Path: implementations/javascript
 ✅ Cache clearing completed
 🐳 Running all tests via Docker (ensures consistent environment)
 🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (includes analysis and build)...
+  🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-javascript .
-  ✅ Docker build completed in 0.20s
-  🔍 Running static analysis...
+  ✅ Docker build completed in 0.43s
+  ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
+  🔧 Running task: make analyze
     🔧 Running: make analyze
-  ♟️  Running chess engine tests...
+  🔧 Running task: make test
     🔧 Running: make test
-  🧪 Running shared track suite (v2-full)...
-  ❌ Docker tests failed in phases: track_v2-full
+  🔧 Running task: make test-chess-engine (track=v2-full)
+  ❌ Docker tests failed in phases: make_test_chess_engine
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-05 09:11:58
+Generated: 2026-03-05 16:18:03
 ================================================================================
 
 PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     LOC      Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-javascript   completed  682          0.2s     0.2s     0.2s      110MB 0/1     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+javascript   completed  682      -/-MB              0.2s/7MB           0.2s/5MB           73.2s/62MB                1/1              2/14              
 
 ============================================================
 DETAILED RESULTS: JAVASCRIPT
 ============================================================
 
 TIMING BREAKDOWN:
-  Build Seconds: 0.20s
-  Analyze Seconds: 0.19s
-  Test Seconds: 0.19s
-  Test V1 Seconds: 0.19s
-  Test V2 Full Seconds: 68.31s
+  docker build image: 0.43s
+  make analyze: 0.22s
+  make test: 0.22s
+  make test-chess-engine: 73.17s
+  make test (internal mirror): 0.22s
+  test v2 full seconds: 73.17s
 
 SOURCE SIZE:
   Source LOC: 682 (files: 4)
 
 NORMALIZED METRICS:
-  Build: 293.81 ms/KLOC
-  Analyze: 282.12 ms/KLOC
-  Runtime: 280.50 ms/KLOC
+  Build: 0.00 ms/KLOC
+  Analyze: 324.69 ms/KLOC
+  Runtime: 316.91 ms/KLOC
 
 MEMORY USAGE:
-  Build: Peak 109.9MB, Avg 69.8MB
-  Analyze: Peak 6.3MB, Avg 0.0MB
-  Test: Peak 6.6MB, Avg 0.0MB
+  Image: Peak 116.1MB, Avg 75.9MB
+  Build: Peak 0.0MB, Avg 0.0MB
+  Analyze: Peak 7.0MB, Avg 0.0MB
+  Test: Peak 4.6MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.8MB, Avg 61.4MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
-    ❌ track_v2-full
+    ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Build: ✅ (0.20s)
-  Test: ✅ (0.19s)
+  Image build: ✅ (0.43s)
+  make build: ⏭️ skipped
+  make analyze: ✅ (0.22s)
+  make test: ✅ (0.22s)
+  make test-chess-engine (track=v2-full): ❌ (73.17s)
+  make test score: 1/1
+  make test-chess-engine score: 2/14
 
 ERRORS:
   ❌ track v2-full suite failed: Found 1 implementation(s)

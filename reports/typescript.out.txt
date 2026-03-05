@@ -15,7 +15,7 @@ Path: implementations/typescript
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-typescript .
-  ✅ Docker build completed in 0.28s
+  ✅ Docker build completed in 0.22s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,52 +27,55 @@ Path: implementations/typescript
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-05 12:11:14
+Generated: 2026-03-05 16:14:32
 ================================================================================
 
 PERFORMANCE SUMMARY
-----------------------------------------------------------------------------------------------------------------------
-Language     Status     LOC      Build     Analyze   Test      Test-CE    Memory     Tasks   
-----------------------------------------------------------------------------------------------------------------------
-typescript   completed  1997         0.2s     0.2s     0.2s      8.4s      111MB 3/4     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+typescript   completed  1997     0.2s/7MB           0.2s/5MB           0.2s/6MB           8.4s/62MB                 1/1              2/14              
 
 ============================================================
 DETAILED RESULTS: TYPESCRIPT
 ============================================================
 
 TIMING BREAKDOWN:
-  Image Build Seconds: 0.28s
-  Build Seconds: 0.18s
-  Analyze Seconds: 0.22s
-  Test Seconds: 0.18s
-  Test Internal Seconds: 0.18s
-  Test Chess Engine Seconds: 8.44s
-  Test V2 Full Seconds: 8.44s
+  docker build image: 0.22s
+  make build: 0.20s
+  make analyze: 0.20s
+  make test: 0.18s
+  make test-chess-engine: 8.44s
+  make test (internal mirror): 0.18s
+  test v2 full seconds: 8.44s
 
 SOURCE SIZE:
   Source LOC: 1997 (files: 17)
 
 NORMALIZED METRICS:
-  Build: 91.63 ms/KLOC
-  Analyze: 108.40 ms/KLOC
-  Runtime: 89.80 ms/KLOC
+  Build: 100.20 ms/KLOC
+  Analyze: 98.98 ms/KLOC
+  Runtime: 91.85 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 110.7MB, Avg 83.4MB
-  Build: Peak 7.3MB, Avg 0.0MB
-  Analyze: Peak 7.1MB, Avg 0.0MB
-  Test: Peak 6.6MB, Avg 0.0MB
+  Image: Peak 111.1MB, Avg 83.8MB
+  Build: Peak 6.6MB, Avg 0.0MB
+  Analyze: Peak 4.8MB, Avg 0.0MB
+  Test: Peak 6.3MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.9MB, Avg 59.6MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.28s)
-  make build: ✅ (0.18s)
-  make analyze: ✅ (0.22s)
+  Image build: ✅ (0.22s)
+  make build: ✅ (0.20s)
+  make analyze: ✅ (0.20s)
   make test: ✅ (0.18s)
   make test-chess-engine (track=v2-full): ❌ (8.44s)
+  make test score: 1/1
+  make test-chess-engine score: 2/14
 
 ERRORS:
   ❌ track v2-full suite failed: Found 1 implementation(s)

@@ -1,4 +1,3 @@
-⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -7,50 +6,98 @@ Found 1 implementation(s) to test
 Testing kotlin implementation
 Path: implementations/kotlin
 ============================================================
+📏 Source size: 1524 LOC across 8 files
 🧹 Clearing build cache...
-⚠️  make clean returned non-zero exit code: Erreur : impossible de trouver ou de charger la classe principale "-Xdock:name=Gradle"
-Causé par : java.lang.ClassNotFoundException: "-Xdock:name=Gradle"
-make: *** [clean] Error 1
+🔧 Running: make clean
+⚠️  make clean returned non-zero exit code: Error: Could not find or load main class "-Dorg.gradle.appname=gradlew"
+Caused by: java.lang.ClassNotFoundException: "-Dorg.gradle.appname=gradlew"
+make: *** [Makefile:24: clean] Error 1
 
 ✅ Cache clearing completed
-🔍 Running static analysis...
-✅ Analysis completed in 0.26s
-🔨 Building implementation...
-❌ Build failed in 0.13s
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (prerequisite)...
+  🔧 Running: docker build -t chess-kotlin .
+  ✅ Docker build completed in 0.36s
+  🔧 Running task: make build
+    🔧 Running: make build
+  🔧 Running task: make analyze
+    🔧 Running: make analyze
+  🔧 Running task: make test
+    🔧 Running: make test
+  🔧 Running task: make test-chess-engine (track=v2-full)
+  ❌ Docker tests failed in phases: make_test_chess_engine
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:11:45
+Generated: 2026-03-05 16:14:36
 ================================================================================
 
 PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-kotlin       failed         0.3s     0.1s     0.0s        0MB 0/0     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+kotlin       completed  1524     0.2s/7MB           0.2s/6MB           0.2s/7MB           8.5s/62MB                 1/1              2/14              
 
 ============================================================
 DETAILED RESULTS: KOTLIN
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.26s
-  Build Seconds: 0.13s
+  docker build image: 0.36s
+  make build: 0.15s
+  make analyze: 0.16s
+  make test: 0.16s
+  make test-chess-engine: 8.47s
+  make test (internal mirror): 0.16s
+  test v2 full seconds: 8.47s
+
+SOURCE SIZE:
+  Source LOC: 1524 (files: 8)
+
+NORMALIZED METRICS:
+  Build: 99.60 ms/KLOC
+  Analyze: 104.85 ms/KLOC
+  Runtime: 106.17 ms/KLOC
 
 MEMORY USAGE:
-  Analyze: Peak 0.0MB, Avg 0.0MB
-  Build: Peak 0.0MB, Avg 0.0MB
+  Image: Peak 111.2MB, Avg 89.7MB
+  Build: Peak 6.6MB, Avg 0.0MB
+  Analyze: Peak 6.3MB, Avg 0.0MB
+  Test: Peak 6.6MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.0MB, Avg 59.7MB
+
+CHESS ENGINE TESTS: 0 passed, 1 failed
+  Failed tests:
+    ❌ make_test_chess_engine
+
+DOCKER TESTS:
+  Image build: ✅ (0.36s)
+  make build: ✅ (0.15s)
+  make analyze: ✅ (0.16s)
+  make test: ✅ (0.16s)
+  make test-chess-engine (track=v2-full): ❌ (8.47s)
+  make test score: 1/1
+  make test-chess-engine score: 2/14
 
 ERRORS:
-  ❌ Build failed: Erreur : impossible de trouver ou de charger la classe principale "-Xdock:name=Gradle"
-Causé par : java.lang.ClassNotFoundException: "-Xdock:name=Gradle"
-make: *** [build] Error 1
+  ❌ track v2-full suite failed: Found 1 implementation(s)
+Loaded 14 tests from test/suites/v2_full.json
 
-  ❌ Test failed: Build failed with exit code 2
+Testing kotlin implementation at implementations/kotlin
+----------------------------------------
+Running test: Hash Command Baseline ✓
+Running test: Hash Command After Move ✓
+Running test: Draws Command ✗
+Running test: Go Movetime ✗
+Running test: PGN Show ✗
+Running test: PGN Fixture Morphy ✗
+Running test: PGN Fixture Byrne-Fischer ✗
+Running test: UCI Handshake ✗
+Running test: UCI Fixture Handshake ✗
+Running test: New960 Pos
 
 ================================================================================
+📄 JSON results saved to reports/kotlin.json (1 valid benchmark(s))
 
-📄 Text report saved to benchmark_reports/performance_report_kotlin.txt
-📄 JSON results saved to benchmark_reports/performance_data_kotlin.json
-
-❌ 1 implementation(s) failed testing
+✅ All 1 implementation(s) completed successfully

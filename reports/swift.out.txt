@@ -1,4 +1,3 @@
-⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -7,49 +6,80 @@ Found 1 implementation(s) to test
 Testing swift implementation
 Path: implementations/swift
 ============================================================
+📏 Source size: 929 LOC across 3 files
 🧹 Clearing build cache...
+🔧 Running: make clean
 ✅ Local cache cleared with make clean
 ✅ Cache clearing completed
-🔍 Running static analysis...
-✅ Analysis completed in 1.09s
-🔨 Building implementation...
-❌ Build failed in 0.40s
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (prerequisite)...
+  🔧 Running: docker build -t chess-swift .
+  ✅ Docker build completed in 12.82s
+  🔧 Running task: make build
+    🔧 Running: make build
+  🔧 Running task: make analyze
+    🔧 Running: make analyze
+  🔧 Running task: make test
+    🔧 Running: make test
+  🔧 Running task: make test-chess-engine (track=v2-full)
+  ❌ Docker tests failed in phases: make_test_chess_engine
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 22:18:04
+Generated: 2026-03-05 16:18:29
 ================================================================================
 
 PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-swift        failed         1.1s     0.4s     0.0s        0MB 0/0     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+swift        completed  929      0.2s/7MB           0.2s/7MB           0.2s/7MB           180.1s/-MB                1/1              0/1               
 
 ============================================================
 DETAILED RESULTS: SWIFT
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 1.09s
-  Build Seconds: 0.40s
+  docker build image: 12.82s
+  make build: 0.17s
+  make analyze: 0.16s
+  make test: 0.16s
+  make test-chess-engine: 180.10s
+  make test (internal mirror): 0.16s
+  test v2 full seconds: 180.10s
+
+SOURCE SIZE:
+  Source LOC: 929 (files: 3)
+
+NORMALIZED METRICS:
+  Build: 181.43 ms/KLOC
+  Analyze: 174.30 ms/KLOC
+  Runtime: 171.15 ms/KLOC
 
 MEMORY USAGE:
-  Analyze: Peak 0.0MB, Avg 0.0MB
-  Build: Peak 0.0MB, Avg 0.0MB
+  Image: Peak 117.2MB, Avg 115.4MB
+  Build: Peak 7.1MB, Avg 0.0MB
+  Analyze: Peak 6.9MB, Avg 0.0MB
+  Test: Peak 7.1MB, Avg 0.0MB
+
+CHESS ENGINE TESTS: 0 passed, 1 failed
+  Failed tests:
+    ❌ make_test_chess_engine
+
+DOCKER TESTS:
+  Image build: ✅ (12.82s)
+  make build: ✅ (0.17s)
+  make analyze: ✅ (0.16s)
+  make test: ✅ (0.16s)
+  make test-chess-engine (track=v2-full): ❌ (180.10s)
+  make test score: 1/1
+  make test-chess-engine score: 0/1
 
 ERRORS:
-  ❌ Analysis warnings: error: 'swift': Source files for target Chess should be located under 'Sources/Chess', or a custom sources path can be set with the 'path' property in Package.swift
-make: *** [analyze] Error 1
-
-  ❌ Build failed: error: 'swift': Source files for target Chess should be located under 'Sources/Chess', or a custom sources path can be set with the 'path' property in Package.swift
-make: *** [build] Error 1
-
-  ❌ Test failed: Build failed with exit code 2
+  ❌ track v2-full suite timeout after 180.1s
 
 ================================================================================
+📄 JSON results saved to reports/swift.json (1 valid benchmark(s))
 
-📄 Text report saved to benchmark_reports/performance_report_swift.txt
-📄 JSON results saved to benchmark_reports/performance_data_swift.json
-
-❌ 1 implementation(s) failed testing
+✅ All 1 implementation(s) completed successfully

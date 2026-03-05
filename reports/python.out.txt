@@ -1,12 +1,3 @@
-Running Python static analysis...
-python3 -m pylint chess.py lib/*.py --disable=C0114,C0115,C0116 || true
-python3 -m mypy chess.py lib/*.py || true
-python3 -m flake8 chess.py lib/*.py --max-line-length=100 --ignore=E203,W503 || true
-python3 -m black --check --diff chess.py lib/*.py || true
-python3 -m bandit -r . -f txt || true
-python3 -m py_compile chess.py
-python3 -m py_compile lib/*.py
-⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -15,74 +6,74 @@ Found 1 implementation(s) to test
 Testing python implementation
 Path: implementations/python
 ============================================================
+📏 Source size: 2373 LOC across 12 files
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
 ✅ Cache clearing completed
-🔍 Running static analysis...
-🔧 Running: make analyze
-✅ Analysis completed in 0.21s
-🔨 Building implementation...
-🔧 Running: make build
-✅ Build completed in 0.10s
-♟️  Running chess client tests...
-  ❌ Basic Movement (2s timeout)
-  ❌ Castling (2s timeout)
-  ❌ En Passant (2s timeout)
-  ❌ Checkmate Detection (2s timeout)
-  ❌ AI Move Generation (2s timeout)
-  ❌ Invalid Move Handling (2s timeout)
-  ❌ Pawn Promotion (2s timeout)
-✅ Tests completed in 0.60s (0 passed, 7 failed)
-🐳 Running Docker tests...
-  Building Docker image...
+🐳 Running all tests via Docker (ensures consistent environment)
+🐳 Running comprehensive Docker-based tests...
+  🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-python .
-  ✅ Docker build completed in 0.72s
-  🔧 Running: docker run --rm -i chess-python sh -c echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | timeout 30s make test
-  ✅ Docker test completed in 0.78s
+  ✅ Docker build completed in 0.36s
+  ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
+  🔧 Running task: make analyze
+    🔧 Running: make analyze
+  🔧 Running task: make test
+    🔧 Running: make test
+  🔧 Running task: make test-chess-engine (track=v2-full)
+  ✅ All Docker tests passed (image: 0.4s, make build: skipped, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 8.4s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-10-22 23:15:11
+Generated: 2026-03-05 16:14:41
 ================================================================================
 
 PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-python       completed      0.2s     0.1s     0.6s        0MB 0/7     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+python       completed  2373     -/-MB              0.2s/6MB           0.2s/5MB           8.4s/61MB                 1/1              14/14             
 
 ============================================================
 DETAILED RESULTS: PYTHON
 ============================================================
 
 TIMING BREAKDOWN:
-  Analyze Seconds: 0.21s
-  Build Seconds: 0.10s
-  Test Seconds: 0.60s
+  docker build image: 0.36s
+  make analyze: 0.20s
+  make test: 0.19s
+  make test-chess-engine: 8.40s
+  make test (internal mirror): 0.19s
+  test v2 full seconds: 8.40s
+
+SOURCE SIZE:
+  Source LOC: 2373 (files: 12)
+
+NORMALIZED METRICS:
+  Build: 0.00 ms/KLOC
+  Analyze: 84.04 ms/KLOC
+  Runtime: 77.96 ms/KLOC
 
 MEMORY USAGE:
-  Analyze: Peak 0.0MB, Avg 0.0MB
+  Image: Peak 115.8MB, Avg 92.1MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Test: Peak 0.0MB, Avg 0.0MB
+  Analyze: Peak 6.3MB, Avg 0.0MB
+  Test: Peak 4.7MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.5MB, Avg 59.1MB
 
-CHESS ENGINE TESTS: 0 passed, 7 failed
-  Failed tests:
-    ❌ Basic Movement
-    ❌ Castling
-    ❌ En Passant
-    ❌ Checkmate Detection
-    ❌ AI Move Generation
-    ❌ Invalid Move Handling
-    ❌ Pawn Promotion
+CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Build: ✅ (0.72s)
-  Test: ✅ (0.78s)
+  Image build: ✅ (0.36s)
+  make build: ⏭️ skipped
+  make analyze: ✅ (0.20s)
+  make test: ✅ (0.19s)
+  make test-chess-engine (track=v2-full): ✅ (8.40s)
+  make test score: 1/1
+  make test-chess-engine score: 14/14
 
 ================================================================================
-
-📄 Text report saved to benchmark_reports/performance_report_python.txt
-📄 JSON results saved to benchmark_reports/performance_data_python.json
+📄 JSON results saved to reports/python.json (1 valid benchmark(s))
 
 ✅ All 1 implementation(s) completed successfully
