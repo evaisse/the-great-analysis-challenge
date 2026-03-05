@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "mojo",
+    "docker_image": "chess-mojo",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

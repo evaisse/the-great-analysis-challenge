@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "rust",
+    "docker_image": "chess-rust",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

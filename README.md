@@ -17,28 +17,28 @@ All implementations have complete feature parity with the following features:
 
 | Language | Status | LOC | Build | Test | Analyze | Memory | Features |
 |----------|--------|-----|-------|------|---------|--------|----------|
-| 📦 Bun | 🟢 | 0 | - | - | - | - MB | - |
-| 💠 Crystal | 🟢 | 1692 | - | - | - | - MB | - |
+| 📦 Bun | 🟢 | 0 | 299ms | 192ms | 192ms | 110 MB | - |
+| 💠 Crystal | 🟢 | 1692 | 241ms | 2394ms | 959ms | 526 MB | - |
 | 🎯 Dart | 🟡 | 1739 | 542ms | 3109ms | 1277ms | 451 MB | - |
 | 🌳 Elm | 🟢 | 1663 | 1395ms | 358ms | 379ms | 9 MB | - |
-| ✨ Gleam | 🟢 | 1917 | - | - | - | - MB | - |
-| 🐹 Go | 🟢 | 2237 | - | - | - | - MB | - |
-| 📐 Haskell | 🟢 | 1085 | - | - | - | - MB | - |
-| 🪶 Imba | 🟡 | 0 | - | - | - | - MB | - |
-| 🟨 Javascript | 🟡 | 0 | - | - | - | - MB | - |
-| 🔮 Julia | 🟢 | 1369 | - | - | - | - MB | - |
-| 🧡 Kotlin | 🟡 | 1524 | - | - | - | - MB | - |
+| ✨ Gleam | 🟢 | 1917 | 288ms | 777ms | 333ms | 110 MB | - |
+| 🐹 Go | 🟢 | 2237 | 202ms | 1039ms | 1145ms | 115 MB | - |
+| 📐 Haskell | 🟢 | 1085 | 423ms | 229ms | 217ms | 115 MB | - |
+| 🪶 Imba | 🟡 | 0 | 322ms | 195ms | 209ms | 110 MB | - |
+| 🟨 Javascript | 🟡 | 0 | 200ms | 191ms | 192ms | 110 MB | - |
+| 🔮 Julia | 🟢 | 1369 | 235ms | 181ms | 192ms | 112 MB | - |
+| 🧡 Kotlin | 🟡 | 1524 | 213ms | 171ms | 149ms | 111 MB | - |
 | 🪐 Lua | 🟢 | 1331 | 432ms | 264ms | 316ms | - MB | - |
-| 🔥 Mojo | 🟢 | 275 | - | - | - | - MB | - |
-| 🦊 Nim | 🟢 | 1105 | - | - | - | - MB | - |
+| 🔥 Mojo | 🟢 | 275 | 581ms | 10301ms | 9695ms | 115 MB | - |
+| 🦊 Nim | 🟢 | 1105 | 215ms | 191ms | 184ms | 110 MB | - |
 | 🐘 Php | 🟢 | 2016 | 711ms | 241ms | 460ms | - MB | - |
 | 🐍 Python | 🟡 | 2373 | 103ms | 597ms | 209ms | - MB | - |
-| 🧠 Rescript | 🟡 | 1678 | - | - | - | - MB | - |
+| 🧠 Rescript | 🟡 | 1678 | 291ms | 206ms | 192ms | 110 MB | - |
 | ❤️ Ruby | 🟡 | 1906 | 354ms | 1850ms | 1661ms | - MB | - |
-| 🦀 Rust | 🟢 | 1852 | 567ms | 518ms | 899ms | - MB | - |
-| 🐦 Swift | 🟢 | 856 | - | - | - | - MB | - |
+| 🦀 Rust | 🟢 | 1852 | 13974ms | 188ms | 197ms | 110 MB | - |
+| 🐦 Swift | 🟢 | 856 | 369ms | 181ms | 195ms | 114 MB | - |
 | 📘 Typescript | 🟡 | 1773 | 448ms | 945ms | 1919ms | - MB | - |
-| ⚡ Zig | 🟢 | 1589 | - | - | - | - MB | - |
+| ⚡ Zig | 🟢 | 1589 | 280ms | 188ms | 187ms | 110 MB | - |
 <!-- status-table-end -->
 
 ## 🚀 Quick Start

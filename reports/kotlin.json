@@ -1,0 +1,85 @@
+[
+  {
+    "language": "kotlin",
+    "path": "implementations/kotlin",
+    "metadata": {
+      "language": "kotlin",
+      "version": "1.9.10",
+      "author": "Kotlin Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 500,
+      "run": "java -jar build/libs/chess-1.0.0.jar",
+      "build": "kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar",
+      "test": "java -jar build/libs/chess-1.0.0.jar --test",
+      "analyze": "kotlinc src/main/kotlin/*.kt"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.21298503875732422,
+      "analyze_seconds": 0.14923596382141113,
+      "test_seconds": 0.17064404487609863,
+      "test_v1_seconds": 0.17064404487609863,
+      "test_v2_full_seconds": 8.463032007217407
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 110.88671875,
+        "peak_memory_mb": 110.88671875,
+        "avg_memory_mb": 82.12109375,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.890625,
+        "peak_memory_mb": 6.890625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.890625,
+        "peak_memory_mb": 6.890625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 1524,
+      "source_files": 8
+    },
+    "normalized": {
+      "build_ms_per_kloc": 139.7539624391891,
+      "analyze_ms_per_kloc": 97.92386077520415,
+      "runtime_ms_per_kloc": 111.97115805518283
+    },
+    "docker": {
+      "build_time": 0.21298503875732422,
+      "build_success": true,
+      "test_time": 0.17064404487609863,
+      "test_success": true,
+      "track_test_time": 8.463032007217407,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting kotlin implementation at implementations/kotlin\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Pos"
+    ],
+    "status": "completed"
+  }
+]

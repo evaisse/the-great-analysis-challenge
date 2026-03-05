@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "ruby",
+    "docker_image": "chess-ruby",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

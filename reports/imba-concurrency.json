@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "imba",
+    "docker_image": "chess-imba",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

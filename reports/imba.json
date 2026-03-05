@@ -1,0 +1,85 @@
+[
+  {
+    "language": "imba",
+    "path": "implementations/imba",
+    "metadata": {
+      "language": "imba",
+      "version": "2.0",
+      "author": "Imba Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "build": "imba build chess.imba --platform node --base . --outdir dist",
+      "run": "node dist/chess.js",
+      "test": "true",
+      "analyze": "true"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.32242441177368164,
+      "analyze_seconds": 0.20918560028076172,
+      "test_seconds": 0.19515585899353027,
+      "test_v1_seconds": 0.19515585899353027,
+      "test_v2_full_seconds": 101.421133518219
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 46.3125,
+        "peak_memory_mb": 109.71484375,
+        "avg_memory_mb": 73.1923828125,
+        "avg_cpu_percent": 0.0,
+        "samples": 4,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.58203125,
+        "peak_memory_mb": 6.58203125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 7.33984375,
+        "peak_memory_mb": 7.33984375,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 700,
+      "source_files": 1
+    },
+    "normalized": {
+      "build_ms_per_kloc": 460.60630253383096,
+      "analyze_ms_per_kloc": 298.8365718296596,
+      "runtime_ms_per_kloc": 278.79408427647184
+    },
+    "docker": {
+      "build_time": 0.32242441177368164,
+      "build_success": true,
+      "test_time": 0.19515585899353027,
+      "test_success": true,
+      "track_test_time": 101.421133518219,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting imba implementation at implementations/imba\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Positio"
+    ],
+    "status": "completed"
+  }
+]

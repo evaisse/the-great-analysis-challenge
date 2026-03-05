@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "elm",
+    "docker_image": "chess-elm",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

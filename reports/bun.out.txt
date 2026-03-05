@@ -3,10 +3,10 @@
 Found 1 implementation(s) to test
 
 ============================================================
-Testing rust implementation
-Path: implementations/rust
+Testing bun implementation
+Path: implementations/bun
 ============================================================
-📏 Source size: 1852 LOC across 9 files
+📏 Source size: 669 LOC across 4 files
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -14,8 +14,8 @@ Path: implementations/rust
 🐳 Running all tests via Docker (ensures consistent environment)
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (includes analysis and build)...
-  🔧 Running: docker build -t chess-rust .
-  ✅ Docker build completed in 13.97s
+  🔧 Running: docker build -t chess-bun .
+  ✅ Docker build completed in 0.30s
   🔍 Running static analysis...
     🔧 Running: make analyze
   ♟️  Running chess engine tests...
@@ -25,52 +25,52 @@ Path: implementations/rust
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-05 09:11:27
+Generated: 2026-03-05 09:11:53
 ================================================================================
 
 PERFORMANCE SUMMARY
 --------------------------------------------------------------------------------
 Language     Status     LOC      Analyze  Build    Test     Memory     Tests   
 --------------------------------------------------------------------------------
-rust         completed  1852         0.2s    14.0s     0.2s      110MB 0/1     
+bun          completed  669          0.2s     0.3s     0.2s      110MB 0/1     
 
 ============================================================
-DETAILED RESULTS: RUST
+DETAILED RESULTS: BUN
 ============================================================
 
 TIMING BREAKDOWN:
-  Build Seconds: 13.97s
-  Analyze Seconds: 0.20s
+  Build Seconds: 0.30s
+  Analyze Seconds: 0.19s
   Test Seconds: 0.19s
   Test V1 Seconds: 0.19s
-  Test V2 Full Seconds: 8.33s
+  Test V2 Full Seconds: 73.12s
 
 SOURCE SIZE:
-  Source LOC: 1852 (files: 9)
+  Source LOC: 669 (files: 4)
 
 NORMALIZED METRICS:
-  Build: 7545.59 ms/KLOC
-  Analyze: 106.13 ms/KLOC
-  Runtime: 101.43 ms/KLOC
+  Build: 447.48 ms/KLOC
+  Analyze: 287.67 ms/KLOC
+  Runtime: 287.20 ms/KLOC
 
 MEMORY USAGE:
-  Build: Peak 109.9MB, Avg 108.6MB
+  Build: Peak 110.3MB, Avg 82.7MB
   Analyze: Peak 6.6MB, Avg 0.0MB
-  Test: Peak 7.0MB, Avg 0.0MB
+  Test: Peak 7.4MB, Avg 0.0MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ track_v2-full
 
 DOCKER TESTS:
-  Build: ✅ (13.97s)
+  Build: ✅ (0.30s)
   Test: ✅ (0.19s)
 
 ERRORS:
   ❌ track v2-full suite failed: Found 1 implementation(s)
 Loaded 14 tests from test/suites/v2_full.json
 
-Testing rust implementation at implementations/rust
+Testing bun implementation at implementations/bun
 ----------------------------------------
 Running test: Hash Command Baseline ✓
 Running test: Hash Command After Move ✓
@@ -81,9 +81,9 @@ Running test: PGN Fixture Morphy ✗
 Running test: PGN Fixture Byrne-Fischer ✗
 Running test: UCI Handshake ✗
 Running test: UCI Fixture Handshake ✗
-Running test: New960 Positio
+Running test: New960 Position 
 
 ================================================================================
-📄 JSON results saved to reports/rust.json (1 valid benchmark(s))
+📄 JSON results saved to reports/bun.json (1 valid benchmark(s))
 
 ✅ All 1 implementation(s) completed successfully

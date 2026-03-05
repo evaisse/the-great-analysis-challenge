@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "kotlin",
+    "docker_image": "chess-kotlin",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

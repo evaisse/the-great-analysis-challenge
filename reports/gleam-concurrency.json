@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "gleam",
+    "docker_image": "chess-gleam",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

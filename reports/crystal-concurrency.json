@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "crystal",
+    "docker_image": "chess-crystal",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

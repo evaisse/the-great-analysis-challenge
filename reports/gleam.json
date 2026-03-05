@@ -1,0 +1,81 @@
+[
+  {
+    "language": "gleam",
+    "path": "implementations/gleam",
+    "metadata": {
+      "language": "gleam",
+      "version": "1.3.1",
+      "author": "Gleam Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "build": "gleam build",
+      "test": "gleam test",
+      "analyze": "gleam format --check && gleam check",
+      "run": "gleam run"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.2876098155975342,
+      "analyze_seconds": 0.33299851417541504,
+      "test_seconds": 0.7765367031097412,
+      "test_v1_seconds": 0.7765367031097412,
+      "test_v2_full_seconds": 52.90408968925476
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 110.48828125,
+        "peak_memory_mb": 110.48828125,
+        "avg_memory_mb": 83.47395833333333,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.453125,
+        "peak_memory_mb": 6.453125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 60.890625,
+        "peak_memory_mb": 60.890625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 0,
+      "source_files": 0
+    },
+    "normalized": {},
+    "docker": {
+      "build_time": 0.2876098155975342,
+      "build_success": true,
+      "test_time": 0.7765367031097412,
+      "test_success": true,
+      "track_test_time": 52.90408968925476,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting gleam implementation at implementations/gleam\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Posit"
+    ],
+    "status": "completed"
+  }
+]

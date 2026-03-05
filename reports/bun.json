@@ -1,0 +1,85 @@
+[
+  {
+    "language": "bun",
+    "path": "implementations/bun",
+    "metadata": {
+      "language": "bun",
+      "version": "1.2",
+      "author": "Bun JavaScript Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "build": "bun build chess.js --outdir dist --target bun",
+      "run": "bun run chess.js",
+      "test": "bun test",
+      "analyze": "bun --version"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.2993621826171875,
+      "analyze_seconds": 0.19245100021362305,
+      "test_seconds": 0.1921367645263672,
+      "test_v1_seconds": 0.1921367645263672,
+      "test_v2_full_seconds": 73.11541271209717
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 110.296875,
+        "peak_memory_mb": 110.296875,
+        "avg_memory_mb": 82.72916666666667,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.56640625,
+        "peak_memory_mb": 6.56640625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 7.39453125,
+        "peak_memory_mb": 7.39453125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 669,
+      "source_files": 4
+    },
+    "normalized": {
+      "build_ms_per_kloc": 447.47710406156574,
+      "analyze_ms_per_kloc": 287.6696565226054,
+      "runtime_ms_per_kloc": 287.1999469751378
+    },
+    "docker": {
+      "build_time": 0.2993621826171875,
+      "build_success": true,
+      "test_time": 0.1921367645263672,
+      "test_success": true,
+      "track_test_time": 73.11541271209717,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting bun implementation at implementations/bun\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Position "
+    ],
+    "status": "completed"
+  }
+]

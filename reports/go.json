@@ -1,0 +1,86 @@
+[
+  {
+    "language": "go",
+    "path": "implementations/go",
+    "metadata": {
+      "language": "go",
+      "version": "1.23",
+      "author": "AI Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "build": "go build -o chess .",
+      "test": "go test ./...",
+      "analyze": "go vet ./... && gofmt -d .",
+      "run": "./chess"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.20164036750793457,
+      "analyze_seconds": 1.1446599960327148,
+      "test_seconds": 1.039494276046753,
+      "test_v1_seconds": 1.039494276046753,
+      "test_v2_full_seconds": 8.418618440628052
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 109.984375,
+        "peak_memory_mb": 109.984375,
+        "avg_memory_mb": 70.2421875,
+        "avg_cpu_percent": 0.0,
+        "samples": 2,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 110.328125,
+        "peak_memory_mb": 110.328125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 115.2578125,
+        "peak_memory_mb": 115.2578125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 2237,
+      "source_files": 7
+    },
+    "normalized": {
+      "build_ms_per_kloc": 90.13874273935384,
+      "analyze_ms_per_kloc": 511.69423157474955,
+      "runtime_ms_per_kloc": 464.6822870124063
+    },
+    "docker": {
+      "build_time": 0.20164036750793457,
+      "build_success": true,
+      "test_time": 1.039494276046753,
+      "test_success": true,
+      "track_test_time": 8.418618440628052,
+      "track_test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test",
+        "track_v2-full"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  }
+]

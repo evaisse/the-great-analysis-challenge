@@ -1,0 +1,2031 @@
+[
+  {
+    "implementation": "bun",
+    "docker_image": "chess-bun",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "mojo",
+    "path": "implementations/mojo",
+    "metadata": {
+      "language": "mojo",
+      "version": "24.5",
+      "author": "Mojo Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "build": "mojo build chess.mojo",
+      "test": "mojo chess.mojo",
+      "analyze": "mojo chess.mojo --no-run",
+      "run": "mojo chess.mojo"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.5810234546661377,
+      "analyze_seconds": 9.695207357406616,
+      "test_seconds": 10.301413297653198,
+      "test_v1_seconds": 10.301413297653198,
+      "test_v2_full_seconds": 10.071362257003784
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 115.33203125,
+        "peak_memory_mb": 115.33203125,
+        "avg_memory_mb": 98.646484375,
+        "avg_cpu_percent": 0.0,
+        "samples": 6,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 0,
+      "source_files": 0
+    },
+    "normalized": {},
+    "docker": {
+      "build_time": 0.5810234546661377,
+      "build_success": true,
+      "test_time": 10.301413297653198,
+      "test_success": false,
+      "track_test_time": 10.071362257003784,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "analyze",
+        "test",
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "make analyze failed: 09:16:59.192 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
+      "make test failed: 09:17:09.510 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting mojo implementation at implementations/mojo\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Positio"
+    ],
+    "status": "completed"
+  },
+  {
+    "implementation": "ruby",
+    "docker_image": "chess-ruby",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "implementation": "swift",
+    "docker_image": "chess-swift",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "haskell",
+    "path": "implementations/haskell",
+    "metadata": {
+      "language": "haskell",
+      "version": "9.0",
+      "author": "Haskell Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "run": "./chess_engine",
+      "build": "ghc -O2 --make src/Main.hs -o chess_engine -isrc",
+      "test": "./chess_engine --test",
+      "analyze": "hlint src/"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.42339110374450684,
+      "analyze_seconds": 0.2167644500732422,
+      "test_seconds": 0.22879815101623535,
+      "test_v1_seconds": 0.22879815101623535,
+      "test_v2_full_seconds": 52.85459089279175
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 16.8046875,
+        "peak_memory_mb": 115.37890625,
+        "avg_memory_mb": 76.85234375,
+        "avg_cpu_percent": 0.0,
+        "samples": 5,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 7.37890625,
+        "peak_memory_mb": 7.37890625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.34765625,
+        "peak_memory_mb": 6.34765625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 1085,
+      "source_files": 7
+    },
+    "normalized": {
+      "build_ms_per_kloc": 390.2222154327252,
+      "analyze_ms_per_kloc": 199.78290329331077,
+      "runtime_ms_per_kloc": 210.8738719043644
+    },
+    "docker": {
+      "build_time": 0.42339110374450684,
+      "build_success": true,
+      "test_time": 0.22879815101623535,
+      "test_success": true,
+      "track_test_time": 52.85459089279175,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting haskell implementation at implementations/haskell\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 P"
+    ],
+    "status": "completed"
+  },
+  {
+    "language": "swift",
+    "path": "implementations/swift",
+    "metadata": {
+      "language": "swift",
+      "version": "5.5",
+      "author": "Jules",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "build": "swift build -c release",
+      "test": "swift test",
+      "analyze": "swift build --configuration debug",
+      "run": ".build/release/Chess"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.36873412132263184,
+      "analyze_seconds": 0.19454693794250488,
+      "test_seconds": 0.18140625953674316,
+      "test_v1_seconds": 0.18140625953674316,
+      "test_v2_full_seconds": 180.0959780216217
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 113.9609375,
+        "peak_memory_mb": 113.9609375,
+        "avg_memory_mb": 90.9755859375,
+        "avg_cpu_percent": 0.0,
+        "samples": 4,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.5859375,
+        "peak_memory_mb": 6.5859375,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 7.171875,
+        "peak_memory_mb": 7.171875,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 929,
+      "source_files": 3
+    },
+    "normalized": {
+      "build_ms_per_kloc": 396.9150929199481,
+      "analyze_ms_per_kloc": 209.41543373789546,
+      "runtime_ms_per_kloc": 195.27046236463204
+    },
+    "docker": {
+      "build_time": 0.36873412132263184,
+      "build_success": true,
+      "test_time": 0.18140625953674316,
+      "test_success": true,
+      "track_test_time": 180.0959780216217,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite timeout after 180.1s"
+    ],
+    "status": "completed"
+  },
+  {
+    "implementation": "lua",
+    "docker_image": "chess-lua",
+    "profile": "quick",
+    "status": "passed",
+    "issues": [],
+    "payload": {
+      "profile": "quick",
+      "seed": 12345,
+      "workers": 1,
+      "runs": 10,
+      "checksums": [
+        "0000000053dc167e",
+        "00000000270427e0",
+        "00000000182b6a9b",
+        "0000000053d9ce3b",
+        "000000000d34f95c",
+        "000000007cb0646a",
+        "0000000069af3d61",
+        "000000007e56e08d",
+        "000000003d76c24a",
+        "0000000069ff75c4"
+      ],
+      "deterministic": true,
+      "invariant_errors": 0,
+      "deadlocks": 0,
+      "timeouts": 0,
+      "elapsed_ms": 0,
+      "ops_total": 100000
+    }
+  },
+  {
+    "language": "gleam",
+    "path": "implementations/gleam",
+    "metadata": {
+      "language": "gleam",
+      "version": "1.3.1",
+      "author": "Gleam Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "build": "gleam build",
+      "test": "gleam test",
+      "analyze": "gleam format --check && gleam check",
+      "run": "gleam run"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.2876098155975342,
+      "analyze_seconds": 0.33299851417541504,
+      "test_seconds": 0.7765367031097412,
+      "test_v1_seconds": 0.7765367031097412,
+      "test_v2_full_seconds": 52.90408968925476
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 110.48828125,
+        "peak_memory_mb": 110.48828125,
+        "avg_memory_mb": 83.47395833333333,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.453125,
+        "peak_memory_mb": 6.453125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 60.890625,
+        "peak_memory_mb": 60.890625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 0,
+      "source_files": 0
+    },
+    "normalized": {},
+    "docker": {
+      "build_time": 0.2876098155975342,
+      "build_success": true,
+      "test_time": 0.7765367031097412,
+      "test_success": true,
+      "track_test_time": 52.90408968925476,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting gleam implementation at implementations/gleam\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Posit"
+    ],
+    "status": "completed"
+  },
+  {
+    "implementation": "zig",
+    "docker_image": "chess-zig",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "bun",
+    "path": "implementations/bun",
+    "metadata": {
+      "language": "bun",
+      "version": "1.2",
+      "author": "Bun JavaScript Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "build": "bun build chess.js --outdir dist --target bun",
+      "run": "bun run chess.js",
+      "test": "bun test",
+      "analyze": "bun --version"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.2993621826171875,
+      "analyze_seconds": 0.19245100021362305,
+      "test_seconds": 0.1921367645263672,
+      "test_v1_seconds": 0.1921367645263672,
+      "test_v2_full_seconds": 73.11541271209717
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 110.296875,
+        "peak_memory_mb": 110.296875,
+        "avg_memory_mb": 82.72916666666667,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.56640625,
+        "peak_memory_mb": 6.56640625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 7.39453125,
+        "peak_memory_mb": 7.39453125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 669,
+      "source_files": 4
+    },
+    "normalized": {
+      "build_ms_per_kloc": 447.47710406156574,
+      "analyze_ms_per_kloc": 287.6696565226054,
+      "runtime_ms_per_kloc": 287.1999469751378
+    },
+    "docker": {
+      "build_time": 0.2993621826171875,
+      "build_success": true,
+      "test_time": 0.1921367645263672,
+      "test_success": true,
+      "track_test_time": 73.11541271209717,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting bun implementation at implementations/bun\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Position "
+    ],
+    "status": "completed"
+  },
+  {
+    "implementation": "rust",
+    "docker_image": "chess-rust",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "implementation": "gleam",
+    "docker_image": "chess-gleam",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "python",
+    "path": "implementations/python",
+    "metadata": {
+      "language": "python",
+      "version": "3.11",
+      "author": "Python Implementation",
+      "build": "python3 -m py_compile chess.py",
+      "run": "python3 chess.py",
+      "analyze": "python3 analyze.py",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000
+    },
+    "timings": {
+      "analyze_seconds": 0.20895004272460938,
+      "build_seconds": 0.10319304466247559,
+      "test_seconds": 0.5967466831207275
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {
+      "build_time": 0.7242679595947266,
+      "build_success": true,
+      "test_time": 0.7838959693908691,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        {
+          "test": "Basic Movement",
+          "output": "\n\n\n\n\n"
+        },
+        {
+          "test": "Castling",
+          "output": "\n\n"
+        },
+        {
+          "test": "En Passant",
+          "output": "\n\n"
+        },
+        {
+          "test": "Checkmate Detection",
+          "output": "\n\n\n\n"
+        },
+        {
+          "test": "AI Move Generation",
+          "output": "\n"
+        },
+        {
+          "test": "Invalid Move Handling",
+          "output": "\n"
+        },
+        {
+          "test": "Pawn Promotion",
+          "output": "\n\n"
+        }
+      ],
+      "performance": {},
+      "errors": [
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe",
+        "Command error: [Errno 32] Broken pipe"
+      ]
+    },
+    "errors": [],
+    "status": "completed"
+  },
+  {
+    "language": "nim",
+    "path": "implementations/nim",
+    "metadata": {
+      "language": "nim",
+      "version": "2.0",
+      "author": "Nim Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "build": "nim c -d:release chess.nim",
+      "test": "./chess --test",
+      "analyze": "nim check chess.nim",
+      "run": "./chess"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.2147972583770752,
+      "analyze_seconds": 0.18353891372680664,
+      "test_seconds": 0.19129467010498047,
+      "test_v1_seconds": 0.19129467010498047,
+      "test_v2_full_seconds": 8.321330070495605
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 16.98828125,
+        "peak_memory_mb": 110.0703125,
+        "avg_memory_mb": 52.100260416666664,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.578125,
+        "peak_memory_mb": 6.578125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.3359375,
+        "peak_memory_mb": 6.3359375,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 1105,
+      "source_files": 1
+    },
+    "normalized": {
+      "build_ms_per_kloc": 194.38665916477393,
+      "analyze_ms_per_kloc": 166.09856445864855,
+      "runtime_ms_per_kloc": 173.11734851129455
+    },
+    "docker": {
+      "build_time": 0.2147972583770752,
+      "build_success": true,
+      "test_time": 0.19129467010498047,
+      "test_success": true,
+      "track_test_time": 8.321330070495605,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting nim implementation at implementations/nim\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Position "
+    ],
+    "status": "completed"
+  },
+  {
+    "language": "php",
+    "path": "implementations/php",
+    "metadata": {
+      "language": "php",
+      "version": "8.3",
+      "author": "PHP Implementation",
+      "build": "php -l chess.php",
+      "run": "php chess.php",
+      "analyze": "find . -name '*.php' -exec php -l {} \\;",
+      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | php chess.php",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1500
+    },
+    "timings": {
+      "build_seconds": 0.7111568450927734,
+      "analyze_seconds": 0.46027231216430664,
+      "test_seconds": 0.24146294593811035
+    },
+    "memory": {},
+    "docker": {
+      "build_time": 0.7111568450927734,
+      "build_success": true,
+      "test_time": 0.24146294593811035,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  },
+  {
+    "implementation": "elm",
+    "docker_image": "chess-elm",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "typescript",
+    "path": "implementations/typescript",
+    "metadata": {
+      "language": "typescript",
+      "version": "5.0",
+      "author": "TypeScript Implementation",
+      "build": "npm install && npm run build",
+      "run": "node dist/chess.js",
+      "analyze": "npm install && npm run lint && npx tsc --noEmit && npx prettier --check src/*.ts",
+      "test": "npm install && npm test",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800
+    },
+    "timings": {
+      "build_seconds": 0.4478421211242676,
+      "analyze_seconds": 1.9185657501220703,
+      "test_seconds": 0.9453387260437012
+    },
+    "memory": {},
+    "docker": {
+      "build_time": 0.4478421211242676,
+      "build_success": true,
+      "test_time": 0.9453387260437012,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  },
+  {
+    "implementation": "kotlin",
+    "docker_image": "chess-kotlin",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "implementation": "julia",
+    "docker_image": "chess-julia",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "julia",
+    "path": "implementations/julia",
+    "metadata": {
+      "language": "julia",
+      "version": "1.11",
+      "author": "Julia Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "run": "julia --project=. chess.jl",
+      "build": "julia --project=. -e 'include(\"chess.jl\")'",
+      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | julia --project=. chess.jl | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2'",
+      "analyze": "julia --project=. -e 'include(\"chess.jl\")'"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.23521184921264648,
+      "analyze_seconds": 0.19211578369140625,
+      "test_seconds": 0.18109798431396484,
+      "test_v1_seconds": 0.18109798431396484,
+      "test_v2_full_seconds": 10.84304928779602
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 112.03125,
+        "peak_memory_mb": 112.03125,
+        "avg_memory_mb": 83.12890625,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 7.21875,
+        "peak_memory_mb": 7.21875,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.8671875,
+        "peak_memory_mb": 6.8671875,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 1631,
+      "source_files": 9
+    },
+    "normalized": {
+      "build_ms_per_kloc": 144.213273582248,
+      "analyze_ms_per_kloc": 117.79018006830549,
+      "runtime_ms_per_kloc": 111.03493826729911
+    },
+    "docker": {
+      "build_time": 0.23521184921264648,
+      "build_success": true,
+      "test_time": 0.18109798431396484,
+      "test_success": true,
+      "track_test_time": 10.84304928779602,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting julia implementation at implementations/julia\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Posit"
+    ],
+    "status": "completed"
+  },
+  {
+    "language": "ruby",
+    "path": "implementations/ruby",
+    "metadata": {
+      "language": "ruby",
+      "version": "3.2",
+      "author": "Ruby Implementation",
+      "build": "bundle install",
+      "run": "ruby chess.rb",
+      "analyze": "bundle exec rubocop",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000
+    },
+    "timings": {
+      "analyze_seconds": 1.661067008972168,
+      "build_seconds": 0.3543376922607422,
+      "test_seconds": 1.8503429889678955
+    },
+    "memory": {
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      }
+    },
+    "docker": {
+      "build_time": 7.826535940170288,
+      "build_success": false
+    },
+    "test_results": {
+      "passed": [
+        "Basic Movement",
+        "Castling",
+        "En Passant",
+        "Pawn Promotion"
+      ],
+      "failed": [
+        {
+          "test": "Checkmate Detection",
+          "output": "\n> OK: New game started\na b c d e f g h\n8 r n b q k b n r 8\n7 p p p p p p p p 7\n6 . . . . . . . . 6\n5 . . . . . . . . 5\n4 . . . . . . . . 4\n3 . . . . . . . . 3\n2 P P P P P P P P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nWhite to move\n\n> OK: f2f3\na b c d e f g h\n8 r n b q k b n r 8\n7 p p p p p p p p 7\n6 . . . . . . . . 6\n5 . . . . . . . . 5\n4 . . . . . . . . 4\n3 . . . . . P . . 3\n2 P P P P P . P P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nBlack to move\n\n> OK: e7e5\na b c d e f g h\n8 r n b q k b n r 8\n7 "
+        },
+        {
+          "test": "AI Move Generation",
+          "output": "a b c d e f g h\n8 r n b . k b n r 8\n7 p p p p . p p p 7\n6 . . . . . . . . 6\n5 . . . . p . . . 5\n4 . . . . . . P q 4\n3 . . . . . P . . 3\n2 P P P P P . . P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nWhite to move\nCHECKMATE: Black wins\n\n> OK: New game started"
+        },
+        {
+          "test": "Invalid Move Handling",
+          "output": "a b c d e f g h\n8 r n b q k b n r 8\n7 p p p p p p p p 7\n6 . . . . . . . . 6\n5 . . . . . . . . 5\n4 . . . . . . . . 4\n3 . . . . . . . . 3\n2 P P P P P P P P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nWhite to move\n\n> AI: d2d4 (depth=3, eval=20, time=1169ms)\na b c d e f g h\n8 r n b q k b n r 8\n7 p p p p p p p p 7\n6 . . . . . . . . 6\n5 . . . . . . . . 5\n4 . . . P . . . . 4\n3 . . . . . . . . 3\n2 P P P . P P P P 2\n1 R N B Q K B N R 1\na b c d e f g h\n\nBlack to move\n\n> OK: New game started"
+        }
+      ],
+      "performance": {
+        "Basic Movement": 0.16405582427978516,
+        "Castling": 0.0012121200561523438,
+        "En Passant": 0.001383066177368164,
+        "Pawn Promotion": 0.0006139278411865234
+      },
+      "errors": []
+    },
+    "errors": [
+      "Docker build failed: #0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 1.21kB done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/ubuntu:24.04\n#2 DONE 0.0s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 200B done\n#3 DONE 0.0s\n\n#4 [ 1/10] FROM docker.io/library/ubuntu:24.04\n#4 CACHED\n\n#5 [internal] load build context\n#5 transferring context: 49.68kB done\n#5 DONE 0.1s\n\n#6 [ 2/10] RUN apt-get update && a"
+    ],
+    "status": "completed"
+  },
+  {
+    "language": "crystal",
+    "path": "implementations/crystal",
+    "metadata": {
+      "language": "crystal",
+      "version": "1.14.0",
+      "author": "Crystal Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "build": "crystal build src/chess_engine.cr --release -o chess_engine",
+      "run": "./chess_engine",
+      "test": "crystal spec",
+      "analyze": "crystal tool format --check"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.24142718315124512,
+      "analyze_seconds": 0.9587013721466064,
+      "test_seconds": 2.3935062885284424,
+      "test_v1_seconds": 2.3935062885284424,
+      "test_v2_full_seconds": 8.410900115966797
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 110.109375,
+        "peak_memory_mb": 110.109375,
+        "avg_memory_mb": 82.52734375,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 196.453125,
+        "peak_memory_mb": 196.453125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 526.11328125,
+        "peak_memory_mb": 526.11328125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 1692,
+      "source_files": 7
+    },
+    "normalized": {
+      "build_ms_per_kloc": 142.68746049127964,
+      "analyze_ms_per_kloc": 566.6083759731716,
+      "runtime_ms_per_kloc": 1414.6018253714199
+    },
+    "docker": {
+      "build_time": 0.24142718315124512,
+      "build_success": true,
+      "test_time": 2.3935062885284424,
+      "test_success": true,
+      "track_test_time": 8.410900115966797,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting crystal implementation at implementations/crystal\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2713\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 P"
+    ],
+    "status": "completed"
+  },
+  {
+    "implementation": "go",
+    "docker_image": "chess-go",
+    "profile": "quick",
+    "status": "passed",
+    "issues": [],
+    "payload": {
+      "checksums": [
+        "1c0d57f10c894254",
+        "43f04a6ece53d614",
+        "3b0a35325cfc0ed5",
+        "eef66407390ac7c3",
+        "381605eb7fe55b9a",
+        "3b37c41943cc0166",
+        "a767f9a72f535a43",
+        "616352730fd49c1d",
+        "686578c3b21a5570",
+        "180b0aa1509b1608"
+      ],
+      "deadlocks": 0,
+      "deterministic": true,
+      "elapsed_ms": 0,
+      "invariant_errors": 0,
+      "ops_total": 100000,
+      "profile": "quick",
+      "runs": 10,
+      "seed": 12345,
+      "timeouts": 0,
+      "workers": 1
+    }
+  },
+  {
+    "language": "elm",
+    "path": "implementations/elm",
+    "metadata": {
+      "language": "elm",
+      "version": "0.19.1",
+      "author": "Elm Implementation with Node.js Bridge",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1200,
+      "run": "node chess-bridge.js",
+      "build": "npm install",
+      "test": "node chess-bridge.js --test",
+      "analyze": "node chess-bridge.js --check"
+    },
+    "timings": {
+      "build_seconds": 1.3953700065612793,
+      "analyze_seconds": 0.3793020248413086,
+      "test_seconds": 0.35797786712646484
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "analyze": {
+        "memory_mb": 3.5859375,
+        "peak_memory_mb": 3.5859375,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 8.91015625,
+        "peak_memory_mb": 8.91015625,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "cgroup"
+      }
+    },
+    "docker": {
+      "build_time": 1.3953700065612793,
+      "build_success": true,
+      "test_time": 0.35797786712646484,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  },
+  {
+    "implementation": "haskell",
+    "docker_image": "chess-haskell",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "implementation": "crystal",
+    "docker_image": "chess-crystal",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "lua",
+    "path": "implementations/lua",
+    "metadata": {
+      "language": "lua",
+      "version": "5.4",
+      "author": "Lua Implementation",
+      "build": "lua5.4 -e \"assert(loadfile('chess.lua'))\"",
+      "run": "lua5.4 chess.lua",
+      "analyze": "lua5.4 -l chess.lua",
+      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | lua5.4 chess.lua",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000
+    },
+    "timings": {
+      "build_seconds": 0.43151187896728516,
+      "analyze_seconds": 0.31648993492126465,
+      "test_seconds": 0.26360511779785156
+    },
+    "memory": {},
+    "docker": {
+      "build_time": 0.43151187896728516,
+      "build_success": true,
+      "test_time": 0.26360511779785156,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  },
+  {
+    "language": "javascript",
+    "path": "implementations/javascript",
+    "metadata": {
+      "language": "javascript",
+      "version": "1.0.0",
+      "author": "JavaScript Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "build": "node --check chess.js",
+      "test": "npm test",
+      "analyze": "npm run lint",
+      "run": "node chess.js"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.2003803253173828,
+      "analyze_seconds": 0.19240641593933105,
+      "test_seconds": 0.19130206108093262,
+      "test_v1_seconds": 0.19130206108093262,
+      "test_v2_full_seconds": 68.30965161323547
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 109.9296875,
+        "peak_memory_mb": 109.9296875,
+        "avg_memory_mb": 69.794921875,
+        "avg_cpu_percent": 0.0,
+        "samples": 2,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.34375,
+        "peak_memory_mb": 6.34375,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.5703125,
+        "peak_memory_mb": 6.5703125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 682,
+      "source_files": 4
+    },
+    "normalized": {
+      "build_ms_per_kloc": 293.8127937205026,
+      "analyze_ms_per_kloc": 282.12084448582266,
+      "runtime_ms_per_kloc": 280.50155583714456
+    },
+    "docker": {
+      "build_time": 0.2003803253173828,
+      "build_success": true,
+      "test_time": 0.19130206108093262,
+      "test_success": true,
+      "track_test_time": 68.30965161323547,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting javascript implementation at implementations/javascript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: Ne"
+    ],
+    "status": "completed"
+  },
+  {
+    "language": "kotlin",
+    "path": "implementations/kotlin",
+    "metadata": {
+      "language": "kotlin",
+      "version": "1.9.10",
+      "author": "Kotlin Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 500,
+      "run": "java -jar build/libs/chess-1.0.0.jar",
+      "build": "kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar",
+      "test": "java -jar build/libs/chess-1.0.0.jar --test",
+      "analyze": "kotlinc src/main/kotlin/*.kt"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.21298503875732422,
+      "analyze_seconds": 0.14923596382141113,
+      "test_seconds": 0.17064404487609863,
+      "test_v1_seconds": 0.17064404487609863,
+      "test_v2_full_seconds": 8.463032007217407
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 110.88671875,
+        "peak_memory_mb": 110.88671875,
+        "avg_memory_mb": 82.12109375,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.890625,
+        "peak_memory_mb": 6.890625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.890625,
+        "peak_memory_mb": 6.890625,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 1524,
+      "source_files": 8
+    },
+    "normalized": {
+      "build_ms_per_kloc": 139.7539624391891,
+      "analyze_ms_per_kloc": 97.92386077520415,
+      "runtime_ms_per_kloc": 111.97115805518283
+    },
+    "docker": {
+      "build_time": 0.21298503875732422,
+      "build_success": true,
+      "test_time": 0.17064404487609863,
+      "test_success": true,
+      "track_test_time": 8.463032007217407,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting kotlin implementation at implementations/kotlin\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Pos"
+    ],
+    "status": "completed"
+  },
+  {
+    "language": "zig",
+    "path": "implementations/zig",
+    "metadata": {
+      "language": "zig",
+      "version": "latest",
+      "author": "Zig Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "build": "zig build -Doptimize=ReleaseFast",
+      "run": "./zig-out/bin/chess",
+      "test": "./zig-out/bin/chess --test",
+      "analyze": "zig fmt --check src/"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.2800469398498535,
+      "analyze_seconds": 0.18725037574768066,
+      "test_seconds": 0.1884152889251709,
+      "test_v1_seconds": 0.1884152889251709,
+      "test_v2_full_seconds": 51.99425148963928
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 109.9375,
+        "peak_memory_mb": 109.9375,
+        "avg_memory_mb": 82.29036458333333,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.82421875,
+        "peak_memory_mb": 6.82421875,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.57421875,
+        "peak_memory_mb": 6.57421875,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 1757,
+      "source_files": 9
+    },
+    "normalized": {
+      "build_ms_per_kloc": 159.38926570851083,
+      "analyze_ms_per_kloc": 106.57391903681314,
+      "runtime_ms_per_kloc": 107.23693165917524
+    },
+    "docker": {
+      "build_time": 0.2800469398498535,
+      "build_success": true,
+      "test_time": 0.1884152889251709,
+      "test_success": true,
+      "track_test_time": 51.99425148963928,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting zig implementation at implementations/zig\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Position "
+    ],
+    "status": "completed"
+  },
+  {
+    "implementation": "typescript",
+    "docker_image": "chess-typescript",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "go",
+    "path": "implementations/go",
+    "metadata": {
+      "language": "go",
+      "version": "1.23",
+      "author": "AI Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "build": "go build -o chess .",
+      "test": "go test ./...",
+      "analyze": "go vet ./... && gofmt -d .",
+      "run": "./chess"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.20164036750793457,
+      "analyze_seconds": 1.1446599960327148,
+      "test_seconds": 1.039494276046753,
+      "test_v1_seconds": 1.039494276046753,
+      "test_v2_full_seconds": 8.418618440628052
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 109.984375,
+        "peak_memory_mb": 109.984375,
+        "avg_memory_mb": 70.2421875,
+        "avg_cpu_percent": 0.0,
+        "samples": 2,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 110.328125,
+        "peak_memory_mb": 110.328125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 115.2578125,
+        "peak_memory_mb": 115.2578125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 2237,
+      "source_files": 7
+    },
+    "normalized": {
+      "build_ms_per_kloc": 90.13874273935384,
+      "analyze_ms_per_kloc": 511.69423157474955,
+      "runtime_ms_per_kloc": 464.6822870124063
+    },
+    "docker": {
+      "build_time": 0.20164036750793457,
+      "build_success": true,
+      "test_time": 1.039494276046753,
+      "test_success": true,
+      "track_test_time": 8.418618440628052,
+      "track_test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test",
+        "track_v2-full"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  },
+  {
+    "implementation": "imba",
+    "docker_image": "chess-imba",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "implementation": "rescript",
+    "docker_image": "chess-rescript",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "rust",
+    "path": "implementations/rust",
+    "metadata": {
+      "language": "rust",
+      "version": "1.70",
+      "author": "Rust Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 600,
+      "build": "cargo build --release",
+      "test": "cargo test",
+      "analyze": "cargo check --all-targets",
+      "run": "./target/release/chess"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 13.974440097808838,
+      "analyze_seconds": 0.19655752182006836,
+      "test_seconds": 0.18785500526428223,
+      "test_v1_seconds": 0.18785500526428223,
+      "test_v2_full_seconds": 8.327322244644165
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 16.94921875,
+        "peak_memory_mb": 109.8828125,
+        "avg_memory_mb": 108.58174189814815,
+        "avg_cpu_percent": 0.0,
+        "samples": 135,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.57421875,
+        "peak_memory_mb": 6.57421875,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.98046875,
+        "peak_memory_mb": 6.98046875,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 1852,
+      "source_files": 9
+    },
+    "normalized": {
+      "build_ms_per_kloc": 7545.594005296349,
+      "analyze_ms_per_kloc": 106.13257117714274,
+      "runtime_ms_per_kloc": 101.43358815565995
+    },
+    "docker": {
+      "build_time": 13.974440097808838,
+      "build_success": true,
+      "test_time": 0.18785500526428223,
+      "test_success": true,
+      "track_test_time": 8.327322244644165,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting rust implementation at implementations/rust\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Positio"
+    ],
+    "status": "completed"
+  },
+  {
+    "language": "imba",
+    "path": "implementations/imba",
+    "metadata": {
+      "language": "imba",
+      "version": "2.0",
+      "author": "Imba Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "build": "imba build chess.imba --platform node --base . --outdir dist",
+      "run": "node dist/chess.js",
+      "test": "true",
+      "analyze": "true"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.32242441177368164,
+      "analyze_seconds": 0.20918560028076172,
+      "test_seconds": 0.19515585899353027,
+      "test_v1_seconds": 0.19515585899353027,
+      "test_v2_full_seconds": 101.421133518219
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 46.3125,
+        "peak_memory_mb": 109.71484375,
+        "avg_memory_mb": 73.1923828125,
+        "avg_cpu_percent": 0.0,
+        "samples": 4,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.58203125,
+        "peak_memory_mb": 6.58203125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 7.33984375,
+        "peak_memory_mb": 7.33984375,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 700,
+      "source_files": 1
+    },
+    "normalized": {
+      "build_ms_per_kloc": 460.60630253383096,
+      "analyze_ms_per_kloc": 298.8365718296596,
+      "runtime_ms_per_kloc": 278.79408427647184
+    },
+    "docker": {
+      "build_time": 0.32242441177368164,
+      "build_success": true,
+      "test_time": 0.19515585899353027,
+      "test_success": true,
+      "track_test_time": 101.421133518219,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting imba implementation at implementations/imba\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Positio"
+    ],
+    "status": "completed"
+  },
+  {
+    "implementation": "nim",
+    "docker_image": "chess-nim",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "dart",
+    "path": "implementations/dart",
+    "metadata": {
+      "language": "dart",
+      "version": "3.0",
+      "author": "Dart Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 900,
+      "test": "dart test",
+      "run": "./bin/chess_engine",
+      "build": "make build",
+      "analyze": "make analyze"
+    },
+    "timings": {
+      "build_seconds": 0.5421569347381592,
+      "analyze_seconds": 1.2766788005828857,
+      "test_seconds": 3.108520030975342
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
+      },
+      "analyze": {
+        "memory_mb": 211.109375,
+        "peak_memory_mb": 211.109375,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 450.69140625,
+        "peak_memory_mb": 450.69140625,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "cgroup"
+      }
+    },
+    "docker": {
+      "build_time": 0.5421569347381592,
+      "build_success": true,
+      "test_time": 3.108520030975342,
+      "test_success": true
+    },
+    "test_results": {
+      "passed": [
+        "docker_build",
+        "docker_analyze",
+        "docker_test"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed"
+  },
+  {
+    "implementation": "python",
+    "docker_image": "chess-python",
+    "profile": "quick",
+    "status": "passed",
+    "issues": [],
+    "payload": {
+      "profile": "quick",
+      "seed": 12345,
+      "workers": 1,
+      "runs": 10,
+      "checksums": [
+        "1c0d57f10c894254",
+        "43f04a6ece53d614",
+        "3b0a35325cfc0ed5",
+        "eef66407390ac7c3",
+        "381605eb7fe55b9a",
+        "3b37c41943cc0166",
+        "a767f9a72f535a43",
+        "616352730fd49c1d",
+        "686578c3b21a5570",
+        "180b0aa1509b1608"
+      ],
+      "deterministic": true,
+      "invariant_errors": 0,
+      "deadlocks": 0,
+      "timeouts": 0,
+      "elapsed_ms": 0,
+      "ops_total": 100000
+    }
+  },
+  {
+    "implementation": "dart",
+    "docker_image": "chess-dart",
+    "profile": "quick",
+    "status": "passed",
+    "issues": [],
+    "payload": {
+      "profile": "quick",
+      "seed": 12345,
+      "workers": 1,
+      "runs": 10,
+      "checksums": [
+        "1c0d57f10c894254",
+        "43f04a6ece53d614",
+        "3b0a35325cfc0ed5",
+        "-11099bf8c6f5383d",
+        "381605eb7fe55b9a",
+        "3b37c41943cc0166",
+        "-58980658d0aca5bd",
+        "616352730fd49c1d",
+        "686578c3b21a5570",
+        "180b0aa1509b1608"
+      ],
+      "deterministic": true,
+      "invariant_errors": 0,
+      "deadlocks": 0,
+      "timeouts": 0,
+      "elapsed_ms": 0,
+      "ops_total": 100000
+    }
+  },
+  {
+    "implementation": "mojo",
+    "docker_image": "chess-mojo",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "implementation": "php",
+    "docker_image": "chess-php",
+    "profile": "quick",
+    "status": "passed",
+    "issues": [],
+    "payload": {
+      "profile": "quick",
+      "seed": 12345,
+      "workers": 1,
+      "runs": 10,
+      "checksums": [
+        "0000000053dc167e",
+        "00000000270427e0",
+        "00000000182b6a9b",
+        "0000000053d9ce3b",
+        "000000000d34f95c",
+        "000000007cb0646a",
+        "0000000069af3d61",
+        "000000007e56e08d",
+        "000000003d76c24a",
+        "0000000069ff75c4"
+      ],
+      "deterministic": true,
+      "invariant_errors": 0,
+      "deadlocks": 0,
+      "timeouts": 0,
+      "elapsed_ms": 0,
+      "ops_total": 100000
+    }
+  },
+  {
+    "implementation": "javascript",
+    "docker_image": "chess-javascript",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  },
+  {
+    "language": "rescript",
+    "path": "implementations/rescript",
+    "metadata": {
+      "language": "rescript",
+      "version": "10.0",
+      "author": "ReScript Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1500,
+      "build": "npm run build",
+      "test": "node lib/es6/src/Chess.js --test",
+      "analyze": "npx rescript build",
+      "run": "node lib/es6/src/Chess.js"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.2905616760253906,
+      "analyze_seconds": 0.19222235679626465,
+      "test_seconds": 0.2055041790008545,
+      "test_v1_seconds": 0.2055041790008545,
+      "test_v2_full_seconds": 180.09550499916077
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 109.9765625,
+        "peak_memory_mb": 109.9765625,
+        "avg_memory_mb": 82.78776041666667,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.953125,
+        "peak_memory_mb": 6.953125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.8203125,
+        "peak_memory_mb": 6.8203125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 0,
+      "source_files": 0
+    },
+    "normalized": {},
+    "docker": {
+      "build_time": 0.2905616760253906,
+      "build_success": true,
+      "test_time": 0.2055041790008545,
+      "test_success": true,
+      "track_test_time": 180.09550499916077,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite timeout after 180.1s"
+    ],
+    "status": "completed"
+  }
+]

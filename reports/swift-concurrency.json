@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "swift",
+    "docker_image": "chess-swift",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

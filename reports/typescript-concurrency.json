@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "typescript",
+    "docker_image": "chess-typescript",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

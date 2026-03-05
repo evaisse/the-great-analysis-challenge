@@ -1,0 +1,81 @@
+[
+  {
+    "language": "rescript",
+    "path": "implementations/rescript",
+    "metadata": {
+      "language": "rescript",
+      "version": "10.0",
+      "author": "ReScript Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1500,
+      "build": "npm run build",
+      "test": "node lib/es6/src/Chess.js --test",
+      "analyze": "npx rescript build",
+      "run": "node lib/es6/src/Chess.js"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.2905616760253906,
+      "analyze_seconds": 0.19222235679626465,
+      "test_seconds": 0.2055041790008545,
+      "test_v1_seconds": 0.2055041790008545,
+      "test_v2_full_seconds": 180.09550499916077
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 109.9765625,
+        "peak_memory_mb": 109.9765625,
+        "avg_memory_mb": 82.78776041666667,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.953125,
+        "peak_memory_mb": 6.953125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 6.8203125,
+        "peak_memory_mb": 6.8203125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 0,
+      "source_files": 0
+    },
+    "normalized": {},
+    "docker": {
+      "build_time": 0.2905616760253906,
+      "build_success": true,
+      "test_time": 0.2055041790008545,
+      "test_success": true,
+      "track_test_time": 180.09550499916077,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite timeout after 180.1s"
+    ],
+    "status": "completed"
+  }
+]

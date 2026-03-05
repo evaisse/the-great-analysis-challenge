@@ -1,0 +1,85 @@
+[
+  {
+    "language": "swift",
+    "path": "implementations/swift",
+    "metadata": {
+      "language": "swift",
+      "version": "5.5",
+      "author": "Jules",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "build": "swift build -c release",
+      "test": "swift test",
+      "analyze": "swift build --configuration debug",
+      "run": ".build/release/Chess"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.36873412132263184,
+      "analyze_seconds": 0.19454693794250488,
+      "test_seconds": 0.18140625953674316,
+      "test_v1_seconds": 0.18140625953674316,
+      "test_v2_full_seconds": 180.0959780216217
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 113.9609375,
+        "peak_memory_mb": 113.9609375,
+        "avg_memory_mb": 90.9755859375,
+        "avg_cpu_percent": 0.0,
+        "samples": 4,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 6.5859375,
+        "peak_memory_mb": 6.5859375,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 7.171875,
+        "peak_memory_mb": 7.171875,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 929,
+      "source_files": 3
+    },
+    "normalized": {
+      "build_ms_per_kloc": 396.9150929199481,
+      "analyze_ms_per_kloc": 209.41543373789546,
+      "runtime_ms_per_kloc": 195.27046236463204
+    },
+    "docker": {
+      "build_time": 0.36873412132263184,
+      "build_success": true,
+      "test_time": 0.18140625953674316,
+      "test_success": true,
+      "track_test_time": 180.0959780216217,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite timeout after 180.1s"
+    ],
+    "status": "completed"
+  }
+]

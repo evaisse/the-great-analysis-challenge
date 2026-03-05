@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "haskell",
+    "docker_image": "chess-haskell",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

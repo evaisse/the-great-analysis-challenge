@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "julia",
+    "docker_image": "chess-julia",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

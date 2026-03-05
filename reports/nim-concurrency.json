@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "nim",
+    "docker_image": "chess-nim",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]

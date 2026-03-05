@@ -1,0 +1,33 @@
+[
+  {
+    "implementation": "lua",
+    "docker_image": "chess-lua",
+    "profile": "quick",
+    "status": "passed",
+    "issues": [],
+    "payload": {
+      "profile": "quick",
+      "seed": 12345,
+      "workers": 1,
+      "runs": 10,
+      "checksums": [
+        "0000000053dc167e",
+        "00000000270427e0",
+        "00000000182b6a9b",
+        "0000000053d9ce3b",
+        "000000000d34f95c",
+        "000000007cb0646a",
+        "0000000069af3d61",
+        "000000007e56e08d",
+        "000000003d76c24a",
+        "0000000069ff75c4"
+      ],
+      "deterministic": true,
+      "invariant_errors": 0,
+      "deadlocks": 0,
+      "timeouts": 0,
+      "elapsed_ms": 0,
+      "ops_total": 100000
+    }
+  }
+]

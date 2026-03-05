@@ -1,0 +1,85 @@
+[
+  {
+    "language": "crystal",
+    "path": "implementations/crystal",
+    "metadata": {
+      "language": "crystal",
+      "version": "1.14.0",
+      "author": "Crystal Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "build": "crystal build src/chess_engine.cr --release -o chess_engine",
+      "run": "./chess_engine",
+      "test": "crystal spec",
+      "analyze": "crystal tool format --check"
+    },
+    "track": "v2-full",
+    "profile": "quick",
+    "timings": {
+      "build_seconds": 0.24142718315124512,
+      "analyze_seconds": 0.9587013721466064,
+      "test_seconds": 2.3935062885284424,
+      "test_v1_seconds": 2.3935062885284424,
+      "test_v2_full_seconds": 8.410900115966797
+    },
+    "memory": {
+      "build": {
+        "memory_mb": 110.109375,
+        "peak_memory_mb": 110.109375,
+        "avg_memory_mb": 82.52734375,
+        "avg_cpu_percent": 0.0,
+        "samples": 3,
+        "psutil_available": true
+      },
+      "analyze": {
+        "memory_mb": 196.453125,
+        "peak_memory_mb": 196.453125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 526.11328125,
+        "peak_memory_mb": 526.11328125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      }
+    },
+    "size": {
+      "source_loc": 1692,
+      "source_files": 7
+    },
+    "normalized": {
+      "build_ms_per_kloc": 142.68746049127964,
+      "analyze_ms_per_kloc": 566.6083759731716,
+      "runtime_ms_per_kloc": 1414.6018253714199
+    },
+    "docker": {
+      "build_time": 0.24142718315124512,
+      "build_success": true,
+      "test_time": 2.3935062885284424,
+      "test_success": true,
+      "track_test_time": 8.410900115966797,
+      "track_test_success": false
+    },
+    "test_results": {
+      "passed": [],
+      "failed": [
+        "track_v2-full"
+      ]
+    },
+    "errors": [
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting crystal implementation at implementations/crystal\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2713\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 P"
+    ],
+    "status": "completed"
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "implementation": "zig",
+    "docker_image": "chess-zig",
+    "profile": "quick",
+    "status": "failed",
+    "issues": [
+      "Missing CONCURRENCY: payload"
+    ],
+    "payload": null
+  }
+]
