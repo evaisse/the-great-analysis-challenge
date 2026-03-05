@@ -1,4 +1,3 @@
-⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -7,50 +6,92 @@ Found 1 implementation(s) to test
 Testing typescript implementation
 Path: implementations/typescript
 ============================================================
+📏 Source size: 1997 LOC across 17 files
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
 ✅ Cache clearing completed
 🐳 Running all tests via Docker (ensures consistent environment)
 🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (includes analysis and build)...
+  🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-typescript .
-  ✅ Docker build completed in 0.45s
-  🔍 Running static analysis...
+  ✅ Docker build completed in 0.28s
+  🔧 Running task: make build
+    🔧 Running: make build
+  🔧 Running task: make analyze
     🔧 Running: make analyze
-  ♟️  Running chess engine tests...
+  🔧 Running task: make test
     🔧 Running: make test
-  ✅ All Docker tests passed (build: 0.4s, analyze: 1.9s, test: 0.9s)
+  🔧 Running task: make test-chess-engine (track=v2-full)
+  ❌ Docker tests failed in phases: make_test_chess_engine
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2025-11-06 19:42:46
+Generated: 2026-03-05 12:11:14
 ================================================================================
 
 PERFORMANCE SUMMARY
---------------------------------------------------------------------------------
-Language     Status     Analyze  Build    Test     Memory     Tests   
---------------------------------------------------------------------------------
-typescript   completed      1.9s     0.4s     0.9s        0MB 3/3     
+----------------------------------------------------------------------------------------------------------------------
+Language     Status     LOC      Build     Analyze   Test      Test-CE    Memory     Tasks   
+----------------------------------------------------------------------------------------------------------------------
+typescript   completed  1997         0.2s     0.2s     0.2s      8.4s      111MB 3/4     
 
 ============================================================
 DETAILED RESULTS: TYPESCRIPT
 ============================================================
 
 TIMING BREAKDOWN:
-  Build Seconds: 0.45s
-  Analyze Seconds: 1.92s
-  Test Seconds: 0.95s
+  Image Build Seconds: 0.28s
+  Build Seconds: 0.18s
+  Analyze Seconds: 0.22s
+  Test Seconds: 0.18s
+  Test Internal Seconds: 0.18s
+  Test Chess Engine Seconds: 8.44s
+  Test V2 Full Seconds: 8.44s
 
-CHESS ENGINE TESTS: 3 passed, 0 failed
+SOURCE SIZE:
+  Source LOC: 1997 (files: 17)
+
+NORMALIZED METRICS:
+  Build: 91.63 ms/KLOC
+  Analyze: 108.40 ms/KLOC
+  Runtime: 89.80 ms/KLOC
+
+MEMORY USAGE:
+  Image: Peak 110.7MB, Avg 83.4MB
+  Build: Peak 7.3MB, Avg 0.0MB
+  Analyze: Peak 7.1MB, Avg 0.0MB
+  Test: Peak 6.6MB, Avg 0.0MB
+
+CHESS ENGINE TESTS: 0 passed, 1 failed
+  Failed tests:
+    ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Build: ✅ (0.45s)
-  Test: ✅ (0.95s)
+  Image build: ✅ (0.28s)
+  make build: ✅ (0.18s)
+  make analyze: ✅ (0.22s)
+  make test: ✅ (0.18s)
+  make test-chess-engine (track=v2-full): ❌ (8.44s)
+
+ERRORS:
+  ❌ track v2-full suite failed: Found 1 implementation(s)
+Loaded 14 tests from test/suites/v2_full.json
+
+Testing typescript implementation at implementations/typescript
+----------------------------------------
+Running test: Hash Command Baseline ✓
+Running test: Hash Command After Move ✓
+Running test: Draws Command ✗
+Running test: Go Movetime ✗
+Running test: PGN Show ✗
+Running test: PGN Fixture Morphy ✗
+Running test: PGN Fixture Byrne-Fischer ✗
+Running test: UCI Handshake ✗
+Running test: UCI Fixture Handshake ✗
+Running test: Ne
 
 ================================================================================
-
-📄 Text report saved to benchmark_reports/performance_report_typescript.txt
-📄 JSON results saved to benchmark_reports/performance_data_typescript.json
+📄 JSON results saved to reports/typescript.json (1 valid benchmark(s))
 
 ✅ All 1 implementation(s) completed successfully

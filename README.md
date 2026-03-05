@@ -22,7 +22,7 @@ All implementations have complete feature parity with the following features:
 | 🎯 Dart | 🟡 | [1739](implementations/dart/bin/main.dart) | 542ms | 3109ms | 1277ms | 451 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🌳 Elm | 🟢 | [1663](implementations/elm/src/ChessEngine.elm) | 1395ms | 358ms | 379ms | 9 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | ✨ Gleam | 🟢 | [1917](implementations/gleam/src/chess_engine.gleam) | 288ms | 777ms | 333ms | 110 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🐹 Go | 🟢 | [2237](implementations/go/chess.go) | 202ms | 1039ms | 1145ms | 115 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🐹 Go | 🟢 | [2237](implementations/go/chess.go) | 443ms | 1085ms | 1150ms | 115 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 📐 Haskell | 🟢 | [1085](implementations/haskell/src/Main.hs) | 423ms | 229ms | 217ms | 115 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🪶 Imba | 🟡 | [700](implementations/imba/chess.imba) | 322ms | 195ms | 209ms | 110 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🟨 Javascript | 🟡 | [682](implementations/javascript/chess.js) | 200ms | 191ms | 192ms | 110 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
@@ -37,7 +37,7 @@ All implementations have complete feature parity with the following features:
 | ❤️ Ruby | 🟡 | [1906](implementations/ruby/chess.rb) | 354ms | 1850ms | 1661ms | - MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🦀 Rust | 🟢 | [1852](implementations/rust/src/main.rs) | 13974ms | 188ms | 197ms | 110 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐦 Swift | 🟢 | [856](implementations/swift/src/main.swift) | 369ms | 181ms | 195ms | 114 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 📘 Typescript | 🟡 | [1773](implementations/typescript/src/chess.ts) | 448ms | 945ms | 1919ms | - MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 📘 Typescript | 🟡 | [1773](implementations/typescript/src/chess.ts) | 183ms | 179ms | 216ms | 7 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | ⚡ Zig | 🟢 | [1589](implementations/zig/src/main.zig) | 280ms | 188ms | 187ms | 110 MB | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 <!-- status-table-end -->
 
