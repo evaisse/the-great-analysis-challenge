@@ -12,10 +12,10 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 # Add scripts directory to path to import shared module
-SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'scripts')
+SCRIPTS_DIR = Path(__file__).resolve().parents[3] / "scripts"
 if os.path.exists(SCRIPTS_DIR):
     import sys
-    sys.path.insert(0, SCRIPTS_DIR)
+    sys.path.insert(0, str(SCRIPTS_DIR))
     try:
         from chess_metadata import get_metadata
     except ImportError:
@@ -87,6 +87,18 @@ EXCLUDED_SEGMENTS = (
     '/test/',
     'test/',
 )
+
+FEATURE_CATALOG: List[str] = [
+    "perft",
+    "fen",
+    "ai",
+    "castling",
+    "en_passant",
+    "promotion",
+    "pgn",
+    "uci",
+    "chess960",
+]
 
 def find_project_root():
     """Find the project root directory."""
@@ -236,6 +248,47 @@ def resolve_entrypoint_file(impl_path: str, language: str, meta: Dict[str, Any])
 
     # Pick highest score; for ties prefer shortest path.
     return max(candidates, key=lambda rel: (_entrypoint_score(rel), -len(rel)))
+
+def _normalize_feature_name(feature: str) -> str:
+    """Normalize feature names for matching and deduplication."""
+    return feature.strip().lower().replace('-', '_').replace(' ', '_')
+
+def format_feature_summary(meta: Dict[str, Any]) -> str:
+    """Render features as labels with completion ratio against the catalog."""
+    raw_features = meta.get('features', [])
+    if not isinstance(raw_features, list):
+        raw_features = []
+
+    normalized_catalog = [_normalize_feature_name(item) for item in FEATURE_CATALOG]
+    catalog_set = set(normalized_catalog)
+
+    # Deduplicate while preserving original order from metadata.
+    normalized_seen = set()
+    normalized_features: List[str] = []
+    for item in raw_features:
+        feature = _normalize_feature_name(str(item))
+        if feature and feature not in normalized_seen:
+            normalized_seen.add(feature)
+            normalized_features.append(feature)
+
+    matched_count = sum(1 for feature in normalized_features if feature in catalog_set)
+    total_count = len(normalized_catalog)
+    completion_pct = int(round((matched_count / total_count) * 100)) if total_count > 0 else 0
+
+    # Show catalog features in canonical order first, then unknown extras.
+    feature_labels: List[str] = []
+    for catalog_feature in normalized_catalog:
+        if catalog_feature in normalized_seen:
+            feature_labels.append(catalog_feature)
+    for feature in normalized_features:
+        if feature not in catalog_set:
+            feature_labels.append(feature)
+
+    if feature_labels:
+        labels = " ".join(f"`{feature}`" for feature in feature_labels)
+        return f"{matched_count}/{total_count} ({completion_pct}%) {labels}"
+
+    return f"0/{total_count} (0%) -"
 
 def load_performance_data():
     """Load performance benchmark data from individual files"""
@@ -442,8 +495,7 @@ def update_readme() -> bool:
             mem_disp = f"{int(round(peak_memory))}" if peak_memory > 0 else "-"
 
             # Features
-            features = meta.get('features', []) if isinstance(meta.get('features'), list) else []
-            feature_summary = ', '.join(features) if features else '-'
+            feature_summary = format_feature_summary(meta)
             
             lang_name = f"{lang_emoji} {language.title()}"
             loc_display = str(loc_data['loc'])
