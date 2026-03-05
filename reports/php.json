@@ -6,10 +6,6 @@
       "language": "php",
       "version": "8.3",
       "author": "PHP Implementation",
-      "build": "php -l chess.php",
-      "run": "php chess.php",
-      "analyze": "find . -name '*.php' -exec php -l {} \\;",
-      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | php chess.php",
       "features": [
         "perft",
         "fen",
@@ -19,25 +15,114 @@
         "promotion"
       ],
       "max_ai_depth": 5,
-      "estimated_perft4_ms": 1500
+      "estimated_perft4_ms": 1500,
+      "build": "php -l chess.php",
+      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | php chess.php",
+      "analyze": "find . -name '*.php' -exec php -l {} \\;",
+      "run": "php chess.php"
     },
+    "track": "v2-full",
+    "profile": "quick",
     "timings": {
-      "build_seconds": 0.7111568450927734,
-      "analyze_seconds": 0.46027231216430664,
-      "test_seconds": 0.24146294593811035
+      "image_build_seconds": 3.3928427696228027,
+      "build_seconds": 0.3261697292327881,
+      "analyze_seconds": 0.3352184295654297,
+      "test_seconds": 0.21174860000610352,
+      "test_internal_seconds": 0.21174860000610352,
+      "test_chess_engine_seconds": 8.350319147109985,
+      "test_v2_full_seconds": 8.350319147109985
     },
-    "memory": {},
+    "memory": {
+      "image": {
+        "memory_mb": 114.1484375,
+        "peak_memory_mb": 114.1484375,
+        "avg_memory_mb": 111.4625946969697,
+        "avg_cpu_percent": 0.0,
+        "samples": 33,
+        "psutil_available": true
+      },
+      "build": {
+        "memory_mb": 8.7578125,
+        "peak_memory_mb": 8.7578125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "analyze": {
+        "memory_mb": 9.20703125,
+        "peak_memory_mb": 9.20703125,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test": {
+        "memory_mb": 8.74609375,
+        "peak_memory_mb": 8.74609375,
+        "avg_cpu_percent": 0,
+        "psutil_available": true,
+        "source": "cgroup"
+      },
+      "test_chess_engine": {
+        "memory_mb": 31.55078125,
+        "peak_memory_mb": 61.44921875,
+        "avg_memory_mb": 59.488818359375,
+        "avg_cpu_percent": 0.0,
+        "samples": 80,
+        "psutil_available": true
+      }
+    },
+    "size": {
+      "source_loc": 2016,
+      "source_files": 10
+    },
+    "normalized": {
+      "build_ms_per_kloc": 161.7905402940417,
+      "analyze_ms_per_kloc": 166.27898291935998,
+      "runtime_ms_per_kloc": 105.03402778080532
+    },
     "docker": {
-      "build_time": 0.7111568450927734,
+      "build_time": 3.3928427696228027,
       "build_success": true,
-      "test_time": 0.24146294593811035,
-      "test_success": true
+      "image_build_time": 3.3928427696228027,
+      "image_build_success": true,
+      "make_build_time": 0.3261697292327881,
+      "make_build_success": true,
+      "make_analyze_time": 0.3352184295654297,
+      "make_analyze_success": true,
+      "test_time": 0.21174860000610352,
+      "test_success": true,
+      "make_test_time": 0.21174860000610352,
+      "make_test_success": true,
+      "test_chess_engine_time": 8.350319147109985,
+      "test_chess_engine_success": true,
+      "track_test_time": 8.350319147109985,
+      "track_test_success": true
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      },
+      "make_test_chess_engine": {
+        "passed": 14,
+        "failed": 0,
+        "errors": 0,
+        "total": 14
+      }
     },
     "test_results": {
       "passed": [
-        "docker_build",
-        "docker_analyze",
-        "docker_test"
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
       ],
       "failed": []
     },
