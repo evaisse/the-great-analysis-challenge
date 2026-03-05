@@ -201,6 +201,18 @@ jobs:
         with:
           path: benchmark_artifacts/
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Combine benchmark results
+        run: ./workflow combine-results
+
+      - name: Update README status table
+        id: update
+        run: ./workflow update-readme
+
       - name: Determine version and commit changes
         id: version
         run: |
@@ -214,7 +226,7 @@ jobs:
           fi
           ./workflow create-release \
             --version-type "$VERSION_TYPE" \
-            --readme-changed "false" \
+            --readme-changed "${{ steps.update.outputs.changed }}" \
             --excellent-count "${{ needs.validation.outputs.excellent-count }}" \
             --good-count "${{ needs.validation.outputs.good-count }}" \
             --needs-work-count "${{ needs.validation.outputs.needs-work-count }}" \

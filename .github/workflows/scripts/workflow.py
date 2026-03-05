@@ -749,7 +749,7 @@ Benchmark results summary:
 Performance testing completed with status updates."""
             
             self.run_command(["git", "commit", "-m", commit_message], show_output=True)
-            self.run_command(["git", "push", "origin", "master"], show_output=True)
+            self.run_command(["git", "push", "origin", "main"], show_output=True)
             print("✅ Changes committed and pushed")
         
         # Create and push tag
