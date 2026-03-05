@@ -100,6 +100,13 @@ FEATURE_CATALOG: List[str] = [
     "chess960",
 ]
 
+BENCHMARK_STEPS = [
+    ("make build", "build_seconds"),
+    ("make analyze", "analyze_seconds"),
+    ("make test", "test_seconds"),
+    ("make test-chess-engine", "test_chess_engine_seconds"),
+]
+
 def find_project_root():
     """Find the project root directory."""
     current_dir = os.getcwd()
@@ -392,6 +399,91 @@ def format_step_metric(seconds, peak_memory_mb: float) -> str:
     """Format one make step as '<duration>, <memory>'."""
     return f"{format_time(seconds)}, {format_memory_mb(peak_memory_mb)}"
 
+def resolve_test_chess_engine_seconds(impl_data: Dict[str, Any]) -> Optional[float]:
+    """Resolve shared suite duration from current or legacy timing keys."""
+    timings = impl_data.get('timings', {})
+    if not isinstance(timings, dict):
+        return None
+
+    test_chess_engine_step = timings.get('test_chess_engine_seconds')
+    track_name = impl_data.get('track')
+    if test_chess_engine_step is None and isinstance(track_name, str) and track_name.strip():
+        legacy_track_key = f"test_{track_name.strip().replace('-', '_')}_seconds"
+        test_chess_engine_step = timings.get(legacy_track_key)
+    if test_chess_engine_step is None:
+        legacy_fallback_keys = (
+            "test_v2_full_seconds",
+            "test_v2_system_seconds",
+            "test_v2_functional_seconds",
+            "test_v2_foundation_seconds",
+            "test_v1_seconds",
+        )
+        for legacy_key in legacy_fallback_keys:
+            if timings.get(legacy_key) is not None:
+                test_chess_engine_step = timings.get(legacy_key)
+                break
+
+    return test_chess_engine_step
+
+def _build_relative_bar(seconds: float, best_seconds: float, width: int = 20) -> str:
+    """Build a normalized ASCII bar where fastest score uses full width."""
+    if seconds is None or seconds <= 0 or best_seconds is None or best_seconds <= 0:
+        return ""
+    ratio = best_seconds / seconds
+    ratio = max(0.0, min(1.0, ratio))
+    bar_len = max(1, int(round(ratio * width)))
+    return "#" * bar_len
+
+def build_speed_chart(combined_data: Dict[str, Dict[str, Any]], languages: List[str]) -> str:
+    """Render markdown speed charts for benchmark steps."""
+    lines: List[str] = []
+    lines.append("Lower is better. Bars are normalized per step (`####################` = fastest).")
+    lines.append("")
+
+    for step_label, timing_key in BENCHMARK_STEPS:
+        entries: List[tuple] = []
+        for language in languages:
+            impl_data = combined_data.get(language, {})
+            timings = impl_data.get('timings', {})
+            if not isinstance(timings, dict):
+                continue
+            if timing_key == "test_chess_engine_seconds":
+                seconds = resolve_test_chess_engine_seconds(impl_data)
+            else:
+                seconds = timings.get(timing_key)
+
+            if seconds is None:
+                continue
+            try:
+                value = float(seconds)
+            except (TypeError, ValueError):
+                continue
+            if value < 0:
+                continue
+            entries.append((language, value))
+
+        lines.append(f"#### `{step_label}`")
+        if not entries:
+            lines.append("No benchmark data available.")
+            lines.append("")
+            continue
+
+        entries.sort(key=lambda item: (item[1], item[0]))
+        top_entries = entries[:5]
+        best = top_entries[0][1]
+
+        lines.append("| Rank | Implementation | Time | Chart |")
+        lines.append("|------|----------------|------|-------|")
+        for idx, (language, seconds) in enumerate(top_entries, 1):
+            lang_emoji = CUSTOM_EMOJIS.get(language, '📦')
+            lang_label = f"{lang_emoji} {language.title()}"
+            lines.append(
+                f"| {idx} | {lang_label} | {format_time(seconds)} | `{_build_relative_bar(seconds, best)}` |"
+            )
+        lines.append("")
+
+    return "\n".join(lines).rstrip()
+
 def format_score(score: Dict[str, Any], success_fallback: Optional[bool] = None) -> str:
     """Format score dictionaries as passed/total."""
     if isinstance(score, dict):
@@ -505,11 +597,7 @@ def update_readme() -> bool:
             build_step = timings.get('build_seconds')
             analyze_step = timings.get('analyze_seconds')
             test_step = timings.get('test_seconds')
-            test_chess_engine_step = timings.get('test_chess_engine_seconds')
-            track_name = impl_data.get('track')
-            if test_chess_engine_step is None and isinstance(track_name, str) and track_name.strip():
-                legacy_track_key = f"test_{track_name.strip().replace('-', '_')}_seconds"
-                test_chess_engine_step = timings.get(legacy_track_key)
+            test_chess_engine_step = resolve_test_chess_engine_seconds(impl_data)
             
             # Memory
             memory_data = impl_data.get('memory', {})
@@ -566,6 +654,7 @@ def update_readme() -> bool:
 |----------|--------|-----|------------|--------------|-----------|------------------------|-----------------|------------------------------|----------|"""
         
         new_table = table_header + "\n" + "\n".join(table_rows)
+        speed_chart = build_speed_chart(combined_data, sorted(all_languages))
         
         readme_path = os.path.join(project_root, "README.md")
         
@@ -580,10 +669,16 @@ def update_readme() -> bool:
             if "<!-- status-table-start -->" not in content:
                 print("⚠️ Warning: README doesn't contain status table markers")
                 return False
-            
+            if "<!-- speed-chart-start -->" not in content or "<!-- speed-chart-end -->" not in content:
+                print("⚠️ Warning: README doesn't contain speed chart markers")
+                return False
+
             pattern = r'(<!-- status-table-start -->).*?(<!-- status-table-end -->)'
             replacement = f'\\1\n{new_table}\n\\2'
             new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+            chart_pattern = r'(<!-- speed-chart-start -->).*?(<!-- speed-chart-end -->)'
+            chart_replacement = f'\\1\n{speed_chart}\n\\2'
+            new_content = re.sub(chart_pattern, chart_replacement, new_content, flags=re.DOTALL)
             
             if new_content == content:
                 print("⚠️ No changes detected in README content")

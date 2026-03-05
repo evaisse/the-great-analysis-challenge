@@ -8,6 +8,7 @@ LABEL org.chess.author="Python Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1000
+LABEL org.chess.benchmark.build="skip"
 LABEL org.chess.build="python3 -m py_compile chess.py"
 LABEL org.chess.test="python3 test_engine.py"
 LABEL org.chess.analyze="python3 -m py_compile chess.py lib/*.py"

@@ -45,6 +45,11 @@ except ImportError:
 from test_harness import ChessEngineTester, TestSuite, find_implementations, TRACK_TO_SUITE
 from code_size_metrics import collect_metrics_for_impl
 
+TRUTHY_VALUES = {"1", "true", "yes", "y", "on"}
+FALSY_VALUES = {"0", "false", "no", "n", "off"}
+SKIP_VALUES = {"skip", "skipped"}
+INTERPRETED_RUNTIME_VALUES = {"interpreted", "scripted", "jit"}
+
 class PerformanceMonitor:
     """Monitor system performance during tests"""
     
@@ -166,6 +171,24 @@ class ImplementationTester:
             "errors": [],
             "status": "pending"
         }
+
+    @staticmethod
+    def _normalized_str(value: Optional[object]) -> str:
+        """Normalize metadata values to lowercase strings."""
+        if value is None:
+            return ""
+        return str(value).strip().lower()
+
+    def _should_skip_make_build(self) -> bool:
+        """Return True when metadata declares build phase should be skipped."""
+        benchmark_build = self._normalized_str(self.metadata.get("benchmark.build"))
+        if benchmark_build in SKIP_VALUES or benchmark_build in TRUTHY_VALUES:
+            return True
+        if benchmark_build in FALSY_VALUES or benchmark_build == "run":
+            return False
+
+        runtime_mode = self._normalized_str(self.metadata.get("runtime"))
+        return runtime_mode in INTERPRETED_RUNTIME_VALUES
         
     def run_full_test(self) -> Dict:
         """Run complete performance test suite"""
@@ -488,16 +511,36 @@ class ImplementationTester:
             print(f"  ✅ Docker build completed in {build_time:.2f}s")
 
             # Phase 2: make build
-            print("  🔧 Running task: make build")
-            make_build_success, make_build_time = self._run_docker_command(
-                image_name,
-                "make build",
-                phase="build",
-            )
-            self.results["timings"]["build_seconds"] = make_build_time
-            self.results["docker"]["make_build_time"] = make_build_time
-            self.results["docker"]["make_build_success"] = make_build_success
-            self.results["task_results"]["make_build"] = make_build_success
+            make_build_skipped = self._should_skip_make_build()
+            self.results["docker"]["make_build_skipped"] = make_build_skipped
+
+            if make_build_skipped:
+                print("  ⏭️ Skipping task: make build (metadata runtime/benchmark flag)")
+                make_build_success = True
+                make_build_time = None
+                self.results["timings"]["build_seconds"] = None
+                self.results["docker"]["make_build_time"] = None
+                self.results["docker"]["make_build_success"] = True
+                self.results["task_results"]["make_build"] = True
+                self.results.setdefault("memory", {})
+                self.results["memory"]["build"] = {
+                    "memory_mb": 0,
+                    "peak_memory_mb": 0,
+                    "avg_cpu_percent": 0,
+                    "psutil_available": PSUTIL_AVAILABLE,
+                    "source": "skipped",
+                }
+            else:
+                print("  🔧 Running task: make build")
+                make_build_success, make_build_time = self._run_docker_command(
+                    image_name,
+                    "make build",
+                    phase="build",
+                )
+                self.results["timings"]["build_seconds"] = make_build_time
+                self.results["docker"]["make_build_time"] = make_build_time
+                self.results["docker"]["make_build_success"] = make_build_success
+                self.results["task_results"]["make_build"] = make_build_success
 
             # Phase 3: make analyze
             print("  🔧 Running task: make analyze")
@@ -552,9 +595,14 @@ class ImplementationTester:
                 and track_test_success
             )
             if overall_success:
+                build_phase_summary = (
+                    "make build: skipped"
+                    if make_build_skipped
+                    else f"make build: {make_build_time:.1f}s"
+                )
                 print(
                     "  ✅ All Docker tests passed "
-                    f"(image: {build_time:.1f}s, make build: {make_build_time:.1f}s, "
+                    f"(image: {build_time:.1f}s, {build_phase_summary}, "
                     f"make analyze: {analyze_time:.1f}s, make test: {test_time:.1f}s, "
                     f"make test-chess-engine: {track_test_time:.1f}s)"
                 )
@@ -570,7 +618,7 @@ class ImplementationTester:
                 failed_phases = []
                 if not success:
                     failed_phases.append("image")
-                if not make_build_success:
+                if not make_build_skipped and not make_build_success:
                     failed_phases.append("make_build")
                 if not analyze_success:
                     failed_phases.append("make_analyze")
@@ -728,8 +776,10 @@ class ImplementationTester:
 
 def generate_performance_report(results: List[Dict]) -> str:
     """Generate comprehensive performance report"""
-    def fmt_step_cell(time_seconds: float, peak_mb: float) -> str:
+    def fmt_step_cell(time_seconds: Optional[float], peak_mb: float) -> str:
         """Format one benchmarked make step as '<time>s/<memory>MB'."""
+        if time_seconds is None:
+            return "-/-MB"
         time_part = f"{time_seconds:.1f}s"
         mem_part = "-" if peak_mb <= 0 else f"{peak_mb:.0f}"
         return f"{time_part}/{mem_part}MB"
@@ -763,7 +813,7 @@ def generate_performance_report(results: List[Dict]) -> str:
         lang = result.get("language", "Unknown")[:11]
         status = result.get("status", "unknown")[:9]
         
-        build_time = result.get("timings", {}).get("build_seconds", 0)
+        build_time = result.get("timings", {}).get("build_seconds")
         analyze_time = result.get("timings", {}).get("analyze_seconds", 0)
         test_time = result.get("timings", {}).get("test_seconds", 0)
         test_chess_engine_time = result.get("timings", {}).get("test_chess_engine_seconds", 0)
@@ -820,11 +870,11 @@ def generate_performance_report(results: List[Dict]) -> str:
             ]
             printed = set()
             for key in ordered_keys:
-                if key in timings:
+                if key in timings and timings[key] is not None:
                     printed.add(key)
                     report.append(f"  {timing_labels.get(key, key)}: {timings[key]:.2f}s")
             for phase, time_val in timings.items():
-                if phase in printed:
+                if phase in printed or time_val is None:
                     continue
                 label = timing_labels.get(phase, phase.replace('_', ' '))
                 report.append(f"  {label}: {time_val:.2f}s")
@@ -878,7 +928,8 @@ def generate_performance_report(results: List[Dict]) -> str:
             image_build_success = docker.get("image_build_success", docker.get("build_success", False))
             image_build_time = docker.get("image_build_time", docker.get("build_time", 0))
             make_build_success = docker.get("make_build_success", False)
-            make_build_time = docker.get("make_build_time", 0)
+            make_build_time = docker.get("make_build_time")
+            make_build_skipped = docker.get("make_build_skipped", False)
             make_analyze_success = docker.get("make_analyze_success", False)
             make_analyze_time = docker.get("make_analyze_time", 0)
             make_test_success = docker.get("make_test_success", docker.get("test_success", False))
@@ -887,7 +938,10 @@ def generate_performance_report(results: List[Dict]) -> str:
             make_test_chess_time = docker.get("test_chess_engine_time", docker.get("track_test_time", 0))
 
             report.append(f"  Image build: {'✅' if image_build_success else '❌'} ({image_build_time:.2f}s)")
-            report.append(f"  make build: {'✅' if make_build_success else '❌'} ({make_build_time:.2f}s)")
+            if make_build_skipped:
+                report.append("  make build: ⏭️ skipped")
+            else:
+                report.append(f"  make build: {'✅' if make_build_success else '❌'} ({make_build_time:.2f}s)")
             report.append(f"  make analyze: {'✅' if make_analyze_success else '❌'} ({make_analyze_time:.2f}s)")
             report.append(f"  make test: {'✅' if make_test_success else '❌'} ({make_test_time:.2f}s)")
             report.append(
@@ -1059,12 +1113,14 @@ Requirements:
     for result in all_results:
         status = result.get("status")
         timings = result.get("timings", {})
+        docker = result.get("docker", {})
         build_seconds = timings.get("build_seconds")
         test_seconds = timings.get("test_seconds")
+        make_build_skipped = bool(docker.get("make_build_skipped", False))
         
         # Check if benchmark is complete and has valid timing data
         # Timing values must be non-None and non-negative
-        has_valid_build = build_seconds is not None and build_seconds >= 0
+        has_valid_build = make_build_skipped or (build_seconds is not None and build_seconds >= 0)
         has_valid_test = test_seconds is not None and test_seconds >= 0
         
         if status == "completed" and has_valid_build and has_valid_test:
@@ -1076,10 +1132,11 @@ Requirements:
                 reason.append(f"status={status}")
             # Only check timing data validity when status is completed
             if status == "completed":
-                if build_seconds is None:
-                    reason.append("missing build_seconds")
-                elif build_seconds < 0:
-                    reason.append("build_seconds is negative")
+                if not make_build_skipped:
+                    if build_seconds is None:
+                        reason.append("missing build_seconds")
+                    elif build_seconds < 0:
+                        reason.append("build_seconds is negative")
                 if test_seconds is None:
                     reason.append("missing test_seconds")
                 elif test_seconds < 0:

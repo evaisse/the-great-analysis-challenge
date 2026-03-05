@@ -31,7 +31,7 @@ All implementations have complete feature parity with the following features:
 | 🪐 Lua | 🟢 | [1331](implementations/lua/chess.lua) | 432ms, - MB | 316ms, - MB | 264ms, - MB | -, - MB | 1/1 | - | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🔥 Mojo | 🟢 | [275](implementations/mojo/chess.mojo) | 581ms, 115 MB | 9695ms, - MB | 10301ms, - MB | 10071ms, - MB | 1/1 | 1/1 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🦊 Nim | 🟢 | [1105](implementations/nim/chess.nim) | 215ms, 110 MB | 184ms, 7 MB | 191ms, 6 MB | 8321ms, - MB | 1/1 | 1/1 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🐘 Php | 🟢 | [2016](implementations/php/chess.php) | 711ms, - MB | 460ms, - MB | 241ms, - MB | -, - MB | 1/1 | - | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🐘 Php | 🟢 | [2016](implementations/php/chess.php) | 326ms, 9 MB | 335ms, 9 MB | 212ms, 9 MB | 8350ms, 61 MB | 1/1 | 14/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐍 Python | 🟡 | [2373](implementations/python/chess.py) | 103ms, - MB | 209ms, - MB | 597ms, - MB | -, - MB | 1/1 | - | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🧠 Rescript | 🟡 | [1678](implementations/rescript/src/Chess.res) | 291ms, 110 MB | 192ms, 7 MB | 206ms, 7 MB | 180096ms, - MB | 1/1 | 1/1 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | ❤️ Ruby | 🟡 | [1906](implementations/ruby/chess.rb) | 354ms, - MB | 1661ms, - MB | 1850ms, - MB | -, - MB | 1/1 | - | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
@@ -46,7 +46,49 @@ Legend:
 - `make ...` columns: benchmarked command shown as `<duration>, <peak memory>`.
 - `make test score`: score of `make test` (binary `1/1` success, `0/1` failure).
 - `make test-chess-engine score`: shared harness score (`passed/total`) for the benchmark track.
-- `-`: metric not yet available for this implementation/run.
+- `-`: metric not yet available for this implementation/run, or intentionally skipped (for example `make build` on interpreted runtimes).
+
+## ⚡ Speed Charts
+
+<!-- speed-chart-start -->
+Lower is better. Bars are normalized per step (`####################` = fastest).
+
+#### `make build`
+| Rank | Implementation | Time | Chart |
+|------|----------------|------|-------|
+| 1 | 🐍 Python | 103ms | `####################` |
+| 2 | 📘 Typescript | 183ms | `###########` |
+| 3 | 🟨 Javascript | 200ms | `##########` |
+| 4 | 🧡 Kotlin | 213ms | `##########` |
+| 5 | 🦊 Nim | 215ms | `##########` |
+
+#### `make analyze`
+| Rank | Implementation | Time | Chart |
+|------|----------------|------|-------|
+| 1 | 🧡 Kotlin | 149ms | `####################` |
+| 2 | 🦊 Nim | 184ms | `################` |
+| 3 | ⚡ Zig | 187ms | `################` |
+| 4 | 🔮 Julia | 192ms | `################` |
+| 5 | 🧠 Rescript | 192ms | `################` |
+
+#### `make test`
+| Rank | Implementation | Time | Chart |
+|------|----------------|------|-------|
+| 1 | 🧡 Kotlin | 171ms | `####################` |
+| 2 | 📘 Typescript | 179ms | `###################` |
+| 3 | 🔮 Julia | 181ms | `###################` |
+| 4 | 🐦 Swift | 181ms | `###################` |
+| 5 | 🦀 Rust | 188ms | `##################` |
+
+#### `make test-chess-engine`
+| Rank | Implementation | Time | Chart |
+|------|----------------|------|-------|
+| 1 | 🦊 Nim | 8321ms | `####################` |
+| 2 | 🦀 Rust | 8327ms | `####################` |
+| 3 | 🐘 Php | 8350ms | `####################` |
+| 4 | 💠 Crystal | 8411ms | `####################` |
+| 5 | 🐹 Go | 8417ms | `####################` |
+<!-- speed-chart-end -->
 
 ## 🚀 Quick Start
 

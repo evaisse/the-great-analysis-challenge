@@ -15,6 +15,10 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from chess_metadata import get_metadata
 
+TRUTHY_VALUES = {"1", "true", "yes", "y", "on"}
+SKIP_VALUES = {"skip", "skipped"}
+INTERPRETED_RUNTIME_VALUES = {"interpreted", "scripted", "jit"}
+
 
 def resolve_impl_path(impl: str) -> Path:
     candidate = Path(impl)
@@ -67,6 +71,15 @@ def _shell_missing(stderr: str | None, shell: str) -> bool:
     )
 
 
+def _should_skip_build_phase(metadata: dict) -> bool:
+    benchmark_build = str(metadata.get("benchmark.build", "")).strip().lower()
+    if benchmark_build in SKIP_VALUES or benchmark_build in TRUTHY_VALUES:
+        return True
+
+    runtime_mode = str(metadata.get("runtime", "")).strip().lower()
+    return runtime_mode in INTERPRETED_RUNTIME_VALUES
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a metadata phase in Docker")
     parser.add_argument("--impl", required=True, help="Implementation name or path")
@@ -90,6 +103,10 @@ def main() -> int:
 
     metadata = get_metadata(str(impl_path))
     command = metadata.get(args.phase, "")
+
+    if args.phase == "build" and _should_skip_build_phase(metadata):
+        print(f"Skipping build phase for {impl_name} (metadata benchmark/runtime flag)")
+        return 0
 
     if not command:
         print(

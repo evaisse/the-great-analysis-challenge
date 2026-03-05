@@ -48,12 +48,13 @@ def validate_result_json(result_file: Path, language: str) -> Tuple[bool, List[s
         # Check timings - ensure they are not missing
         # This enforces benchmark output constraints at the CI level
         timings = data.get('timings', {})
-        required_timing_fields = ['build_seconds', 'test_seconds']
-        
-        for field in required_timing_fields:
-            value = timings.get(field)
-            if value is None:
-                issues.append(f"Required timing field '{field}' is missing")
+        docker_data = data.get('docker', {}) if isinstance(data.get('docker', {}), dict) else {}
+        make_build_skipped = bool(docker_data.get('make_build_skipped', False))
+
+        if not make_build_skipped and timings.get('build_seconds') is None:
+            issues.append("Required timing field 'build_seconds' is missing")
+        if timings.get('test_seconds') is None:
+            issues.append("Required timing field 'test_seconds' is missing")
         
         # Note: Zero values are acceptable for very fast operations
         # that complete in less than 1ms, so we don't flag them as issues

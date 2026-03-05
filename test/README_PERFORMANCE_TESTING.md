@@ -18,6 +18,10 @@ Main JSON timings:
 - `test_seconds` -> step 4 (`make test`)
 - `test_chess_engine_seconds` -> step 5 (`make test-chess-engine`)
 
+Build-phase skip for interpreted runtimes:
+- Set Docker metadata `org.chess.runtime="interpreted"` (or `org.chess.benchmark.build="skip"`) to skip step 2 in benchmarks.
+- When skipped, `docker.make_build_skipped=true` and `build_seconds` is omitted/`null`.
+
 Additional timing:
 - `image_build_seconds` measures step 1 (Docker image build prerequisite)
 
@@ -46,6 +50,7 @@ python3 test/performance_test.py --output reports/rust.out.txt --json reports/ru
 
 - Benchmarks are Docker-only via root Make targets.
 - `build` is compile-only by contract.
+- For interpreted runtimes, `build` can be intentionally skipped in benchmark mode.
 - `test` covers implementation-internal checks.
 - `test-chess-engine` runs the shared suite for the selected track.
 - Host memory sampling is best-effort (requires `psutil`).

@@ -122,6 +122,11 @@ jobs:
           echo "seconds=${timeout_seconds}" >> "$GITHUB_OUTPUT"
           echo "Using timeout ${timeout_seconds}s for ${{ matrix.engine }}"
 
+      - name: Reset reports workspace
+        run: |
+          rm -rf reports
+          mkdir -p reports
+
       - name: Run benchmark for ${{ matrix.name }}
         run: ./workflow run-benchmark ${{ matrix.engine }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }}
 
@@ -147,7 +152,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-${{ matrix.engine }}-${{ github.sha }}
-          path: reports/
+          path: |
+            reports/${{ matrix.engine }}.json
+            reports/${{ matrix.engine }}.out.txt
+            reports/${{ matrix.engine }}-concurrency.json
+          if-no-files-found: warn
           retention-days: 30
 
   combine-results:
