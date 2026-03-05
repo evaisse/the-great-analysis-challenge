@@ -506,6 +506,10 @@ def update_readme() -> bool:
             analyze_step = timings.get('analyze_seconds')
             test_step = timings.get('test_seconds')
             test_chess_engine_step = timings.get('test_chess_engine_seconds')
+            track_name = impl_data.get('track')
+            if test_chess_engine_step is None and isinstance(track_name, str) and track_name.strip():
+                legacy_track_key = f"test_{track_name.strip().replace('-', '_')}_seconds"
+                test_chess_engine_step = timings.get(legacy_track_key)
             
             # Memory
             memory_data = impl_data.get('memory', {})
