@@ -9,7 +9,7 @@ import re
 import subprocess
 import glob
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 # Add scripts directory to path to import shared module
 SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'scripts')
@@ -47,6 +47,47 @@ CUSTOM_EMOJIS: Dict[str, str] = {
     'zig': '⚡'
 }
 
+LANGUAGE_EXTENSIONS: Dict[str, List[str]] = {
+    'bun': ['.js'],
+    'crystal': ['.cr'],
+    'dart': ['.dart'],
+    'elm': ['.elm'],
+    'gleam': ['.gleam'],
+    'go': ['.go'],
+    'haskell': ['.hs'],
+    'imba': ['.imba'],
+    'javascript': ['.js'],
+    'julia': ['.jl'],
+    'kotlin': ['.kt'],
+    'lua': ['.lua'],
+    'mojo': ['.mojo', '.🔥'],
+    'nim': ['.nim'],
+    'php': ['.php'],
+    'python': ['.py'],
+    'rescript': ['.res', '.resi'],
+    'ruby': ['.rb'],
+    'rust': ['.rs'],
+    'swift': ['.swift'],
+    'typescript': ['.ts'],
+    'zig': ['.zig']
+}
+
+GENERATED_SEGMENTS = (
+    'dist/',
+    'build/',
+    'target/',
+    'lib/es6/',
+    '.build/',
+    'zig-out/',
+    '__pycache__/',
+    'vendor/',
+)
+
+EXCLUDED_SEGMENTS = (
+    '/test/',
+    'test/',
+)
+
 def find_project_root():
     """Find the project root directory."""
     current_dir = os.getcwd()
@@ -60,30 +101,8 @@ def find_project_root():
 
 def count_lines_of_code(impl_path: str) -> Dict[str, int]:
     """Count lines of code for an implementation."""
-    extensions = {
-        'crystal': ['.cr'],
-        'dart': ['.dart'],
-        'elm': ['.elm'],
-        'gleam': ['.gleam'],
-        'go': ['.go'],
-        'haskell': ['.hs'],
-        'julia': ['.jl'],
-        'kotlin': ['.kt'],
-        'lua': ['.lua'],
-        'mojo': ['.mojo', '.🔥'],
-        'nim': ['.nim'],
-        'php': ['.php'],
-        'python': ['.py'],
-        'rescript': ['.res', '.resi'],
-        'ruby': ['.rb'],
-        'rust': ['.rs'],
-        'swift': ['.swift'],
-        'typescript': ['.ts'],
-        'zig': ['.zig']
-    }
-
     lang_name = os.path.basename(impl_path)
-    exts = extensions.get(lang_name, [])
+    exts = LANGUAGE_EXTENSIONS.get(lang_name, [])
     total_loc = 0
     file_count = 0
 
@@ -102,6 +121,121 @@ def count_lines_of_code(impl_path: str) -> Dict[str, int]:
                 continue
 
     return {'loc': total_loc, 'files': file_count}
+
+def _normalize_relpath(path: str) -> str:
+    """Normalize a relative path for Markdown links."""
+    return path.replace('\\', '/').lstrip('./')
+
+def _is_generated_or_excluded_path(rel_path: str) -> bool:
+    """True for generated/build/test paths we should avoid as entrypoint targets."""
+    lowered = _normalize_relpath(rel_path).lower()
+    return any(segment in lowered for segment in GENERATED_SEGMENTS + EXCLUDED_SEGMENTS)
+
+def _entrypoint_score(rel_path: str) -> int:
+    """Score a candidate entrypoint path (higher is better)."""
+    path = _normalize_relpath(rel_path)
+    lowered = path.lower()
+    base = os.path.basename(lowered)
+
+    score = 0
+    if lowered.startswith('src/'):
+        score += 50
+    elif lowered.startswith('bin/'):
+        score += 35
+    elif lowered.startswith('lib/'):
+        score += 20
+
+    if re.search(r'(^|/)(main|chess|chess_engine|chessengine)\.[^/]+$', lowered):
+        score += 35
+    if 'chess_engine' in lowered or 'chessengine' in lowered:
+        score += 25
+    elif 'chess' in base:
+        score += 15
+    elif 'main' in base:
+        score += 10
+
+    if _is_generated_or_excluded_path(lowered):
+        score -= 100
+
+    # Favor shallower paths when score is equivalent.
+    score -= lowered.count('/') // 2
+    return score
+
+def _extract_candidates_from_command(command: str, impl_path: str, extensions: List[str]) -> List[str]:
+    """Extract source-like file candidates from metadata command strings."""
+    if not command or not extensions:
+        return []
+
+    # Capture tokens that look like paths ending with a language extension.
+    exts_pattern = '|'.join(re.escape(ext) for ext in extensions)
+    token_pattern = re.compile(rf'([A-Za-z0-9_./*+-]+(?:{exts_pattern}))')
+
+    results: List[str] = []
+    seen = set()
+    for match in token_pattern.finditer(command):
+        raw = match.group(1).strip('\'"`()[]{};,')
+        if not raw:
+            continue
+
+        if '*' in raw:
+            expanded = glob.glob(os.path.join(impl_path, raw), recursive=True)
+            for path in expanded:
+                if os.path.isfile(path):
+                    rel = _normalize_relpath(os.path.relpath(path, impl_path))
+                    if rel not in seen:
+                        seen.add(rel)
+                        results.append(rel)
+            continue
+
+        abs_candidate = os.path.join(impl_path, raw)
+        if os.path.isfile(abs_candidate):
+            rel = _normalize_relpath(raw)
+            if rel not in seen:
+                seen.add(rel)
+                results.append(rel)
+
+    return results
+
+def resolve_entrypoint_file(impl_path: str, language: str, meta: Dict[str, Any]) -> Optional[str]:
+    """Resolve the best source entrypoint file for a language implementation."""
+    extensions = LANGUAGE_EXTENSIONS.get(language, [])
+    if not extensions:
+        return None
+
+    candidates: List[str] = []
+    seen = set()
+
+    # First pass: infer from metadata commands.
+    for key in ('build', 'run', 'test', 'analyze'):
+        value = meta.get(key)
+        if not isinstance(value, str):
+            continue
+        for rel in _extract_candidates_from_command(value, impl_path, extensions):
+            if rel not in seen:
+                seen.add(rel)
+                candidates.append(rel)
+
+    # Second pass: fallback scan in source locations.
+    search_patterns = ['src/**/*', 'bin/**/*', '*']
+    for pattern in search_patterns:
+        for ext in extensions:
+            glob_pattern = os.path.join(impl_path, pattern + ext)
+            for path in glob.glob(glob_pattern, recursive=True):
+                if not os.path.isfile(path):
+                    continue
+                rel = _normalize_relpath(os.path.relpath(path, impl_path))
+                if rel in seen:
+                    continue
+                if _is_generated_or_excluded_path(rel):
+                    continue
+                seen.add(rel)
+                candidates.append(rel)
+
+    if not candidates:
+        return None
+
+    # Pick highest score; for ties prefer shortest path.
+    return max(candidates, key=lambda rel: (_entrypoint_score(rel), -len(rel)))
 
 def load_performance_data():
     """Load performance benchmark data from individual files"""
@@ -281,6 +415,7 @@ def update_readme() -> bool:
             # Metadata & Stats
             meta = get_metadata(impl_path)
             loc_data = count_lines_of_code(impl_path)
+            entrypoint_file = resolve_entrypoint_file(impl_path, language, meta)
             
             # Status
             if verification_data and language in verification_data:
@@ -311,7 +446,12 @@ def update_readme() -> bool:
             feature_summary = ', '.join(features) if features else '-'
             
             lang_name = f"{lang_emoji} {language.title()}"
-            table_rows.append(f"| {lang_name} | {emoji} | {loc_data['loc']} | {build_time} | {test_time} | {analyze_time} | {mem_disp} MB | {feature_summary} |")
+            loc_display = str(loc_data['loc'])
+            if entrypoint_file:
+                entrypoint_repo_path = Path("implementations") / language / entrypoint_file
+                loc_display = f"[{loc_data['loc']}]({entrypoint_repo_path.as_posix()})"
+
+            table_rows.append(f"| {lang_name} | {emoji} | {loc_display} | {build_time} | {test_time} | {analyze_time} | {mem_disp} MB | {feature_summary} |")
         
         # Create table content
         table_header = """
