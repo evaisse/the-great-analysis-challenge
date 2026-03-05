@@ -382,6 +382,27 @@ def format_time(seconds):
         else:
             return f"{ms:.0f}ms"
 
+def format_memory_mb(peak_memory_mb: float) -> str:
+    """Format memory in MB with fallback when unavailable."""
+    if peak_memory_mb is None or peak_memory_mb <= 0:
+        return "- MB"
+    return f"{int(round(peak_memory_mb))} MB"
+
+def format_step_metric(seconds, peak_memory_mb: float) -> str:
+    """Format one make step as '<duration>, <memory>'."""
+    return f"{format_time(seconds)}, {format_memory_mb(peak_memory_mb)}"
+
+def format_score(score: Dict[str, Any], success_fallback: Optional[bool] = None) -> str:
+    """Format score dictionaries as passed/total."""
+    if isinstance(score, dict):
+        total = int(score.get("total", 0) or 0)
+        if total > 0:
+            passed = int(score.get("passed", 0) or 0)
+            return f"{passed}/{total}"
+    if success_fallback is None:
+        return "-"
+    return "1/1" if success_fallback else "0/1"
+
 def get_verification_status():
     """Get current verification status by running verify_implementations.py"""
     try:
@@ -481,18 +502,44 @@ def update_readme() -> bool:
             
             # Timings
             timings = impl_data.get('timings', {})
-            analyze_time = format_time(timings.get('analyze_seconds'))
-            build_time = format_time(timings.get('build_seconds'))
-            test_time = format_time(timings.get('test_seconds'))
+            build_step = timings.get('build_seconds')
+            analyze_step = timings.get('analyze_seconds')
+            test_step = timings.get('test_seconds')
+            test_chess_engine_step = timings.get('test_chess_engine_seconds')
             
             # Memory
             memory_data = impl_data.get('memory', {})
-            peak_memory = 0
-            for phase in ['build', 'test', 'analyze']:
-                phase_mem = memory_data.get(phase, {})
-                if isinstance(phase_mem, dict):
-                    peak_memory = max(peak_memory, phase_mem.get('peak_memory_mb', 0))
-            mem_disp = f"{int(round(peak_memory))}" if peak_memory > 0 else "-"
+            build_memory = memory_data.get('build', {}).get('peak_memory_mb', 0) if isinstance(memory_data.get('build', {}), dict) else 0
+            analyze_memory = memory_data.get('analyze', {}).get('peak_memory_mb', 0) if isinstance(memory_data.get('analyze', {}), dict) else 0
+            test_memory = memory_data.get('test', {}).get('peak_memory_mb', 0) if isinstance(memory_data.get('test', {}), dict) else 0
+            test_chess_engine_memory = (
+                memory_data.get('test_chess_engine', {}).get('peak_memory_mb', 0)
+                if isinstance(memory_data.get('test_chess_engine', {}), dict)
+                else 0
+            )
+
+            make_build_disp = format_step_metric(build_step, build_memory)
+            make_analyze_disp = format_step_metric(analyze_step, analyze_memory)
+            make_test_disp = format_step_metric(test_step, test_memory)
+            make_test_chess_engine_disp = format_step_metric(test_chess_engine_step, test_chess_engine_memory)
+
+            # Scores
+            scores = impl_data.get('scores', {})
+            task_results = impl_data.get('task_results', {})
+            make_test_score = format_score(
+                scores.get('make_test', {}) if isinstance(scores, dict) else {},
+                success_fallback=(
+                    (bool(task_results.get('make_test', False)) if isinstance(task_results, dict) else False)
+                    or bool(impl_data.get('status') == 'completed' and test_step is not None)
+                ),
+            )
+            make_test_chess_engine_score = format_score(
+                scores.get('make_test_chess_engine', {}) if isinstance(scores, dict) else {},
+                success_fallback=(
+                    (bool(task_results.get('make_test_chess_engine', False)) if isinstance(task_results, dict) else False)
+                    or bool(impl_data.get('status') == 'completed' and test_chess_engine_step is not None)
+                ) if test_chess_engine_step is not None else None,
+            )
 
             # Features
             feature_summary = format_feature_summary(meta)
@@ -503,12 +550,16 @@ def update_readme() -> bool:
                 entrypoint_repo_path = Path("implementations") / language / entrypoint_file
                 loc_display = f"[{loc_data['loc']}]({entrypoint_repo_path.as_posix()})"
 
-            table_rows.append(f"| {lang_name} | {emoji} | {loc_display} | {build_time} | {test_time} | {analyze_time} | {mem_disp} MB | {feature_summary} |")
+            table_rows.append(
+                f"| {lang_name} | {emoji} | {loc_display} | "
+                f"{make_build_disp} | {make_analyze_disp} | {make_test_disp} | {make_test_chess_engine_disp} | "
+                f"{make_test_score} | {make_test_chess_engine_score} | {feature_summary} |"
+            )
         
         # Create table content
         table_header = """
-| Language | Status | LOC | Build | Test | Analyze | Memory | Features |
-|----------|--------|-----|-------|------|---------|--------|----------|"""
+| Language | Status | LOC | make build | make analyze | make test | make test-chess-engine | make test score | make test-chess-engine score | Features |
+|----------|--------|-----|------------|--------------|-----------|------------------------|-----------------|------------------------------|----------|"""
         
         new_table = table_header + "\n" + "\n".join(table_rows)
         

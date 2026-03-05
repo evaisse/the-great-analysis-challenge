@@ -161,6 +161,7 @@ class ImplementationTester:
             "normalized": {},
             "docker": {},
             "task_results": {},
+            "scores": {},
             "test_results": {},
             "errors": [],
             "status": "pending"
@@ -478,6 +479,10 @@ class ImplementationTester:
             "make_test": False,
             "make_test_chess_engine": False,
         }
+        self.results["scores"] = {
+            "make_test": {"passed": 0, "failed": 1, "total": 1},
+            "make_test_chess_engine": {"passed": 0, "failed": 1, "total": 1},
+        }
 
         if success:
             print(f"  ✅ Docker build completed in {build_time:.2f}s")
@@ -520,10 +525,15 @@ class ImplementationTester:
             self.results["docker"]["make_test_time"] = test_time
             self.results["docker"]["make_test_success"] = test_success
             self.results["task_results"]["make_test"] = test_success
+            self.results["scores"]["make_test"] = {
+                "passed": 1 if test_success else 0,
+                "failed": 0 if test_success else 1,
+                "total": 1,
+            }
 
             # Phase 5: make test-chess-engine equivalent via shared harness
             print(f"  🔧 Running task: make test-chess-engine (track={self.track})")
-            track_test_success, track_test_time = self._run_track_suite(image_name, self.track)
+            track_test_success, track_test_time, track_score = self._run_track_suite(image_name, self.track)
             self.results["timings"]["test_chess_engine_seconds"] = track_test_time
             self.results["timings"][f"test_{self.track.replace('-', '_')}_seconds"] = track_test_time
             self.results["docker"]["test_chess_engine_time"] = track_test_time
@@ -531,6 +541,7 @@ class ImplementationTester:
             self.results["docker"]["track_test_time"] = track_test_time
             self.results["docker"]["track_test_success"] = track_test_success
             self.results["task_results"]["make_test_chess_engine"] = track_test_success
+            self.results["scores"]["make_test_chess_engine"] = track_score
 
             # Overall success if all benchmark tasks passed
             overall_success = (
@@ -633,14 +644,45 @@ class ImplementationTester:
             self.results["errors"].append(f"{command} error: {str(e)}")
             return False, elapsed
 
-    def _run_track_suite(self, image_name: str, track: str) -> Tuple[bool, float]:
+    def _parse_track_suite_score(self, output: str) -> Dict[str, int]:
+        """Parse test_harness summary row for one implementation."""
+        score = {"passed": 0, "failed": 0, "errors": 0, "total": 0}
+        row_re = re.compile(r"^\s*([A-Za-z0-9_+\-.]+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$")
+        target_lang = str(self.language).lower()
+
+        for line in output.splitlines():
+            match = row_re.match(line)
+            if not match:
+                continue
+            lang = match.group(1).lower()
+            passed = int(match.group(2))
+            failed = int(match.group(3))
+            errors = int(match.group(4))
+            total = passed + failed + errors
+
+            # Prefer language row match; fallback to first numeric row if needed.
+            if lang == target_lang or score["total"] == 0:
+                score = {
+                    "passed": passed,
+                    "failed": failed + errors,
+                    "errors": errors,
+                    "total": total,
+                }
+                if lang == target_lang:
+                    break
+
+        return score
+
+    def _run_track_suite(self, image_name: str, track: str) -> Tuple[bool, float, Dict[str, int]]:
         """Run shared track suite through test_harness using the Docker image."""
         if track not in TRACK_TO_SUITE:
             self.results["errors"].append(f"Unknown track: {track}")
-            return False, 0.0
+            return False, 0.0, {"passed": 0, "failed": 1, "errors": 1, "total": 1}
 
         start_time = time.time()
         timeout = 180 if self.profile == "quick" else 600
+        monitor = PerformanceMonitor()
+        monitor.start_monitoring()
 
         cmd = [
             "python3",
@@ -656,24 +698,50 @@ class ImplementationTester:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
             elapsed = time.time() - start_time
+            memory_stats = monitor.stop_monitoring()
+            self.results.setdefault("memory", {})
+            self.results["memory"]["test_chess_engine"] = memory_stats
+            score = self._parse_track_suite_score(result.stdout)
 
             if result.returncode != 0:
                 snippet = (result.stdout + "\n" + result.stderr)[:500]
                 self.results["errors"].append(f"track {track} suite failed: {snippet}")
-                return False, elapsed
+                if score["total"] == 0:
+                    score = {"passed": 0, "failed": 1, "errors": 1, "total": 1}
+                return False, elapsed, score
 
-            return True, elapsed
+            if score["total"] == 0:
+                # Fallback to binary score when summary parsing is unavailable.
+                score = {"passed": 1, "failed": 0, "errors": 0, "total": 1}
+
+            return True, elapsed, score
         except subprocess.TimeoutExpired:
             elapsed = time.time() - start_time
+            monitor.stop_monitoring()
             self.results["errors"].append(f"track {track} suite timeout after {elapsed:.1f}s")
-            return False, elapsed
+            return False, elapsed, {"passed": 0, "failed": 1, "errors": 1, "total": 1}
         except Exception as e:
             elapsed = time.time() - start_time
+            monitor.stop_monitoring()
             self.results["errors"].append(f"track {track} suite error: {str(e)}")
-            return False, elapsed
+            return False, elapsed, {"passed": 0, "failed": 1, "errors": 1, "total": 1}
 
 def generate_performance_report(results: List[Dict]) -> str:
     """Generate comprehensive performance report"""
+    def fmt_step_cell(time_seconds: float, peak_mb: float) -> str:
+        """Format one benchmarked make step as '<time>s/<memory>MB'."""
+        time_part = f"{time_seconds:.1f}s"
+        mem_part = "-" if peak_mb <= 0 else f"{peak_mb:.0f}"
+        return f"{time_part}/{mem_part}MB"
+
+    def score_cell(score: Dict[str, int], fallback_success: bool) -> str:
+        """Format score dictionaries; fallback to binary when unavailable."""
+        if isinstance(score, dict) and score.get("total", 0) > 0:
+            passed = int(score.get("passed", 0))
+            total = int(score.get("total", 0))
+            return f"{passed}/{total}"
+        return "1/1" if fallback_success else "0/1"
+
     report = []
     report.append("=" * 80)
     report.append("CHESS ENGINE PERFORMANCE TEST REPORT")
@@ -683,13 +751,13 @@ def generate_performance_report(results: List[Dict]) -> str:
     
     # Summary table
     report.append("PERFORMANCE SUMMARY")
-    report.append("-" * 118)
+    report.append("-" * 168)
     report.append(
         f"{'Language':<12} {'Status':<10} {'LOC':<8} "
-        f"{'Build':<9} {'Analyze':<9} {'Test':<9} {'Test-CE':<10} "
-        f"{'Memory':<10} {'Tasks':<8}"
+        f"{'make build':<18} {'make analyze':<18} {'make test':<18} {'make test-chess-engine':<25} "
+        f"{'make test score':<16} {'make test-ce score':<18}"
     )
-    report.append("-" * 118)
+    report.append("-" * 168)
     
     for result in sorted(results, key=lambda x: x.get("language", "")):
         lang = result.get("language", "Unknown")[:11]
@@ -701,28 +769,28 @@ def generate_performance_report(results: List[Dict]) -> str:
         test_chess_engine_time = result.get("timings", {}).get("test_chess_engine_seconds", 0)
         source_loc = result.get("size", {}).get("source_loc", 0)
         
-        peak_memory = max([
-            result.get("memory", {}).get("analyze", {}).get("peak_memory_mb", 0),
-            result.get("memory", {}).get("build", {}).get("peak_memory_mb", 0),
-            result.get("memory", {}).get("test", {}).get("peak_memory_mb", 0),
-            result.get("memory", {}).get("image", {}).get("peak_memory_mb", 0)
-        ])
+        memory = result.get("memory", {})
+        build_mem = memory.get("build", {}).get("peak_memory_mb", 0)
+        analyze_mem = memory.get("analyze", {}).get("peak_memory_mb", 0)
+        test_mem = memory.get("test", {}).get("peak_memory_mb", 0)
+        test_ce_mem = memory.get("test_chess_engine", {}).get("peak_memory_mb", 0)
 
         task_results = result.get("task_results", {})
-        task_order = [
-            "make_build",
-            "make_analyze",
-            "make_test",
-            "make_test_chess_engine",
-        ]
-        passed = sum(1 for key in task_order if task_results.get(key) is True)
-        total = len(task_order)
+        scores = result.get("scores", {})
+        make_test_score = score_cell(scores.get("make_test", {}), task_results.get("make_test", False))
+        make_test_ce_score = score_cell(
+            scores.get("make_test_chess_engine", {}),
+            task_results.get("make_test_chess_engine", False),
+        )
 
         report.append(
             f"{lang:<12} {status:<10} "
             f"{source_loc:<8} "
-            f"{build_time:>7.1f}s {analyze_time:>7.1f}s {test_time:>7.1f}s {test_chess_engine_time:>8.1f}s "
-            f"{peak_memory:>8.0f}MB {passed}/{total:<6}"
+            f"{fmt_step_cell(build_time, build_mem):<18} "
+            f"{fmt_step_cell(analyze_time, analyze_mem):<18} "
+            f"{fmt_step_cell(test_time, test_mem):<18} "
+            f"{fmt_step_cell(test_chess_engine_time, test_ce_mem):<25} "
+            f"{make_test_score:<16} {make_test_ce_score:<18}"
         )
     
     # Detailed results
@@ -735,8 +803,31 @@ def generate_performance_report(results: List[Dict]) -> str:
         timings = result.get("timings", {})
         if timings:
             report.append("\nTIMING BREAKDOWN:")
+            timing_labels = {
+                "image_build_seconds": "docker build image",
+                "build_seconds": "make build",
+                "analyze_seconds": "make analyze",
+                "test_seconds": "make test",
+                "test_internal_seconds": "make test (internal mirror)",
+                "test_chess_engine_seconds": "make test-chess-engine",
+            }
+            ordered_keys = [
+                "image_build_seconds",
+                "build_seconds",
+                "analyze_seconds",
+                "test_seconds",
+                "test_chess_engine_seconds",
+            ]
+            printed = set()
+            for key in ordered_keys:
+                if key in timings:
+                    printed.add(key)
+                    report.append(f"  {timing_labels.get(key, key)}: {timings[key]:.2f}s")
             for phase, time_val in timings.items():
-                report.append(f"  {phase.replace('_', ' ').title()}: {time_val:.2f}s")
+                if phase in printed:
+                    continue
+                label = timing_labels.get(phase, phase.replace('_', ' '))
+                report.append(f"  {label}: {time_val:.2f}s")
 
         # Source size and normalized metrics
         size = result.get("size", {})
@@ -805,6 +896,19 @@ def generate_performance_report(results: List[Dict]) -> str:
                 f"{'✅' if make_test_chess_success else '❌'} "
                 f"({make_test_chess_time:.2f}s)"
             )
+
+            scores = result.get("scores", {})
+            make_test_score = scores.get("make_test", {})
+            make_test_ce_score = scores.get("make_test_chess_engine", {})
+            if isinstance(make_test_score, dict) and make_test_score.get("total", 0) > 0:
+                report.append(
+                    f"  make test score: {make_test_score.get('passed', 0)}/{make_test_score.get('total', 0)}"
+                )
+            if isinstance(make_test_ce_score, dict) and make_test_ce_score.get("total", 0) > 0:
+                report.append(
+                    "  make test-chess-engine score: "
+                    f"{make_test_ce_score.get('passed', 0)}/{make_test_ce_score.get('total', 0)}"
+                )
         
         # Errors
         errors = result.get("errors", [])

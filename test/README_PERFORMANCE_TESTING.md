@@ -21,6 +21,14 @@ Main JSON timings:
 Additional timing:
 - `image_build_seconds` measures step 1 (Docker image build prerequisite)
 
+Scores exported in JSON:
+- `scores.make_test`: binary score for `make test` (`1/1` or `0/1`)
+- `scores.make_test_chess_engine`: shared suite score (`passed/total`)
+
+Memory exported in JSON:
+- `memory.build`, `memory.analyze`, `memory.test`, `memory.test_chess_engine`
+- README/summary tables display each benchmarked `make ...` phase as `<duration>, <peak memory>`
+
 ## Usage
 
 ```bash
