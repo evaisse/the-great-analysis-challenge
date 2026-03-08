@@ -15,7 +15,7 @@ Path: implementations/rescript
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-rescript .
-  ✅ Docker build completed in 0.63s
+  ✅ Docker build completed in 0.54s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -25,37 +25,39 @@ Path: implementations/rescript
   🔧 Running task: make test-chess-engine (track=v2-full)
   ❌ Docker tests failed in phases: make_test_chess_engine
 
+⏰ Overall timeout reached (300s)
+
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-05 16:19:59
+Generated: 2026-03-08 06:25:53
 ================================================================================
 
 PERFORMANCE SUMMARY
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-rescript     completed  0        0.2s/7MB           0.2s/7MB           0.2s/6MB           180.1s/-MB                1/1              0/1               
+rescript     completed  0        0.2s/7MB           0.2s/7MB           0.2s/6MB           600.0s/-MB                1/1              0/1               
 
 ============================================================
 DETAILED RESULTS: RESCRIPT
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.63s
-  make build: 0.19s
-  make analyze: 0.19s
+  docker build image: 0.54s
+  make build: 0.18s
+  make analyze: 0.18s
   make test: 0.18s
-  make test-chess-engine: 180.09s
+  make test-chess-engine: 600.03s
   make test (internal mirror): 0.18s
-  test v2 full seconds: 180.09s
+  test v2 full seconds: 600.03s
 
 SOURCE SIZE:
   Source LOC: 0 (files: 0)
 
 MEMORY USAGE:
-  Image: Peak 115.7MB, Avg 88.6MB
-  Build: Peak 7.1MB, Avg 0.0MB
-  Analyze: Peak 6.9MB, Avg 0.0MB
+  Image: Peak 116.1MB, Avg 100.6MB
+  Build: Peak 6.6MB, Avg 0.0MB
+  Analyze: Peak 6.6MB, Avg 0.0MB
   Test: Peak 6.3MB, Avg 0.0MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
@@ -63,16 +65,16 @@ CHESS ENGINE TESTS: 0 passed, 1 failed
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.63s)
-  make build: ✅ (0.19s)
-  make analyze: ✅ (0.19s)
+  Image build: ✅ (0.54s)
+  make build: ✅ (0.18s)
+  make analyze: ✅ (0.18s)
   make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ❌ (180.09s)
+  make test-chess-engine (track=v2-full): ❌ (600.03s)
   make test score: 1/1
   make test-chess-engine score: 0/1
 
 ERRORS:
-  ❌ track v2-full suite timeout after 180.1s
+  ❌ track v2-full suite timeout after 600.0s
 
 ================================================================================
 📄 JSON results saved to reports/rescript.json (1 valid benchmark(s))

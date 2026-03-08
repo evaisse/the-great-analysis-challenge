@@ -15,18 +15,18 @@ Path: implementations/php
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-php .
-  ✅ Docker build completed in 23.94s
+  ✅ Docker build completed in 0.28s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ✅ All Docker tests passed (image: 23.9s, make build: skipped, make analyze: 0.3s, make test: 0.2s, make test-chess-engine: 8.3s)
+  ✅ All Docker tests passed (image: 0.3s, make build: skipped, make analyze: 0.3s, make test: 0.2s, make test-chess-engine: 8.3s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-05 16:15:15
+Generated: 2026-03-08 06:13:45
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -40,36 +40,36 @@ DETAILED RESULTS: PHP
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 23.94s
-  make analyze: 0.33s
-  make test: 0.20s
-  make test-chess-engine: 8.35s
-  make test (internal mirror): 0.20s
-  test v2 full seconds: 8.35s
+  docker build image: 0.28s
+  make analyze: 0.34s
+  make test: 0.21s
+  make test-chess-engine: 8.34s
+  make test (internal mirror): 0.21s
+  test v2 full seconds: 8.34s
 
 SOURCE SIZE:
   Source LOC: 2016 (files: 10)
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 164.90 ms/KLOC
-  Runtime: 101.23 ms/KLOC
+  Analyze: 170.02 ms/KLOC
+  Runtime: 103.31 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 116.4MB, Avg 115.1MB
+  Image: Peak 110.6MB, Avg 83.0MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 9.2MB, Avg 0.0MB
+  Analyze: Peak 9.0MB, Avg 0.0MB
   Test: Peak 9.2MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 59.6MB
+  Test_Chess_Engine: Peak 61.6MB, Avg 59.1MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (23.94s)
+  Image build: ✅ (0.28s)
   make build: ⏭️ skipped
-  make analyze: ✅ (0.33s)
-  make test: ✅ (0.20s)
-  make test-chess-engine (track=v2-full): ✅ (8.35s)
+  make analyze: ✅ (0.34s)
+  make test: ✅ (0.21s)
+  make test-chess-engine (track=v2-full): ✅ (8.34s)
   make test score: 1/1
   make test-chess-engine score: 14/14
 

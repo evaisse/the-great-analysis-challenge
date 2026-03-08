@@ -15,7 +15,7 @@ Path: implementations/haskell
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-haskell .
-  ✅ Docker build completed in 1.03s
+  ✅ Docker build completed in 0.29s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,52 +27,52 @@ Path: implementations/haskell
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-05 16:17:30
+Generated: 2026-03-08 06:16:26
 ================================================================================
 
 PERFORMANCE SUMMARY
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-haskell      completed  1085     0.3s/38MB          0.2s/7MB           0.2s/6MB           52.8s/62MB                1/1              0/14              
+haskell      completed  1085     0.4s/38MB          0.2s/7MB           0.2s/7MB           52.8s/62MB                1/1              0/14              
 
 ============================================================
 DETAILED RESULTS: HASKELL
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 1.03s
-  make build: 0.35s
-  make analyze: 0.22s
-  make test: 0.23s
+  docker build image: 0.29s
+  make build: 0.39s
+  make analyze: 0.21s
+  make test: 0.21s
   make test-chess-engine: 52.81s
-  make test (internal mirror): 0.23s
+  make test (internal mirror): 0.21s
   test v2 full seconds: 52.81s
 
 SOURCE SIZE:
   Source LOC: 1085 (files: 7)
 
 NORMALIZED METRICS:
-  Build: 320.01 ms/KLOC
-  Analyze: 207.06 ms/KLOC
-  Runtime: 212.13 ms/KLOC
+  Build: 355.05 ms/KLOC
+  Analyze: 189.15 ms/KLOC
+  Runtime: 196.71 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 116.2MB, Avg 105.5MB
-  Build: Peak 37.6MB, Avg 0.0MB
-  Analyze: Peak 7.1MB, Avg 0.0MB
-  Test: Peak 6.3MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.6MB, Avg 61.2MB
+  Image: Peak 114.4MB, Avg 83.2MB
+  Build: Peak 37.5MB, Avg 0.0MB
+  Analyze: Peak 6.7MB, Avg 0.0MB
+  Test: Peak 7.0MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.7MB, Avg 61.3MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (1.03s)
-  make build: ✅ (0.35s)
-  make analyze: ✅ (0.22s)
-  make test: ✅ (0.23s)
+  Image build: ✅ (0.29s)
+  make build: ✅ (0.39s)
+  make analyze: ✅ (0.21s)
+  make test: ✅ (0.21s)
   make test-chess-engine (track=v2-full): ❌ (52.81s)
   make test score: 1/1
   make test-chess-engine score: 0/14
