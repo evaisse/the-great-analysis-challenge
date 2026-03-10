@@ -21,8 +21,8 @@ def get_dockerfile_metadata(dockerfile_path: Path) -> Dict[str, Any]:
                 else:
                     val = raw_val
                 
-                # Handle lists (like features)
-                if key == 'features' and val:
+                # Handle comma-separated lists.
+                if key in {'features', 'source_exts'} and val:
                     metadata[key] = [f.strip() for f in val.split(',')]
                 # Handle integers
                 elif key in ['max_ai_depth', 'estimated_perft4_ms'] and val:

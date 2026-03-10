@@ -11,6 +11,7 @@ LABEL org.chess.author="Kotlin Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=500
+LABEL org.chess.source_exts=".kt"
 LABEL org.chess.run="java -jar build/libs/chess-1.0.0.jar"
 LABEL org.chess.build="kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar"
 LABEL org.chess.test="java -jar build/libs/chess-1.0.0.jar --test"

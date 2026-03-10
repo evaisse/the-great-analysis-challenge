@@ -11,6 +11,7 @@ LABEL org.chess.author="Haskell Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1000
+LABEL org.chess.source_exts=".hs"
 LABEL org.chess.run="./chess_engine"
 LABEL org.chess.build="ghc -O2 --make src/Main.hs -o chess_engine -isrc"
 LABEL org.chess.test="./chess_engine --test"

@@ -10,6 +10,7 @@ LABEL org.chess.author="Elm Implementation with Node.js Bridge"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1200
+LABEL org.chess.source_exts=".elm"
 LABEL org.chess.run="node chess-bridge.js"
 LABEL org.chess.build="elm make src/ChessEngine.elm --output=src/chess.js"
 LABEL org.chess.test="node chess-bridge.js --test"

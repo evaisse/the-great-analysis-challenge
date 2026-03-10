@@ -10,6 +10,7 @@ LABEL org.chess.author="Crystal Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=800
+LABEL org.chess.source_exts=".cr"
 LABEL org.chess.build="crystal build src/chess_engine.cr --release -o chess_engine"
 LABEL org.chess.run="./chess_engine"
 LABEL org.chess.test="crystal spec"
