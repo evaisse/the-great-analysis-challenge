@@ -31,6 +31,7 @@ TRACK_TO_SUITE = {
     "v2-functional": "test/suites/v2_functional.json",
     "v2-system": "test/suites/v2_system.json",
     "v2-full": "test/suites/v2_full.json",
+    "v3-book": "test/suites/v3_book.json",
 }
 
 class ChessEngineTester:

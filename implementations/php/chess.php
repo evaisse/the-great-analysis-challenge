@@ -23,8 +23,19 @@ class ChessEngine {
     private FenParser $fen_parser;
     private AI $ai;
     private Perft $perft;
+    private int $uci_hash_mb = 16;
+    private int $uci_threads = 1;
     private ?string $pgn_path = null;
     private array $pgn_moves = [];
+    private ?string $book_path = null;
+    private bool $book_enabled = false;
+    /** @var array<string,array<int,array{move:string,weight:int}>> */
+    private array $book_entries = [];
+    private int $book_entry_count = 0;
+    private int $book_lookups = 0;
+    private int $book_hits = 0;
+    private int $book_misses = 0;
+    private int $book_played = 0;
     private int $chess960_id = 0;
     private bool $trace_enabled = false;
     private string $trace_level = 'info';
@@ -129,6 +140,12 @@ class ChessEngine {
                 case 'pgn':
                     $this->handle_pgn(array_slice($parts, 1));
                     break;
+                case 'book':
+                    $this->handle_book(array_slice($parts, 1));
+                    break;
+                case 'endgame':
+                    $this->handle_endgame(array_slice($parts, 1));
+                    break;
 
                 case 'uci':
                     $this->handle_uci();
@@ -136,6 +153,18 @@ class ChessEngine {
 
                 case 'isready':
                     $this->handle_isready();
+                    break;
+
+                case 'setoption':
+                    $this->handle_setoption(array_slice($parts, 1));
+                    break;
+
+                case 'ucinewgame':
+                    $this->handle_ucinewgame();
+                    break;
+
+                case 'position':
+                    $this->handle_position(array_slice($parts, 1));
                     break;
 
                 case 'new960':
@@ -240,7 +269,7 @@ class ChessEngine {
         } else {
             require_once __DIR__ . '/lib/DrawDetection.php';
             if (DrawDetection::is_draw($this->board)) {
-                $reason = DrawDetection::is_draw_by_repetition($this->board) ? "repetition" : "50-move rule";
+                $reason = DrawDetection::is_draw_by_fifty_moves($this->board) ? "50-move rule" : "repetition";
                 echo "DRAW: by $reason\n";
             } else {
                 echo "OK: " . $move->to_string() . "\n";
@@ -270,45 +299,42 @@ class ChessEngine {
             echo "ERROR: AI depth must be 1-5\n";
             return;
         }
-        
-        $result = $this->ai->find_best_move($depth);
-        
-        if ($result === null) {
-            echo "ERROR: No legal moves available\n";
-            return;
-        }
-        
-        [$move, $eval, $time_ms] = $result;
-        $this->apply_ai_move($move, intval($eval), intval($time_ms), $depth);
+        $this->handle_ai_timed($depth, 0);
     }
 
-    private function handle_ai_move_timed(int $time_limit_ms, int $max_depth = 64): void {
-        if ($time_limit_ms <= 0) {
-            echo "ERROR: Time limit must be > 0\n";
-            return;
-        }
-
-        $result = $this->ai->find_best_move_timed($time_limit_ms, $max_depth);
-        if ($result === null) {
+    private function handle_ai_timed(int $max_depth, int $movetime_ms): void {
+        $legal_moves = $this->move_gen->generate_moves();
+        if (empty($legal_moves)) {
             echo "ERROR: No legal moves available\n";
             return;
         }
 
-        /** @var Move $move */
-        $move = $result['move'];
-        $eval = intval($result['score'] ?? 0);
-        $time_ms = intval($result['time_ms'] ?? 0);
-        $depth = max(1, intval($result['depth'] ?? 1));
-        $this->apply_ai_move($move, $eval, $time_ms, $depth);
-    }
+        $book_move = $this->choose_book_move($legal_moves);
+        if ($book_move !== null) {
+            $this->apply_book_move($book_move);
+            return;
+        }
 
-    private function apply_ai_move(Move $move, int $eval, int $time_ms, int $depth): void {
+        $endgame_choice = $this->choose_endgame_move($legal_moves);
+        if ($endgame_choice !== null) {
+            $this->apply_endgame_move($endgame_choice['move'], $endgame_choice['info']);
+            return;
+        }
+
+        [$move, $eval, $depth_used, $time_ms, ] = $this->ai->search($max_depth, $movetime_ms);
+
+        if ($move === null) {
+            echo "ERROR: No legal moves available\n";
+            return;
+        }
+
         $this->board->make_move($move);
+        echo "AI: " . $move->to_string() . " (depth=$depth_used, eval=$eval, time={$time_ms}ms)\n";
 
         // Check for game end first
         $is_checkmate = $this->move_gen->is_checkmate();
         $is_stalemate = $this->move_gen->is_stalemate();
-
+        
         if ($is_checkmate) {
             $winner = $this->board->current_player === CHESS_WHITE ? "Black" : "White";
             echo "CHECKMATE: $winner wins\n";
@@ -317,13 +343,11 @@ class ChessEngine {
         } else {
             require_once __DIR__ . '/lib/DrawDetection.php';
             if (DrawDetection::is_draw($this->board)) {
-                $reason = DrawDetection::is_draw_by_repetition($this->board) ? "repetition" : "50-move rule";
+                $reason = DrawDetection::is_draw_by_fifty_moves($this->board) ? "50-move rule" : "repetition";
                 echo "DRAW: by $reason\n";
-            } else {
-                echo "AI: " . $move->to_string() . " (depth=$depth, eval=$eval, time={$time_ms}ms)\n";
             }
         }
-
+        
         echo $this->board->display();
     }
     
@@ -381,11 +405,52 @@ class ChessEngine {
 
     private function handle_go(array $args): void {
         if (count($args) === 0) {
-            echo "ERROR: go requires subcommand (movetime|wtime|infinite)\n";
+            echo "ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|infinite)\n";
             return;
         }
 
         $sub = strtolower($args[0]);
+        if ($sub === 'depth') {
+            if (!isset($args[1]) || !is_numeric($args[1])) {
+                echo "ERROR: go depth requires an integer value\n";
+                return;
+            }
+
+            $depth = intval($args[1]);
+            if ($depth < 1) {
+                $depth = 1;
+            } elseif ($depth > 5) {
+                $depth = 5;
+            }
+
+            $legal_moves = $this->move_gen->generate_moves();
+            $book_move = $this->choose_book_move($legal_moves);
+            if ($book_move !== null) {
+                $move_str = strtolower($book_move->to_string());
+                echo "info string bookmove {$move_str}\n";
+                echo "bestmove {$move_str}\n";
+                return;
+            }
+
+            $endgame_choice = $this->choose_endgame_move($legal_moves);
+            if ($endgame_choice !== null) {
+                $move_str = strtolower($endgame_choice['move']->to_string());
+                $info = $endgame_choice['info'];
+                echo "info string endgame {$info['type']} score cp {$info['score_white']}\n";
+                echo "bestmove {$move_str}\n";
+                return;
+            }
+
+            [$move, $eval, $depth_used, $time_ms, ] = $this->ai->search($depth, 0);
+            if ($move === null) {
+                echo "bestmove 0000\n";
+                return;
+            }
+            echo "info depth {$depth_used} score cp {$eval} time {$time_ms} nodes 0\n";
+            echo "bestmove " . $move->to_string() . "\n";
+            return;
+        }
+
         if ($sub === 'movetime') {
             if (!isset($args[1])) {
                 echo "ERROR: go movetime requires a value in milliseconds\n";
@@ -398,24 +463,23 @@ class ChessEngine {
                 return;
             }
 
-            $this->handle_ai_move_timed($movetime);
+            $this->handle_ai_timed(5, $movetime);
             return;
         }
 
-        if ($sub === 'wtime' || $sub === 'btime') {
-            $parsed = $this->parse_go_time_control($args);
-            if (is_string($parsed)) {
-                echo $parsed . "\n";
+        if ($sub === 'wtime') {
+            [$movetime, $error] = $this->derive_movetime_from_clock_args($args);
+            if ($error !== null) {
+                echo "ERROR: {$error}\n";
                 return;
             }
-
-            $movetime = $this->compute_go_movetime($parsed);
-            $this->handle_ai_move_timed($movetime);
+            $this->handle_ai_timed(5, $movetime);
             return;
         }
 
         if ($sub === 'infinite') {
-            $this->handle_ai_move_timed($this->infinite_go_budget_ms());
+            echo "OK: go infinite acknowledged (bounded search mode)\n";
+            $this->handle_ai_timed(5, 15000);
             return;
         }
 
@@ -425,6 +489,67 @@ class ChessEngine {
     private function handle_stop(): void {
         $this->ai->request_stop();
         echo "OK: stop\n";
+    }
+
+    /**
+     * @return array{0:int,1:?string}
+     */
+    private function derive_movetime_from_clock_args(array $args): array {
+        $values = [
+            'winc' => 0,
+            'binc' => 0,
+            'movestogo' => 30,
+        ];
+
+        $i = 0;
+        while ($i < count($args)) {
+            $key = strtolower(trim($args[$i]));
+            $i++;
+            if ($i >= count($args)) {
+                return [0, "go {$key} requires a value"];
+            }
+            if (!is_numeric($args[$i])) {
+                return [0, "go {$key} requires an integer value"];
+            }
+            $value = intval($args[$i]);
+            $i++;
+
+            if (!in_array($key, ['wtime', 'btime', 'winc', 'binc', 'movestogo'], true)) {
+                return [0, "unsupported go parameter: {$key}"];
+            }
+            $values[$key] = $value;
+        }
+
+        if (!isset($values['wtime']) || !isset($values['btime'])) {
+            return [0, 'go wtime/btime parameters are required'];
+        }
+        if ($values['wtime'] <= 0 || $values['btime'] <= 0) {
+            return [0, 'go wtime/btime must be > 0'];
+        }
+        if ($values['movestogo'] <= 0) {
+            $values['movestogo'] = 30;
+        }
+
+        if ($this->board->current_player === CHESS_WHITE) {
+            $base = $values['wtime'];
+            $inc = $values['winc'];
+        } else {
+            $base = $values['btime'];
+            $inc = $values['binc'];
+        }
+
+        $budget = intdiv($base, $values['movestogo'] + 1) + intdiv($inc, 2);
+        if ($budget < 50) {
+            $budget = 50;
+        }
+        if ($budget >= $base) {
+            $budget = intdiv($base, 2);
+        }
+        if ($budget <= 0) {
+            return [0, 'unable to derive positive movetime from clocks'];
+        }
+
+        return [$budget, null];
     }
 
     private function handle_pgn(array $args): void {
@@ -476,12 +601,217 @@ class ChessEngine {
         echo "ERROR: Unsupported pgn command\n";
     }
 
+    private function handle_book(array $args): void {
+        if (count($args) === 0) {
+            echo "ERROR: book requires subcommand (load|on|off|stats)\n";
+            return;
+        }
+
+        $sub = strtolower($args[0]);
+        if ($sub === 'load') {
+            if (!isset($args[1])) {
+                echo "ERROR: book load requires a file path\n";
+                return;
+            }
+            $path = implode(' ', array_slice($args, 1));
+            if (!is_readable($path)) {
+                echo "ERROR: book load failed: file not readable\n";
+                return;
+            }
+
+            $content = file_get_contents($path);
+            if ($content === false) {
+                echo "ERROR: book load failed: unable to read file\n";
+                return;
+            }
+
+            try {
+                [$entries, $total_entries] = $this->parse_book_entries($content);
+            } catch (\Exception $e) {
+                echo "ERROR: book load failed: " . $e->getMessage() . "\n";
+                return;
+            }
+
+            $this->book_path = $path;
+            $this->book_entries = $entries;
+            $this->book_entry_count = $total_entries;
+            $this->book_enabled = true;
+            $this->book_lookups = 0;
+            $this->book_hits = 0;
+            $this->book_misses = 0;
+            $this->book_played = 0;
+
+            echo 'BOOK: loaded path="' . $path . '"; positions=' . count($entries) .
+                 '; entries=' . $total_entries . '; enabled=true' . "\n";
+            return;
+        }
+
+        if ($sub === 'on') {
+            $this->book_enabled = true;
+            echo "BOOK: enabled=true\n";
+            return;
+        }
+
+        if ($sub === 'off') {
+            $this->book_enabled = false;
+            echo "BOOK: enabled=false\n";
+            return;
+        }
+
+        if ($sub === 'stats') {
+            $path = $this->book_path ?? '(none)';
+            echo "BOOK: enabled=" . ($this->book_enabled ? 'true' : 'false') .
+                 "; path={$path}; positions=" . count($this->book_entries) .
+                 "; entries={$this->book_entry_count}; lookups={$this->book_lookups}; " .
+                 "hits={$this->book_hits}; misses={$this->book_misses}; played={$this->book_played}\n";
+            return;
+        }
+
+        echo "ERROR: Unsupported book command\n";
+    }
+
+    private function handle_endgame(array $args): void {
+        $info = $this->detect_endgame_state();
+        if ($info === null) {
+            $active = $this->board->current_player === CHESS_WHITE ? 'white' : 'black';
+            echo "ENDGAME: type=none; active={$active}; score=0\n";
+            return;
+        }
+
+        $output = "ENDGAME: type={$info['type']}; strong=" . $this->color_name($info['strong']) .
+            "; weak=" . $this->color_name($info['weak']) . "; score={$info['score_white']}";
+        $legal_moves = $this->move_gen->generate_moves();
+        $choice = $this->choose_endgame_move($legal_moves);
+        if ($choice !== null) {
+            $output .= '; bestmove=' . strtolower($choice['move']->to_string());
+        }
+        $output .= '; detail=' . $info['detail'];
+        echo $output . "\n";
+    }
+
     private function handle_uci(): void {
         echo "uciok\n";
     }
 
     private function handle_isready(): void {
         echo "readyok\n";
+    }
+
+    private function handle_setoption(array $args): void {
+        if (count($args) < 4 || strtolower($args[0]) !== 'name') {
+            echo "ERROR: setoption format is 'setoption name <Hash|Threads> value <n>'\n";
+            return;
+        }
+
+        $value_idx = -1;
+        for ($i = 1; $i < count($args); $i++) {
+            if (strtolower($args[$i]) === 'value') {
+                $value_idx = $i;
+                break;
+            }
+        }
+        if ($value_idx <= 1 || $value_idx + 1 >= count($args)) {
+            echo "ERROR: setoption requires 'value <n>'\n";
+            return;
+        }
+
+        $name = strtolower(trim(implode(' ', array_slice($args, 1, $value_idx - 1))));
+        if (!is_numeric($args[$value_idx + 1])) {
+            echo "ERROR: setoption value must be an integer\n";
+            return;
+        }
+        $value = intval($args[$value_idx + 1]);
+
+        if ($name === 'hash') {
+            $this->uci_hash_mb = max(1, min(1024, $value));
+            echo "info string option Hash={$this->uci_hash_mb}\n";
+            return;
+        }
+
+        if ($name === 'threads') {
+            $this->uci_threads = max(1, min(64, $value));
+            echo "info string option Threads={$this->uci_threads}\n";
+            return;
+        }
+
+        $raw_name = trim(implode(' ', array_slice($args, 1, $value_idx - 1)));
+        echo "info string unsupported option {$raw_name}\n";
+    }
+
+    private function handle_ucinewgame(): void {
+        $this->board = new Board();
+        $this->move_gen = new MoveGenerator($this->board);
+        $this->fen_parser = new FenParser($this->board);
+        $this->ai = new AI($this->board, $this->move_gen);
+        $this->perft = new Perft($this->board, $this->move_gen);
+    }
+
+    private function handle_position(array $args): void {
+        if (count($args) === 0) {
+            echo "ERROR: position requires 'startpos' or 'fen <...>'\n";
+            return;
+        }
+
+        $idx = 0;
+        $keyword = strtolower($args[0]);
+        if ($keyword === 'startpos') {
+            $this->handle_ucinewgame();
+            $idx = 1;
+        } elseif ($keyword === 'fen') {
+            $idx = 1;
+            $fen_tokens = [];
+            while ($idx < count($args) && strtolower($args[$idx]) !== 'moves') {
+                $fen_tokens[] = $args[$idx];
+                $idx++;
+            }
+            if (empty($fen_tokens)) {
+                echo "ERROR: position fen requires a FEN string\n";
+                return;
+            }
+            if (!$this->fen_parser->load_fen(implode(' ', $fen_tokens))) {
+                echo "ERROR: Invalid FEN string\n";
+                return;
+            }
+        } else {
+            echo "ERROR: position requires 'startpos' or 'fen <...>'\n";
+            return;
+        }
+
+        if ($idx < count($args) && strtolower($args[$idx]) === 'moves') {
+            $idx++;
+            for (; $idx < count($args); $idx++) {
+                $err = $this->apply_move_silent($args[$idx]);
+                if ($err !== null) {
+                    echo "ERROR: position move {$args[$idx]} failed: {$err}\n";
+                    return;
+                }
+            }
+        }
+    }
+
+    private function apply_move_silent(string $move_str): ?string {
+        $move = $this->move_gen->parse_move($move_str);
+        if ($move === null) {
+            return 'Invalid move format';
+        }
+
+        $legal_moves = $this->move_gen->generate_moves();
+        $selected = null;
+        foreach ($legal_moves as $candidate) {
+            if ($candidate->from_row === $move->from_row &&
+                $candidate->from_col === $move->from_col &&
+                $candidate->to_row === $move->to_row &&
+                $candidate->to_col === $move->to_col) {
+                $selected = $candidate;
+                break;
+            }
+        }
+        if ($selected === null) {
+            return 'Illegal move';
+        }
+
+        $this->board->make_move($selected);
+        return null;
     }
 
     private function handle_new960(array $args): void {
@@ -628,80 +958,12 @@ class ChessEngine {
         }
     }
 
-    private function parse_go_time_control(array $args): array|string {
-        $options = [
-            'wtime' => null,
-            'btime' => null,
-            'winc' => null,
-            'binc' => null,
-            'movestogo' => null,
-        ];
-
-        $n = count($args);
-        for ($i = 0; $i < $n; $i += 2) {
-            $key = strtolower($args[$i]);
-            if (!array_key_exists($key, $options)) {
-                return "ERROR: Unsupported go parameter";
-            }
-            if (!isset($args[$i + 1])) {
-                return "ERROR: Missing value for go parameter '$key'";
-            }
-
-            $raw_value = trim($args[$i + 1]);
-            if (!preg_match('/^-?\d+$/', $raw_value)) {
-                return "ERROR: Invalid numeric value for go parameter '$key'";
-            }
-
-            $value = intval($raw_value);
-            if ($value < 0) {
-                return "ERROR: go parameter '$key' must be >= 0";
-            }
-
-            $options[$key] = $value;
-        }
-
-        foreach (['wtime', 'btime', 'winc', 'binc'] as $required) {
-            if ($options[$required] === null) {
-                return "ERROR: go wtime/btime/winc/binc are required";
-            }
-        }
-
-        if ($options['movestogo'] !== null && $options['movestogo'] <= 0) {
-            return "ERROR: go movestogo must be > 0";
-        }
-
-        return $options;
-    }
-
-    private function compute_go_movetime(array $options): int {
-        $is_white = $this->board->current_player === CHESS_WHITE;
-        $remaining = $is_white ? intval($options['wtime']) : intval($options['btime']);
-        $increment = $is_white ? intval($options['winc']) : intval($options['binc']);
-        $moves_to_go = intval($options['movestogo'] ?? 0);
-        if ($moves_to_go <= 0) {
-            $moves_to_go = 30;
-        }
-
-        if ($remaining <= 0) {
-            return 1;
-        }
-
-        $reserve = max(10, min(500, intdiv($remaining, 20)));
-        $spendable = max(1, $remaining - $reserve);
-        $base = intdiv($spendable, max(1, $moves_to_go));
-        $increment_share = intdiv($increment * 3, 4);
-        $budget = $base + $increment_share;
-
-        if ($remaining < 100) {
-            return max(1, min($remaining, 25));
-        }
-
-        return max(10, min($budget, $spendable));
-    }
-
-    private function infinite_go_budget_ms(): int {
-        // "infinite" is cooperative in this single-threaded CLI; use a long bounded search.
-        return 15000;
+    private function depth_for_movetime(int $movetime): int {
+        if ($movetime <= 200) return 1;
+        if ($movetime <= 500) return 2;
+        if ($movetime <= 2000) return 3;
+        if ($movetime <= 5000) return 4;
+        return 5;
     }
 
     private function get_repetition_count(): int {
@@ -752,6 +1014,375 @@ class ChessEngine {
         return $moves;
     }
 
+    private function book_position_key(string $fen): string {
+        $parts = preg_split('/\s+/', trim($fen)) ?: [];
+        if (count($parts) >= 4) {
+            return implode(' ', array_slice($parts, 0, 4));
+        }
+        return trim($fen);
+    }
+
+    /**
+     * @return array{0:array<string,array<int,array{move:string,weight:int}>>,1:int}
+     */
+    private function parse_book_entries(string $content): array {
+        $entries = [];
+        $total_entries = 0;
+        $lines = preg_split('/\R/', $content) ?: [];
+
+        foreach ($lines as $idx => $raw) {
+            $line_number = $idx + 1;
+            $line = trim($raw);
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+
+            if (strpos($line, '->') === false) {
+                throw new \RuntimeException("line {$line_number}: expected '<fen> -> <move> [weight]'");
+            }
+
+            [$left, $right] = array_map('trim', explode('->', $line, 2));
+            $key = $this->book_position_key($left);
+            if ($key === '') {
+                throw new \RuntimeException("line {$line_number}: empty position key");
+            }
+
+            $rhs_parts = preg_split('/\s+/', trim($right)) ?: [];
+            if (count($rhs_parts) === 0) {
+                throw new \RuntimeException("line {$line_number}: missing move");
+            }
+
+            $move = strtolower($rhs_parts[0]);
+            if (!preg_match('/^[a-h][1-8][a-h][1-8][qrbn]?$/', $move)) {
+                throw new \RuntimeException("line {$line_number}: invalid move '{$move}'");
+            }
+
+            $weight = 1;
+            if (isset($rhs_parts[1])) {
+                if (!is_numeric($rhs_parts[1])) {
+                    throw new \RuntimeException("line {$line_number}: invalid weight '{$rhs_parts[1]}'");
+                }
+                $weight = intval($rhs_parts[1]);
+                if ($weight <= 0) {
+                    throw new \RuntimeException("line {$line_number}: weight must be > 0");
+                }
+            }
+
+            if (!isset($entries[$key])) {
+                $entries[$key] = [];
+            }
+            $entries[$key][] = ['move' => $move, 'weight' => $weight];
+            $total_entries++;
+        }
+
+        return [$entries, $total_entries];
+    }
+
+    private function choose_book_move(array $legal_moves): ?Move {
+        $this->book_lookups++;
+        if (!$this->book_enabled || empty($this->book_entries)) {
+            $this->book_misses++;
+            return null;
+        }
+
+        $key = $this->book_position_key($this->fen_parser->export_fen());
+        $position_entries = $this->book_entries[$key] ?? [];
+        if (empty($position_entries)) {
+            $this->book_misses++;
+            return null;
+        }
+
+        $legal_by_notation = [];
+        foreach ($legal_moves as $move) {
+            $legal_by_notation[strtolower($move->to_string())] = $move;
+        }
+
+        $weighted = [];
+        $total_weight = 0;
+        foreach ($position_entries as $entry) {
+            $notation = $entry['move'];
+            if (!isset($legal_by_notation[$notation])) {
+                continue;
+            }
+            $weight = max(1, intval($entry['weight']));
+            $weighted[] = ['move' => $legal_by_notation[$notation], 'weight' => $weight];
+            $total_weight += $weight;
+        }
+
+        if (empty($weighted) || $total_weight <= 0) {
+            $this->book_misses++;
+            return null;
+        }
+
+        $seed = abs(intval($this->board->zobrist_hash)) + $this->book_lookups;
+        $selector = $seed % $total_weight;
+        $acc = 0;
+        $chosen = $weighted[0]['move'];
+        foreach ($weighted as $entry) {
+            $acc += $entry['weight'];
+            if ($selector < $acc) {
+                $chosen = $entry['move'];
+                break;
+            }
+        }
+
+        $this->book_hits++;
+        return $chosen;
+    }
+
+    private function apply_book_move(Move $move): void {
+        $this->board->make_move($move);
+        $this->book_played++;
+        $move_str = strtolower($move->to_string());
+
+        $is_checkmate = $this->move_gen->is_checkmate();
+        $is_stalemate = $this->move_gen->is_stalemate();
+
+        if ($is_checkmate) {
+            $winner = $this->board->current_player === CHESS_WHITE ? "Black" : "White";
+            echo "AI: {$move_str} (book, CHECKMATE: {$winner} wins)\n";
+        } elseif ($is_stalemate) {
+            echo "AI: {$move_str} (book, STALEMATE)\n";
+        } else {
+            require_once __DIR__ . '/lib/DrawDetection.php';
+            if (DrawDetection::is_draw($this->board)) {
+                $reason = DrawDetection::is_draw_by_fifty_moves($this->board) ? "50-move rule" : "repetition";
+                echo "AI: {$move_str} (book, DRAW: by {$reason})\n";
+            } else {
+                echo "AI: {$move_str} (book)\n";
+            }
+        }
+
+        echo $this->board->display();
+    }
+
+    private function color_name(int $color): string {
+        return $color === CHESS_WHITE ? 'white' : 'black';
+    }
+
+    private function square_to_algebraic(array $sq): string {
+        return chr(ord('a') + $sq[1]) . (8 - $sq[0]);
+    }
+
+    private function manhattan(array $a, array $b): int {
+        return abs($a[0] - $b[0]) + abs($a[1] - $b[1]);
+    }
+
+    private function non_king_material(array $counts, int $color): int {
+        return ($counts[$color][CHESS_PAWN] ?? 0) +
+            ($counts[$color][CHESS_KNIGHT] ?? 0) +
+            ($counts[$color][CHESS_BISHOP] ?? 0) +
+            ($counts[$color][CHESS_ROOK] ?? 0) +
+            ($counts[$color][CHESS_QUEEN] ?? 0);
+    }
+
+    private function detect_endgame_state(): ?array {
+        $piece_keys = [CHESS_EMPTY, CHESS_PAWN, CHESS_KNIGHT, CHESS_BISHOP, CHESS_ROOK, CHESS_QUEEN, CHESS_KING];
+        $counts = [
+            CHESS_WHITE => array_fill_keys($piece_keys, 0),
+            CHESS_BLACK => array_fill_keys($piece_keys, 0),
+        ];
+        $kings = [];
+        $pawns = [];
+        $rooks = [];
+        $queens = [];
+
+        for ($row = 0; $row < 8; $row++) {
+            for ($col = 0; $col < 8; $col++) {
+                [$piece, $color] = $this->board->get_piece($row, $col);
+                if ($piece === CHESS_EMPTY) {
+                    continue;
+                }
+                $counts[$color][$piece]++;
+                if ($piece === CHESS_KING) {
+                    $kings[$color] = [$row, $col];
+                } elseif ($piece === CHESS_PAWN && !isset($pawns[$color])) {
+                    $pawns[$color] = [$row, $col];
+                } elseif ($piece === CHESS_ROOK && !isset($rooks[$color])) {
+                    $rooks[$color] = [$row, $col];
+                } elseif ($piece === CHESS_QUEEN && !isset($queens[$color])) {
+                    $queens[$color] = [$row, $col];
+                }
+            }
+        }
+
+        if (!isset($kings[CHESS_WHITE]) || !isset($kings[CHESS_BLACK])) {
+            return null;
+        }
+
+        $white_material = $this->non_king_material($counts, CHESS_WHITE);
+        $black_material = $this->non_king_material($counts, CHESS_BLACK);
+
+        // KQK
+        if (($counts[CHESS_WHITE][CHESS_QUEEN] ?? 0) === 1 && $white_material === 1 && $black_material === 0) {
+            $weak_king = $kings[CHESS_BLACK];
+            $strong_king = $kings[CHESS_WHITE];
+            $edge = min($weak_king[0], 7 - $weak_king[0], $weak_king[1], 7 - $weak_king[1]);
+            $king_distance = $this->manhattan($strong_king, $weak_king);
+            $score = 900 + (14 - $king_distance) * 6 + (3 - $edge) * 20;
+            return [
+                'type' => 'KQK',
+                'strong' => CHESS_WHITE,
+                'weak' => CHESS_BLACK,
+                'score_white' => $score,
+                'detail' => 'queen=' . $this->square_to_algebraic($queens[CHESS_WHITE]),
+            ];
+        }
+        if (($counts[CHESS_BLACK][CHESS_QUEEN] ?? 0) === 1 && $black_material === 1 && $white_material === 0) {
+            $weak_king = $kings[CHESS_WHITE];
+            $strong_king = $kings[CHESS_BLACK];
+            $edge = min($weak_king[0], 7 - $weak_king[0], $weak_king[1], 7 - $weak_king[1]);
+            $king_distance = $this->manhattan($strong_king, $weak_king);
+            $score = 900 + (14 - $king_distance) * 6 + (3 - $edge) * 20;
+            return [
+                'type' => 'KQK',
+                'strong' => CHESS_BLACK,
+                'weak' => CHESS_WHITE,
+                'score_white' => -$score,
+                'detail' => 'queen=' . $this->square_to_algebraic($queens[CHESS_BLACK]),
+            ];
+        }
+
+        // KPK
+        if (($counts[CHESS_WHITE][CHESS_PAWN] ?? 0) === 1 && $white_material === 1 && $black_material === 0) {
+            $pawn = $pawns[CHESS_WHITE];
+            $strong_king = $kings[CHESS_WHITE];
+            $weak_king = $kings[CHESS_BLACK];
+            $promotion = [0, $pawn[1]];
+            $pawn_steps = $pawn[0];
+            $score = 120 + (6 - $pawn_steps) * 35 + $this->manhattan($weak_king, $promotion) * 6 - $this->manhattan($strong_king, $pawn) * 8;
+            if ($pawn_steps <= 1) {
+                $score += 80;
+            }
+            if ($score < 30) {
+                $score = 30;
+            }
+            return [
+                'type' => 'KPK',
+                'strong' => CHESS_WHITE,
+                'weak' => CHESS_BLACK,
+                'score_white' => $score,
+                'detail' => 'pawn=' . $this->square_to_algebraic($pawn),
+            ];
+        }
+        if (($counts[CHESS_BLACK][CHESS_PAWN] ?? 0) === 1 && $black_material === 1 && $white_material === 0) {
+            $pawn = $pawns[CHESS_BLACK];
+            $strong_king = $kings[CHESS_BLACK];
+            $weak_king = $kings[CHESS_WHITE];
+            $promotion = [7, $pawn[1]];
+            $pawn_steps = 7 - $pawn[0];
+            $score = 120 + (6 - $pawn_steps) * 35 + $this->manhattan($weak_king, $promotion) * 6 - $this->manhattan($strong_king, $pawn) * 8;
+            if ($pawn_steps <= 1) {
+                $score += 80;
+            }
+            if ($score < 30) {
+                $score = 30;
+            }
+            return [
+                'type' => 'KPK',
+                'strong' => CHESS_BLACK,
+                'weak' => CHESS_WHITE,
+                'score_white' => -$score,
+                'detail' => 'pawn=' . $this->square_to_algebraic($pawn),
+            ];
+        }
+
+        // KRKP
+        if (($counts[CHESS_WHITE][CHESS_ROOK] ?? 0) === 1 && $white_material === 1 &&
+            ($counts[CHESS_BLACK][CHESS_PAWN] ?? 0) === 1 && $black_material === 1) {
+            $strong_king = $kings[CHESS_WHITE];
+            $weak_king = $kings[CHESS_BLACK];
+            $weak_pawn = $pawns[CHESS_BLACK];
+            $pawn_steps = 7 - $weak_pawn[0];
+            $score = 380 - $pawn_steps * 25 + ($this->manhattan($weak_king, $weak_pawn) - $this->manhattan($strong_king, $weak_pawn)) * 12;
+            if ($score < 50) {
+                $score = 50;
+            }
+            return [
+                'type' => 'KRKP',
+                'strong' => CHESS_WHITE,
+                'weak' => CHESS_BLACK,
+                'score_white' => $score,
+                'detail' => 'rook=' . $this->square_to_algebraic($rooks[CHESS_WHITE]) . ',pawn=' . $this->square_to_algebraic($weak_pawn),
+            ];
+        }
+        if (($counts[CHESS_BLACK][CHESS_ROOK] ?? 0) === 1 && $black_material === 1 &&
+            ($counts[CHESS_WHITE][CHESS_PAWN] ?? 0) === 1 && $white_material === 1) {
+            $strong_king = $kings[CHESS_BLACK];
+            $weak_king = $kings[CHESS_WHITE];
+            $weak_pawn = $pawns[CHESS_WHITE];
+            $pawn_steps = $weak_pawn[0];
+            $score = 380 - $pawn_steps * 25 + ($this->manhattan($weak_king, $weak_pawn) - $this->manhattan($strong_king, $weak_pawn)) * 12;
+            if ($score < 50) {
+                $score = 50;
+            }
+            return [
+                'type' => 'KRKP',
+                'strong' => CHESS_BLACK,
+                'weak' => CHESS_WHITE,
+                'score_white' => -$score,
+                'detail' => 'rook=' . $this->square_to_algebraic($rooks[CHESS_BLACK]) . ',pawn=' . $this->square_to_algebraic($weak_pawn),
+            ];
+        }
+
+        return null;
+    }
+
+    private function choose_endgame_move(array $legal_moves): ?array {
+        $root_info = $this->detect_endgame_state();
+        if ($root_info === null || count($legal_moves) === 0) {
+            return null;
+        }
+
+        $root_color = $this->board->current_player;
+        $best_move = $legal_moves[0];
+        $best_notation = strtolower($best_move->to_string());
+        $best_score = -PHP_INT_MAX;
+
+        foreach ($legal_moves as $candidate) {
+            $this->board->make_move($candidate);
+            $next_info = $this->detect_endgame_state();
+            $score = $next_info !== null ? intval($next_info['score_white']) : $this->ai->evaluate();
+            if ($root_color === CHESS_BLACK) {
+                $score = -$score;
+            }
+            $notation = strtolower($candidate->to_string());
+            if ($score > $best_score || ($score === $best_score && $notation < $best_notation)) {
+                $best_score = $score;
+                $best_move = $candidate;
+                $best_notation = $notation;
+            }
+            $this->board->undo_move();
+        }
+
+        return ['move' => $best_move, 'info' => $root_info];
+    }
+
+    private function apply_endgame_move(Move $move, array $info): void {
+        $this->board->make_move($move);
+        $move_str = strtolower($move->to_string());
+        echo "AI: {$move_str} (endgame {$info['type']}, score={$info['score_white']})\n";
+
+        // Check for game end first
+        $is_checkmate = $this->move_gen->is_checkmate();
+        $is_stalemate = $this->move_gen->is_stalemate();
+        
+        if ($is_checkmate) {
+            $winner = $this->board->current_player === CHESS_WHITE ? "Black" : "White";
+            echo "CHECKMATE: $winner wins\n";
+        } elseif ($is_stalemate) {
+            echo "STALEMATE: Draw\n";
+        } else {
+            require_once __DIR__ . '/lib/DrawDetection.php';
+            if (DrawDetection::is_draw($this->board)) {
+                $reason = DrawDetection::is_draw_by_fifty_moves($this->board) ? "50-move rule" : "repetition";
+                echo "DRAW: by $reason\n";
+            }
+        }
+        
+        echo $this->board->display();
+    }
+
     private function handle_status(): void {
         $is_checkmate = $this->move_gen->is_checkmate();
         $is_stalemate = $this->move_gen->is_stalemate();
@@ -764,7 +1395,7 @@ class ChessEngine {
         } else {
             require_once __DIR__ . '/lib/DrawDetection.php';
             if (DrawDetection::is_draw($this->board)) {
-                $reason = DrawDetection::is_draw_by_repetition($this->board) ? "repetition" : "50-move rule";
+                $reason = DrawDetection::is_draw_by_fifty_moves($this->board) ? "50-move rule" : "repetition";
                 echo "DRAW: by $reason\n";
             } else {
                 echo "OK: ongoing\n";
@@ -800,12 +1431,18 @@ Available commands:
   draws                       - Show draw detection status
   history                     - Show position hash history
   go movetime <ms>            - Time-managed AI move
-  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-managed AI move
-  go infinite                 - Long bounded iterative search
-  stop                        - Cooperative stop request (backward-compatible)
+  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-based timed move
+  go depth <n>                - UCI-style depth search (prints info/bestmove)
+  go infinite                 - Start bounded long search mode
+  stop                        - Stop infinite search mode
   pgn load|show|moves         - PGN command family
+  book load|on|off|stats      - Native opening book controls
+  endgame                     - Detect specialized endgame and best move hint
   uci                         - Enter/respond to UCI handshake
   isready                     - UCI readiness probe
+  setoption name <Hash|Threads> value <n> - Set UCI option
+  ucinewgame                  - Reset internal state for UCI game
+  position startpos|fen ... [moves ...] - Load UCI position
   new960 [id]                 - Start Chess960 game by id (0-959)
   position960                 - Show current Chess960 metadata
   trace on|off|level|report   - Trace controls and summary

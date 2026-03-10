@@ -1,0 +1,57 @@
+{
+  "version": "3.0",
+  "track": "v3-book",
+  "description": "Native opening book track (load, toggle, move selection)",
+  "test_categories": {
+    "book_load": {
+      "description": "Book load and stats command contract",
+      "required": true,
+      "tests": [
+        {
+          "id": "book_load_stats",
+          "name": "Book Load Stats",
+          "commands": [
+            {"fixture_file": "test/fixtures/book/commands_load_stats.txt"}
+          ],
+          "expected_patterns": ["BOOK: loaded", "BOOK: enabled=true", "entries=2"],
+          "timeout": 8000
+        }
+      ]
+    },
+    "book_toggle": {
+      "description": "Book on/off toggles remain observable",
+      "required": true,
+      "tests": [
+        {
+          "id": "book_toggle_on_off",
+          "name": "Book Toggle On Off",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "book load /repo/test/fixtures/book/opening.book"},
+            {"fixture_file": "test/fixtures/book/commands_toggle.txt"}
+          ],
+          "expected_patterns": ["BOOK: enabled=false", "BOOK: enabled=true"],
+          "timeout": 8000
+        }
+      ]
+    },
+    "book_play": {
+      "description": "Book move is actually played before search",
+      "required": true,
+      "tests": [
+        {
+          "id": "book_ai_move",
+          "name": "Book AI Move",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "book load /repo/test/fixtures/book/opening.book"},
+            {"cmd": "ai 3"},
+            {"cmd": "book stats"}
+          ],
+          "expected_patterns": ["AI:", "(book)", "hits=1", "played=1"],
+          "timeout": 8000
+        }
+      ]
+    }
+  }
+}
