@@ -1,6 +1,6 @@
 # AGENTS.md - AI Agent Instructions
 
-**ALWAYS** read `./README.md`, `CONTRIBUTING.md` and `llms.txt` before making any edit.
+**ALWAYS** read `./README.md`, `docs/CONTRIBUTING.md` and `llms.txt` before making any edit.
 
 ## Project Overview
 
@@ -310,7 +310,7 @@ Before considering an implementation complete:
 ### Resources
 
 1. **Specification**: Read `CHESS_ENGINE_SPECS.md` thoroughly
-2. **Guidelines**: Review `README_IMPLEMENTATION_GUIDELINES.md`
+2. **Guidelines**: Review `docs/IMPLEMENTATION_GUIDELINES.md`
 3. **Examples**: Study existing implementations (Ruby, TypeScript, Rust are well-documented)
 4. **Test Suite**: Check `test/test_suite.json` for exact test requirements
 5. **GitHub Actions**: See `.github/workflows/README.md` for CI/CD details
@@ -363,16 +363,17 @@ A: Balance both. Prioritize idiomatic, readable code, then optimize hot paths if
 the-great-analysis-challenge/
 ├── README.md                           # Main project documentation
 ├── CHESS_ENGINE_SPECS.md              # Complete specification (YOUR BIBLE)
-├── README_IMPLEMENTATION_GUIDELINES.md # Quick reference guide
+├── docs/IMPLEMENTATION_GUIDELINES.md  # Quick reference guide
 ├── AGENTS.md                          # This file - agent instructions
 ├── llms.txt                           # LLM context file list
 ├── Makefile                           # Docker-based build/test automation
 │
-├── <language>/                        # One directory per language
-│   ├── Dockerfile                     # Complete build environment
-│   ├── README.md                      # Language-specific docs
-│   ├── <source files>                 # Implementation
-│   └── lib/ or src/                   # Additional modules
+├── implementations/                   # One directory per language
+│   ├── <language>/
+│   │   ├── Dockerfile                 # Complete build environment
+│   │   ├── README.md                  # Language-specific docs
+│   │   ├── <source files>             # Implementation
+│   │   └── lib/ or src/               # Additional modules
 │
 ├── test/                              # Test infrastructure
 │   ├── test_suite.json                # Automated test definitions

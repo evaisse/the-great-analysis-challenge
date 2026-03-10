@@ -219,4 +219,4 @@ Part of The Great Analysis Challenge multi-language chess engine project.
 
 ## Contributing
 
-Follow the implementation guidelines in `CHESS_ENGINE_SPECS.md` and `README_IMPLEMENTATION_GUIDELINES.md` at the project root.
+Follow the implementation guidelines in `CHESS_ENGINE_SPECS.md` and `docs/IMPLEMENTATION_GUIDELINES.md` at the project root.

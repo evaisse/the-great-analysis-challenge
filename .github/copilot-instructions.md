@@ -22,8 +22,8 @@ make list-implementations      # List all discovered implementations
 
 - [CHESS_ENGINE_SPECS.md](../CHESS_ENGINE_SPECS.md) — **The authoritative spec** (board, CLI protocol, perft targets)
 - [AI_ALGORITHM_SPEC.md](../AI_ALGORITHM_SPEC.md) — Minimax + alpha-beta requirements, evaluation function
-- [README_IMPLEMENTATION_GUIDELINES.md](../README_IMPLEMENTATION_GUIDELINES.md) — Step-by-step implementation guide
-- [CONTRIBUTING.md](../CONTRIBUTING.md) — Contribution process and coding standards
+- [docs/IMPLEMENTATION_GUIDELINES.md](../docs/IMPLEMENTATION_GUIDELINES.md) — Step-by-step implementation guide
+- [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md) — Contribution process and coding standards
 - [AGENTS.md](../AGENTS.md) — Detailed agent workflow and project structure
 - [llms.txt](../llms.txt) — Project file map for LLMs
 

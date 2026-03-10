@@ -7,8 +7,8 @@ Implement a chess engine in a new programming language following the project spe
 Before starting, read these specification files:
 - [Chess Engine Specs](../../CHESS_ENGINE_SPECS.md)
 - [AI Algorithm Spec](../../AI_ALGORITHM_SPEC.md)
-- [Implementation Guidelines](../../README_IMPLEMENTATION_GUIDELINES.md)
-- [Contributing Guide](../../CONTRIBUTING.md)
+- [Implementation Guidelines](../../docs/IMPLEMENTATION_GUIDELINES.md)
+- [Contributing Guide](../../docs/CONTRIBUTING.md)
 
 ## Implementation Order
 

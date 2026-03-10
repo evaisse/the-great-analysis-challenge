@@ -33,4 +33,4 @@ Review a chess engine implementation for correctness, idiomacy, and spec complia
 ## Reference
 - [Chess Engine Specs](../../CHESS_ENGINE_SPECS.md)
 - [AI Algorithm Spec](../../AI_ALGORITHM_SPEC.md)
-- [Contributing Guide](../../CONTRIBUTING.md)
+- [Contributing Guide](../../docs/CONTRIBUTING.md)

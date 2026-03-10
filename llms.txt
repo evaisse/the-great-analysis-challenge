@@ -1,53 +1,43 @@
 # The Great Analysis Challenge
 
-> Polyglot chess engine benchmark comparing languages under a single spec with Docker-first builds, standardized CLI, and automated tests.
+> Polyglot chess engine benchmark with a shared spec, Docker-first execution, and cross-language verification.
 
-This repository hosts parallel chess engines implemented per-language to compare paradigms, performance, and developer experience. Every implementation must:
-- Follow `CHESS_ENGINE_SPECS.md` for board state, CLI protocol, AI search (minimax + alpha-beta), and perft targets
-- Ship its own `Dockerfile`, `chess.meta`, and README under `implementations/<language>/`
-- Build, run, and test exclusively through the Docker targets defined in the root `Makefile` and the shared test harness in `test/`
-- Use only the language standard library for the chess engine implementation (no third-party packages or libraries)
-- **Ensure `Dockerfile` has NO external downloads** (binaries/toolchains) except via standard language package managers; use base images with full toolchains instead.
+Use this file as a compact map of canonical project docs.
 
-## Core Specs
+## Mandatory Rules (Summary)
 
-- [CHESS_ENGINE_SPECS.md](CHESS_ENGINE_SPECS.md): Authoritative rules for board representation, commands, AI depth limits, and performance benchmarks.
-- [AI_ALGORITHM_SPEC.md](AI_ALGORITHM_SPEC.md): Detailed minimax + alpha-beta requirements and evaluation guidelines referenced by all languages.
+- Follow `CHESS_ENGINE_SPECS.md` for engine behavior and CLI protocol.
+- Follow `AI_ALGORITHM_SPEC.md` for deterministic minimax + alpha-beta behavior.
+- Keep implementation workflows Docker-only via root `Makefile` targets.
+- Use standard library only for chess engine logic.
+- Avoid non-package-manager external downloads in Dockerfiles.
 
-## Implementation & Agent Guides
+## Primary Entry Points
 
-- [AGENTS.md](AGENTS.md): Operational instructions and guardrails for AI agents contributing to the project.
-- [README_IMPLEMENTATION_GUIDELINES.md](README_IMPLEMENTATION_GUIDELINES.md): Step-by-step workflow for building a compliant language implementation.
-- [CONTRIBUTING.md](CONTRIBUTING.md): Contribution process, coding standards, and review expectations.
+- [README.md](README.md): Project overview, live implementation matrix, benchmark charts.
+- [docs/README.md](docs/README.md): Documentation hub by role/task.
+- [AGENTS.md](AGENTS.md): Operational instructions and constraints for AI agents.
 
-## Project Overview & Status
+## Specifications
 
-- [README.md](README.md): High-level project overview, goals, and language matrix.
-- [LANGUAGE_STATISTICS_README.md](LANGUAGE_STATISTICS_README.md): Explanation of the language metrics pipeline.
-- [language_statistics.yaml](language_statistics.yaml): Current per-language statistics consumed by dashboards and reports.
+- [CHESS_ENGINE_SPECS.md](CHESS_ENGINE_SPECS.md): Authoritative rules, commands, legality, FEN, perft.
+- [AI_ALGORITHM_SPEC.md](AI_ALGORITHM_SPEC.md): AI search and evaluation contract.
 
-## Build, Test, and Automation
+## Contribution and Implementation Guides
 
-- [Makefile](Makefile): Canonical Docker targets (e.g., `make image DIR=<lang>`, `make build DIR=<lang>`, `make test-chess-engine DIR=<lang>`).
-- [test/test_suite.json](test/test_suite.json): Declarative test definitions covering movement, special rules, AI, and FEN requirements.
-- [test/test_harness.py](test/test_harness.py): Runner invoked by the Make targets and CI workflows.
-- [.github/workflows/bench.yaml](.github/workflows/bench.yaml): CI entry point for benchmarking and regression checks.
-- [.github/workflows/test.yaml](.github/workflows/test.yaml): CI pipeline executing the shared test harness across implementations.
+- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md): Contribution process and PR expectations.
+- [docs/IMPLEMENTATION_GUIDELINES.md](docs/IMPLEMENTATION_GUIDELINES.md): Implementation checklist, required files/labels, validation flow.
 
-## Implementation References
+## Build/Test Automation
 
-- [implementations/](implementations): Production-ready language directories, each containing its Dockerfile, `chess.meta`, README, and source.
-- [implementations-wip/](implementations-wip): Experimental or in-progress language ports awaiting graduation to `implementations/`.
-- [docs/](docs): Additional language-specific or architectural notes referenced by some implementations.
+- [Makefile](Makefile): Canonical `make image/build/analyze/test/test-chess-engine` targets.
+- [test/test_suite.json](test/test_suite.json): Shared behavioral test definitions.
+- [test/test_harness.py](test/test_harness.py): Shared harness invoked by CI and local workflows.
 
-## Verification & Reporting
+## Supporting References
 
-- [verification_results.txt](verification_results.txt): Latest summarized verification run outcomes.
-- [build_results.log](build_results.log): Historical build logs useful for diagnosing CI or Docker regressions.
-- [reports/](reports): Generated analysis artifacts and benchmarking summaries.
-
-## Optional
-
-- [scripts/](scripts): Helper utilities (stats refresh, doc builders, automation aides).
-- [workflow](workflow): CLI helper for orchestrating multi-language workflows during local development.
-- [build-local.sh](build-local.sh): Convenience wrapper for executing Docker builds outside the Make targets.
+- [docs/reference/language-statistics.md](docs/reference/language-statistics.md): Language statistics data maintenance.
+- [language_statistics.yaml](language_statistics.yaml): Source statistics dataset.
+- [docs/ISSUE_TRIAGE_WORKFLOW.md](docs/ISSUE_TRIAGE_WORKFLOW.md): Automatic issue triage behavior.
+- [docs/prd/README.md](docs/prd/README.md): PRD roadmap for next-level features.
+- [docs/archive/quarantine-summary.md](docs/archive/quarantine-summary.md): Archived quarantine context.

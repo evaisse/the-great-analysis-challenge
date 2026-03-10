@@ -19,4 +19,4 @@ applyTo: "implementations/**"
 - `chess.meta` must accurately describe build, run, analyze, and test commands
 - Board display: a1 is bottom-left, White pieces uppercase, Black pieces lowercase, coordinate labels on all sides
 - Test commands: `make docker-build`, `make docker-test`, `echo -e "new\nperft 4\nquit" | docker run -i chess-<language>`
-- Reference [CHESS_ENGINE_SPECS.md](../../CHESS_ENGINE_SPECS.md), [AI_ALGORITHM_SPEC.md](../../AI_ALGORITHM_SPEC.md), and [README_IMPLEMENTATION_GUIDELINES.md](../../README_IMPLEMENTATION_GUIDELINES.md)
+- Reference [CHESS_ENGINE_SPECS.md](../../CHESS_ENGINE_SPECS.md), [AI_ALGORITHM_SPEC.md](../../AI_ALGORITHM_SPEC.md), and [docs/IMPLEMENTATION_GUIDELINES.md](../../docs/IMPLEMENTATION_GUIDELINES.md)

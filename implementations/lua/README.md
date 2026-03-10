@@ -209,7 +209,7 @@ Local functions capture game state through Lua's closure mechanism.
 
 ## Contributing
 
-Follow the project's standard guidelines in `README_IMPLEMENTATION_GUIDELINES.md`.
+Follow the project's standard guidelines in `docs/IMPLEMENTATION_GUIDELINES.md`.
 
 ## License
 

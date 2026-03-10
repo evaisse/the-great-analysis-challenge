@@ -1,17 +1,20 @@
 # The Great Analysis Challenge: Multi-Language Chess Engine Project
 
-A comprehensive project implementing identical chess engines across **different programming languages** to compare their approaches, performance, and unique paradigms.
+Polyglot chess engine benchmark: same functional spec, multiple language implementations, Docker-first workflow, shared tests.
 
-## 📚 Available Implementations
+## Documentation
 
-All implementations have complete feature parity with the following features:
+Start here: [Documentation Hub](docs/README.md)
 
-- ✅ **perft** - Performance testing with recursive move generation
-- ✅ **fen** - Forsyth-Edwards Notation support
-- ✅ **ai** - Artificial intelligence with minimax algorithms
-- ✅ **castling** - Special king-rook moves
-- ✅ **en_passant** - Special pawn capture rules
-- ✅ **promotion** - Pawn advancement to other pieces
+Core references:
+- [CHESS_ENGINE_SPECS.md](CHESS_ENGINE_SPECS.md) - authoritative engine and CLI requirements
+- [AI_ALGORITHM_SPEC.md](AI_ALGORITHM_SPEC.md) - minimax + alpha-beta deterministic behavior
+- [AGENTS.md](AGENTS.md) - agent operating rules for this repository
+- [llms.txt](llms.txt) - compact file map for LLM tooling
+
+## Available Implementations
+
+All implementations target parity for core features: `perft`, `fen`, `ai`, `castling`, `en_passant`, `promotion`.
 
 <!-- status-table-start -->
 
@@ -42,13 +45,11 @@ All implementations have complete feature parity with the following features:
 <!-- status-table-end -->
 
 Legend:
-- `Status`: `🟢 excellent` = 0 error / 0 warning, `🟡 good` = 0 error with warnings, `🔴 needs_work` = at least 1 error.
-- `make ...` columns: benchmarked command shown as `<duration>, <peak memory>`.
-- `make test score`: score of `make test` (binary `1/1` success, `0/1` failure).
-- `make test-chess-engine score`: shared harness score (`passed/total`) for the benchmark track.
-- `-`: metric not yet available for this implementation/run, or intentionally skipped (for example `make build` on interpreted runtimes).
+- `Status`: `🟢 excellent` (no errors/warnings), `🟡 good` (warnings only), `🔴 needs_work` (at least one error).
+- `make ...` columns: `<duration>, <peak memory>`.
+- `-`: metric missing or intentionally skipped.
 
-## ⚡ Speed Charts
+## Speed Charts
 
 <!-- speed-chart-start -->
 Lower is better. Bars are normalized per step (`####################` = fastest).
@@ -90,70 +91,15 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | 5 | 🐍 Python | 8388ms | `####################` |
 <!-- speed-chart-end -->
 
-## 🚀 Quick Start
+## Quick Commands
 
 ```bash
-# List all available implementations
 make list-implementations
-
-# Build Docker image for a specific implementation
-make image DIR=go
-
-# Run compilation only for a specific implementation
-make build DIR=go
-
-# Run internal implementation tests only
-make test DIR=ruby
-
-# Run shared chess engine suite only
-make test-chess-engine DIR=ruby
-
-# Analyze a specific implementation
-make analyze DIR=python
-
-# Build and test all implementations
-make image
-make build
-make analyze
-make test
-make test-chess-engine
-
-# Test from within an implementation directory
-cd implementations/<language> && make docker-test
-
-# Run performance benchmarks
-./workflow run-benchmark <language>
-
-# Verify all implementations
-python3 test/verify_implementations.py
+make image DIR=<language>
+make build DIR=<language>
+make analyze DIR=<language>
+make test DIR=<language>
+make test-chess-engine DIR=<language>
 ```
 
-**New Convention-Based Approach**: All root Makefile commands now use the `DIR` parameter (e.g., `make build DIR=go`) instead of language-specific targets. This makes the infrastructure 100% implementation-agnostic!
-
-## CI/CD
-
-- **🔄 Continuous Testing**: All implementations tested via Docker on every commit
-- **📊 Weekly Benchmarks**: Performance reports generated every Sunday
-- **🏷️ Automatic Releases**: Semantic versioning based on implementation health
-- **📈 Performance Tracking**: Historical analysis and build time monitoring
-- **🎯 Issue Triage**: Automated label application and clarification requests
-
-**Manual Operations**: [GitHub Actions](../../actions/workflows/bench.yaml) | [Latest Results](../../releases/latest) | [Issue Triage Docs](./docs/ISSUE_TRIAGE_WORKFLOW.md)
-
-All implementations MUST be built, tested, and analyzed exclusively via Docker containers to ensure:
-
-- **Zero Host Dependencies**: No local toolchains required (python, rust, etc.)
-- **Consistent Environment**: Identical tool versions for all contributors
-- **Reproducible Results**: Identical testing and analysis conditions
-- **Simplified CI/CD**: Only Docker required, not X language toolchains
-
-## 📋 Architecture
-
-Each implementation follows identical specifications:
-
-- **Chess Rules & Interface**: [CHESS_ENGINE_SPECS.md](./CHESS_ENGINE_SPECS.md) - Core engine requirements
-- **AI Algorithm**: [AI_ALGORITHM_SPEC.md](./AI_ALGORITHM_SPEC.md) - Deterministic move selection algorithm
-- **Standardized Commands**: Identical interface across all languages
-- **Docker Support**: Containerized testing and deployment
-- **Makefile Targets**: `image`, `build`, `analyze`, `test`, `test-chess-engine`, `docker-test`
-- **Metadata**: Structured information in `chess.meta` files
+All implementation build/test/analyze operations are Docker-only.

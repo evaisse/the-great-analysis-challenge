@@ -117,8 +117,8 @@ def analyze_issue_content(title: str, body: str, existing_labels: List[str]) -> 
             "4. **Any questions** you have about the specification or process\n\n"
             "Please review the following resources:\n"
             "- [Chess Engine Specification](CHESS_ENGINE_SPECS.md)\n"
-            "- [Implementation Guidelines](README_IMPLEMENTATION_GUIDELINES.md)\n"
-            "- [Contributing Guide](CONTRIBUTING.md)\n\n"
+            "- [Implementation Guidelines](docs/IMPLEMENTATION_GUIDELINES.md)\n"
+            "- [Contributing Guide](docs/CONTRIBUTING.md)\n\n"
             "Looking forward to your contribution!"
         )
     

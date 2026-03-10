@@ -94,4 +94,4 @@ Relates to #
 
 ---
 
-**Please ensure you have read and followed the [Contributing Guidelines](../CONTRIBUTING.md) and [Implementation Guidelines](../README_IMPLEMENTATION_GUIDELINES.md) before submitting this PR.**
+**Please ensure you have read and followed the [Contributing Guidelines](../docs/CONTRIBUTING.md) and [Implementation Guidelines](../docs/IMPLEMENTATION_GUIDELINES.md) before submitting this PR.**
