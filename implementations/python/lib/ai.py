@@ -1,37 +1,27 @@
-"""
-AI engine using iterative deepening negamax with alpha-beta pruning.
-"""
+"""AI engine using iterative deepening + negamax + alpha-beta + TT."""
 
-import time
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, List
+import time
+from typing import Dict, Tuple, Optional, List
 from lib.types import Move, Piece, PieceType, Color
 from lib.board import Board
 from lib.move_generator import MoveGenerator
 
-
-class SearchTimeout(Exception):
-    """Raised when search reaches its deadline."""
+MATE_VALUE = 100000
+INFINITY = 10**9
 
 
 @dataclass
 class TTEntry:
-    """Transposition table entry."""
     depth: int
     score: int
-    flag: str
-    best_move: Optional[Tuple[int, int, int, int, Optional[PieceType], bool, bool]]
+    flag: str  # exact | lower | upper
+    best_move: Optional[Move]
 
 
 class AI:
-    """Chess AI with iterative deepening, TT-backed negamax and alpha-beta pruning."""
-
-    TT_EXACT = "exact"
-    TT_LOWERBOUND = "lowerbound"
-    TT_UPPERBOUND = "upperbound"
-    MATE_SCORE = 100000
-    TT_MAX_SIZE = 250000
-
+    """Chess AI using minimax with alpha-beta pruning."""
+    
     # Piece values for evaluation
     PIECE_VALUES = {
         PieceType.PAWN: 100,
@@ -41,7 +31,7 @@ class AI:
         PieceType.QUEEN: 900,
         PieceType.KING: 20000
     }
-
+    
     # Position bonus tables
     PAWN_TABLE = [
         [0,  0,  0,  0,  0,  0,  0,  0],
@@ -53,7 +43,7 @@ class AI:
         [5, 10, 10,-20,-20, 10, 10,  5],
         [0,  0,  0,  0,  0,  0,  0,  0]
     ]
-
+    
     KNIGHT_TABLE = [
         [-50,-40,-30,-30,-30,-30,-40,-50],
         [-40,-20,  0,  0,  0,  0,-20,-40],
@@ -64,7 +54,7 @@ class AI:
         [-40,-20,  0,  5,  5,  0,-20,-40],
         [-50,-40,-30,-30,-30,-30,-40,-50]
     ]
-
+    
     BISHOP_TABLE = [
         [-20,-10,-10,-10,-10,-10,-10,-20],
         [-10,  0,  0,  0,  0,  0,  0,-10],
@@ -75,7 +65,7 @@ class AI:
         [-10,  5,  0,  0,  0,  0,  5,-10],
         [-20,-10,-10,-10,-10,-10,-10,-20]
     ]
-
+    
     ROOK_TABLE = [
         [0,  0,  0,  0,  0,  0,  0,  0],
         [5, 10, 10, 10, 10, 10, 10,  5],
@@ -86,7 +76,7 @@ class AI:
         [-5,  0,  0,  0,  0,  0,  0, -5],
         [0,  0,  0,  5,  5,  0,  0,  0]
     ]
-
+    
     QUEEN_TABLE = [
         [-20,-10,-10, -5, -5,-10,-10,-20],
         [-10,  0,  0,  0,  0,  0,  0,-10],
@@ -97,7 +87,7 @@ class AI:
         [-10,  0,  5,  0,  0,  0,  0,-10],
         [-20,-10,-10, -5, -5,-10,-10,-20]
     ]
-
+    
     KING_TABLE = [
         [-30,-40,-40,-50,-50,-40,-40,-30],
         [-30,-40,-40,-50,-50,-40,-40,-30],
@@ -108,254 +98,190 @@ class AI:
         [20, 20,  0,  0,  0,  0, 20, 20],
         [20, 30, 10,  0,  0, 10, 30, 20]
     ]
-
+    
     def __init__(self, board: Board, move_generator: MoveGenerator):
         self.board = board
         self.move_generator = move_generator
-        self.transposition_table: Dict[int, TTEntry] = {}
+        self._tt: Dict[int, TTEntry] = {}
         self._deadline: Optional[float] = None
-
+        self._timed_out = False
+        self._stop_requested = False
+    
     def get_best_move(self, depth: int) -> Tuple[Optional[Move], int]:
-        """Get best move for fixed depth (backward-compatible API)."""
-        best_move, score, _ = self.search(max_depth=depth)
-        return best_move, score
-
-    def get_best_move_timed(self, movetime_ms: int, max_depth: int = 5) -> Tuple[Optional[Move], int, int]:
-        """Get best move using iterative deepening bounded by movetime."""
-        return self.search(max_depth=max_depth, time_limit_ms=movetime_ms)
-
-    def search(self, max_depth: int, time_limit_ms: Optional[int] = None) -> Tuple[Optional[Move], int, int]:
-        """
-        Iterative deepening search.
-
-        Returns (best_move, eval_score, completed_depth). If timeout happens during a
-        deeper iteration, result from the last fully completed depth is returned.
-        """
-        if max_depth < 1:
-            max_depth = 1
-
-        legal_moves = self.move_generator.generate_legal_moves()
-        if not legal_moves:
-            return None, 0, 0
-
-        fallback_move = self._order_moves(legal_moves)[0]
-        fallback_score = self._evaluate_for_side_to_move()
-
-        if time_limit_ms is not None and time_limit_ms <= 0:
-            time_limit_ms = 1
-
-        self._deadline = None
-        if time_limit_ms is not None:
-            self._deadline = time.monotonic() + (time_limit_ms / 1000.0)
-
-        best_move = fallback_move
-        best_score = fallback_score
-        completed_depth = 0
-
-        try:
-            for depth in range(1, max_depth + 1):
-                self._check_timeout()
-                iter_move, iter_score = self._search_root(depth)
-                if iter_move is None:
-                    break
-                best_move = iter_move
-                best_score = iter_score
-                completed_depth = depth
-        except SearchTimeout:
-            # Keep last completed iteration result.
-            pass
-        finally:
-            self._deadline = None
-
-        return best_move, best_score, completed_depth
-
-    def _search_root(self, depth: int) -> Tuple[Optional[Move], int]:
-        """Search root node at a fixed depth."""
-        self._check_timeout()
-
-        alpha = -self.MATE_SCORE
-        beta = self.MATE_SCORE
-        best_score = -self.MATE_SCORE
-        best_move: Optional[Move] = None
-
-        node_hash = self.board.zobrist_hash
-        tt_entry = self.transposition_table.get(node_hash)
-        tt_move_key = tt_entry.best_move if tt_entry else None
-
-        legal_moves = self.move_generator.generate_legal_moves()
-        if not legal_moves:
-            if self.board.is_in_check(self.board.to_move):
-                return None, -self.MATE_SCORE
-            return None, 0
-
-        ordered_moves = self._order_moves(legal_moves, tt_move_key)
-        alpha_original = alpha
-        beta_original = beta
-
-        for move in ordered_moves:
-            self._check_timeout()
-            self.board.make_move(move)
-            score = -self._negamax(depth - 1, -beta, -alpha, 1)
-            self.board.undo_move(move)
-
-            if score > best_score:
-                best_score = score
-                best_move = move
-
-            if score > alpha:
-                alpha = score
-
-            if alpha >= beta:
-                break
-
-        if best_move is not None:
-            flag = self.TT_EXACT
-            if best_score <= alpha_original:
-                flag = self.TT_UPPERBOUND
-            elif best_score >= beta_original:
-                flag = self.TT_LOWERBOUND
-            self._store_tt(node_hash, depth, best_score, flag, best_move)
-
+        """Backward-compatible API used by `ai <depth>` command."""
+        best_move, best_score, _, _, _ = self.search(depth, 0)
         return best_move, best_score
 
-    def _negamax(self, depth: int, alpha: int, beta: int, ply: int) -> int:
-        """Negamax with alpha-beta pruning and TT lookup/store."""
-        self._check_timeout()
-        alpha_original = alpha
-        beta_original = beta
+    def request_stop(self) -> None:
+        """Cooperative stop flag for ongoing search."""
+        self._stop_requested = True
 
-        node_hash = self.board.zobrist_hash
-        tt_entry = self.transposition_table.get(node_hash)
-        tt_move_key = None
-        if tt_entry:
-            tt_move_key = tt_entry.best_move
-            if tt_entry.depth >= depth:
-                if tt_entry.flag == self.TT_EXACT:
-                    return tt_entry.score
-                if tt_entry.flag == self.TT_LOWERBOUND:
-                    alpha = max(alpha, tt_entry.score)
-                elif tt_entry.flag == self.TT_UPPERBOUND:
-                    beta = min(beta, tt_entry.score)
-                if alpha >= beta:
-                    return tt_entry.score
-
-        if depth == 0:
-            return self._evaluate_for_side_to_move()
+    def search(self, max_depth: int, movetime_ms: int) -> Tuple[Optional[Move], int, int, int, bool]:
+        """Return (best_move, score, depth_reached, elapsed_ms, timed_out)."""
+        if max_depth < 1:
+            max_depth = 1
+        if max_depth > 5:
+            max_depth = 5
 
         legal_moves = self.move_generator.generate_legal_moves()
         if not legal_moves:
-            if self.board.is_in_check(self.board.to_move):
-                # Prefer faster mates and slower losses.
-                return -self.MATE_SCORE + ply
-            return 0
+            return None, 0, 0, 0, False
 
-        best_score = -self.MATE_SCORE
-        best_move: Optional[Move] = None
+        self._timed_out = False
+        self._stop_requested = False
+        start = time.monotonic()
+        self._deadline = start + (movetime_ms / 1000.0) if movetime_ms > 0 else None
 
-        for move in self._order_moves(legal_moves, tt_move_key):
-            self._check_timeout()
+        best_move = legal_moves[0]
+        best_score = self.evaluate_position()
+        completed_depth = 0
+
+        for depth in range(1, max_depth + 1):
+            score, move, complete = self._search_root(depth)
+            if not complete:
+                break
+            if move is not None:
+                best_move = move
+                best_score = score
+                completed_depth = depth
+
+        if completed_depth == 0:
+            completed_depth = 1
+
+        elapsed_ms = int((time.monotonic() - start) * 1000)
+        return best_move, int(best_score), completed_depth, elapsed_ms, self._timed_out
+
+    def _search_root(self, depth: int) -> Tuple[int, Optional[Move], bool]:
+        if self._time_exceeded():
+            return 0, None, False
+
+        moves = self.move_generator.generate_legal_moves()
+        if not moves:
+            return 0, None, True
+
+        entry = self._tt.get(self.board.zobrist_hash)
+        ordered_moves = self._order_moves(moves, entry.best_move if entry else None)
+
+        alpha = -INFINITY
+        beta = INFINITY
+        best_score = -INFINITY
+        best_move: Optional[Move] = ordered_moves[0]
+
+        for move in ordered_moves:
+            if self._time_exceeded():
+                return 0, None, False
             self.board.make_move(move)
-            score = -self._negamax(depth - 1, -beta, -alpha, ply + 1)
+            score, _, ok = self._negamax(depth - 1, -beta, -alpha)
             self.board.undo_move(move)
+            if not ok:
+                return 0, None, False
+            score = -score
 
             if score > best_score:
                 best_score = score
                 best_move = move
-
             if score > alpha:
                 alpha = score
 
+        return int(best_score), best_move, True
+
+    def _negamax(self, depth: int, alpha: int, beta: int) -> Tuple[int, Optional[Move], bool]:
+        if self._time_exceeded():
+            return 0, None, False
+
+        original_alpha = alpha
+        key = self.board.zobrist_hash
+        best_from_tt: Optional[Move] = None
+
+        entry = self._tt.get(key)
+        if entry and entry.depth >= depth:
+            if entry.flag == 'exact':
+                return entry.score, entry.best_move, True
+            if entry.flag == 'lower':
+                alpha = max(alpha, entry.score)
+            elif entry.flag == 'upper':
+                beta = min(beta, entry.score)
+            if alpha >= beta:
+                return entry.score, entry.best_move, True
+            best_from_tt = entry.best_move
+
+        if depth == 0:
+            return int(self.evaluate_position()), None, True
+
+        moves = self.move_generator.generate_legal_moves()
+        if not moves:
+            if self.board.is_in_check(self.board.to_move):
+                return -MATE_VALUE + depth, None, True
+            return 0, None, True
+
+        ordered = self._order_moves(moves, best_from_tt)
+        best_score = -INFINITY
+        best_move: Optional[Move] = ordered[0]
+
+        for move in ordered:
+            if self._time_exceeded():
+                return 0, None, False
+            self.board.make_move(move)
+            score, _, ok = self._negamax(depth - 1, -beta, -alpha)
+            self.board.undo_move(move)
+            if not ok:
+                return 0, None, False
+            score = -score
+
+            if score > best_score:
+                best_score = score
+                best_move = move
+            if score > alpha:
+                alpha = score
             if alpha >= beta:
                 break
 
-        flag = self.TT_EXACT
-        if best_score <= alpha_original:
-            flag = self.TT_UPPERBOUND
-        elif best_score >= beta_original:
-            flag = self.TT_LOWERBOUND
+        flag = 'exact'
+        if best_score <= original_alpha:
+            flag = 'upper'
+        elif best_score >= beta:
+            flag = 'lower'
+        self._tt[key] = TTEntry(depth=depth, score=int(best_score), flag=flag, best_move=best_move)
 
-        self._store_tt(node_hash, depth, best_score, flag, best_move)
-        return best_score
+        return int(best_score), best_move, True
 
-    def _store_tt(self, node_hash: int, depth: int, score: int, flag: str, best_move: Optional[Move]) -> None:
-        """Store TT entry with shallow size control."""
-        if len(self.transposition_table) >= self.TT_MAX_SIZE:
-            self.transposition_table.clear()
-        self.transposition_table[node_hash] = TTEntry(
-            depth=depth,
-            score=score,
-            flag=flag,
-            best_move=self._move_to_key(best_move) if best_move else None
-        )
-
-    def _evaluate_for_side_to_move(self) -> int:
-        """Return static eval from side-to-move perspective."""
-        score = self.evaluate_position()
-        return score if self.board.to_move == Color.WHITE else -score
-
-    def _check_timeout(self) -> None:
-        """Raise SearchTimeout when deadline is reached."""
-        if self._deadline is not None and time.monotonic() >= self._deadline:
-            raise SearchTimeout()
-
-    def _move_to_key(
-        self,
-        move: Optional[Move]
-    ) -> Optional[Tuple[int, int, int, int, Optional[PieceType], bool, bool]]:
-        """Serialize move identity for TT storage."""
-        if move is None:
-            return None
-        return (
-            move.from_row,
-            move.from_col,
-            move.to_row,
-            move.to_col,
-            move.promotion,
-            move.is_castling,
-            move.is_en_passant,
-        )
-
-    def _move_matches_key(
-        self,
-        move: Move,
-        move_key: Optional[Tuple[int, int, int, int, Optional[PieceType], bool, bool]]
-    ) -> bool:
-        """Compare a move against TT move identity."""
-        if move_key is None:
-            return False
-        return self._move_to_key(move) == move_key
-
-    def _order_moves(
-        self,
-        moves: List[Move],
-        tt_move_key: Optional[Tuple[int, int, int, int, Optional[PieceType], bool, bool]] = None
-    ) -> List[Move]:
-        """Order moves for better pruning and deterministic choices."""
-        def move_score(move: Move) -> int:
+    def _order_moves(self, moves: List[Move], tt_move: Optional[Move] = None) -> List[Move]:
+        """Order moves for better alpha-beta pruning."""
+        def move_score(move):
             score = 0
 
-            # Prioritize captures.
+            if tt_move and move == tt_move:
+                score += 100000
+            
+            # Prioritize captures
             target_piece = self.board.get_piece(move.to_row, move.to_col)
             if target_piece:
                 score += self.PIECE_VALUES[target_piece.type]
-            elif move.is_en_passant:
-                score += self.PIECE_VALUES[PieceType.PAWN]
-
-            # Prioritize promotions.
+            
+            # Prioritize promotions
             if move.promotion:
                 score += self.PIECE_VALUES[move.promotion]
-
-            # Prioritize center moves.
+            
+            # Prioritize center moves
+            center_bonus = 0
             if 3 <= move.to_row <= 4 and 3 <= move.to_col <= 4:
-                score += 10
-
+                center_bonus = 10
+            score += center_bonus
+            
             return score
+        
+        return sorted(moves, key=move_score, reverse=True)
 
-        def move_key(move: Move):
-            tt_priority = 0 if self._move_matches_key(move, tt_move_key) else 1
-            return (tt_priority, -move_score(move), move.to_algebraic())
-
-        return sorted(moves, key=move_key)
+    def _time_exceeded(self) -> bool:
+        if self._stop_requested:
+            self._timed_out = True
+            return True
+        if self._deadline is None:
+            return False
+        if time.monotonic() >= self._deadline:
+            self._timed_out = True
+            return True
+        return False
     
     def evaluate_position(self) -> int:
         """Evaluate the current position."""

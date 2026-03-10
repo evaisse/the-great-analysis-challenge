@@ -21,6 +21,16 @@ type ChessEngine struct {
 	ai                *AI
 	pgnPath           string
 	pgnMoves          []string
+	bookPath          string
+	bookEnabled       bool
+	bookEntries       map[string][]BookEntry
+	bookEntryCount    int
+	bookLookups       int
+	bookHits          int
+	bookMisses        int
+	bookPlayed        int
+	uciHashMB         int
+	uciThreads        int
 	chess960ID        int
 	traceEnabled      bool
 	traceLevel        string
@@ -34,12 +44,30 @@ type TraceEvent struct {
 	Detail string `json:"detail"`
 }
 
+type BookEntry struct {
+	Move   string
+	Weight int
+}
+
+type EndgameInfo struct {
+	Kind       string
+	Strong     Color
+	Weak       Color
+	WhiteScore int
+	Detail     string
+}
+
 func NewChessEngine() *ChessEngine {
 	return &ChessEngine{
 		gameState:    NewGameState(),
 		ai:           NewAI(),
 		pgnPath:      "",
 		pgnMoves:     make([]string, 0),
+		bookPath:     "",
+		bookEnabled:  false,
+		bookEntries:  make(map[string][]BookEntry),
+		uciHashMB:    16,
+		uciThreads:   1,
 		traceLevel:   "info",
 		traceEvents:  make([]TraceEvent, 0),
 	}
@@ -116,10 +144,20 @@ func (engine *ChessEngine) Run() {
 			fmt.Println("OK: stop")
 		case "pgn":
 			engine.handlePGN(parts[1:])
+		case "book":
+			engine.handleBook(parts[1:])
+		case "endgame":
+			engine.handleEndgame(parts[1:])
 		case "uci":
 			engine.handleUCI()
 		case "isready":
 			engine.handleIsReady()
+		case "setoption":
+			engine.handleSetOption(parts[1:])
+		case "ucinewgame":
+			engine.handleUCINewGame()
+		case "position":
+			engine.handlePosition(parts[1:])
 		case "new960":
 			engine.handleNew960(parts[1:])
 		case "position960":
@@ -300,78 +338,24 @@ func (engine *ChessEngine) handleStatus() {
 }
 
 func (engine *ChessEngine) handleAI(depth int) {
-	if depth < 1 || depth > MAX_DEPTH {
-		depth = 3
-	}
-	engine.handleAISearch(depth, 0, depth)
-}
-
-func (engine *ChessEngine) handleAISearch(maxDepth int, movetime time.Duration, reportedDepth int) {
-	start := time.Now()
-
 	legalMoves := engine.gameState.GenerateLegalMoves()
 	if len(legalMoves) == 0 {
 		fmt.Println("ERROR: No legal moves available")
 		return
 	}
 
-	var searchResult SearchResult
-	if movetime > 0 {
-		searchResult = engine.ai.FindBestMoveTimed(engine.gameState, movetime, maxDepth)
-	} else {
-		searchResult = engine.ai.FindBestMoveWithDepth(engine.gameState, maxDepth)
+	if bookMove, ok := engine.chooseBookMove(legalMoves); ok {
+		engine.applyBookAIMove(bookMove)
+		return
 	}
 
-	bestMove := searchResult.Move
-
-	// Validate that we got a legal move
-	validMove := false
-	for _, move := range legalMoves {
-		if movesEqual(move, bestMove) || (!bestMove.IsPromotion && move.From == bestMove.From && move.To == bestMove.To) {
-			bestMove = move // Use the complete move with all flags
-			validMove = true
-			break
-		}
+	if endgameMove, info, ok := engine.chooseEndgameMove(legalMoves); ok {
+		engine.applyEndgameAIMove(endgameMove, info)
+		return
 	}
 
-	if !validMove {
-		// Fallback to first legal move
-		bestMove = legalMoves[0]
-	}
-
-	engine.gameState.MakeMove(bestMove)
-
-	elapsed := time.Since(start)
-	score := engine.ai.evaluate(engine.gameState)
-	depthToReport := reportedDepth
-	if depthToReport <= 0 {
-		depthToReport = searchResult.Depth
-	}
-	if depthToReport <= 0 {
-		depthToReport = 1
-	}
-
-	moveStr := moveToNotation(bestMove)
-
-	// Check for game end conditions
-	nextLegalMoves := engine.gameState.GenerateLegalMoves()
-	if len(nextLegalMoves) == 0 {
-		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
-			fmt.Printf("AI: %s (CHECKMATE)\n", moveStr)
-		} else {
-			fmt.Printf("AI: %s (STALEMATE)\n", moveStr)
-		}
-	} else {
-		drawReason := engine.gameState.GetDrawReason()
-		if drawReason != "" {
-			fmt.Printf("AI: %s (DRAW: by %s)\n", moveStr, drawReason)
-		} else {
-			fmt.Printf("AI: %s (depth=%d, eval=%d, time=%d)\n",
-				moveStr, depthToReport, score, elapsed.Milliseconds())
-		}
-	}
-
-	fmt.Print(engine.gameState.Display())
+	result := engine.ai.Search(engine.gameState, depth, 0)
+	engine.applyAIMove(result, legalMoves, depth)
 }
 
 func (engine *ChessEngine) repetitionCount() int {
@@ -389,114 +373,46 @@ func (engine *ChessEngine) repetitionCount() int {
 	return count
 }
 
-type goTimeControl struct {
-	wtime     int
-	btime     int
-	winc      int
-	binc      int
-	movestogo int
-}
-
-func parseGoTimeControl(args []string) (goTimeControl, error) {
-	tc := goTimeControl{movestogo: 0}
-	seen := map[string]bool{
-		"wtime": false,
-		"btime": false,
-		"winc":  false,
-		"binc":  false,
+func depthForMovetime(movetimeMs int) int {
+	if movetimeMs <= 200 {
+		return 1
 	}
-
-	for i := 0; i < len(args); i++ {
-		key := strings.ToLower(args[i])
-		switch key {
-		case "wtime", "btime", "winc", "binc", "movestogo":
-			if i+1 >= len(args) {
-				return tc, fmt.Errorf("go %s requires an integer value", key)
-			}
-
-			value, err := strconv.Atoi(args[i+1])
-			if err != nil {
-				return tc, fmt.Errorf("go %s requires an integer value", key)
-			}
-			if value < 0 {
-				return tc, fmt.Errorf("go %s must be >= 0", key)
-			}
-
-			switch key {
-			case "wtime":
-				tc.wtime = value
-			case "btime":
-				tc.btime = value
-			case "winc":
-				tc.winc = value
-			case "binc":
-				tc.binc = value
-			case "movestogo":
-				if value == 0 {
-					return tc, fmt.Errorf("go movestogo must be > 0")
-				}
-				tc.movestogo = value
-			}
-
-			if _, ok := seen[key]; ok {
-				seen[key] = true
-			}
-			i++
-		default:
-			return tc, fmt.Errorf("unsupported go token: %s", args[i])
-		}
+	if movetimeMs <= 500 {
+		return 2
 	}
-
-	if !seen["wtime"] || !seen["btime"] || !seen["winc"] || !seen["binc"] {
-		return tc, fmt.Errorf("go requires wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]")
+	if movetimeMs <= 2000 {
+		return 3
 	}
-
-	return tc, nil
-}
-
-func deriveThinkTimeMs(activeColor Color, tc goTimeControl) int {
-	remaining := tc.wtime
-	increment := tc.winc
-	if activeColor == Black {
-		remaining = tc.btime
-		increment = tc.binc
+	if movetimeMs <= 5000 {
+		return 4
 	}
-
-	movesToGo := tc.movestogo
-	if movesToGo <= 0 {
-		movesToGo = 30
-	}
-
-	thinkMs := remaining/movesToGo + increment/2
-	if thinkMs < 20 {
-		thinkMs = 20
-	}
-
-	maxSpend := remaining - 50
-	if maxSpend < 1 {
-		maxSpend = remaining / 2
-	}
-	if maxSpend < 1 {
-		maxSpend = 1
-	}
-
-	if thinkMs > maxSpend {
-		thinkMs = maxSpend
-	}
-	if thinkMs > 5000 {
-		thinkMs = 5000
-	}
-
-	return thinkMs
+	return 5
 }
 
 func (engine *ChessEngine) handleGo(args []string) {
 	if len(args) == 0 {
-		fmt.Println("ERROR: go requires movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|infinite")
+		fmt.Println("ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|infinite)")
 		return
 	}
 
 	switch strings.ToLower(args[0]) {
+	case "depth":
+		if len(args) < 2 {
+			fmt.Println("ERROR: go depth requires a value")
+			return
+		}
+		depth, err := strconv.Atoi(args[1])
+		if err != nil {
+			fmt.Println("ERROR: go depth requires an integer value")
+			return
+		}
+		if depth < 1 {
+			depth = 1
+		}
+		if depth > MAX_DEPTH {
+			depth = MAX_DEPTH
+		}
+		engine.handleUCIDepthSearch(depth)
 	case "movetime":
 		if len(args) < 2 {
 			fmt.Println("ERROR: go movetime requires a value in milliseconds")
@@ -511,19 +427,700 @@ func (engine *ChessEngine) handleGo(args []string) {
 			fmt.Println("ERROR: go movetime must be > 0")
 			return
 		}
-		engine.handleAISearch(MAX_DEPTH, time.Duration(movetimeMs)*time.Millisecond, 0)
-	case "infinite":
-		// "Infinite" remains bounded in this wave; search uses iterative deepening + deadline.
-		engine.handleAISearch(MAX_DEPTH, 2*time.Second, 0)
-	default:
-		tc, err := parseGoTimeControl(args)
+		engine.handleAITimed(MAX_DEPTH, movetimeMs)
+	case "wtime":
+		movetimeMs, err := deriveMovetimeFromClockArgs(args, engine.gameState.ActiveColor)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())
 			return
 		}
-		thinkMs := deriveThinkTimeMs(engine.gameState.ActiveColor, tc)
-		engine.handleAISearch(MAX_DEPTH, time.Duration(thinkMs)*time.Millisecond, 0)
+		engine.handleAITimed(MAX_DEPTH, movetimeMs)
+	case "infinite":
+		fmt.Println("OK: go infinite acknowledged (bounded search mode)")
+		// Cooperative bounded search in this synchronous CLI.
+		engine.handleAITimed(MAX_DEPTH, 15000)
+	default:
+		fmt.Println("ERROR: Unsupported go command")
 	}
+}
+
+func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
+	legalMoves := engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		fmt.Println("bestmove 0000")
+		return
+	}
+
+	if bookMove, ok := engine.chooseBookMove(legalMoves); ok {
+		moveStr := moveToString(bookMove)
+		fmt.Printf("info string bookmove %s\n", moveStr)
+		fmt.Printf("bestmove %s\n", moveStr)
+		return
+	}
+
+	if endgameMove, info, ok := engine.chooseEndgameMove(legalMoves); ok {
+		moveStr := moveToString(endgameMove)
+		fmt.Printf("info string endgame %s score cp %d\n", info.Kind, info.WhiteScore)
+		fmt.Printf("bestmove %s\n", moveStr)
+		return
+	}
+
+	result := engine.ai.Search(engine.gameState, depth, 0)
+	bestMove := normalizeBestMove(result.Move, legalMoves)
+	moveStr := moveToString(bestMove)
+	fmt.Printf("info depth %d score cp %d time %d nodes 0\n", result.Depth, result.Score, result.ElapsedMS)
+	fmt.Printf("bestmove %s\n", moveStr)
+}
+
+func deriveMovetimeFromClockArgs(args []string, active Color) (int, error) {
+	values := map[string]int{
+		"winc":     0,
+		"binc":     0,
+		"movestogo": 30,
+	}
+
+	i := 0
+	for i < len(args) {
+		key := strings.ToLower(strings.TrimSpace(args[i]))
+		i++
+		if i >= len(args) {
+			return 0, fmt.Errorf("go %s requires a value", key)
+		}
+		value, err := strconv.Atoi(args[i])
+		if err != nil {
+			return 0, fmt.Errorf("go %s requires an integer value", key)
+		}
+		i++
+
+		switch key {
+		case "wtime", "btime", "winc", "binc", "movestogo":
+			values[key] = value
+		default:
+			return 0, fmt.Errorf("unsupported go parameter: %s", key)
+		}
+	}
+
+	wtime, hasWtime := values["wtime"]
+	btime, hasBtime := values["btime"]
+	if !hasWtime || !hasBtime {
+		return 0, fmt.Errorf("go wtime/btime parameters are required")
+	}
+	if wtime <= 0 || btime <= 0 {
+		return 0, fmt.Errorf("go wtime/btime must be > 0")
+	}
+	if values["movestogo"] <= 0 {
+		values["movestogo"] = 30
+	}
+
+	base := wtime
+	increment := values["winc"]
+	if active == Black {
+		base = btime
+		increment = values["binc"]
+	}
+
+	budget := base/(values["movestogo"]+1) + increment/2
+	if budget < 50 {
+		budget = 50
+	}
+	if budget >= base {
+		budget = base / 2
+	}
+	if budget <= 0 {
+		return 0, fmt.Errorf("unable to derive positive movetime from clocks")
+	}
+	return budget, nil
+}
+
+func (engine *ChessEngine) handleAITimed(maxDepth int, movetimeMs int) {
+	legalMoves := engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		fmt.Println("ERROR: No legal moves available")
+		return
+	}
+
+	if bookMove, ok := engine.chooseBookMove(legalMoves); ok {
+		engine.applyBookAIMove(bookMove)
+		return
+	}
+
+	if endgameMove, info, ok := engine.chooseEndgameMove(legalMoves); ok {
+		engine.applyEndgameAIMove(endgameMove, info)
+		return
+	}
+
+	result := engine.ai.Search(engine.gameState, maxDepth, movetimeMs)
+	engine.applyAIMove(result, legalMoves, maxDepth)
+}
+
+func (engine *ChessEngine) applyAIMove(result SearchResult, legalMoves []Move, requestedDepth int) {
+	bestMove := normalizeBestMove(result.Move, legalMoves)
+
+	engine.gameState.MakeMove(bestMove)
+
+	moveStr := moveToString(bestMove)
+
+	// Check for game end conditions
+	nextLegalMoves := engine.gameState.GenerateLegalMoves()
+	if len(nextLegalMoves) == 0 {
+		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
+			fmt.Printf("AI: %s (CHECKMATE)\n", moveStr)
+		} else {
+			fmt.Printf("AI: %s (STALEMATE)\n", moveStr)
+		}
+	} else {
+		drawReason := engine.gameState.GetDrawReason()
+		if drawReason != "" {
+			fmt.Printf("AI: %s (DRAW: by %s)\n", moveStr, drawReason)
+		} else {
+			depthUsed := result.Depth
+			if depthUsed == 0 {
+				depthUsed = requestedDepth
+			}
+			fmt.Printf("AI: %s (depth=%d, eval=%d, time=%d)\n",
+				moveStr, depthUsed, result.Score, result.ElapsedMS)
+		}
+	}
+
+	fmt.Print(engine.gameState.Display())
+}
+
+func normalizeBestMove(bestMove Move, legalMoves []Move) Move {
+	validMove := false
+	for _, move := range legalMoves {
+		if move.From == bestMove.From && move.To == bestMove.To {
+			if !bestMove.IsPromotion || move.PromoteTo == bestMove.PromoteTo {
+				bestMove = move
+				validMove = true
+				break
+			}
+		}
+	}
+	if !validMove {
+		return legalMoves[0]
+	}
+	return bestMove
+}
+
+func moveToString(move Move) string {
+	moveStr := fmt.Sprintf("%s%s", move.From.ToAlgebraic(), move.To.ToAlgebraic())
+	if move.IsPromotion {
+		switch move.PromoteTo {
+		case Queen:
+			moveStr += "q"
+		case Rook:
+			moveStr += "r"
+		case Bishop:
+			moveStr += "b"
+		case Knight:
+			moveStr += "n"
+		}
+	}
+	return moveStr
+}
+
+func bookPositionKeyFromFEN(fen string) string {
+	parts := strings.Fields(strings.TrimSpace(fen))
+	if len(parts) >= 4 {
+		return strings.Join(parts[:4], " ")
+	}
+	return strings.TrimSpace(fen)
+}
+
+func parseBookEntries(content string) (map[string][]BookEntry, int, error) {
+	entries := make(map[string][]BookEntry)
+	totalEntries := 0
+	movePattern := regexp.MustCompile(`^[a-h][1-8][a-h][1-8][qrbn]?$`)
+	lines := strings.Split(content, "\n")
+
+	for idx, raw := range lines {
+		line := strings.TrimSpace(raw)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "->", 2)
+		if len(parts) != 2 {
+			return nil, 0, fmt.Errorf("line %d: expected '<fen> -> <move> [weight]'", idx+1)
+		}
+
+		key := bookPositionKeyFromFEN(parts[0])
+		if key == "" {
+			return nil, 0, fmt.Errorf("line %d: empty position key", idx+1)
+		}
+
+		rhsFields := strings.Fields(strings.TrimSpace(parts[1]))
+		if len(rhsFields) == 0 {
+			return nil, 0, fmt.Errorf("line %d: missing move", idx+1)
+		}
+
+		move := strings.ToLower(rhsFields[0])
+		if !movePattern.MatchString(move) {
+			return nil, 0, fmt.Errorf("line %d: invalid move %q", idx+1, move)
+		}
+
+		weight := 1
+		if len(rhsFields) > 1 {
+			parsedWeight, err := strconv.Atoi(rhsFields[1])
+			if err != nil {
+				return nil, 0, fmt.Errorf("line %d: invalid weight %q", idx+1, rhsFields[1])
+			}
+			if parsedWeight <= 0 {
+				return nil, 0, fmt.Errorf("line %d: weight must be > 0", idx+1)
+			}
+			weight = parsedWeight
+		}
+
+		entries[key] = append(entries[key], BookEntry{
+			Move:   move,
+			Weight: weight,
+		})
+		totalEntries++
+	}
+
+	return entries, totalEntries, nil
+}
+
+func (engine *ChessEngine) handleBook(args []string) {
+	if len(args) == 0 {
+		fmt.Println("ERROR: book requires subcommand (load|on|off|stats)")
+		return
+	}
+
+	switch strings.ToLower(args[0]) {
+	case "load":
+		if len(args) < 2 {
+			fmt.Println("ERROR: book load requires a file path")
+			return
+		}
+
+		path := strings.Join(args[1:], " ")
+		content, err := os.ReadFile(path)
+		if err != nil {
+			fmt.Printf("ERROR: book load failed: %s\n", err.Error())
+			return
+		}
+
+		entries, totalEntries, parseErr := parseBookEntries(string(content))
+		if parseErr != nil {
+			fmt.Printf("ERROR: book load failed: %s\n", parseErr.Error())
+			return
+		}
+
+		engine.bookPath = path
+		engine.bookEntries = entries
+		engine.bookEntryCount = totalEntries
+		engine.bookEnabled = true
+		engine.bookLookups = 0
+		engine.bookHits = 0
+		engine.bookMisses = 0
+		engine.bookPlayed = 0
+
+		fmt.Printf(
+			"BOOK: loaded path=\"%s\"; positions=%d; entries=%d; enabled=%t\n",
+			path,
+			len(entries),
+			totalEntries,
+			engine.bookEnabled,
+		)
+	case "on":
+		engine.bookEnabled = true
+		fmt.Println("BOOK: enabled=true")
+	case "off":
+		engine.bookEnabled = false
+		fmt.Println("BOOK: enabled=false")
+	case "stats":
+		path := engine.bookPath
+		if path == "" {
+			path = "(none)"
+		}
+		fmt.Printf(
+			"BOOK: enabled=%t; path=%s; positions=%d; entries=%d; lookups=%d; hits=%d; misses=%d; played=%d\n",
+			engine.bookEnabled,
+			path,
+			len(engine.bookEntries),
+			engine.bookEntryCount,
+			engine.bookLookups,
+			engine.bookHits,
+			engine.bookMisses,
+			engine.bookPlayed,
+		)
+	default:
+		fmt.Println("ERROR: Unsupported book command")
+	}
+}
+
+func (engine *ChessEngine) chooseBookMove(legalMoves []Move) (Move, bool) {
+	engine.bookLookups++
+	if !engine.bookEnabled || len(engine.bookEntries) == 0 {
+		engine.bookMisses++
+		return Move{}, false
+	}
+
+	key := bookPositionKeyFromFEN(engine.gameState.ToFEN())
+	entries := engine.bookEntries[key]
+	if len(entries) == 0 {
+		engine.bookMisses++
+		return Move{}, false
+	}
+
+	legalByNotation := make(map[string]Move, len(legalMoves))
+	for _, move := range legalMoves {
+		legalByNotation[strings.ToLower(moveToString(move))] = move
+	}
+
+	type weightedCandidate struct {
+		move   Move
+		weight int
+	}
+
+	candidates := make([]weightedCandidate, 0, len(entries))
+	totalWeight := 0
+	for _, entry := range entries {
+		move, ok := legalByNotation[entry.Move]
+		if !ok {
+			continue
+		}
+		weight := entry.Weight
+		if weight <= 0 {
+			weight = 1
+		}
+		candidates = append(candidates, weightedCandidate{
+			move:   move,
+			weight: weight,
+		})
+		totalWeight += weight
+	}
+
+	if len(candidates) == 0 || totalWeight <= 0 {
+		engine.bookMisses++
+		return Move{}, false
+	}
+
+	selector := int((uint64(engine.gameState.ZobristHash) + uint64(engine.bookLookups)) % uint64(totalWeight))
+	acc := 0
+	chosen := candidates[0].move
+	for _, candidate := range candidates {
+		acc += candidate.weight
+		if selector < acc {
+			chosen = candidate.move
+			break
+		}
+	}
+
+	engine.bookHits++
+	return chosen, true
+}
+
+func (engine *ChessEngine) applyBookAIMove(bestMove Move) {
+	engine.gameState.MakeMove(bestMove)
+	engine.bookPlayed++
+
+	moveStr := moveToString(bestMove)
+	nextLegalMoves := engine.gameState.GenerateLegalMoves()
+	if len(nextLegalMoves) == 0 {
+		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
+			fmt.Printf("AI: %s (book, CHECKMATE)\n", moveStr)
+		} else {
+			fmt.Printf("AI: %s (book, STALEMATE)\n", moveStr)
+		}
+	} else {
+		drawReason := engine.gameState.GetDrawReason()
+		if drawReason != "" {
+			fmt.Printf("AI: %s (book, DRAW: by %s)\n", moveStr, drawReason)
+		} else {
+			fmt.Printf("AI: %s (book)\n", moveStr)
+		}
+	}
+
+	fmt.Print(engine.gameState.Display())
+}
+
+func (engine *ChessEngine) handleEndgame(_ []string) {
+	info, ok := detectEndgame(engine.gameState)
+	if !ok {
+		fmt.Printf("ENDGAME: type=none; active=%s; score=0\n", colorName(engine.gameState.ActiveColor))
+		return
+	}
+
+	output := fmt.Sprintf(
+		"ENDGAME: type=%s; strong=%s; weak=%s; score=%d",
+		info.Kind,
+		colorName(info.Strong),
+		colorName(info.Weak),
+		info.WhiteScore,
+	)
+
+	legalMoves := engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) > 0 {
+		if bestMove, _, ok := engine.chooseEndgameMove(legalMoves); ok {
+			output += fmt.Sprintf("; bestmove=%s", strings.ToLower(moveToString(bestMove)))
+		}
+	}
+	if info.Detail != "" {
+		output += fmt.Sprintf("; detail=%s", info.Detail)
+	}
+
+	fmt.Println(output)
+}
+
+func colorName(color Color) string {
+	if color == White {
+		return "white"
+	}
+	return "black"
+}
+
+func absInt(value int) int {
+	if value < 0 {
+		return -value
+	}
+	return value
+}
+
+func minInt(values ...int) int {
+	if len(values) == 0 {
+		return 0
+	}
+	result := values[0]
+	for i := 1; i < len(values); i++ {
+		if values[i] < result {
+			result = values[i]
+		}
+	}
+	return result
+}
+
+func manhattanDistance(a, b Square) int {
+	return absInt(a.File-b.File) + absInt(a.Rank-b.Rank)
+}
+
+func nonKingMaterialCount(counts [2][7]int, color Color) int {
+	total := 0
+	for pieceType := Pawn; pieceType <= Queen; pieceType++ {
+		total += counts[color][pieceType]
+	}
+	return total
+}
+
+func detectEndgame(gs *GameState) (EndgameInfo, bool) {
+	var counts [2][7]int
+	var kingSquares [2]Square
+	var hasKing [2]bool
+	var pawnSquares [2]Square
+	var hasPawn [2]bool
+	var rookSquares [2]Square
+	var hasRook [2]bool
+	var queenSquares [2]Square
+	var hasQueen [2]bool
+
+	for rank := 0; rank < 8; rank++ {
+		for file := 0; file < 8; file++ {
+			piece := gs.Board[rank][file]
+			if piece.Type == Empty {
+				continue
+			}
+			counts[piece.Color][piece.Type]++
+
+			square := Square{File: file, Rank: rank}
+			switch piece.Type {
+			case King:
+				kingSquares[piece.Color] = square
+				hasKing[piece.Color] = true
+			case Pawn:
+				if !hasPawn[piece.Color] {
+					pawnSquares[piece.Color] = square
+					hasPawn[piece.Color] = true
+				}
+			case Rook:
+				if !hasRook[piece.Color] {
+					rookSquares[piece.Color] = square
+					hasRook[piece.Color] = true
+				}
+			case Queen:
+				if !hasQueen[piece.Color] {
+					queenSquares[piece.Color] = square
+					hasQueen[piece.Color] = true
+				}
+			}
+		}
+	}
+
+	if !hasKing[White] || !hasKing[Black] {
+		return EndgameInfo{}, false
+	}
+
+	whiteMaterial := nonKingMaterialCount(counts, White)
+	blackMaterial := nonKingMaterialCount(counts, Black)
+
+	// KQK
+	if counts[White][Queen] == 1 && whiteMaterial == 1 && blackMaterial == 0 {
+		weakKing := kingSquares[Black]
+		strongKing := kingSquares[White]
+		edgeDistance := minInt(weakKing.File, 7-weakKing.File, weakKing.Rank, 7-weakKing.Rank)
+		kingDistance := manhattanDistance(strongKing, weakKing)
+		score := 900 + (14-kingDistance)*6 + (3-edgeDistance)*20
+		return EndgameInfo{
+			Kind:       "KQK",
+			Strong:     White,
+			Weak:       Black,
+			WhiteScore: score,
+			Detail:     fmt.Sprintf("queen=%s", queenSquares[White].ToAlgebraic()),
+		}, true
+	}
+	if counts[Black][Queen] == 1 && blackMaterial == 1 && whiteMaterial == 0 {
+		weakKing := kingSquares[White]
+		strongKing := kingSquares[Black]
+		edgeDistance := minInt(weakKing.File, 7-weakKing.File, weakKing.Rank, 7-weakKing.Rank)
+		kingDistance := manhattanDistance(strongKing, weakKing)
+		score := 900 + (14-kingDistance)*6 + (3-edgeDistance)*20
+		return EndgameInfo{
+			Kind:       "KQK",
+			Strong:     Black,
+			Weak:       White,
+			WhiteScore: -score,
+			Detail:     fmt.Sprintf("queen=%s", queenSquares[Black].ToAlgebraic()),
+		}, true
+	}
+
+	// KPK
+	if counts[White][Pawn] == 1 && whiteMaterial == 1 && blackMaterial == 0 {
+		pawn := pawnSquares[White]
+		strongKing := kingSquares[White]
+		weakKing := kingSquares[Black]
+		promotion := Square{File: pawn.File, Rank: 7}
+		pawnSteps := 7 - pawn.Rank
+		score := 120 + (6-pawnSteps)*35 + manhattanDistance(weakKing, promotion)*6 - manhattanDistance(strongKing, pawn)*8
+		if pawnSteps <= 1 {
+			score += 80
+		}
+		if score < 30 {
+			score = 30
+		}
+		return EndgameInfo{
+			Kind:       "KPK",
+			Strong:     White,
+			Weak:       Black,
+			WhiteScore: score,
+			Detail:     fmt.Sprintf("pawn=%s", pawn.ToAlgebraic()),
+		}, true
+	}
+	if counts[Black][Pawn] == 1 && blackMaterial == 1 && whiteMaterial == 0 {
+		pawn := pawnSquares[Black]
+		strongKing := kingSquares[Black]
+		weakKing := kingSquares[White]
+		promotion := Square{File: pawn.File, Rank: 0}
+		pawnSteps := pawn.Rank
+		score := 120 + (6-pawnSteps)*35 + manhattanDistance(weakKing, promotion)*6 - manhattanDistance(strongKing, pawn)*8
+		if pawnSteps <= 1 {
+			score += 80
+		}
+		if score < 30 {
+			score = 30
+		}
+		return EndgameInfo{
+			Kind:       "KPK",
+			Strong:     Black,
+			Weak:       White,
+			WhiteScore: -score,
+			Detail:     fmt.Sprintf("pawn=%s", pawn.ToAlgebraic()),
+		}, true
+	}
+
+	// KRKP
+	if counts[White][Rook] == 1 && whiteMaterial == 1 && counts[Black][Pawn] == 1 && blackMaterial == 1 {
+		strongKing := kingSquares[White]
+		weakKing := kingSquares[Black]
+		weakPawn := pawnSquares[Black]
+		pawnSteps := weakPawn.Rank
+		score := 380 - pawnSteps*25 + (manhattanDistance(weakKing, weakPawn)-manhattanDistance(strongKing, weakPawn))*12
+		if score < 50 {
+			score = 50
+		}
+		return EndgameInfo{
+			Kind:       "KRKP",
+			Strong:     White,
+			Weak:       Black,
+			WhiteScore: score,
+			Detail:     fmt.Sprintf("rook=%s,pawn=%s", rookSquares[White].ToAlgebraic(), weakPawn.ToAlgebraic()),
+		}, true
+	}
+	if counts[Black][Rook] == 1 && blackMaterial == 1 && counts[White][Pawn] == 1 && whiteMaterial == 1 {
+		strongKing := kingSquares[Black]
+		weakKing := kingSquares[White]
+		weakPawn := pawnSquares[White]
+		pawnSteps := 7 - weakPawn.Rank
+		score := 380 - pawnSteps*25 + (manhattanDistance(weakKing, weakPawn)-manhattanDistance(strongKing, weakPawn))*12
+		if score < 50 {
+			score = 50
+		}
+		return EndgameInfo{
+			Kind:       "KRKP",
+			Strong:     Black,
+			Weak:       White,
+			WhiteScore: -score,
+			Detail:     fmt.Sprintf("rook=%s,pawn=%s", rookSquares[Black].ToAlgebraic(), weakPawn.ToAlgebraic()),
+		}, true
+	}
+
+	return EndgameInfo{}, false
+}
+
+func (engine *ChessEngine) chooseEndgameMove(legalMoves []Move) (Move, EndgameInfo, bool) {
+	rootInfo, ok := detectEndgame(engine.gameState)
+	if !ok || len(legalMoves) == 0 {
+		return Move{}, EndgameInfo{}, false
+	}
+
+	rootColor := engine.gameState.ActiveColor
+	bestMove := legalMoves[0]
+	bestNotation := strings.ToLower(moveToString(bestMove))
+	bestScore := -INFINITY
+
+	for _, candidate := range legalMoves {
+		clone := engine.gameState.Clone()
+		clone.MakeMove(candidate)
+
+		score := engine.ai.evaluate(clone)
+		if endInfo, hasEndgame := detectEndgame(clone); hasEndgame {
+			score = endInfo.WhiteScore
+		}
+		if rootColor == Black {
+			score = -score
+		}
+
+		notation := strings.ToLower(moveToString(candidate))
+		if score > bestScore || (score == bestScore && notation < bestNotation) {
+			bestScore = score
+			bestMove = candidate
+			bestNotation = notation
+		}
+	}
+
+	return bestMove, rootInfo, true
+}
+
+func (engine *ChessEngine) applyEndgameAIMove(bestMove Move, info EndgameInfo) {
+	engine.gameState.MakeMove(bestMove)
+	moveStr := moveToString(bestMove)
+
+	nextLegalMoves := engine.gameState.GenerateLegalMoves()
+	if len(nextLegalMoves) == 0 {
+		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
+			fmt.Printf("AI: %s (endgame %s, CHECKMATE)\n", moveStr, info.Kind)
+		} else {
+			fmt.Printf("AI: %s (endgame %s, STALEMATE)\n", moveStr, info.Kind)
+		}
+	} else {
+		drawReason := engine.gameState.GetDrawReason()
+		if drawReason != "" {
+			fmt.Printf("AI: %s (endgame %s, DRAW: by %s)\n", moveStr, info.Kind, drawReason)
+		} else {
+			fmt.Printf("AI: %s (endgame %s, score=%d)\n", moveStr, info.Kind, info.WhiteScore)
+		}
+	}
+
+	fmt.Print(engine.gameState.Display())
 }
 
 func (engine *ChessEngine) handlePGN(args []string) {
@@ -572,6 +1169,143 @@ func (engine *ChessEngine) handleUCI() {
 
 func (engine *ChessEngine) handleIsReady() {
 	fmt.Println("readyok")
+}
+
+func (engine *ChessEngine) handleSetOption(args []string) {
+	if len(args) < 4 || strings.ToLower(args[0]) != "name" {
+		fmt.Println("ERROR: setoption format is 'setoption name <Hash|Threads> value <n>'")
+		return
+	}
+
+	valueIndex := -1
+	for i := 1; i < len(args); i++ {
+		if strings.ToLower(args[i]) == "value" {
+			valueIndex = i
+			break
+		}
+	}
+	if valueIndex <= 1 || valueIndex+1 >= len(args) {
+		fmt.Println("ERROR: setoption requires 'value <n>'")
+		return
+	}
+
+	name := strings.ToLower(strings.TrimSpace(strings.Join(args[1:valueIndex], " ")))
+	value, err := strconv.Atoi(args[valueIndex+1])
+	if err != nil {
+		fmt.Println("ERROR: setoption value must be an integer")
+		return
+	}
+
+	switch name {
+	case "hash":
+		if value < 1 {
+			value = 1
+		}
+		if value > 1024 {
+			value = 1024
+		}
+		engine.uciHashMB = value
+		fmt.Printf("info string option Hash=%d\n", engine.uciHashMB)
+	case "threads":
+		if value < 1 {
+			value = 1
+		}
+		if value > 64 {
+			value = 64
+		}
+		engine.uciThreads = value
+		fmt.Printf("info string option Threads=%d\n", engine.uciThreads)
+	default:
+		fmt.Printf("info string unsupported option %s\n", strings.TrimSpace(strings.Join(args[1:valueIndex], " ")))
+	}
+}
+
+func (engine *ChessEngine) handleUCINewGame() {
+	engine.gameState = NewGameState()
+	engine.ai = NewAI()
+}
+
+func (engine *ChessEngine) handlePosition(args []string) {
+	if len(args) == 0 {
+		fmt.Println("ERROR: position requires 'startpos' or 'fen <...>'")
+		return
+	}
+
+	i := 0
+	switch strings.ToLower(args[0]) {
+	case "startpos":
+		engine.gameState = NewGameState()
+		engine.ai = NewAI()
+		i = 1
+	case "fen":
+		i = 1
+		fenParts := make([]string, 0, 6)
+		for i < len(args) && strings.ToLower(args[i]) != "moves" {
+			fenParts = append(fenParts, args[i])
+			i++
+		}
+		if len(fenParts) == 0 {
+			fmt.Println("ERROR: position fen requires a FEN string")
+			return
+		}
+		if err := engine.gameState.FromFEN(strings.Join(fenParts, " ")); err != nil {
+			fmt.Printf("ERROR: Invalid FEN: %s\n", err.Error())
+			return
+		}
+	default:
+		fmt.Println("ERROR: position requires 'startpos' or 'fen <...>'")
+		return
+	}
+
+	if i < len(args) && strings.ToLower(args[i]) == "moves" {
+		i++
+		for ; i < len(args); i++ {
+			if err := engine.applyMoveSilently(args[i]); err != nil {
+				fmt.Printf("ERROR: position move %s failed: %s\n", args[i], err.Error())
+				return
+			}
+		}
+	}
+}
+
+func (engine *ChessEngine) applyMoveSilently(moveStr string) error {
+	if len(moveStr) < 4 {
+		return fmt.Errorf("invalid move format")
+	}
+
+	from := AlgebraicToSquare(moveStr[0:2])
+	to := AlgebraicToSquare(moveStr[2:4])
+	if !from.IsValid() || !to.IsValid() {
+		return fmt.Errorf("invalid move format")
+	}
+
+	var promotionPiece PieceType
+	hasPromotion := false
+	if len(moveStr) == 5 {
+		hasPromotion = true
+		switch strings.ToLower(string(moveStr[4])) {
+		case "q":
+			promotionPiece = Queen
+		case "r":
+			promotionPiece = Rook
+		case "b":
+			promotionPiece = Bishop
+		case "n":
+			promotionPiece = Knight
+		default:
+			return fmt.Errorf("invalid promotion piece")
+		}
+	}
+
+	move, err := engine.gameState.IsValidMove(from, to)
+	if err != nil {
+		return err
+	}
+	if move.IsPromotion && hasPromotion {
+		move.PromoteTo = promotionPiece
+	}
+	engine.gameState.MakeMove(move)
+	return nil
 }
 
 func (engine *ChessEngine) handleNew960(args []string) {
@@ -788,13 +1522,19 @@ func (engine *ChessEngine) showHelp() {
 	fmt.Println("  undo         - Undo the last move")
 	fmt.Println("  export       - Export current position as FEN")
 	fmt.Println("  ai <depth>   - Let AI make a move (depth 1-5, default 3)")
-	fmt.Println("  go movetime <ms> - Time-managed AI move")
-	fmt.Println("  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-based AI move")
-	fmt.Println("  go infinite  - Run a bounded timed iterative search")
+	fmt.Println("  go movetime <ms> - Time-managed AI move with iterative deepening")
+	fmt.Println("  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-based timed move")
+	fmt.Println("  go depth <n> - UCI-style depth-limited search (prints info/bestmove)")
+	fmt.Println("  go infinite  - Start bounded long search mode")
 	fmt.Println("  stop         - Stop infinite search mode")
 	fmt.Println("  pgn load|show|moves - PGN command family")
+	fmt.Println("  book load|on|off|stats - Native opening book controls")
+	fmt.Println("  endgame      - Detect specialized endgame module and best move hint")
 	fmt.Println("  uci          - Enter/respond to UCI handshake")
 	fmt.Println("  isready      - UCI readiness probe")
+	fmt.Println("  setoption name <Hash|Threads> value <n> - Set UCI option")
+	fmt.Println("  ucinewgame   - Reset internal state for UCI game")
+	fmt.Println("  position startpos|fen ... [moves ...] - Load UCI position")
 	fmt.Println("  new960 [id]  - Start Chess960 game by id (0-959)")
 	fmt.Println("  position960  - Show current Chess960 metadata")
 	fmt.Println("  trace ...    - Trace controls and reports")

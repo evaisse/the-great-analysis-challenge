@@ -121,11 +121,11 @@ jobs:
 
       - name: V2 Foundation (Core Blocking)
         if: steps.v2-core.outputs.enabled == 'true'
-        run: ./workflow test-chess-engine ${{ matrix.engine }} --track v2-foundation --docker-image chess-${{ matrix.engine }}-test
+        run: ./workflow test-chess-engine ${{ matrix.engine }} --track v2-foundation --docker-image chess-${{ matrix.engine }}
 
       - name: V2 Functional (Core Blocking)
         if: steps.v2-core.outputs.enabled == 'true'
-        run: ./workflow test-chess-engine ${{ matrix.engine }} --track v2-functional --docker-image chess-${{ matrix.engine }}-test
+        run: ./workflow test-chess-engine ${{ matrix.engine }} --track v2-functional --docker-image chess-${{ matrix.engine }}
 
       - name: Ensure workspace clean for ${{ matrix.engine }}
         run: |

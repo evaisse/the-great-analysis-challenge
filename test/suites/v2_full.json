@@ -98,6 +98,33 @@
         }
       ]
     },
+    "functional_book": {
+      "description": "Native opening book contract",
+      "required": true,
+      "tests": [
+        {
+          "id": "book_load_stats",
+          "name": "Book Load Stats",
+          "commands": [
+            {"fixture_file": "test/fixtures/book/commands_load_stats.txt"}
+          ],
+          "expected_patterns": ["BOOK: loaded", "BOOK: enabled=true", "entries=2"],
+          "timeout": 8000
+        },
+        {
+          "id": "book_ai_move",
+          "name": "Book AI Move",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "book load /repo/test/fixtures/book/opening.book"},
+            {"cmd": "ai 3"},
+            {"cmd": "book stats"}
+          ],
+          "expected_patterns": ["AI:", "(book)", "BOOK: enabled=true", "hits=1"],
+          "timeout": 8000
+        }
+      ]
+    },
     "functional_uci": {
       "description": "UCI handshake surface with transcript fixtures",
       "required": true,

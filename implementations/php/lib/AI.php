@@ -7,362 +7,277 @@ require_once __DIR__ . '/Board.php';
 require_once __DIR__ . '/MoveGenerator.php';
 
 /**
- * AI with minimax and alpha-beta pruning
+ * AI with iterative deepening + negamax alpha-beta + transposition table.
  */
 class AI {
-    private const TT_FLAG_EXACT = 0;
-    private const TT_FLAG_LOWER = 1;
-    private const TT_FLAG_UPPER = 2;
-    private const SCORE_INF = 1000000000;
-    private const SCORE_MATE = 1000000;
+    private const MATE_VALUE = 100000;
+    private const INFINITY_SCORE = 1000000000;
 
     private Board $board;
     private MoveGenerator $move_gen;
     private array $tt = [];
-    private int $tt_max_entries = 200000;
-    private ?float $search_deadline = null;
+    private ?float $deadline = null;
+    private bool $timed_out = false;
     private bool $stop_requested = false;
-    private int $node_count = 0;
-    
+
     public function __construct(Board $board, MoveGenerator $move_gen) {
         $this->board = $board;
         $this->move_gen = $move_gen;
-    }
-    
-    public function find_best_move(int $depth): ?array {
-        $result = $this->search_with_iterative_deepening($depth, null);
-        if ($result === null) {
-            return null;
-        }
-
-        return [$result['move'], $result['score'], $result['time_ms']];
-    }
-
-    public function find_best_move_timed(int $time_limit_ms, int $max_depth = 64): ?array {
-        $max_depth = max(1, $max_depth);
-        $time_limit_ms = max(1, $time_limit_ms);
-        return $this->search_with_iterative_deepening($max_depth, $time_limit_ms);
     }
 
     public function request_stop(): void {
         $this->stop_requested = true;
     }
 
-    public function clear_stop_request(): void {
-        $this->stop_requested = false;
+    /**
+     * Backward-compatible API used by `ai <depth>`.
+     *
+     * @return array{0:Move,1:int,2:int}|null
+     */
+    public function find_best_move(int $depth): ?array {
+        [$move, $score, , $time_ms, ] = $this->search($depth, 0);
+        if ($move === null) {
+            return null;
+        }
+        return [$move, $score, $time_ms];
     }
 
-    private function search_with_iterative_deepening(int $max_depth, ?int $time_limit_ms): ?array {
-        $start_time = microtime(true);
-        $this->clear_stop_request();
-        $this->search_deadline = $time_limit_ms !== null ? ($start_time + ($time_limit_ms / 1000.0)) : null;
-        $this->node_count = 0;
-
-        $root_moves = $this->move_gen->generate_moves();
-        if (empty($root_moves)) {
-            $this->search_deadline = null;
-            return null;
-        }
-
-        $best_move = null;
-        $best_score = -self::SCORE_INF;
-        $best_depth = 0;
-
-        $tt_entry = $this->tt_lookup($this->board->zobrist_hash);
-        $root_hint = $tt_entry['best'] ?? null;
-        $ordered_root = $this->order_moves($root_moves, $root_hint);
-
-        for ($depth = 1; $depth <= $max_depth; $depth++) {
-            if ($this->should_stop_search()) {
-                break;
-            }
-
-            $iteration = $this->search_root($depth, $ordered_root);
-            if ($iteration === null) {
-                break;
-            }
-
-            $best_move = $iteration['move'];
-            $best_score = $iteration['score'];
-            $best_depth = $depth;
-            $ordered_root = $this->order_moves($root_moves, $iteration['best_sig']);
-        }
-
-        if ($best_move === null) {
-            $best_move = $ordered_root[0] ?? null;
-            if ($best_move === null) {
-                $this->search_deadline = null;
-                return null;
-            }
-            $best_score = 0;
-        }
-
-        $elapsed_ms = (int) round((microtime(true) - $start_time) * 1000);
-        $timed_out = $time_limit_ms !== null && $this->search_deadline !== null && microtime(true) >= $this->search_deadline;
-        $this->search_deadline = null;
-
-        return [
-            'move' => $best_move,
-            'score' => $best_score,
-            'time_ms' => $elapsed_ms,
-            'depth' => $best_depth,
-            'timed_out' => $timed_out,
-            'nodes' => $this->node_count,
-        ];
-    }
-
-    private function search_root(int $depth, array $moves): ?array {
-        $alpha = -self::SCORE_INF;
-        $beta = self::SCORE_INF;
-        $best_score = -self::SCORE_INF;
-        $best_move = null;
-        $best_sig = null;
-
-        foreach ($moves as $move) {
-            if ($this->should_stop_search()) {
-                return null;
-            }
-
-            $this->board->make_move($move);
-            $child_score = $this->negamax($depth - 1, -$beta, -$alpha, 1);
-            $this->board->undo_move();
-
-            if ($child_score === null) {
-                return null;
-            }
-
-            $score = -$child_score;
-            if ($score > $best_score) {
-                $best_score = $score;
-                $best_move = $move;
-                $best_sig = $this->move_signature($move);
-            }
-
-            if ($score > $alpha) {
-                $alpha = $score;
-            }
-            if ($alpha >= $beta) {
-                break;
-            }
-        }
-
-        if ($best_move === null) {
-            return null;
-        }
-
-        $this->tt_store(
-            $this->board->zobrist_hash,
-            $depth,
-            $best_score,
-            self::TT_FLAG_EXACT,
-            $best_sig
-        );
-
-        return ['move' => $best_move, 'score' => $best_score, 'best_sig' => $best_sig];
-    }
-
-    private function negamax(int $depth, int $alpha, int $beta, int $ply): ?int {
-        $this->node_count++;
-        if (($this->node_count & 2047) === 0 && $this->should_stop_search()) {
-            return null;
-        }
-
-        if ($this->should_stop_search()) {
-            return null;
-        }
-
-        if ($depth === 0) {
-            return $this->evaluate();
-        }
-
-        if ($this->move_gen->is_checkmate()) {
-            return -self::SCORE_MATE + $ply;
-        }
-
-        if ($this->move_gen->is_stalemate()) {
-            return 0;
-        }
-
-        $alpha_original = $alpha;
-        $beta_original = $beta;
-        $hash = $this->board->zobrist_hash;
-        $tt_entry = $this->tt_lookup($hash);
-        $best_hint = null;
-
-        if ($tt_entry !== null) {
-            $best_hint = $tt_entry['best'] ?? null;
-            if ($tt_entry['depth'] >= $depth) {
-                if ($tt_entry['flag'] === self::TT_FLAG_EXACT) {
-                    return $tt_entry['score'];
-                }
-
-                if ($tt_entry['flag'] === self::TT_FLAG_LOWER) {
-                    $alpha = max($alpha, $tt_entry['score']);
-                } elseif ($tt_entry['flag'] === self::TT_FLAG_UPPER) {
-                    $beta = min($beta, $tt_entry['score']);
-                }
-
-                if ($alpha >= $beta) {
-                    return $tt_entry['score'];
-                }
-            }
+    /**
+     * @return array{0:?Move,1:int,2:int,3:int,4:bool}
+     */
+    public function search(int $max_depth, int $movetime_ms = 0): array {
+        if ($max_depth < 1) {
+            $max_depth = 1;
+        } elseif ($max_depth > 5) {
+            $max_depth = 5;
         }
 
         $moves = $this->move_gen->generate_moves();
         if (empty($moves)) {
-            if ($this->move_gen->is_in_check()) {
-                return -self::SCORE_MATE + $ply;
-            }
-            return 0;
+            return [null, 0, 0, 0, false];
         }
 
-        $moves = $this->order_moves($moves, $best_hint);
-        $best_score = -self::SCORE_INF;
-        $best_sig = null;
+        $this->timed_out = false;
+        $this->stop_requested = false;
+        $start = microtime(true);
+        $this->deadline = $movetime_ms > 0 ? ($start + ($movetime_ms / 1000.0)) : null;
 
-        foreach ($moves as $move) {
+        $best_move = $moves[0];
+        $best_score = $this->evaluate();
+        $completed_depth = 0;
+
+        for ($depth = 1; $depth <= $max_depth; $depth++) {
+            [$score, $move, $complete] = $this->search_root($depth);
+            if (!$complete) {
+                break;
+            }
+            if ($move !== null) {
+                $best_move = $move;
+                $best_score = $score;
+                $completed_depth = $depth;
+            }
+        }
+
+        if ($completed_depth === 0) {
+            $completed_depth = 1;
+        }
+
+        $elapsed_ms = (int) round((microtime(true) - $start) * 1000);
+        return [$best_move, $best_score, $completed_depth, $elapsed_ms, $this->timed_out];
+    }
+
+    /**
+     * @return array{0:int,1:?Move,2:bool}
+     */
+    private function search_root(int $depth): array {
+        if ($this->time_exceeded()) {
+            return [0, null, false];
+        }
+
+        $moves = $this->move_gen->generate_moves();
+        if (empty($moves)) {
+            return [0, null, true];
+        }
+
+        $entry = $this->tt[(string) $this->board->zobrist_hash] ?? null;
+        $tt_move = $entry['best_move'] ?? null;
+        $ordered = $this->order_moves($moves, $tt_move);
+
+        $alpha = -self::INFINITY_SCORE;
+        $beta = self::INFINITY_SCORE;
+        $best_score = -self::INFINITY_SCORE;
+        $best_move = $ordered[0] ?? null;
+
+        foreach ($ordered as $move) {
+            if ($this->time_exceeded()) {
+                return [0, null, false];
+            }
             $this->board->make_move($move);
-            $child_score = $this->negamax($depth - 1, -$beta, -$alpha, $ply + 1);
+            [$score, , $ok] = $this->negamax($depth - 1, -$beta, -$alpha);
             $this->board->undo_move();
 
-            if ($child_score === null) {
-                return null;
+            if (!$ok) {
+                return [0, null, false];
             }
 
-            $score = -$child_score;
+            $score = -$score;
             if ($score > $best_score) {
                 $best_score = $score;
-                $best_sig = $this->move_signature($move);
+                $best_move = $move;
             }
-
             if ($score > $alpha) {
                 $alpha = $score;
             }
+        }
 
+        return [$best_score, $best_move, true];
+    }
+
+    /**
+     * @return array{0:int,1:?Move,2:bool}
+     */
+    private function negamax(int $depth, int $alpha, int $beta): array {
+        if ($this->time_exceeded()) {
+            return [0, null, false];
+        }
+
+        $original_alpha = $alpha;
+        $key = (string) $this->board->zobrist_hash;
+        $best_from_tt = null;
+        $entry = $this->tt[$key] ?? null;
+        if ($entry !== null && $entry['depth'] >= $depth) {
+            if ($entry['flag'] === 'exact') {
+                return [$entry['score'], $entry['best_move'], true];
+            }
+            if ($entry['flag'] === 'lower') {
+                $alpha = max($alpha, $entry['score']);
+            } elseif ($entry['flag'] === 'upper') {
+                $beta = min($beta, $entry['score']);
+            }
+            if ($alpha >= $beta) {
+                return [$entry['score'], $entry['best_move'], true];
+            }
+            $best_from_tt = $entry['best_move'];
+        }
+
+        if ($depth === 0) {
+            return [$this->evaluate(), null, true];
+        }
+
+        if ($this->move_gen->is_checkmate()) {
+            return [-self::MATE_VALUE + $depth, null, true];
+        }
+        if ($this->move_gen->is_stalemate()) {
+            return [0, null, true];
+        }
+
+        $moves = $this->move_gen->generate_moves();
+        if (empty($moves)) {
+            return [0, null, true];
+        }
+
+        $ordered = $this->order_moves($moves, $best_from_tt);
+        $best_score = -self::INFINITY_SCORE;
+        $best_move = $ordered[0] ?? null;
+
+        foreach ($ordered as $move) {
+            if ($this->time_exceeded()) {
+                return [0, null, false];
+            }
+            $this->board->make_move($move);
+            [$score, , $ok] = $this->negamax($depth - 1, -$beta, -$alpha);
+            $this->board->undo_move();
+
+            if (!$ok) {
+                return [0, null, false];
+            }
+            $score = -$score;
+
+            if ($score > $best_score) {
+                $best_score = $score;
+                $best_move = $move;
+            }
+            if ($score > $alpha) {
+                $alpha = $score;
+            }
             if ($alpha >= $beta) {
                 break;
             }
         }
 
-        $flag = self::TT_FLAG_EXACT;
-        if ($best_score <= $alpha_original) {
-            $flag = self::TT_FLAG_UPPER;
-        } elseif ($best_score >= $beta_original) {
-            $flag = self::TT_FLAG_LOWER;
-        }
-
-        $this->tt_store($hash, $depth, $best_score, $flag, $best_sig);
-        return $best_score;
-    }
-
-    private function should_stop_search(): bool {
-        if ($this->stop_requested) {
-            return true;
-        }
-        if ($this->search_deadline === null) {
-            return false;
-        }
-        return microtime(true) >= $this->search_deadline;
-    }
-
-    private function tt_lookup(int $hash): ?array {
-        $key = $this->tt_key($hash);
-        return $this->tt[$key] ?? null;
-    }
-
-    private function tt_store(int $hash, int $depth, int $score, int $flag, ?array $best_sig): void {
-        $key = $this->tt_key($hash);
-        $existing = $this->tt[$key] ?? null;
-        if ($existing !== null && $existing['depth'] > $depth) {
-            return;
-        }
-
-        if (count($this->tt) >= $this->tt_max_entries) {
-            // Simple bounded table policy to keep memory use deterministic.
-            $this->tt = [];
+        $flag = 'exact';
+        if ($best_score <= $original_alpha) {
+            $flag = 'upper';
+        } elseif ($best_score >= $beta) {
+            $flag = 'lower';
         }
 
         $this->tt[$key] = [
             'depth' => $depth,
-            'score' => $score,
+            'score' => $best_score,
             'flag' => $flag,
-            'best' => $best_sig,
+            'best_move' => $best_move,
         ];
+
+        return [$best_score, $best_move, true];
     }
 
-    private function tt_key(int $hash): string {
-        return (string) sprintf('%u', $hash);
-    }
-
-    private function order_moves(array $moves, ?array $tt_best_sig): array {
-        $scored = [];
-        foreach ($moves as $idx => $move) {
-            $score = $this->move_order_score($move);
-            if ($tt_best_sig !== null && $this->move_matches_signature($move, $tt_best_sig)) {
-                $score += 1000000;
-            }
-            $scored[] = ['idx' => $idx, 'score' => $score, 'move' => $move];
-        }
-
-        usort($scored, function(array $a, array $b): int {
-            if ($a['score'] === $b['score']) {
-                return $a['idx'] <=> $b['idx'];
-            }
-            return $b['score'] <=> $a['score'];
+    /**
+     * @param Move[] $moves
+     * @return Move[]
+     */
+    private function order_moves(array $moves, ?Move $tt_move = null): array {
+        usort($moves, function (Move $a, Move $b) use ($tt_move): int {
+            return $this->move_ordering_score($b, $tt_move) <=> $this->move_ordering_score($a, $tt_move);
         });
-
-        $ordered = [];
-        foreach ($scored as $entry) {
-            $ordered[] = $entry['move'];
-        }
-        return $ordered;
+        return $moves;
     }
 
-    private function move_order_score(Move $move): int {
+    private function move_ordering_score(Move $move, ?Move $tt_move): int {
         $score = 0;
-
-        [$moving_piece, $_] = $this->board->get_piece($move->from_row, $move->from_col);
-        [$target_piece, $_target_color] = $this->board->get_piece($move->to_row, $move->to_col);
-
-        if ($move->is_en_passant) {
-            $score += 5000;
-        } elseif ($target_piece !== CHESS_EMPTY) {
-            $score += 5000 + CHESS_PIECE_VALUES[$target_piece] - intdiv(CHESS_PIECE_VALUES[$moving_piece], 10);
+        if ($tt_move !== null && $this->same_move($move, $tt_move)) {
+            $score += 100000;
         }
 
+        [$target_piece, ] = $this->board->get_piece($move->to_row, $move->to_col);
+        if ($target_piece !== CHESS_EMPTY) {
+            $score += 10000 + CHESS_PIECE_VALUES[$target_piece];
+        }
         if ($move->promotion !== null) {
             $score += 9000 + CHESS_PIECE_VALUES[$move->promotion];
         }
-
         if ($move->is_castling) {
-            $score += 50;
+            $score += 100;
         }
-
         return $score;
     }
 
-    private function move_signature(Move $move): array {
-        return [
-            'from_row' => $move->from_row,
-            'from_col' => $move->from_col,
-            'to_row' => $move->to_row,
-            'to_col' => $move->to_col,
-            'promotion' => $move->promotion,
-            'is_castling' => $move->is_castling,
-            'is_en_passant' => $move->is_en_passant,
-        ];
+    private function same_move(?Move $a, ?Move $b): bool {
+        if ($a === null || $b === null) {
+            return false;
+        }
+        return $a->from_row === $b->from_row &&
+            $a->from_col === $b->from_col &&
+            $a->to_row === $b->to_row &&
+            $a->to_col === $b->to_col &&
+            $a->promotion === $b->promotion;
     }
 
-    private function move_matches_signature(Move $move, array $sig): bool {
-        return $move->from_row === $sig['from_row']
-            && $move->from_col === $sig['from_col']
-            && $move->to_row === $sig['to_row']
-            && $move->to_col === $sig['to_col']
-            && $move->promotion === $sig['promotion']
-            && $move->is_castling === $sig['is_castling']
-            && $move->is_en_passant === $sig['is_en_passant'];
+    private function time_exceeded(): bool {
+        if ($this->stop_requested) {
+            $this->timed_out = true;
+            return true;
+        }
+        if ($this->deadline === null) {
+            return false;
+        }
+        if (microtime(true) >= $this->deadline) {
+            $this->timed_out = true;
+            return true;
+        }
+        return false;
     }
-
+    
     public function evaluate(): int {
         $score = 0;
         

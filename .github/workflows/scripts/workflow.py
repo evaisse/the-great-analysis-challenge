@@ -345,7 +345,7 @@ class WorkflowTool:
             print(f"❌ Implementation directory not found: {impl_dir}")
             return False
 
-        image = docker_image or f"chess-{impl_name}-test"
+        image = docker_image or f"chess-{impl_name}"
         cmd = [
             "python3",
             "test/test_harness.py",
@@ -994,13 +994,13 @@ def main():
     # test-chess-engine command
     test_engine_parser = subparsers.add_parser('test-chess-engine', help='Run shared chess-engine harness')
     test_engine_parser.add_argument('impl_name', help='Implementation name')
-    test_engine_parser.add_argument('--track', default='v1', help='Track name (v1, v2-foundation, v2-functional, v2-system, v2-full)')
-    test_engine_parser.add_argument('--docker-image', help='Docker image name (default: chess-<impl>-test)')
+    test_engine_parser.add_argument('--track', default='v1', help='Track name (v1, v2-foundation, v2-functional, v2-system, v2-full, v3-book)')
+    test_engine_parser.add_argument('--docker-image', help='Docker image name (default: chess-<impl>)')
 
     # benchmark-stress command
     stress_parser = subparsers.add_parser('benchmark-stress', help='Run stress benchmark suite')
     stress_parser.add_argument('impl_name', help='Implementation name')
-    stress_parser.add_argument('--track', default='v1', help='Track name (v1, v2-foundation, v2-functional, v2-system, v2-full)')
+    stress_parser.add_argument('--track', default='v1', help='Track name (v1, v2-foundation, v2-functional, v2-system, v2-full, v3-book)')
     stress_parser.add_argument('--profile', default='quick', choices=['quick', 'full'], help='Benchmark profile')
     stress_parser.add_argument('--timeout', type=int, default=300, help='Timeout in seconds')
 

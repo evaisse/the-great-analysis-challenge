@@ -8,7 +8,7 @@ import sys
 import re
 import json
 import time
-from typing import Optional, Dict
+from typing import Optional
 from lib.board import Board
 from lib.move_generator import MoveGenerator
 from lib.fen_parser import FenParser
@@ -19,8 +19,6 @@ from lib.types import Move, Color, PieceType
 
 class ChessEngine:
     """Main chess engine class that handles user commands and game flow."""
-    GO_MAX_DEPTH = 5
-    GO_INFINITE_MOVETIME_MS = 10000
     
     def __init__(self):
         self.board = Board()
@@ -32,6 +30,16 @@ class ChessEngine:
         self._go_infinite = False
         self._pgn_path: Optional[str] = None
         self._pgn_moves = []
+        self._book_path: Optional[str] = None
+        self._book_enabled = False
+        self._book_entries = {}
+        self._book_entry_count = 0
+        self._book_lookups = 0
+        self._book_hits = 0
+        self._book_misses = 0
+        self._book_played = 0
+        self._uci_hash_mb = 16
+        self._uci_threads = 1
         self._chess960_id = 0
         self._trace_enabled = False
         self._trace_level = 'info'
@@ -106,10 +114,20 @@ class ChessEngine:
                 self.handle_stop()
             elif cmd == 'pgn':
                 self.handle_pgn(parts[1:])
+            elif cmd == 'book':
+                self.handle_book(parts[1:])
+            elif cmd == 'endgame':
+                self.handle_endgame(parts[1:])
             elif cmd == 'uci':
                 self.handle_uci()
             elif cmd == 'isready':
                 self.handle_isready()
+            elif cmd == 'setoption':
+                self.handle_setoption(parts[1:])
+            elif cmd == 'ucinewgame':
+                self.handle_ucinewgame()
+            elif cmd == 'position':
+                self.handle_position(parts[1:])
             elif cmd == 'new960':
                 self.handle_new960(parts[1:])
             elif cmd == 'position960':
@@ -228,33 +246,26 @@ class ChessEngine:
         if not (1 <= depth <= 5):
             print('ERROR: AI depth must be 1-5')
             return
-        
-        start_time = time.time()
-        
-        best_move, eval_score = self.ai.get_best_move(depth)
-        
-        end_time = time.time()
-        elapsed_ms = int((end_time - start_time) * 1000)
-        self._apply_ai_move(best_move, eval_score, depth, elapsed_ms)
+        self.handle_ai_timed(depth, 0)
 
-    def handle_ai_timed_move(self, movetime_ms: int, max_depth: int = GO_MAX_DEPTH):
-        """Handle time-managed AI move."""
-        if movetime_ms <= 0:
-            print('ERROR: movetime must be > 0')
+    def handle_ai_timed(self, max_depth: int, movetime_ms: int):
+        """Handle time-managed AI search."""
+        legal_moves = self.move_generator.generate_legal_moves()
+        if not legal_moves:
+            print('ERROR: No legal moves available')
             return
 
-        bounded_depth = max(1, min(max_depth, self.GO_MAX_DEPTH))
-        start_time = time.time()
-        best_move, eval_score, completed_depth = self.ai.get_best_move_timed(
-            movetime_ms,
-            max_depth=bounded_depth
-        )
-        elapsed_ms = int((time.time() - start_time) * 1000)
-        reported_depth = completed_depth if completed_depth > 0 else 1
-        self._apply_ai_move(best_move, eval_score, reported_depth, elapsed_ms)
+        book_move = self._choose_book_move(legal_moves)
+        if book_move is not None:
+            self._apply_book_move(book_move)
+            return
 
-    def _apply_ai_move(self, best_move: Optional[Move], eval_score: int, depth: int, elapsed_ms: int):
-        """Apply a computed AI move and print standard outputs."""
+        endgame_choice = self._choose_endgame_move(legal_moves)
+        if endgame_choice is not None:
+            self._apply_endgame_move(endgame_choice[0], endgame_choice[1])
+            return
+
+        best_move, eval_score, depth_used, elapsed_ms, _ = self.ai.search(max_depth, movetime_ms)
         if not best_move:
             print('ERROR: No legal moves available')
             return
@@ -263,11 +274,10 @@ class ChessEngine:
         self.board.make_move(best_move)
 
         move_str = best_move.to_algebraic()
-        print(f'AI: {move_str} (depth={depth}, eval={eval_score}, time={elapsed_ms}ms)')
+        print(f'AI: {move_str} (depth={depth_used}, eval={eval_score}, time={elapsed_ms}ms)')
 
         print(self.board.display())
 
-        # Check for game end
         game_status = self.board.get_game_status()
         if game_status == 'checkmate':
             winner = 'Black' if self.board.to_move == Color.WHITE else 'White'
@@ -342,6 +352,45 @@ class ChessEngine:
             return
 
         subcommand = args[0].lower()
+        if subcommand == 'depth':
+            if len(args) < 2:
+                print('ERROR: go depth requires a value')
+                return
+            try:
+                depth = int(args[1])
+            except ValueError:
+                print('ERROR: go depth requires an integer value')
+                return
+
+            if depth < 1:
+                depth = 1
+            if depth > 5:
+                depth = 5
+
+            legal_moves = self.move_generator.generate_legal_moves()
+            book_move = self._choose_book_move(legal_moves)
+            if book_move is not None:
+                move_str = book_move.to_algebraic()
+                print(f'info string bookmove {move_str}')
+                print(f'bestmove {move_str}')
+                return
+
+            endgame_choice = self._choose_endgame_move(legal_moves)
+            if endgame_choice is not None:
+                move, info = endgame_choice
+                move_str = move.to_algebraic()
+                print(f'info string endgame {info["type"]} score cp {info["score_white"]}')
+                print(f'bestmove {move_str}')
+                return
+
+            best_move, eval_score, depth_used, elapsed_ms, _ = self.ai.search(depth, 0)
+            if not best_move:
+                print('bestmove 0000')
+                return
+            print(f'info depth {depth_used} score cp {eval_score} time {elapsed_ms} nodes 0')
+            print(f'bestmove {best_move.to_algebraic()}')
+            return
+
         if subcommand == 'movetime':
             if len(args) < 2:
                 print('ERROR: go movetime requires a value in milliseconds')
@@ -356,24 +405,21 @@ class ChessEngine:
                 print('ERROR: go movetime must be > 0')
                 return
 
-            self.handle_ai_timed_move(movetime_ms, max_depth=self.GO_MAX_DEPTH)
+            self.handle_ai_timed(5, movetime_ms)
+            return
+
+        if subcommand == 'wtime':
+            movetime_ms, error = self._derive_movetime_from_clock_args(args)
+            if error is not None:
+                print(f'ERROR: {error}')
+                return
+            self.handle_ai_timed(5, movetime_ms)
             return
 
         if subcommand == 'infinite':
             self._go_infinite = True
-            try:
-                # Wave-1 cooperative behavior: bounded long search instead of pure ack-only stub.
-                self.handle_ai_timed_move(self.GO_INFINITE_MOVETIME_MS, max_depth=self.GO_MAX_DEPTH)
-            finally:
-                self._go_infinite = False
-            return
-
-        if subcommand in ('wtime', 'btime', 'winc', 'binc', 'movestogo'):
-            controls = self._parse_go_time_controls(args)
-            if controls is None:
-                return
-            movetime_ms = self._compute_go_movetime(controls)
-            self.handle_ai_timed_move(movetime_ms, max_depth=self.GO_MAX_DEPTH)
+            print('OK: go infinite acknowledged (bounded search mode)')
+            self.handle_ai_timed(5, 15000)
             return
 
         print('ERROR: Unsupported go command')
@@ -381,76 +427,50 @@ class ChessEngine:
     def handle_stop(self):
         """Handle stop command."""
         self._go_infinite = False
+        self.ai.request_stop()
         print('OK: stop')
 
-    def _parse_go_time_controls(self, args) -> Optional[Dict[str, int]]:
-        """Parse key-value go time controls."""
-        allowed = {'wtime', 'btime', 'winc', 'binc', 'movestogo'}
-        parsed: Dict[str, int] = {}
-        idx = 0
-
-        while idx < len(args):
-            key = args[idx].lower()
-            if key not in allowed:
-                print(f'ERROR: Unsupported go parameter: {key}')
-                return None
-
-            if idx + 1 >= len(args):
-                print(f'ERROR: go {key} requires an integer value')
-                return None
-
-            if key in parsed:
-                print(f'ERROR: Duplicate go parameter: {key}')
-                return None
-
+    def _derive_movetime_from_clock_args(self, args):
+        """Derive think time from go wtime/btime/winc/binc controls."""
+        values = {'winc': 0, 'binc': 0, 'movestogo': 30}
+        i = 0
+        while i < len(args):
+            key = args[i].lower()
+            i += 1
+            if i >= len(args):
+                return 0, f'go {key} requires a value'
             try:
-                value = int(args[idx + 1])
+                value = int(args[i])
             except ValueError:
-                print(f'ERROR: go {key} requires an integer value')
-                return None
+                return 0, f'go {key} requires an integer value'
+            i += 1
 
-            if key == 'movestogo':
-                if value <= 0:
-                    print('ERROR: go movestogo must be > 0')
-                    return None
-            elif value < 0:
-                print(f'ERROR: go {key} must be >= 0')
-                return None
+            if key not in ('wtime', 'btime', 'winc', 'binc', 'movestogo'):
+                return 0, f'unsupported go parameter: {key}'
+            values[key] = value
 
-            parsed[key] = value
-            idx += 2
+        if 'wtime' not in values or 'btime' not in values:
+            return 0, 'go wtime/btime parameters are required'
+        if values['wtime'] <= 0 or values['btime'] <= 0:
+            return 0, 'go wtime/btime must be > 0'
+        if values['movestogo'] <= 0:
+            values['movestogo'] = 30
 
-        required = ('wtime', 'btime', 'winc', 'binc')
-        missing = [field for field in required if field not in parsed]
-        if missing:
-            print(f"ERROR: go time controls missing required fields: {' '.join(missing)}")
-            return None
-
-        return parsed
-
-    def _compute_go_movetime(self, controls: Dict[str, int]) -> int:
-        """Compute a practical per-move time budget from clock controls."""
         if self.board.to_move == Color.WHITE:
-            remaining_ms = controls['wtime']
-            increment_ms = controls['winc']
+            base = values['wtime']
+            inc = values['winc']
         else:
-            remaining_ms = controls['btime']
-            increment_ms = controls['binc']
+            base = values['btime']
+            inc = values['binc']
 
-        moves_to_go = controls.get('movestogo', 30)
-
-        if remaining_ms <= 0:
-            return max(25, min(1000, increment_ms))
-
-        reserve_ms = max(50, remaining_ms // 20)
-        usable_ms = max(1, remaining_ms - reserve_ms)
-        budget_ms = usable_ms // max(1, moves_to_go)
-        budget_ms += increment_ms // 2
-        budget_ms = max(25, budget_ms)
-        budget_ms = min(budget_ms, usable_ms)
-
-        # Keep command responsive even with very large remaining clocks.
-        return min(budget_ms, 30000)
+        budget = base // (values['movestogo'] + 1) + inc // 2
+        if budget < 50:
+            budget = 50
+        if budget >= base:
+            budget = base // 2
+        if budget <= 0:
+            return 0, 'unable to derive positive movetime from clocks'
+        return budget, None
 
     def handle_pgn(self, args):
         """Handle pgn command family."""
@@ -490,6 +510,81 @@ class ChessEngine:
 
         print('ERROR: Unsupported pgn command')
 
+    def handle_book(self, args):
+        """Handle book command family."""
+        if not args:
+            print('ERROR: book requires subcommand (load|on|off|stats)')
+            return
+
+        subcommand = args[0].lower()
+        if subcommand == 'load':
+            if len(args) < 2:
+                print('ERROR: book load requires a file path')
+                return
+            path = ' '.join(args[1:])
+            try:
+                with open(path, 'r', encoding='utf-8') as handle:
+                    content = handle.read()
+                entries, total_entries = self._parse_book_entries(content)
+            except Exception as exc:
+                print(f'ERROR: book load failed: {exc}')
+                return
+
+            self._book_path = path
+            self._book_entries = entries
+            self._book_entry_count = total_entries
+            self._book_enabled = True
+            self._book_lookups = 0
+            self._book_hits = 0
+            self._book_misses = 0
+            self._book_played = 0
+            print(
+                f'BOOK: loaded path="{path}"; positions={len(entries)}; '
+                f'entries={total_entries}; enabled=true'
+            )
+            return
+
+        if subcommand == 'on':
+            self._book_enabled = True
+            print('BOOK: enabled=true')
+            return
+
+        if subcommand == 'off':
+            self._book_enabled = False
+            print('BOOK: enabled=false')
+            return
+
+        if subcommand == 'stats':
+            path = self._book_path if self._book_path else '(none)'
+            print(
+                f'BOOK: enabled={str(self._book_enabled).lower()}; '
+                f'path={path}; positions={len(self._book_entries)}; '
+                f'entries={self._book_entry_count}; lookups={self._book_lookups}; '
+                f'hits={self._book_hits}; misses={self._book_misses}; played={self._book_played}'
+            )
+            return
+
+        print('ERROR: Unsupported book command')
+
+    def handle_endgame(self, _args):
+        """Report specialized endgame detection and best move hint."""
+        info = self._detect_endgame_state()
+        if info is None:
+            active = 'white' if self.board.to_move == Color.WHITE else 'black'
+            print(f'ENDGAME: type=none; active={active}; score=0')
+            return
+
+        output = (
+            f'ENDGAME: type={info["type"]}; strong={self._color_name(info["strong"])}; '
+            f'weak={self._color_name(info["weak"])}; score={info["score_white"]}'
+        )
+        legal_moves = self.move_generator.generate_legal_moves()
+        choice = self._choose_endgame_move(legal_moves)
+        if choice is not None:
+            output += f'; bestmove={choice[0].to_algebraic().lower()}'
+        output += f'; detail={info["detail"]}'
+        print(output)
+
     def handle_uci(self):
         """Handle uci command."""
         print('uciok')
@@ -497,6 +592,118 @@ class ChessEngine:
     def handle_isready(self):
         """Handle isready command."""
         print('readyok')
+
+    def handle_setoption(self, args):
+        """Handle UCI setoption command."""
+        if len(args) < 4 or args[0].lower() != 'name':
+            print("ERROR: setoption format is 'setoption name <Hash|Threads> value <n>'")
+            return
+
+        try:
+            value_idx = next(i for i, token in enumerate(args) if token.lower() == 'value')
+        except StopIteration:
+            print("ERROR: setoption requires 'value <n>'")
+            return
+
+        if value_idx <= 0 or value_idx + 1 >= len(args):
+            print("ERROR: setoption requires 'value <n>'")
+            return
+
+        name = ' '.join(args[1:value_idx]).strip().lower()
+        try:
+            value = int(args[value_idx + 1])
+        except ValueError:
+            print('ERROR: setoption value must be an integer')
+            return
+
+        if name == 'hash':
+            self._uci_hash_mb = max(1, min(1024, value))
+            print(f'info string option Hash={self._uci_hash_mb}')
+            return
+
+        if name == 'threads':
+            self._uci_threads = max(1, min(64, value))
+            print(f'info string option Threads={self._uci_threads}')
+            return
+
+        print(f'info string unsupported option {" ".join(args[1:value_idx]).strip()}')
+
+    def handle_ucinewgame(self):
+        """Handle UCI ucinewgame command."""
+        self.board = Board()
+        self.move_generator = MoveGenerator(self.board)
+        self.fen_parser = FenParser(self.board)
+        self.ai = AI(self.board, self.move_generator)
+        self.perft = Perft(self.board, self.move_generator)
+        self.move_history = []
+
+    def handle_position(self, args):
+        """Handle UCI position command: startpos|fen ... [moves ...]."""
+        if not args:
+            print("ERROR: position requires 'startpos' or 'fen <...>'")
+            return
+
+        idx = 0
+        keyword = args[0].lower()
+        if keyword == 'startpos':
+            self.handle_ucinewgame()
+            idx = 1
+        elif keyword == 'fen':
+            idx = 1
+            fen_tokens = []
+            while idx < len(args) and args[idx].lower() != 'moves':
+                fen_tokens.append(args[idx])
+                idx += 1
+            if not fen_tokens:
+                print('ERROR: position fen requires a FEN string')
+                return
+            try:
+                self.fen_parser.parse(' '.join(fen_tokens))
+                self.move_history = []
+            except Exception as exc:
+                print(f'ERROR: Invalid FEN string: {exc}')
+                return
+        else:
+            print("ERROR: position requires 'startpos' or 'fen <...>'")
+            return
+
+        if idx < len(args) and args[idx].lower() == 'moves':
+            idx += 1
+            for move_str in args[idx:]:
+                error = self._apply_move_silent(move_str)
+                if error is not None:
+                    print(f'ERROR: position move {move_str} failed: {error}')
+                    return
+
+    def _apply_move_silent(self, move_str: str) -> Optional[str]:
+        """Apply one coordinate move without emitting CLI output."""
+        move = Move.from_algebraic(move_str)
+        if not move:
+            return 'Invalid move format'
+
+        moving_piece = self.board.get_piece(move.from_row, move.from_col)
+        if moving_piece and moving_piece.type == PieceType.PAWN and move.promotion is None:
+            if (moving_piece.color == Color.WHITE and move.to_row == 7) or \
+               (moving_piece.color == Color.BLACK and move.to_row == 0):
+                move.promotion = PieceType.QUEEN
+
+        legal_moves = self.move_generator.generate_legal_moves()
+        legal_move = None
+        for candidate in legal_moves:
+            if (candidate.from_row == move.from_row and
+                candidate.from_col == move.from_col and
+                candidate.to_row == move.to_row and
+                candidate.to_col == move.to_col and
+                candidate.promotion == move.promotion):
+                legal_move = candidate
+                break
+
+        if not legal_move:
+            return 'Illegal move'
+
+        self.move_history.append(legal_move)
+        self.board.make_move(legal_move)
+        return None
 
     def handle_new960(self, args):
         """Handle new960 command."""
@@ -626,6 +833,18 @@ class ChessEngine:
         if len(self._trace_events) > 256:
             self._trace_events = self._trace_events[-256:]
 
+    def depth_for_movetime(self, movetime_ms: int) -> int:
+        """Convert movetime budget to a practical search depth."""
+        if movetime_ms <= 200:
+            return 1
+        if movetime_ms <= 500:
+            return 2
+        if movetime_ms <= 2000:
+            return 3
+        if movetime_ms <= 5000:
+            return 4
+        return 5
+
     def get_repetition_count(self) -> int:
         """Count current position repetitions since last irreversible move."""
         current_hash = self.board.zobrist_hash
@@ -661,6 +880,318 @@ class ChessEngine:
                 continue
             moves.append(token)
         return moves
+
+    def _book_position_key(self, fen: str) -> str:
+        parts = fen.strip().split()
+        if len(parts) >= 4:
+            return ' '.join(parts[:4])
+        return fen.strip()
+
+    def _parse_book_entries(self, content: str):
+        entries = {}
+        total_entries = 0
+        move_pattern = re.compile(r'^[a-h][1-8][a-h][1-8][qrbn]?$')
+
+        for idx, raw in enumerate(content.splitlines(), start=1):
+            line = raw.strip()
+            if not line or line.startswith('#'):
+                continue
+            if '->' not in line:
+                raise ValueError(f"line {idx}: expected '<fen> -> <move> [weight]'")
+
+            left, right = line.split('->', 1)
+            key = self._book_position_key(left)
+            if not key:
+                raise ValueError(f'line {idx}: empty position key')
+
+            rhs_parts = right.strip().split()
+            if not rhs_parts:
+                raise ValueError(f'line {idx}: missing move')
+
+            move = rhs_parts[0].lower()
+            if not move_pattern.match(move):
+                raise ValueError(f'line {idx}: invalid move "{move}"')
+
+            weight = 1
+            if len(rhs_parts) > 1:
+                try:
+                    weight = int(rhs_parts[1])
+                except ValueError as exc:
+                    raise ValueError(f'line {idx}: invalid weight "{rhs_parts[1]}"') from exc
+                if weight <= 0:
+                    raise ValueError(f'line {idx}: weight must be > 0')
+
+            entries.setdefault(key, []).append((move, weight))
+            total_entries += 1
+
+        return entries, total_entries
+
+    def _choose_book_move(self, legal_moves):
+        self._book_lookups += 1
+        if not self._book_enabled or not self._book_entries:
+            self._book_misses += 1
+            return None
+
+        key = self._book_position_key(self.fen_parser.export())
+        candidates = self._book_entries.get(key, [])
+        if not candidates:
+            self._book_misses += 1
+            return None
+
+        legal_by_notation = {
+            move.to_algebraic().lower(): move
+            for move in legal_moves
+        }
+
+        weighted = []
+        total_weight = 0
+        for notation, weight in candidates:
+            move = legal_by_notation.get(notation)
+            if move is None:
+                continue
+            norm_weight = weight if weight > 0 else 1
+            weighted.append((move, norm_weight))
+            total_weight += norm_weight
+
+        if not weighted or total_weight <= 0:
+            self._book_misses += 1
+            return None
+
+        selector = (int(self.board.zobrist_hash) + self._book_lookups) % total_weight
+        acc = 0
+        chosen = weighted[0][0]
+        for move, weight in weighted:
+            acc += weight
+            if selector < acc:
+                chosen = move
+                break
+
+        self._book_hits += 1
+        return chosen
+
+    def _apply_book_move(self, move: Move):
+        self.move_history.append(move)
+        self.board.make_move(move)
+        self._book_played += 1
+        move_str = move.to_algebraic()
+
+        game_status = self.board.get_game_status()
+        if game_status == 'checkmate':
+            winner = 'Black' if self.board.to_move == Color.WHITE else 'White'
+            print(f'AI: {move_str} (book, CHECKMATE: {winner} wins)')
+        elif game_status == 'stalemate':
+            print(f'AI: {move_str} (book, STALEMATE)')
+        else:
+            from lib.draw_detection import is_draw
+            if is_draw(self.board):
+                from lib.draw_detection import is_draw_by_repetition
+                reason = 'repetition' if is_draw_by_repetition(self.board) else '50-move rule'
+                print(f'AI: {move_str} (book, DRAW: by {reason})')
+            else:
+                print(f'AI: {move_str} (book)')
+
+        print(self.board.display())
+
+    def _color_name(self, color: Color) -> str:
+        return 'white' if color == Color.WHITE else 'black'
+
+    def _manhattan(self, a, b) -> int:
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+    def _non_king_material(self, counts, color: Color) -> int:
+        return (
+            counts[color][PieceType.PAWN] +
+            counts[color][PieceType.KNIGHT] +
+            counts[color][PieceType.BISHOP] +
+            counts[color][PieceType.ROOK] +
+            counts[color][PieceType.QUEEN]
+        )
+
+    def _detect_endgame_state(self):
+        counts = {
+            Color.WHITE: {pt: 0 for pt in PieceType},
+            Color.BLACK: {pt: 0 for pt in PieceType},
+        }
+        kings = {}
+        pawns = {}
+        rooks = {}
+        queens = {}
+
+        for row in range(8):
+            for col in range(8):
+                piece = self.board.get_piece(row, col)
+                if not piece:
+                    continue
+                counts[piece.color][piece.type] += 1
+                if piece.type == PieceType.KING:
+                    kings[piece.color] = (row, col)
+                elif piece.type == PieceType.PAWN and piece.color not in pawns:
+                    pawns[piece.color] = (row, col)
+                elif piece.type == PieceType.ROOK and piece.color not in rooks:
+                    rooks[piece.color] = (row, col)
+                elif piece.type == PieceType.QUEEN and piece.color not in queens:
+                    queens[piece.color] = (row, col)
+
+        if Color.WHITE not in kings or Color.BLACK not in kings:
+            return None
+
+        white_material = self._non_king_material(counts, Color.WHITE)
+        black_material = self._non_king_material(counts, Color.BLACK)
+
+        # KQK
+        if counts[Color.WHITE][PieceType.QUEEN] == 1 and white_material == 1 and black_material == 0:
+            weak_king = kings[Color.BLACK]
+            strong_king = kings[Color.WHITE]
+            edge_distance = min(weak_king[0], 7 - weak_king[0], weak_king[1], 7 - weak_king[1])
+            king_distance = self._manhattan(strong_king, weak_king)
+            score = 900 + (14 - king_distance) * 6 + (3 - edge_distance) * 20
+            return {
+                'type': 'KQK',
+                'strong': Color.WHITE,
+                'weak': Color.BLACK,
+                'score_white': score,
+                'detail': f'queen={chr(ord("a") + queens[Color.WHITE][1])}{queens[Color.WHITE][0] + 1}',
+            }
+        if counts[Color.BLACK][PieceType.QUEEN] == 1 and black_material == 1 and white_material == 0:
+            weak_king = kings[Color.WHITE]
+            strong_king = kings[Color.BLACK]
+            edge_distance = min(weak_king[0], 7 - weak_king[0], weak_king[1], 7 - weak_king[1])
+            king_distance = self._manhattan(strong_king, weak_king)
+            score = 900 + (14 - king_distance) * 6 + (3 - edge_distance) * 20
+            return {
+                'type': 'KQK',
+                'strong': Color.BLACK,
+                'weak': Color.WHITE,
+                'score_white': -score,
+                'detail': f'queen={chr(ord("a") + queens[Color.BLACK][1])}{queens[Color.BLACK][0] + 1}',
+            }
+
+        # KPK
+        if counts[Color.WHITE][PieceType.PAWN] == 1 and white_material == 1 and black_material == 0:
+            pawn = pawns[Color.WHITE]
+            strong_king = kings[Color.WHITE]
+            weak_king = kings[Color.BLACK]
+            promotion = (7, pawn[1])
+            pawn_steps = 7 - pawn[0]
+            score = 120 + (6 - pawn_steps) * 35 + self._manhattan(weak_king, promotion) * 6 - self._manhattan(strong_king, pawn) * 8
+            if pawn_steps <= 1:
+                score += 80
+            if score < 30:
+                score = 30
+            return {
+                'type': 'KPK',
+                'strong': Color.WHITE,
+                'weak': Color.BLACK,
+                'score_white': score,
+                'detail': f'pawn={chr(ord("a") + pawn[1])}{pawn[0] + 1}',
+            }
+        if counts[Color.BLACK][PieceType.PAWN] == 1 and black_material == 1 and white_material == 0:
+            pawn = pawns[Color.BLACK]
+            strong_king = kings[Color.BLACK]
+            weak_king = kings[Color.WHITE]
+            promotion = (0, pawn[1])
+            pawn_steps = pawn[0]
+            score = 120 + (6 - pawn_steps) * 35 + self._manhattan(weak_king, promotion) * 6 - self._manhattan(strong_king, pawn) * 8
+            if pawn_steps <= 1:
+                score += 80
+            if score < 30:
+                score = 30
+            return {
+                'type': 'KPK',
+                'strong': Color.BLACK,
+                'weak': Color.WHITE,
+                'score_white': -score,
+                'detail': f'pawn={chr(ord("a") + pawn[1])}{pawn[0] + 1}',
+            }
+
+        # KRKP
+        if counts[Color.WHITE][PieceType.ROOK] == 1 and white_material == 1 and counts[Color.BLACK][PieceType.PAWN] == 1 and black_material == 1:
+            strong_king = kings[Color.WHITE]
+            weak_king = kings[Color.BLACK]
+            weak_pawn = pawns[Color.BLACK]
+            pawn_steps = weak_pawn[0]
+            score = 380 - pawn_steps * 25 + (self._manhattan(weak_king, weak_pawn) - self._manhattan(strong_king, weak_pawn)) * 12
+            if score < 50:
+                score = 50
+            return {
+                'type': 'KRKP',
+                'strong': Color.WHITE,
+                'weak': Color.BLACK,
+                'score_white': score,
+                'detail': (
+                    f'rook={chr(ord("a") + rooks[Color.WHITE][1])}{rooks[Color.WHITE][0] + 1},'
+                    f'pawn={chr(ord("a") + weak_pawn[1])}{weak_pawn[0] + 1}'
+                ),
+            }
+        if counts[Color.BLACK][PieceType.ROOK] == 1 and black_material == 1 and counts[Color.WHITE][PieceType.PAWN] == 1 and white_material == 1:
+            strong_king = kings[Color.BLACK]
+            weak_king = kings[Color.WHITE]
+            weak_pawn = pawns[Color.WHITE]
+            pawn_steps = 7 - weak_pawn[0]
+            score = 380 - pawn_steps * 25 + (self._manhattan(weak_king, weak_pawn) - self._manhattan(strong_king, weak_pawn)) * 12
+            if score < 50:
+                score = 50
+            return {
+                'type': 'KRKP',
+                'strong': Color.BLACK,
+                'weak': Color.WHITE,
+                'score_white': -score,
+                'detail': (
+                    f'rook={chr(ord("a") + rooks[Color.BLACK][1])}{rooks[Color.BLACK][0] + 1},'
+                    f'pawn={chr(ord("a") + weak_pawn[1])}{weak_pawn[0] + 1}'
+                ),
+            }
+
+        return None
+
+    def _choose_endgame_move(self, legal_moves):
+        root_info = self._detect_endgame_state()
+        if root_info is None or not legal_moves:
+            return None
+
+        root_color = self.board.to_move
+        best_move = legal_moves[0]
+        best_notation = best_move.to_algebraic().lower()
+        best_score = -10**9
+
+        for move in legal_moves:
+            self.board.make_move(move)
+            next_info = self._detect_endgame_state()
+            if next_info is not None:
+                score = next_info['score_white']
+            else:
+                score = self.ai.evaluate_position()
+            if root_color == Color.BLACK:
+                score = -score
+            notation = move.to_algebraic().lower()
+            if score > best_score or (score == best_score and notation < best_notation):
+                best_score = score
+                best_move = move
+                best_notation = notation
+            self.board.undo_move(move)
+
+        return best_move, root_info
+
+    def _apply_endgame_move(self, move: Move, info):
+        self.move_history.append(move)
+        self.board.make_move(move)
+        move_str = move.to_algebraic()
+        print(f'AI: {move_str} (endgame {info["type"]}, score={info["score_white"]})')
+
+        print(self.board.display())
+
+        game_status = self.board.get_game_status()
+        if game_status == 'checkmate':
+            winner = 'Black' if self.board.to_move == Color.WHITE else 'White'
+            print(f'CHECKMATE: {winner} wins')
+        elif game_status == 'stalemate':
+            print('STALEMATE: Draw')
+        else:
+            from lib.draw_detection import is_draw
+            if is_draw(self.board):
+                from lib.draw_detection import is_draw_by_repetition
+                reason = 'repetition' if is_draw_by_repetition(self.board) else '50-move rule'
+                print(f'DRAW: by {reason}')
     
     def handle_status(self):
         """Handle status command."""
@@ -710,12 +1241,18 @@ Available commands:
   draws                      - Show draw detection status
   history                    - Show position hash history
   go movetime <ms>           - Time-managed AI move
-  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-managed AI move
-  go infinite                - Run bounded long iterative search
-  stop                       - Cooperative stop signal
+  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-based timed move
+  go depth <n>               - UCI-style depth search (prints info/bestmove)
+  go infinite                - Start bounded long search mode
+  stop                       - Stop infinite search mode
   pgn load|show|moves        - PGN command family
+  book load|on|off|stats     - Native opening book controls
+  endgame                    - Detect specialized endgame and best move hint
   uci                        - Enter/respond to UCI handshake
   isready                    - UCI readiness probe
+  setoption name <Hash|Threads> value <n> - Set UCI option
+  ucinewgame                 - Reset internal state for UCI game
+  position startpos|fen ... [moves ...] - Load UCI position
   new960 [id]                - Start Chess960 game by id (0-959)
   position960                - Show current Chess960 metadata
   perft <depth>              - Performance test (move count)

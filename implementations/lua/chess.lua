@@ -20,15 +20,25 @@ local position_history = {}
 local irreversible_history = {}
 local pgn_path = nil
 local pgn_moves = {}
+local book_path = nil
+local book_enabled = false
+local book_entries = {}
+local book_entry_count = 0
+local book_lookups = 0
+local book_hits = 0
+local book_misses = 0
+local book_played = 0
+local uci_hash_mb = 16
+local uci_threads = 1
 local chess960_id = 0
 local trace_enabled = false
 local trace_level = "info"
 local trace_events = {}
 local trace_command_count = 0
-local transposition_table = {}
-local tt_entry_count = 0
+local tt = {}
+local search_deadline = nil
+local search_timed_out = false
 local search_stop_requested = false
-local active_search = nil
 
 local zobrist_keys = {
     pieces = {},
@@ -771,9 +781,6 @@ local function import_fen(fen_str)
     fullmove_number = tonumber(parts[6]) or 1
     
     move_history = {}
-    position_history = {}
-    irreversible_history = {}
-    zobrist_hash = compute_hash()
     return true, "OK"
 end
 
@@ -842,169 +849,112 @@ local function evaluate_position()
     return score
 end
 
--- Negamax search with iterative deepening and transposition table
-local SEARCH_INF = 2000000000
-local MATE_SCORE = 1000000
-local TT_FLAG_EXACT = "exact"
-local TT_FLAG_LOWER = "lower"
-local TT_FLAG_UPPER = "upper"
-local TT_MAX_ENTRIES = 200000
-local SEARCH_TIME_CHECK_INTERVAL = 512
-local GO_INFINITE_BUDGET_MS = 5000
-local GO_MAX_DEPTH = 64
-
-local function clone_move(move)
-    if not move then return nil end
-    if move[5] then
-        return {move[1], move[2], move[3], move[4], move[5]}
-    end
-    return {move[1], move[2], move[3], move[4]}
+-- Minimax with alpha-beta pruning
+local function move_key(move)
+    local promo = move[5] or ""
+    return string.format("%d:%d:%d:%d:%s", move[1], move[2], move[3], move[4], promo)
 end
 
-local function moves_equal(a, b)
-    if not a or not b then return false end
-    return a[1] == b[1] and a[2] == b[2] and a[3] == b[3] and a[4] == b[4] and a[5] == b[5]
-end
-
-local function move_to_string(move)
-    local move_str = indices_to_algebraic(move[1], move[2]) .. indices_to_algebraic(move[3], move[4])
-    if move[5] then
-        move_str = move_str .. move[5]
-    end
-    return move_str
-end
-
-local function clear_transposition_table()
-    transposition_table = {}
-    tt_entry_count = 0
-end
-
-local function store_tt_entry(hash_key, depth, score, flag, best_move)
-    local existing = transposition_table[hash_key]
-    if existing and existing.depth and existing.depth > depth and flag ~= TT_FLAG_EXACT then
-        return
-    end
-
-    if not existing then
-        if tt_entry_count >= TT_MAX_ENTRIES then
-            clear_transposition_table()
-        end
-        tt_entry_count = tt_entry_count + 1
-    end
-
-    transposition_table[hash_key] = {
-        depth = depth,
-        score = score,
-        flag = flag,
-        best_move = clone_move(best_move)
-    }
-end
-
-local function score_move_for_ordering(move, tt_move)
-    local score = 0
-    if tt_move and moves_equal(move, tt_move) then
-        score = score + 1000000
-    end
-
-    local target_piece = board[move[3]][move[4]]
-    if target_piece ~= "." then
-        score = score + 100000 + math.abs(PIECE_VALUES[target_piece] or 0)
-    end
-
-    if move[5] then
-        score = score + 50000
-    end
-
-    return score
-end
-
-local function order_moves(moves, tt_move)
-    table.sort(moves, function(a, b)
-        return score_move_for_ordering(a, tt_move) > score_move_for_ordering(b, tt_move)
-    end)
-end
-
-local function search_should_abort(depth)
+local function search_time_exceeded()
     if search_stop_requested then
-        if active_search then
-            active_search.aborted = true
-        end
+        search_timed_out = true
         return true
     end
-
-    if not active_search or not active_search.deadline_clock then
+    if not search_deadline then
         return false
     end
-
-    active_search.nodes = active_search.nodes + 1
-    if depth <= 1 or (active_search.nodes % SEARCH_TIME_CHECK_INTERVAL == 0) then
-        if os.clock() >= active_search.deadline_clock then
-            active_search.aborted = true
-            return true
-        end
+    if os.clock() >= search_deadline then
+        search_timed_out = true
+        return true
     end
-
     return false
 end
 
-local function negamax(depth, alpha, beta, ply)
-    if search_should_abort(depth) then
-        return nil, nil, true
+local function order_moves(moves, tt_move_key)
+    local scored = {}
+    for _, move in ipairs(moves) do
+        local score = 0
+        if tt_move_key and move_key(move) == tt_move_key then
+            score = score + 100000
+        end
+        local target = board[move[3]][move[4]]
+        if target and target ~= "." then
+            score = score + 10000 + math.abs(PIECE_VALUES[target] or 0)
+        end
+        if move[5] then
+            score = score + 9000 + math.abs(PIECE_VALUES[move[5]] or 0)
+        end
+        table.insert(scored, {move = move, score = score})
+    end
+    table.sort(scored, function(a, b) return a.score > b.score end)
+
+    local ordered = {}
+    for _, item in ipairs(scored) do
+        table.insert(ordered, item.move)
+    end
+    return ordered
+end
+
+local function negamax(depth, alpha, beta)
+    if search_time_exceeded() then
+        return 0, nil, false
     end
 
-    local hash_key = zobrist_hash
-    local alpha_orig = alpha
-    local beta_orig = beta
-    local tt_entry = transposition_table[hash_key]
+    local original_alpha = alpha
+    local key = string.format("%u", zobrist_hash)
+    local best_from_tt = nil
+    local entry = tt[key]
 
-    if tt_entry and tt_entry.depth >= depth then
-        if tt_entry.flag == TT_FLAG_EXACT then
-            return tt_entry.score, clone_move(tt_entry.best_move), false
-        elseif tt_entry.flag == TT_FLAG_LOWER then
-            alpha = math.max(alpha, tt_entry.score)
-        elseif tt_entry.flag == TT_FLAG_UPPER then
-            beta = math.min(beta, tt_entry.score)
+    if entry and entry.depth >= depth then
+        if entry.flag == "exact" then
+            return entry.score, entry.best_move_key, true
+        elseif entry.flag == "lower" then
+            alpha = math.max(alpha, entry.score)
+        elseif entry.flag == "upper" then
+            beta = math.min(beta, entry.score)
         end
-
         if alpha >= beta then
-            return tt_entry.score, clone_move(tt_entry.best_move), false
+            return entry.score, entry.best_move_key, true
         end
+        best_from_tt = entry.best_move_key
     end
 
     if depth == 0 then
-        local side_sign = white_to_move and 1 or -1
-        return side_sign * evaluate_position(), nil, false
+        local eval = evaluate_position()
+        if not white_to_move then
+            eval = -eval
+        end
+        return eval, nil, true
     end
 
     local moves = generate_legal_moves()
     if #moves == 0 then
         if is_in_check(white_to_move) then
-            return -MATE_SCORE + ply, nil, false
+            return -100000 + depth, nil, true
         end
-        return 0, nil, false
+        return 0, nil, true
     end
 
-    local tt_move = tt_entry and tt_entry.best_move or nil
-    order_moves(moves, tt_move)
+    local ordered = order_moves(moves, best_from_tt)
+    local best_score = -math.huge
+    local best_move_key = move_key(ordered[1])
 
-    local best_score = -SEARCH_INF
-    local best_move = nil
-
-    for _, move in ipairs(moves) do
-        make_move_internal(move[1], move[2], move[3], move[4], move[5])
-        local child_score, _, aborted = negamax(depth - 1, -beta, -alpha, ply + 1)
-        undo_move()
-
-        if aborted then
-            return nil, nil, true
+    for _, move in ipairs(ordered) do
+        if search_time_exceeded() then
+            return 0, nil, false
         end
+        make_move_internal(move[1], move[2], move[3], move[4], move[5])
+        local score, _, ok = negamax(depth - 1, -beta, -alpha)
+        undo_move()
+        if not ok then
+            return 0, nil, false
+        end
+        score = -score
 
-        local score = -child_score
         if score > best_score then
             best_score = score
-            best_move = clone_move(move)
+            best_move_key = move_key(move)
         end
-
         if score > alpha then
             alpha = score
         end
@@ -1013,125 +963,574 @@ local function negamax(depth, alpha, beta, ply)
         end
     end
 
-    local flag = TT_FLAG_EXACT
-    if best_score <= alpha_orig then
-        flag = TT_FLAG_UPPER
-    elseif best_score >= beta_orig then
-        flag = TT_FLAG_LOWER
+    local flag = "exact"
+    if best_score <= original_alpha then
+        flag = "upper"
+    elseif best_score >= beta then
+        flag = "lower"
     end
-    store_tt_entry(hash_key, depth, best_score, flag, best_move)
+    tt[key] = {
+        depth = depth,
+        score = best_score,
+        flag = flag,
+        best_move_key = best_move_key
+    }
 
-    return best_score, best_move, false
+    return best_score, best_move_key, true
 end
 
-local function choose_fallback_move()
-    local moves = generate_legal_moves()
-    if #moves == 0 then
-        return nil
+local function search_root(depth)
+    if search_time_exceeded() then
+        return 0, nil, false
     end
 
-    local best_move = moves[1]
-    local best_score = score_move_for_ordering(best_move, nil)
-    for i = 2, #moves do
-        local move = moves[i]
-        local score = score_move_for_ordering(move, nil)
+    local moves = generate_legal_moves()
+    if #moves == 0 then
+        return 0, nil, true
+    end
+
+    local entry = tt[string.format("%u", zobrist_hash)]
+    local ordered = order_moves(moves, entry and entry.best_move_key or nil)
+    local best_score = -math.huge
+    local best_move = ordered[1]
+    local alpha = -math.huge
+    local beta = math.huge
+
+    for _, move in ipairs(ordered) do
+        if search_time_exceeded() then
+            return 0, nil, false
+        end
+        make_move_internal(move[1], move[2], move[3], move[4], move[5])
+        local score, _, ok = negamax(depth - 1, -beta, -alpha)
+        undo_move()
+        if not ok then
+            return 0, nil, false
+        end
+        score = -score
+
         if score > best_score then
             best_score = score
             best_move = move
         end
+        if score > alpha then
+            alpha = score
+        end
     end
 
-    return clone_move(best_move)
+    return best_score, best_move, true
 end
 
-local function run_iterative_search(max_depth, time_limit_ms)
-    local start_clock = os.clock()
-    clear_transposition_table()
+local function search_best_move(max_depth, movetime_ms)
+    max_depth = tonumber(max_depth) or 3
+    if max_depth < 1 then max_depth = 1 end
+    if max_depth > 5 then max_depth = 5 end
 
-    local deadline_clock = nil
-    if time_limit_ms and time_limit_ms > 0 then
-        deadline_clock = start_clock + (time_limit_ms / 1000)
+    local legal_moves = generate_legal_moves()
+    if #legal_moves == 0 then
+        return nil, 0, 0, 0, false
     end
 
-    active_search = {
-        start_clock = start_clock,
-        deadline_clock = deadline_clock,
-        nodes = 0,
-        aborted = false
-    }
+    local start_clock = os.clock()
+    search_timed_out = false
+    search_stop_requested = false
+    search_deadline = nil
+    if movetime_ms and movetime_ms > 0 then
+        search_deadline = start_clock + (movetime_ms / 1000.0)
+    end
 
-    local best_score = nil
-    local best_move = nil
+    local best_move = legal_moves[1]
+    local best_score = evaluate_position()
+    if not white_to_move then
+        best_score = -best_score
+    end
     local completed_depth = 0
 
     for depth = 1, max_depth do
-        if search_should_abort(depth) then
+        local score, move, complete = search_root(depth)
+        if not complete then
             break
         end
-
-        local score, move, aborted = negamax(depth, -SEARCH_INF, SEARCH_INF, 0)
-        if aborted then
-            break
-        end
-
-        completed_depth = depth
-        best_score = score
-        best_move = clone_move(move)
-
-        if math.abs(score) >= MATE_SCORE - 128 then
-            break
+        if move then
+            best_move = move
+            best_score = score
+            completed_depth = depth
         end
     end
 
-    local elapsed_ms = math.floor((os.clock() - start_clock) * 1000)
-    active_search = nil
-
-    return best_score, best_move, completed_depth, elapsed_ms
-end
-
-local function perform_ai_search(max_depth, time_limit_ms, allow_fallback)
-    search_stop_requested = false
-
-    local eval, best_move, reached_depth, elapsed = run_iterative_search(max_depth, time_limit_ms)
-    if allow_fallback and not best_move then
-        best_move = choose_fallback_move()
-        if best_move then
-            eval = eval or 0
-        end
+    if completed_depth == 0 then
+        completed_depth = 1
     end
 
-    if not best_move then
-        return false, "ERROR: No legal moves"
-    end
-
-    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
-    return true, string.format(
-        "AI: %s (depth=%d, eval=%d, time=%d)",
-        move_to_string(best_move),
-        reached_depth,
-        math.floor(eval or 0),
-        elapsed
-    )
+    local elapsed = math.floor((os.clock() - start_clock) * 1000)
+    return best_move, best_score, completed_depth, elapsed, search_timed_out
 end
 
 -- AI move
-local function ai_move(depth)
-    depth = tonumber(depth) or 3
-    if depth < 1 or depth > 5 then
+local function ai_move(max_depth, movetime_ms)
+    max_depth = tonumber(max_depth) or 3
+    if max_depth < 1 or max_depth > 5 then
         return false, "ERROR: AI depth must be 1-5"
     end
 
-    return perform_ai_search(depth, nil, false)
+    local best_move, eval, depth_used, elapsed = search_best_move(max_depth, movetime_ms or 0)
+    if not best_move then
+        return false, "ERROR: No legal moves"
+    end
+    
+    local move_str = indices_to_algebraic(best_move[1], best_move[2]) .. 
+                     indices_to_algebraic(best_move[3], best_move[4])
+    if best_move[5] then
+        move_str = move_str .. best_move[5]
+    end
+    
+    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    
+    return true, string.format("AI: %s (depth=%d, eval=%d, time=%d)", move_str, depth_used, eval, elapsed)
 end
 
-local function ai_move_timed(time_limit_ms, max_depth)
-    local budget = tonumber(time_limit_ms)
-    if not budget or budget <= 0 then
-        return false, "ERROR: Search time must be > 0"
+local function derive_movetime_from_clock_args(tokens)
+    local values = {winc = 0, binc = 0, movestogo = 30}
+
+    local i = 1
+    while i <= #tokens do
+        local key = tokens[i]:lower()
+        local value_raw = tokens[i + 1]
+        if not value_raw then
+            return nil, string.format("go %s requires a value", key)
+        end
+        local value = tonumber(value_raw)
+        if not value then
+            return nil, string.format("go %s requires an integer value", key)
+        end
+
+        if key ~= "wtime" and key ~= "btime" and key ~= "winc" and key ~= "binc" and key ~= "movestogo" then
+            return nil, string.format("unsupported go parameter: %s", key)
+        end
+        values[key] = math.floor(value)
+        i = i + 2
     end
 
-    local depth_cap = max_depth or GO_MAX_DEPTH
-    return perform_ai_search(depth_cap, math.floor(budget), true)
+    if not values.wtime or not values.btime then
+        return nil, "go wtime/btime parameters are required"
+    end
+    if values.wtime <= 0 or values.btime <= 0 then
+        return nil, "go wtime/btime must be > 0"
+    end
+    if values.movestogo <= 0 then
+        values.movestogo = 30
+    end
+
+    local base = white_to_move and values.wtime or values.btime
+    local inc = white_to_move and values.winc or values.binc
+    local budget = math.floor(base / (values.movestogo + 1) + inc / 2)
+
+    if budget < 50 then
+        budget = 50
+    end
+    if budget >= base then
+        budget = math.floor(base / 2)
+    end
+    if budget <= 0 then
+        return nil, "unable to derive positive movetime from clocks"
+    end
+
+    return budget, nil
+end
+
+local function book_position_key_from_fen(fen)
+    local fields = {}
+    for token in tostring(fen):gmatch("%S+") do
+        table.insert(fields, token)
+    end
+    if #fields >= 4 then
+        return table.concat({fields[1], fields[2], fields[3], fields[4]}, " ")
+    end
+    return tostring(fen):gsub("^%s*(.-)%s*$", "%1")
+end
+
+local function parse_book_entries(content)
+    local parsed = {}
+    local total_entries = 0
+    local line_no = 0
+
+    for raw_line in tostring(content):gmatch("[^\r\n]+") do
+        line_no = line_no + 1
+        local line = raw_line:gsub("^%s*(.-)%s*$", "%1")
+        if line ~= "" and not line:match("^#") then
+            local left, right = line:match("^(.-)%s*%-%>%s*(.+)$")
+            if not left or not right then
+                return nil, nil, string.format("line %d: expected '<fen> -> <move> [weight]'", line_no)
+            end
+
+            local key = book_position_key_from_fen(left)
+            if key == "" then
+                return nil, nil, string.format("line %d: empty position key", line_no)
+            end
+
+            local rhs_tokens = {}
+            for token in right:gmatch("%S+") do
+                table.insert(rhs_tokens, token)
+            end
+            if #rhs_tokens == 0 then
+                return nil, nil, string.format("line %d: missing move", line_no)
+            end
+
+            local move = rhs_tokens[1]:lower()
+            if not move:match("^[a-h][1-8][a-h][1-8][qrbn]?$") then
+                return nil, nil, string.format("line %d: invalid move '%s'", line_no, move)
+            end
+
+            local weight = 1
+            if rhs_tokens[2] then
+                local parsed_weight = tonumber(rhs_tokens[2])
+                if not parsed_weight or parsed_weight % 1 ~= 0 then
+                    return nil, nil, string.format("line %d: invalid weight '%s'", line_no, rhs_tokens[2])
+                end
+                if parsed_weight <= 0 then
+                    return nil, nil, string.format("line %d: weight must be > 0", line_no)
+                end
+                weight = math.floor(parsed_weight)
+            end
+
+            if not parsed[key] then
+                parsed[key] = {}
+            end
+            table.insert(parsed[key], {move = move, weight = weight})
+            total_entries = total_entries + 1
+        end
+    end
+
+    return parsed, total_entries, nil
+end
+
+local function book_positions_count()
+    local count = 0
+    for _ in pairs(book_entries) do
+        count = count + 1
+    end
+    return count
+end
+
+local function choose_book_move()
+    book_lookups = book_lookups + 1
+    if not book_enabled or next(book_entries) == nil then
+        book_misses = book_misses + 1
+        return nil, nil
+    end
+
+    local key = book_position_key_from_fen(export_fen())
+    local entries = book_entries[key]
+    if not entries or #entries == 0 then
+        book_misses = book_misses + 1
+        return nil, nil
+    end
+
+    local legal_moves = generate_legal_moves()
+    local legal_by_notation = {}
+    for _, move in ipairs(legal_moves) do
+        local notation = indices_to_algebraic(move[1], move[2]) .. indices_to_algebraic(move[3], move[4])
+        if move[5] then
+            notation = notation .. tostring(move[5])
+        end
+        legal_by_notation[notation:lower()] = move
+    end
+
+    local weighted = {}
+    local total_weight = 0
+    for _, entry in ipairs(entries) do
+        local legal = legal_by_notation[entry.move]
+        if legal then
+            local weight = tonumber(entry.weight) or 1
+            if weight <= 0 then weight = 1 end
+            weight = math.floor(weight)
+            table.insert(weighted, {move = legal, notation = entry.move, weight = weight})
+            total_weight = total_weight + weight
+        end
+    end
+
+    if #weighted == 0 or total_weight <= 0 then
+        book_misses = book_misses + 1
+        return nil, nil
+    end
+
+    local selector = (math.abs(zobrist_hash) + book_lookups) % total_weight
+    local acc = 0
+    local chosen = weighted[1]
+    for _, item in ipairs(weighted) do
+        acc = acc + item.weight
+        if selector < acc then
+            chosen = item
+            break
+        end
+    end
+
+    book_hits = book_hits + 1
+    return chosen.move, chosen.notation
+end
+
+local function apply_book_move(best_move, move_str)
+    if not best_move then
+        return false
+    end
+
+    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    book_played = book_played + 1
+    print("AI: " .. move_str .. " (book)")
+    display_board()
+
+    local legal_moves = generate_legal_moves()
+    if #legal_moves == 0 then
+        if is_in_check(white_to_move) then
+            print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
+        else
+            print("STALEMATE: Draw")
+        end
+    elseif is_draw() then
+        local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
+        print("DRAW: by " .. reason)
+    end
+
+    return true
+end
+
+local function color_name(is_white)
+    return is_white and "white" or "black"
+end
+
+local function manhattan(a_rank, a_file, b_rank, b_file)
+    return math.abs(a_rank - b_rank) + math.abs(a_file - b_file)
+end
+
+local function non_king_material(counts)
+    return (counts.P or 0) + (counts.N or 0) + (counts.B or 0) + (counts.R or 0) + (counts.Q or 0)
+end
+
+local function detect_endgame_state()
+    local counts = {
+        white = {P = 0, N = 0, B = 0, R = 0, Q = 0, K = 0},
+        black = {P = 0, N = 0, B = 0, R = 0, Q = 0, K = 0},
+    }
+    local kings = {}
+    local pawns = {}
+    local rooks = {}
+    local queens = {}
+
+    for rank = 1, 8 do
+        for file = 1, 8 do
+            local piece = board[rank][file]
+            if piece ~= "." then
+                local upper = piece:upper()
+                local is_white = piece:match("%u") ~= nil
+                local color = is_white and "white" or "black"
+                counts[color][upper] = (counts[color][upper] or 0) + 1
+                if upper == "K" then
+                    kings[color] = {rank, file}
+                elseif upper == "P" and not pawns[color] then
+                    pawns[color] = {rank, file}
+                elseif upper == "R" and not rooks[color] then
+                    rooks[color] = {rank, file}
+                elseif upper == "Q" and not queens[color] then
+                    queens[color] = {rank, file}
+                end
+            end
+        end
+    end
+
+    if not kings.white or not kings.black then
+        return nil
+    end
+
+    local white_material = non_king_material(counts.white)
+    local black_material = non_king_material(counts.black)
+
+    -- KQK
+    if counts.white.Q == 1 and white_material == 1 and black_material == 0 then
+        local weak_king = kings.black
+        local strong_king = kings.white
+        local edge = math.min(weak_king[1] - 1, 8 - weak_king[1], weak_king[2] - 1, 8 - weak_king[2])
+        local king_distance = manhattan(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
+        local score = 900 + (14 - king_distance) * 6 + (3 - edge) * 20
+        return {
+            type = "KQK",
+            strong_white = true,
+            weak_white = false,
+            score_white = score,
+            detail = "queen=" .. indices_to_algebraic(queens.white[1], queens.white[2]),
+        }
+    end
+    if counts.black.Q == 1 and black_material == 1 and white_material == 0 then
+        local weak_king = kings.white
+        local strong_king = kings.black
+        local edge = math.min(weak_king[1] - 1, 8 - weak_king[1], weak_king[2] - 1, 8 - weak_king[2])
+        local king_distance = manhattan(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
+        local score = 900 + (14 - king_distance) * 6 + (3 - edge) * 20
+        return {
+            type = "KQK",
+            strong_white = false,
+            weak_white = true,
+            score_white = -score,
+            detail = "queen=" .. indices_to_algebraic(queens.black[1], queens.black[2]),
+        }
+    end
+
+    -- KPK
+    if counts.white.P == 1 and white_material == 1 and black_material == 0 then
+        local pawn = pawns.white
+        local strong_king = kings.white
+        local weak_king = kings.black
+        local promotion_rank, promotion_file = 8, pawn[2]
+        local pawn_steps = 8 - pawn[1]
+        local score = 120 + (6 - pawn_steps) * 35 +
+            manhattan(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
+            manhattan(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
+        if pawn_steps <= 1 then
+            score = score + 80
+        end
+        if score < 30 then
+            score = 30
+        end
+        return {
+            type = "KPK",
+            strong_white = true,
+            weak_white = false,
+            score_white = score,
+            detail = "pawn=" .. indices_to_algebraic(pawn[1], pawn[2]),
+        }
+    end
+    if counts.black.P == 1 and black_material == 1 and white_material == 0 then
+        local pawn = pawns.black
+        local strong_king = kings.black
+        local weak_king = kings.white
+        local promotion_rank, promotion_file = 1, pawn[2]
+        local pawn_steps = pawn[1] - 1
+        local score = 120 + (6 - pawn_steps) * 35 +
+            manhattan(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
+            manhattan(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
+        if pawn_steps <= 1 then
+            score = score + 80
+        end
+        if score < 30 then
+            score = 30
+        end
+        return {
+            type = "KPK",
+            strong_white = false,
+            weak_white = true,
+            score_white = -score,
+            detail = "pawn=" .. indices_to_algebraic(pawn[1], pawn[2]),
+        }
+    end
+
+    -- KRKP
+    if counts.white.R == 1 and white_material == 1 and counts.black.P == 1 and black_material == 1 then
+        local strong_king = kings.white
+        local weak_king = kings.black
+        local weak_pawn = pawns.black
+        local pawn_steps = weak_pawn[1] - 1
+        local score = 380 - pawn_steps * 25 +
+            (manhattan(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
+                manhattan(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
+        if score < 50 then
+            score = 50
+        end
+        return {
+            type = "KRKP",
+            strong_white = true,
+            weak_white = false,
+            score_white = score,
+            detail = "rook=" .. indices_to_algebraic(rooks.white[1], rooks.white[2]) ..
+                ",pawn=" .. indices_to_algebraic(weak_pawn[1], weak_pawn[2]),
+        }
+    end
+    if counts.black.R == 1 and black_material == 1 and counts.white.P == 1 and white_material == 1 then
+        local strong_king = kings.black
+        local weak_king = kings.white
+        local weak_pawn = pawns.white
+        local pawn_steps = 8 - weak_pawn[1]
+        local score = 380 - pawn_steps * 25 +
+            (manhattan(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
+                manhattan(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
+        if score < 50 then
+            score = 50
+        end
+        return {
+            type = "KRKP",
+            strong_white = false,
+            weak_white = true,
+            score_white = -score,
+            detail = "rook=" .. indices_to_algebraic(rooks.black[1], rooks.black[2]) ..
+                ",pawn=" .. indices_to_algebraic(weak_pawn[1], weak_pawn[2]),
+        }
+    end
+
+    return nil
+end
+
+local function choose_endgame_move()
+    local root_info = detect_endgame_state()
+    if not root_info then
+        return nil, nil, nil
+    end
+
+    local legal_moves = generate_legal_moves()
+    if #legal_moves == 0 then
+        return nil, nil, nil
+    end
+
+    local root_white = white_to_move
+    local best_move = legal_moves[1]
+    local best_move_str = indices_to_algebraic(best_move[1], best_move[2]) .. indices_to_algebraic(best_move[3], best_move[4])
+    if best_move[5] then
+        best_move_str = best_move_str .. best_move[5]
+    end
+    best_move_str = best_move_str:lower()
+    local best_score = -math.huge
+
+    for _, candidate in ipairs(legal_moves) do
+        make_move_internal(candidate[1], candidate[2], candidate[3], candidate[4], candidate[5])
+        local next_info = detect_endgame_state()
+        local score = next_info and next_info.score_white or evaluate_position()
+        if not root_white then
+            score = -score
+        end
+        local move_str = indices_to_algebraic(candidate[1], candidate[2]) .. indices_to_algebraic(candidate[3], candidate[4])
+        if candidate[5] then
+            move_str = move_str .. candidate[5]
+        end
+        move_str = move_str:lower()
+        if score > best_score or (score == best_score and move_str < best_move_str) then
+            best_score = score
+            best_move = candidate
+            best_move_str = move_str
+        end
+        undo_move()
+    end
+
+    return best_move, root_info, best_move_str
+end
+
+local function apply_endgame_move(best_move, info, move_str)
+    if not best_move then
+        return false
+    end
+
+    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    print(string.format("AI: %s (endgame %s, score=%d)", move_str, info.type, info.score_white))
+    display_board()
+
+    local legal_moves = generate_legal_moves()
+    if #legal_moves == 0 then
+        if is_in_check(white_to_move) then
+            print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
+        else
+            print("STALEMATE: Draw")
+        end
+    elseif is_draw() then
+        local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
+        print("DRAW: by " .. reason)
+    end
+
+    return true
 end
 
 local function load_pgn(path)
@@ -1333,51 +1732,147 @@ local function main()
             end
             print(string.format("  %d: %016x (current)", #position_history, zobrist_hash))
         elseif cmd == "go" then
-            local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
-            subcmd = subcmd and subcmd:lower() or ""
+            local tokens = {}
+            for token in arg:gmatch("%S+") do
+                table.insert(tokens, token)
+            end
+            local subcmd = tokens[1] and tokens[1]:lower() or ""
 
-            if subcmd == "movetime" then
-                local movetime = tonumber(subarg)
+            if subcmd == "depth" then
+                local depth = tonumber(tokens[2])
+                if not depth then
+                    print("ERROR: go depth requires an integer value")
+                else
+                    depth = math.floor(depth)
+                    if depth < 1 then depth = 1 end
+                    if depth > 5 then depth = 5 end
+                    local book_move, book_move_str = choose_book_move()
+                    if book_move and book_move_str then
+                        print("info string bookmove " .. book_move_str)
+                        print("bestmove " .. book_move_str)
+                        goto continue
+                    end
+                    local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                    if endgame_move and endgame_info and endgame_move_str then
+                        print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
+                        print("bestmove " .. endgame_move_str)
+                        goto continue
+                    end
+                    local best_move, eval, depth_used, elapsed = search_best_move(depth, 0)
+                    if not best_move then
+                        print("bestmove 0000")
+                    else
+                        local move_str = indices_to_algebraic(best_move[1], best_move[2]) ..
+                                         indices_to_algebraic(best_move[3], best_move[4])
+                        if best_move[5] then
+                            move_str = move_str .. best_move[5]
+                        end
+                        print(string.format("info depth %d score cp %d time %d nodes 0", depth_used, eval, elapsed))
+                        print("bestmove " .. move_str)
+                    end
+                end
+            elseif subcmd == "movetime" then
+                local movetime = tonumber(tokens[2])
                 if not movetime then
                     print("ERROR: go movetime requires an integer value")
                 elseif movetime <= 0 then
                     print("ERROR: go movetime must be > 0")
                 else
-                    local depth = 5
-                    if movetime <= 200 then
-                        depth = 1
-                    elseif movetime <= 500 then
-                        depth = 2
-                    elseif movetime <= 2000 then
-                        depth = 3
-                    elseif movetime <= 5000 then
-                        depth = 4
-                    end
+                    local book_move, book_move_str = choose_book_move()
+                    if book_move and book_move_str then
+                        apply_book_move(book_move, book_move_str)
+                    else
+                        local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                        if endgame_move and endgame_info and endgame_move_str then
+                            apply_endgame_move(endgame_move, endgame_info, endgame_move_str)
+                        else
+                            local success, msg = ai_move(5, movetime)
+                            print(msg)
+                            if success then
+                                display_board()
 
-                    local success, msg = ai_move(depth)
-                    print(msg)
-                    if success then
-                        display_board()
-
-                        local legal_moves = generate_legal_moves()
-                        if #legal_moves == 0 then
-                            if is_in_check(white_to_move) then
-                                print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
-                            else
-                                print("STALEMATE: Draw")
+                                local legal_moves = generate_legal_moves()
+                                if #legal_moves == 0 then
+                                    if is_in_check(white_to_move) then
+                                        print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
+                                    else
+                                        print("STALEMATE: Draw")
+                                    end
+                                elseif is_draw() then
+                                    local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
+                                    print("DRAW: by " .. reason)
+                                end
                             end
-                        elseif is_draw() then
-                            local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
-                            print("DRAW: by " .. reason)
+                        end
+                    end
+                end
+            elseif subcmd == "wtime" then
+                local movetime, err = derive_movetime_from_clock_args(tokens)
+                if not movetime then
+                    print("ERROR: " .. err)
+                else
+                    local book_move, book_move_str = choose_book_move()
+                    if book_move and book_move_str then
+                        apply_book_move(book_move, book_move_str)
+                    else
+                        local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                        if endgame_move and endgame_info and endgame_move_str then
+                            apply_endgame_move(endgame_move, endgame_info, endgame_move_str)
+                        else
+                            local success, msg = ai_move(5, movetime)
+                            print(msg)
+                            if success then
+                                display_board()
+
+                                local legal_moves = generate_legal_moves()
+                                if #legal_moves == 0 then
+                                    if is_in_check(white_to_move) then
+                                        print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
+                                    else
+                                        print("STALEMATE: Draw")
+                                    end
+                                elseif is_draw() then
+                                    local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
+                                    print("DRAW: by " .. reason)
+                                end
+                            end
                         end
                     end
                 end
             elseif subcmd == "infinite" then
-                print("OK: go infinite acknowledged (use stop to terminate)")
+                print("OK: go infinite acknowledged (bounded search mode)")
+                local book_move, book_move_str = choose_book_move()
+                if book_move and book_move_str then
+                    apply_book_move(book_move, book_move_str)
+                else
+                    local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                    if endgame_move and endgame_info and endgame_move_str then
+                        apply_endgame_move(endgame_move, endgame_info, endgame_move_str)
+                    else
+                        local success, msg = ai_move(5, 15000)
+                        print(msg)
+                        if success then
+                            display_board()
+
+                            local legal_moves = generate_legal_moves()
+                            if #legal_moves == 0 then
+                                if is_in_check(white_to_move) then
+                                    print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
+                                else
+                                    print("STALEMATE: Draw")
+                                end
+                            elseif is_draw() then
+                                local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
+                                print("DRAW: by " .. reason)
+                            end
+                        end
+                    end
+                end
             else
                 print("ERROR: Unsupported go command")
             end
         elseif cmd == "stop" then
+            search_stop_requested = true
             print("OK: stop")
         elseif cmd == "pgn" then
             local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
@@ -1402,10 +1897,181 @@ local function main()
             else
                 print("ERROR: Unsupported pgn command")
             end
+        elseif cmd == "book" then
+            local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
+            subcmd = subcmd and subcmd:lower() or ""
+
+            if subcmd == "load" then
+                if not subarg or subarg == "" then
+                    print("ERROR: book load requires a file path")
+                else
+                    local file = io.open(subarg, "r")
+                    if not file then
+                        print("ERROR: book load failed: file unavailable")
+                    else
+                        local content = file:read("*a")
+                        file:close()
+                        local parsed, total_entries, err = parse_book_entries(content)
+                        if not parsed then
+                            print("ERROR: book load failed: " .. err)
+                        else
+                            book_path = subarg
+                            book_entries = parsed
+                            book_entry_count = total_entries
+                            book_enabled = true
+                            book_lookups = 0
+                            book_hits = 0
+                            book_misses = 0
+                            book_played = 0
+                            print(string.format(
+                                "BOOK: loaded path=\"%s\"; positions=%d; entries=%d; enabled=true",
+                                subarg,
+                                book_positions_count(),
+                                book_entry_count
+                            ))
+                        end
+                    end
+                end
+            elseif subcmd == "on" then
+                book_enabled = true
+                print("BOOK: enabled=true")
+            elseif subcmd == "off" then
+                book_enabled = false
+                print("BOOK: enabled=false")
+            elseif subcmd == "stats" then
+                local source = book_path or "(none)"
+                print(string.format(
+                    "BOOK: enabled=%s; path=%s; positions=%d; entries=%d; lookups=%d; hits=%d; misses=%d; played=%d",
+                    tostring(book_enabled),
+                    source,
+                    book_positions_count(),
+                    book_entry_count,
+                    book_lookups,
+                    book_hits,
+                    book_misses,
+                    book_played
+                ))
+            else
+                print("ERROR: Unsupported book command")
+            end
+        elseif cmd == "endgame" then
+            local info = detect_endgame_state()
+            if not info then
+                print(string.format("ENDGAME: type=none; active=%s; score=0", color_name(white_to_move)))
+            else
+                local best_move, _, best_move_str = choose_endgame_move()
+                local output = string.format(
+                    "ENDGAME: type=%s; strong=%s; weak=%s; score=%d",
+                    info.type,
+                    color_name(info.strong_white),
+                    color_name(info.weak_white),
+                    info.score_white
+                )
+                if best_move and best_move_str then
+                    output = output .. "; bestmove=" .. best_move_str
+                end
+                output = output .. "; detail=" .. info.detail
+                print(output)
+            end
         elseif cmd == "uci" then
             print("uciok")
         elseif cmd == "isready" then
             print("readyok")
+        elseif cmd == "setoption" then
+            local tokens = {}
+            for token in arg:gmatch("%S+") do
+                table.insert(tokens, token)
+            end
+            if #tokens < 4 or tokens[1]:lower() ~= "name" then
+                print("ERROR: setoption format is 'setoption name <Hash|Threads> value <n>'")
+            else
+                local value_idx = nil
+                for i = 2, #tokens do
+                    if tokens[i]:lower() == "value" then
+                        value_idx = i
+                        break
+                    end
+                end
+                if not value_idx or value_idx <= 2 or value_idx + 1 > #tokens then
+                    print("ERROR: setoption requires 'value <n>'")
+                else
+                    local option_name_parts = {}
+                    for i = 2, value_idx - 1 do
+                        table.insert(option_name_parts, tokens[i])
+                    end
+                    local option_name = table.concat(option_name_parts, " "):lower()
+                    local value = tonumber(tokens[value_idx + 1])
+                    if not value then
+                        print("ERROR: setoption value must be an integer")
+                    else
+                        value = math.floor(value)
+                        if option_name == "hash" then
+                            if value < 1 then value = 1 end
+                            if value > 1024 then value = 1024 end
+                            uci_hash_mb = value
+                            print(string.format("info string option Hash=%d", uci_hash_mb))
+                        elseif option_name == "threads" then
+                            if value < 1 then value = 1 end
+                            if value > 64 then value = 64 end
+                            uci_threads = value
+                            print(string.format("info string option Threads=%d", uci_threads))
+                        else
+                            print("info string unsupported option " .. table.concat(option_name_parts, " "))
+                        end
+                    end
+                end
+            end
+        elseif cmd == "ucinewgame" then
+            new_game()
+            tt = {}
+        elseif cmd == "position" then
+            local tokens = {}
+            for token in arg:gmatch("%S+") do
+                table.insert(tokens, token)
+            end
+            if #tokens == 0 then
+                print("ERROR: position requires 'startpos' or 'fen <...>'")
+            else
+                local idx = 1
+                local keyword = tokens[1]:lower()
+                if keyword == "startpos" then
+                    new_game()
+                    tt = {}
+                    idx = 2
+                elseif keyword == "fen" then
+                    idx = 2
+                    local fen_parts = {}
+                    while idx <= #tokens and tokens[idx]:lower() ~= "moves" do
+                        table.insert(fen_parts, tokens[idx])
+                        idx = idx + 1
+                    end
+                    if #fen_parts == 0 then
+                        print("ERROR: position fen requires a FEN string")
+                        goto continue
+                    end
+                    local success, msg = import_fen(table.concat(fen_parts, " "))
+                    if not success then
+                        print(msg)
+                        goto continue
+                    end
+                else
+                    print("ERROR: position requires 'startpos' or 'fen <...>'")
+                    goto continue
+                end
+
+                if idx <= #tokens and tokens[idx]:lower() == "moves" then
+                    idx = idx + 1
+                    while idx <= #tokens do
+                        local move_str = tokens[idx]
+                        local success, msg = execute_move(move_str)
+                        if not success then
+                            print("ERROR: position move " .. move_str .. " failed: " .. msg)
+                            break
+                        end
+                        idx = idx + 1
+                    end
+                end
+            end
         elseif cmd == "new960" then
             local id = tonumber(arg) or 0
             if id < 0 or id > 959 then
@@ -1484,22 +2150,32 @@ local function main()
             end
         elseif cmd == "ai" then
             local depth = tonumber(arg) or 3
-            local success, msg = ai_move(depth)
-            print(msg)
-            if success then
-                display_board()
-                
-                -- Check for game end
-                local legal_moves = generate_legal_moves()
-                if #legal_moves == 0 then
-                    if is_in_check(white_to_move) then
-                        print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
-                    else
-                        print("STALEMATE: Draw")
+            local book_move, book_move_str = choose_book_move()
+            if book_move and book_move_str then
+                apply_book_move(book_move, book_move_str)
+            else
+                local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                if endgame_move and endgame_info and endgame_move_str then
+                    apply_endgame_move(endgame_move, endgame_info, endgame_move_str)
+                else
+                    local success, msg = ai_move(depth)
+                    print(msg)
+                    if success then
+                        display_board()
+                        
+                        -- Check for game end
+                        local legal_moves = generate_legal_moves()
+                        if #legal_moves == 0 then
+                            if is_in_check(white_to_move) then
+                                print("CHECKMATE: " .. (white_to_move and "Black" or "White") .. " wins")
+                            else
+                                print("STALEMATE: Draw")
+                            end
+                        elseif is_draw() then
+                            local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
+                            print("DRAW: by " .. reason)
+                        end
                     end
-                elseif is_draw() then
-                    local reason = is_draw_by_fifty_moves() and "50-move rule" or "repetition"
-                    print("DRAW: by " .. reason)
                 end
             end
         elseif cmd == "eval" then
@@ -1521,11 +2197,18 @@ local function main()
             print("  draws            - Show draw detection status")
             print("  history          - Show position hash history")
             print("  go movetime <ms> - Time-managed AI move")
-            print("  go infinite      - Start infinite search mode (stub)")
+            print("  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-based timed move")
+            print("  go depth <n>     - UCI-style depth search (prints info/bestmove)")
+            print("  go infinite      - Start bounded long search mode")
             print("  stop             - Stop infinite search mode")
             print("  pgn load|show|moves - PGN command family")
+            print("  book load|on|off|stats - Native opening book controls")
+            print("  endgame          - Detect specialized endgame and best move hint")
             print("  uci              - Enter/respond to UCI handshake")
             print("  isready          - UCI readiness probe")
+            print("  setoption name <Hash|Threads> value <n> - Set UCI option")
+            print("  ucinewgame       - Reset internal state for UCI game")
+            print("  position startpos|fen ... [moves ...] - Load UCI position")
             print("  new960 [id]      - Start Chess960 game by id (0-959)")
             print("  position960      - Show current Chess960 metadata")
             print("  trace ...        - Trace controls and reports")
