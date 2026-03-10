@@ -10,6 +10,7 @@ LABEL org.chess.author="ReScript Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1500
+LABEL org.chess.source_exts=".res,.resi"
 LABEL org.chess.build="npm run build"
 LABEL org.chess.test="node lib/es6/src/Chess.js --test"
 LABEL org.chess.analyze="npx rescript build"

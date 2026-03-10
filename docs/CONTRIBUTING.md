@@ -40,6 +40,7 @@ Required Docker labels:
 - `org.chess.features`
 - `org.chess.max_ai_depth`
 - `org.chess.estimated_perft4_ms`
+- `org.chess.source_exts`
 - `org.chess.build`
 - `org.chess.test`
 - `org.chess.analyze`

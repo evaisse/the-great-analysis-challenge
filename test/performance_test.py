@@ -44,6 +44,7 @@ except ImportError:
 # Import existing test harness
 from test_harness import ChessEngineTester, TestSuite, find_implementations, TRACK_TO_SUITE
 from code_size_metrics import collect_metrics_for_impl
+from token_metrics import TOKEN_METRIC_VERSION
 
 TRUTHY_VALUES = {"1", "true", "yes", "y", "on"}
 FALSY_VALUES = {"0", "false", "no", "n", "off"}
@@ -163,6 +164,7 @@ class ImplementationTester:
             "timings": {},
             "memory": {},
             "size": {},
+            "metrics": {},
             "normalized": {},
             "docker": {},
             "task_results": {},
@@ -220,21 +222,27 @@ class ImplementationTester:
         return self.results
 
     def _collect_code_size_metrics(self):
-        """Collect normalized source LOC/file metrics."""
+        """Collect LOC/file metrics plus language-agnostic token metrics."""
         try:
             size_metrics = collect_metrics_for_impl(self.impl_path)
             self.results["size"] = {
                 "source_loc": size_metrics.get("source_loc", 0),
                 "source_files": size_metrics.get("source_files", 0),
             }
+            self.results["metrics"] = {
+                "tokens_count": size_metrics.get("tokens_count"),
+                "metric_version": size_metrics.get("metric_version", TOKEN_METRIC_VERSION),
+            }
             print(
                 "📏 Source size: "
                 f"{self.results['size']['source_loc']} LOC across "
-                f"{self.results['size']['source_files']} files"
+                f"{self.results['size']['source_files']} files, "
+                f"{self.results['metrics']['tokens_count']} TOKENS"
             )
         except Exception as e:
             self.results["errors"].append(f"Code size metrics error: {str(e)}")
             self.results["size"] = {"source_loc": 0, "source_files": 0}
+            self.results["metrics"] = {"tokens_count": None, "metric_version": TOKEN_METRIC_VERSION}
 
     def _compute_normalized_metrics(self):
         """Compute normalized metrics (ms/KLOC)."""
@@ -801,13 +809,13 @@ def generate_performance_report(results: List[Dict]) -> str:
     
     # Summary table
     report.append("PERFORMANCE SUMMARY")
-    report.append("-" * 168)
+    report.append("-" * 178)
     report.append(
-        f"{'Language':<12} {'Status':<10} {'LOC':<8} "
+        f"{'Language':<12} {'Status':<10} {'TOKENS':<10} {'LOC':<8} "
         f"{'make build':<18} {'make analyze':<18} {'make test':<18} {'make test-chess-engine':<25} "
         f"{'make test score':<16} {'make test-ce score':<18}"
     )
-    report.append("-" * 168)
+    report.append("-" * 178)
     
     for result in sorted(results, key=lambda x: x.get("language", "")):
         lang = result.get("language", "Unknown")[:11]
@@ -817,6 +825,7 @@ def generate_performance_report(results: List[Dict]) -> str:
         analyze_time = result.get("timings", {}).get("analyze_seconds", 0)
         test_time = result.get("timings", {}).get("test_seconds", 0)
         test_chess_engine_time = result.get("timings", {}).get("test_chess_engine_seconds", 0)
+        tokens_count = result.get("metrics", {}).get("tokens_count")
         source_loc = result.get("size", {}).get("source_loc", 0)
         
         memory = result.get("memory", {})
@@ -835,6 +844,7 @@ def generate_performance_report(results: List[Dict]) -> str:
 
         report.append(
             f"{lang:<12} {status:<10} "
+            f"{str(tokens_count) if tokens_count is not None else '-':<10} "
             f"{source_loc:<8} "
             f"{fmt_step_cell(build_time, build_mem):<18} "
             f"{fmt_step_cell(analyze_time, analyze_mem):<18} "
@@ -881,12 +891,18 @@ def generate_performance_report(results: List[Dict]) -> str:
 
         # Source size and normalized metrics
         size = result.get("size", {})
+        metric_data = result.get("metrics", {})
         normalized = result.get("normalized", {})
         if size:
             report.append("\nSOURCE SIZE:")
             report.append(
                 f"  Source LOC: {size.get('source_loc', 0)} "
                 f"(files: {size.get('source_files', 0)})"
+            )
+        if metric_data:
+            report.append(
+                f"  TOKENS ({metric_data.get('metric_version', 'unknown')}): "
+                f"{metric_data.get('tokens_count', '-')}"
             )
         if normalized:
             report.append("\nNORMALIZED METRICS:")

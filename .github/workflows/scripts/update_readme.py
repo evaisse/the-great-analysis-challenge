@@ -18,10 +18,21 @@ if os.path.exists(SCRIPTS_DIR):
     sys.path.insert(0, str(SCRIPTS_DIR))
     try:
         from chess_metadata import get_metadata
+        from token_metrics import (
+            TOKEN_METRIC_VERSION,
+            collect_impl_metrics_from_metadata,
+            parse_source_exts,
+        )
     except ImportError:
+        TOKEN_METRIC_VERSION = "tokens-v2"
         def get_metadata(impl_dir): return {}
+        def collect_impl_metrics_from_metadata(impl_path, metadata): raise RuntimeError("token metrics unavailable")
+        def parse_source_exts(raw_value): return []
 else:
+    TOKEN_METRIC_VERSION = "tokens-v2"
     def get_metadata(impl_dir): return {}
+    def collect_impl_metrics_from_metadata(impl_path, metadata): raise RuntimeError("token metrics unavailable")
+    def parse_source_exts(raw_value): return []
 
 CUSTOM_EMOJIS: Dict[str, str] = {
     'python': '🐍',
@@ -45,31 +56,6 @@ CUSTOM_EMOJIS: Dict[str, str] = {
     'swift': '🐦',
     'typescript': '📘',
     'zig': '⚡'
-}
-
-LANGUAGE_EXTENSIONS: Dict[str, List[str]] = {
-    'bun': ['.js'],
-    'crystal': ['.cr'],
-    'dart': ['.dart'],
-    'elm': ['.elm'],
-    'gleam': ['.gleam'],
-    'go': ['.go'],
-    'haskell': ['.hs'],
-    'imba': ['.imba'],
-    'javascript': ['.js'],
-    'julia': ['.jl'],
-    'kotlin': ['.kt'],
-    'lua': ['.lua'],
-    'mojo': ['.mojo', '.🔥'],
-    'nim': ['.nim'],
-    'php': ['.php'],
-    'python': ['.py'],
-    'rescript': ['.res', '.resi'],
-    'ruby': ['.rb'],
-    'rust': ['.rs'],
-    'swift': ['.swift'],
-    'typescript': ['.ts'],
-    'zig': ['.zig']
 }
 
 GENERATED_SEGMENTS = (
@@ -118,28 +104,30 @@ def find_project_root():
         current_dir = os.path.dirname(current_dir)
     return None
 
-def count_lines_of_code(impl_path: str) -> Dict[str, int]:
-    """Count lines of code for an implementation."""
-    lang_name = os.path.basename(impl_path)
-    exts = LANGUAGE_EXTENSIONS.get(lang_name, [])
-    total_loc = 0
-    file_count = 0
+def resolve_tokens_count(impl_data: Dict[str, Any], impl_path: str, meta: Dict[str, Any], language: str) -> Optional[int]:
+    """Resolve TOKENS from benchmark report; fallback to local computation (non-blocking)."""
+    metrics = impl_data.get("metrics", {})
+    tokens_count = metrics.get("tokens_count") if isinstance(metrics, dict) else None
+    metric_version = metrics.get("metric_version") if isinstance(metrics, dict) else None
 
-    src_dir = os.path.join(impl_path, 'src')
-    if not os.path.exists(src_dir):
-        src_dir = impl_path
+    if isinstance(tokens_count, int) and tokens_count >= 0:
+        if metric_version and metric_version != TOKEN_METRIC_VERSION:
+            print(
+                f"⚠️ {language}: metric version is {metric_version}, expected {TOKEN_METRIC_VERSION}. "
+                "Using reported value anyway."
+            )
+        return tokens_count
 
-    for ext in exts:
-        pattern = f"{src_dir}/**/*{ext}"
-        for file in glob.glob(pattern, recursive=True):
-            try:
-                with open(file, 'r', encoding='utf-8', errors='ignore') as handle:
-                    total_loc += len(handle.readlines())
-                    file_count += 1
-            except Exception:
-                continue
+    try:
+        local_metrics = collect_impl_metrics_from_metadata(Path(impl_path), meta)
+        local_tokens = local_metrics.get("tokens_count")
+        if isinstance(local_tokens, int) and local_tokens >= 0:
+            print(f"⚠️ {language}: missing report TOKENS, using local fallback ({TOKEN_METRIC_VERSION})")
+            return local_tokens
+    except Exception as exc:
+        print(f"⚠️ {language}: could not compute TOKENS fallback: {exc}")
 
-    return {'loc': total_loc, 'files': file_count}
+    return None
 
 def _normalize_relpath(path: str) -> str:
     """Normalize a relative path for Markdown links."""
@@ -217,8 +205,9 @@ def _extract_candidates_from_command(command: str, impl_path: str, extensions: L
 
 def resolve_entrypoint_file(impl_path: str, language: str, meta: Dict[str, Any]) -> Optional[str]:
     """Resolve the best source entrypoint file for a language implementation."""
-    extensions = LANGUAGE_EXTENSIONS.get(language, [])
+    extensions = parse_source_exts(meta.get("source_exts"))
     if not extensions:
+        print(f"⚠️ {language}: metadata source_exts missing or invalid; cannot link TOKENS to entrypoint")
         return None
 
     candidates: List[str] = []
@@ -580,7 +569,7 @@ def update_readme() -> bool:
             
             # Metadata & Stats
             meta = get_metadata(impl_path)
-            loc_data = count_lines_of_code(impl_path)
+            tokens_count = resolve_tokens_count(impl_data, impl_path, meta, language)
             entrypoint_file = resolve_entrypoint_file(impl_path, language, meta)
             
             # Status
@@ -637,21 +626,23 @@ def update_readme() -> bool:
             feature_summary = format_feature_summary(meta)
             
             lang_name = f"{lang_emoji} {language.title()}"
-            loc_display = str(loc_data['loc'])
-            if entrypoint_file:
+            tokens_display = "-"
+            if isinstance(tokens_count, int) and tokens_count >= 0:
+                tokens_display = str(tokens_count)
+            if entrypoint_file and isinstance(tokens_count, int) and tokens_count >= 0:
                 entrypoint_repo_path = Path("implementations") / language / entrypoint_file
-                loc_display = f"[{loc_data['loc']}]({entrypoint_repo_path.as_posix()})"
+                tokens_display = f"[{tokens_count}]({entrypoint_repo_path.as_posix()})"
 
             table_rows.append(
-                f"| {lang_name} | {emoji} | {loc_display} | "
+                f"| {lang_name} | {emoji} | {tokens_display} | "
                 f"{make_build_disp} | {make_analyze_disp} | {make_test_disp} | {make_test_chess_engine_disp} | "
                 f"{make_test_score} | {make_test_chess_engine_score} | {feature_summary} |"
             )
         
         # Create table content
         table_header = """
-| Language | Status | LOC | make build | make analyze | make test | make test-chess-engine | make test score | make test-chess-engine score | Features |
-|----------|--------|-----|------------|--------------|-----------|------------------------|-----------------|------------------------------|----------|"""
+| Language | Status | TOKENS | make build | make analyze | make test | make test-chess-engine | make test score | make test-chess-engine score | Features |
+|----------|--------|--------|------------|--------------|-----------|------------------------|-----------------|------------------------------|----------|"""
         
         new_table = table_header + "\n" + "\n".join(table_rows)
         speed_chart = build_speed_chart(combined_data, sorted(all_languages))

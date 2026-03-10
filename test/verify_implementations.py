@@ -41,7 +41,7 @@ REQUIRED_MAKEFILE_TARGETS = {
 
 # Required metadata fields
 REQUIRED_META_FIELDS = {
-    'language', 'version', 'author', 'build', 'run', 'test', 'analyze', 'features', 'max_ai_depth'
+    'language', 'version', 'author', 'build', 'run', 'test', 'analyze', 'features', 'max_ai_depth', 'source_exts'
 }
 
 # Optional but recommended metadata fields
@@ -183,6 +183,25 @@ def validate_metadata(data: Dict, impl_name: str) -> Dict[str, List[str]]:
         extra_features = features - EXPECTED_FEATURES
         if extra_features:
             result['info'].extend([f"Extra feature: {feature}" for feature in extra_features])
+
+    # Check source extensions used for TOKENS metric.
+    source_exts = data.get('source_exts', [])
+    if not isinstance(source_exts, list) or not source_exts:
+        result['errors'].append("source_exts must be a non-empty list")
+    else:
+        invalid_exts = []
+        normalized_exts = set()
+        for ext in source_exts:
+            ext_str = str(ext).strip().lower()
+            if not re.match(r'^\.[a-z0-9_+#-]+$', ext_str):
+                invalid_exts.append(str(ext))
+                continue
+            normalized_exts.add(ext_str)
+        if invalid_exts:
+            result['errors'].append(
+                "source_exts contains invalid extension(s): " + ", ".join(invalid_exts)
+            )
+        result['info'].append(f"Source extensions: {', '.join(sorted(normalized_exts))}")
     
     # Check AI depth
     if 'max_ai_depth' in data:

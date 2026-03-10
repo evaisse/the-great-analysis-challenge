@@ -10,6 +10,7 @@ LABEL org.chess.author="Ruby Implementation"
 LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1000
+LABEL org.chess.source_exts=".rb"
 LABEL org.chess.benchmark.build="skip"
 LABEL org.chess.build="ruby -c chess.rb"
 LABEL org.chess.test="rspec"
