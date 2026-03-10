@@ -15,7 +15,12 @@ test:
 	else \
 		ghc -O2 --make src/Main.hs -o chess_engine -isrc && \
 		echo -e "new\\nmove e2e4\\nmove e7e5\\nexport\\nquit" | ./chess_engine | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2' && echo "✅ Basic test passed" || echo "❌ Basic test failed"; \
-	fi
+	fi; \
+	echo "Running rich evaluation toggle tests..."; \
+	SIMPLE_EVAL=$$(printf "eval\nquit\n" | ./chess_engine | grep "Evaluation:" | tail -1); \
+	RICH_EVAL=$$(printf "eval\nquit\n" | ./chess_engine --rich-eval | grep "Evaluation:" | tail -1); \
+	[ "$$SIMPLE_EVAL" != "$$RICH_EVAL" ] && echo "✅ Rich eval startup flag test passed" || (echo "❌ Rich eval startup flag test failed" && exit 1); \
+	printf "rich-eval on\nquit\n" | ./chess_engine | grep -q "Rich evaluation enabled" && echo "✅ Rich eval command test passed" || (echo "❌ Rich eval command test failed" && exit 1)
 
 # Static analysis and code quality
 analyze:

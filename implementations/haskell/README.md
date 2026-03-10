@@ -26,6 +26,8 @@ cabal build
 
 ```bash
 cabal run chess
+# Enable rich evaluation from startup
+cabal run chess -- --rich-eval
 ```
 
 ## Commands
@@ -35,6 +37,7 @@ cabal run chess
 - `fen <string>` - Load FEN position
 - `export` - Export current position as FEN
 - `eval` - Show position evaluation
+- `rich-eval on|off` - Toggle rich evaluation during a session
 - `perft 4` - Performance test at depth 4
 - `help` - Show all commands
 - `quit` - Exit
@@ -56,6 +59,7 @@ The implementation follows functional programming principles:
 - **MoveGenerator.hs** - Move generation and basic evaluation
 - **AI.hs** - Minimax search with alpha-beta pruning
 - **Perft.hs** - Performance testing utilities
+- **Eval/** - Rich evaluation modules (tapered, mobility, pawn structure, king safety, positional)
 - **Main.hs** - Command-line interface
 
 The design emphasizes immutability - game states are never modified in place, but new states are created through pure functions. This makes the code easier to reason about and test.

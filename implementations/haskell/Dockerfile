@@ -15,6 +15,6 @@ LABEL org.chess.source_exts=".hs"
 LABEL org.chess.run="./chess_engine"
 LABEL org.chess.build="ghc -O2 --make src/Main.hs -o chess_engine -isrc"
 LABEL org.chess.test="./chess_engine --test"
-LABEL org.chess.analyze="hlint src/"
+LABEL org.chess.analyze="ghc -fno-code --make src/Main.hs -isrc"
 
 CMD ["./chess_engine"]
