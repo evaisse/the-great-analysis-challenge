@@ -9,7 +9,7 @@ class Game {
 
   void init() {
     history = [
-      Board.fromFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+      Board.fromFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
     ];
   }
 
@@ -21,7 +21,18 @@ class Game {
 
   void move(String moveStr) {
     final legalMoves = board.generateMoves();
-    final candidates = legalMoves.where((m) => m.toString() == moveStr);
+    final normalized = moveStr.toLowerCase();
+    final candidates = legalMoves.where((m) {
+      final notation = m.toString();
+      if (notation == normalized) {
+        return true;
+      }
+      // Support implicit queen promotion (e.g. "a7a8") for compatibility
+      // with the shared protocol and test harness.
+      return normalized.length == 4 &&
+          m.promotion == PieceType.queen &&
+          notation == '${normalized}q';
+    });
     final move = candidates.isEmpty ? null : candidates.first;
 
     if (move == null) {

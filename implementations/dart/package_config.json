@@ -1,0 +1,11 @@
+{
+  "configVersion": 2,
+  "packages": [
+    {
+      "name": "chess_engine",
+      "rootUri": "./",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    }
+  ]
+}

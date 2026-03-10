@@ -55,7 +55,7 @@ class Board {
       PieceType.king,
       PieceType.bishop,
       PieceType.knight,
-      PieceType.rook
+      PieceType.rook,
     ];
     for (int col = 0; col < 8; col++) {
       squares[0][col] = Piece(backRank[col], PieceColor.black);
@@ -138,8 +138,14 @@ class Board {
     final targetPiece = squares[to.row][to.col];
 
     // Save irreversible state
-    irreversibleHistory.add(IrreversibleState(
-        _castlingRights, _enPassantTarget, _halfmoveClock, zobristHash));
+    irreversibleHistory.add(
+      IrreversibleState(
+        _castlingRights,
+        _enPassantTarget,
+        _halfmoveClock,
+        zobristHash,
+      ),
+    );
     positionHistory.add(zobristHash);
 
     int hash = zobristHash;
@@ -156,13 +162,13 @@ class Board {
         to.row == _enPassantTarget?.row &&
         to.col == _enPassantTarget?.col) {
       capturedPiece = squares[from.row][to.col];
-      hash ^= zobrist.pieces[zobrist.getPieceIndex(capturedPiece!)]
-          [from.row * 8 + to.col];
+      hash ^= zobrist
+          .pieces[zobrist.getPieceIndex(capturedPiece!)][from.row * 8 + to.col];
       squares[from.row][to.col] = null;
       isCapture = true;
     } else if (isCapture) {
-      hash ^= zobrist.pieces[zobrist.getPieceIndex(targetPiece)]
-          [to.row * 8 + to.col];
+      hash ^= zobrist
+          .pieces[zobrist.getPieceIndex(targetPiece)][to.row * 8 + to.col];
     }
 
     // 3. Handle castling rook
@@ -184,8 +190,9 @@ class Board {
 
     squares[from.row][from.col] = null;
 
-    final finalPiece =
-        promotion != null ? Piece(promotion, piece.color) : piece;
+    final finalPiece = promotion != null
+        ? Piece(promotion, piece.color)
+        : piece;
     hash ^=
         zobrist.pieces[zobrist.getPieceIndex(finalPiece)][to.row * 8 + to.col];
     squares[to.row][to.col] = finalPiece;
@@ -198,11 +205,13 @@ class Board {
 
     if (piece.type == PieceType.king) {
       if (piece.color == PieceColor.white) {
-        _castlingRights =
-            _castlingRights.replaceAll('K', '').replaceAll('Q', '');
+        _castlingRights = _castlingRights
+            .replaceAll('K', '')
+            .replaceAll('Q', '');
       } else {
-        _castlingRights =
-            _castlingRights.replaceAll('k', '').replaceAll('q', '');
+        _castlingRights = _castlingRights
+            .replaceAll('k', '')
+            .replaceAll('q', '');
       }
     } else if (piece.type == PieceType.rook) {
       if (from.row == 7 && from.col == 0)
@@ -517,8 +526,9 @@ class Board {
           } else if (_enPassantTarget != null &&
               _enPassantTarget!.row == row + direction &&
               _enPassantTarget!.col == col + dcol) {
-            moves.add(Move(row, col, row + direction, col + dcol)
-              ..isEnPassant = true);
+            moves.add(
+              Move(row, col, row + direction, col + dcol)..isEnPassant = true,
+            );
           }
         }
       }

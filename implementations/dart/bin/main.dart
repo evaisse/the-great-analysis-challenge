@@ -126,7 +126,9 @@ void main() {
         break;
       case 'go':
         if (parts.length < 2) {
-          print('ERROR: go requires subcommand (movetime <ms>|infinite)');
+          print(
+            'ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|infinite)',
+          );
           break;
         }
         final sub = parts[1].toLowerCase();
@@ -144,16 +146,30 @@ void main() {
             print('ERROR: go movetime must be > 0');
             break;
           }
-          _runAiMove(game, ai, _depthForMovetime(movetime));
+          _runAiTimedMove(game, ai, 5, movetime);
+          break;
+        }
+        if (sub == 'wtime') {
+          final parsed = _deriveMovetimeFromClocks(
+            parts.sublist(1),
+            game.board,
+          );
+          if (parsed.$2 != null) {
+            print('ERROR: ${parsed.$2}');
+            break;
+          }
+          _runAiTimedMove(game, ai, 5, parsed.$1);
           break;
         }
         if (sub == 'infinite') {
-          print('OK: go infinite acknowledged (use stop to terminate)');
+          print('OK: go infinite acknowledged (bounded search mode)');
+          _runAiTimedMove(game, ai, 5, 15000);
           break;
         }
         print('ERROR: Unsupported go command');
         break;
       case 'stop':
+        ai.requestStop();
         print('OK: stop');
         break;
       case 'pgn':
@@ -232,13 +248,17 @@ void main() {
         if (sub == 'on') {
           traceEnabled = true;
           recordTrace('trace', 'enabled');
-          print('TRACE: enabled=true; level=$traceLevel; events=${traceEvents.length}');
+          print(
+            'TRACE: enabled=true; level=$traceLevel; events=${traceEvents.length}',
+          );
           break;
         }
         if (sub == 'off') {
           recordTrace('trace', 'disabled');
           traceEnabled = false;
-          print('TRACE: enabled=false; level=$traceLevel; events=${traceEvents.length}');
+          print(
+            'TRACE: enabled=false; level=$traceLevel; events=${traceEvents.length}',
+          );
           break;
         }
         if (sub == 'level') {
@@ -253,7 +273,9 @@ void main() {
         }
         if (sub == 'report') {
           final enabled = traceEnabled ? 'true' : 'false';
-          print('TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount');
+          print(
+            'TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount',
+          );
           break;
         }
         if (sub == 'reset') {
@@ -263,12 +285,16 @@ void main() {
           break;
         }
         if (sub == 'export') {
-          final target = parts.length > 2 ? parts.sublist(2).join(' ') : '(memory)';
+          final target = parts.length > 2
+              ? parts.sublist(2).join(' ')
+              : '(memory)';
           print('TRACE: export=$target; events=${traceEvents.length}');
           break;
         }
         if (sub == 'chrome') {
-          final target = parts.length > 2 ? parts.sublist(2).join(' ') : '(memory)';
+          final target = parts.length > 2
+              ? parts.sublist(2).join(' ')
+              : '(memory)';
           print('TRACE: chrome=$target; events=${traceEvents.length}');
           break;
         }
@@ -314,6 +340,7 @@ hash
 draws
 history
 go movetime <ms>
+go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]
 go infinite
 stop
 pgn load|show|moves
@@ -341,6 +368,54 @@ int _depthForMovetime(int movetimeMs) {
   if (movetimeMs <= 2000) return 3;
   if (movetimeMs <= 5000) return 4;
   return 5;
+}
+
+(int, String?) _deriveMovetimeFromClocks(List<String> args, Board board) {
+  final values = <String, int>{'winc': 0, 'binc': 0, 'movestogo': 30};
+  var i = 0;
+  while (i < args.length) {
+    final key = args[i].toLowerCase();
+    i++;
+    if (i >= args.length) {
+      return (0, 'go $key requires a value');
+    }
+    final value = int.tryParse(args[i]);
+    if (value == null) {
+      return (0, 'go $key requires an integer value');
+    }
+    i++;
+
+    if (!const ['wtime', 'btime', 'winc', 'binc', 'movestogo'].contains(key)) {
+      return (0, 'unsupported go parameter: $key');
+    }
+    values[key] = value;
+  }
+
+  if (!values.containsKey('wtime') || !values.containsKey('btime')) {
+    return (0, 'go wtime/btime parameters are required');
+  }
+  if (values['wtime']! <= 0 || values['btime']! <= 0) {
+    return (0, 'go wtime/btime must be > 0');
+  }
+  if (values['movestogo']! <= 0) {
+    values['movestogo'] = 30;
+  }
+
+  final isWhite = board.turn == 'w';
+  final base = isWhite ? values['wtime']! : values['btime']!;
+  final inc = isWhite ? values['winc']! : values['binc']!;
+
+  var budget = base ~/ (values['movestogo']! + 1) + inc ~/ 2;
+  if (budget < 50) {
+    budget = 50;
+  }
+  if (budget >= base) {
+    budget = base ~/ 2;
+  }
+  if (budget <= 0) {
+    return (0, 'unable to derive positive movetime from clocks');
+  }
+  return (budget, null);
 }
 
 int _repetitionCount(Board board) {
@@ -374,7 +449,10 @@ List<String> _extractPgnMoves(String content) {
   for (final token in moveText.split(RegExp(r'\s+'))) {
     if (token.isEmpty) continue;
     if (RegExp(r'^\d+\.(\.\.)?$').hasMatch(token)) continue;
-    if (token == '1-0' || token == '0-1' || token == '1/2-1/2' || token == '*') {
+    if (token == '1-0' ||
+        token == '0-1' ||
+        token == '1/2-1/2' ||
+        token == '*') {
       continue;
     }
     moves.add(token);
@@ -415,12 +493,20 @@ Map<String, dynamic> _buildConcurrencyPayload(String profile) {
 }
 
 void _runAiMove(Game game, AI ai, int depth) {
-  final start = DateTime.now().millisecondsSinceEpoch;
-  final move = ai.findBestMove(game.board, depth);
+  _runAiTimedMove(game, ai, depth, 0);
+}
+
+void _runAiTimedMove(Game game, AI ai, int maxDepth, int movetimeMs) {
+  final result = ai.search(game.board, maxDepth, movetimeMs: movetimeMs);
+  final move = result.move;
+  if (move == null) {
+    print('ERROR: No legal moves available');
+    return;
+  }
   game.move(move.toString());
-  final elapsed = DateTime.now().millisecondsSinceEpoch - start;
-  final eval = ai.evaluate(game.board);
-  print('AI: ${move.toString()} (depth=$depth, eval=$eval, time=${elapsed}ms)');
+  print(
+    'AI: ${move.toString()} (depth=${result.depth}, eval=${result.score}, time=${result.elapsedMs}ms)',
+  );
   game.printBoard();
   _checkGameState(game);
 }
