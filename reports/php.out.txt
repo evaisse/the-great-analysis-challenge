@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing php implementation
 Path: implementations/php
 ============================================================
-📏 Source size: 2016 LOC across 10 files
+📏 Source size: 2384 LOC across 10 files
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,61 +15,61 @@ Path: implementations/php
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-php .
-  ✅ Docker build completed in 0.28s
+  ✅ Docker build completed in 0.29s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ✅ All Docker tests passed (image: 0.3s, make build: skipped, make analyze: 0.3s, make test: 0.2s, make test-chess-engine: 8.3s)
+  ✅ All Docker tests passed (image: 0.3s, make build: skipped, make analyze: 0.3s, make test: 0.2s, make test-chess-engine: 8.6s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-08 06:13:45
+Generated: 2026-03-10 21:58:23
 ================================================================================
 
 PERFORMANCE SUMMARY
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-php          completed  2016     -/-MB              0.3s/9MB           0.2s/9MB           8.3s/62MB                 1/1              14/14             
+php          completed  2384     -/-MB              0.3s/9MB           0.2s/9MB           8.6s/62MB                 1/1              14/14             
 
 ============================================================
 DETAILED RESULTS: PHP
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.28s
-  make analyze: 0.34s
+  docker build image: 0.29s
+  make analyze: 0.35s
   make test: 0.21s
-  make test-chess-engine: 8.34s
+  make test-chess-engine: 8.55s
   make test (internal mirror): 0.21s
-  test v2 full seconds: 8.34s
+  test v2 full seconds: 8.55s
 
 SOURCE SIZE:
-  Source LOC: 2016 (files: 10)
+  Source LOC: 2384 (files: 10)
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 170.02 ms/KLOC
-  Runtime: 103.31 ms/KLOC
+  Analyze: 145.71 ms/KLOC
+  Runtime: 87.52 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 110.6MB, Avg 83.0MB
+  Image: Peak 111.1MB, Avg 83.2MB
   Build: Peak 0.0MB, Avg 0.0MB
   Analyze: Peak 9.0MB, Avg 0.0MB
-  Test: Peak 9.2MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.6MB, Avg 59.1MB
+  Test: Peak 9.0MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.7MB, Avg 59.4MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.28s)
+  Image build: ✅ (0.29s)
   make build: ⏭️ skipped
-  make analyze: ✅ (0.34s)
+  make analyze: ✅ (0.35s)
   make test: ✅ (0.21s)
-  make test-chess-engine (track=v2-full): ✅ (8.34s)
+  make test-chess-engine (track=v2-full): ✅ (8.55s)
   make test score: 1/1
   make test-chess-engine score: 14/14
 

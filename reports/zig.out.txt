@@ -27,14 +27,14 @@ Path: implementations/zig
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-08 06:14:27
+Generated: 2026-03-10 21:59:12
 ================================================================================
 
 PERFORMANCE SUMMARY
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-zig          completed  1757     0.2s/7MB           0.2s/6MB           0.2s/5MB           52.0s/62MB                1/1              0/18              
+zig          completed  1757     0.2s/7MB           0.2s/7MB           0.2s/7MB           52.0s/62MB                1/1              0/18              
 
 ============================================================
 DETAILED RESULTS: ZIG
@@ -43,26 +43,26 @@ DETAILED RESULTS: ZIG
 TIMING BREAKDOWN:
   docker build image: 0.28s
   make build: 0.20s
-  make analyze: 0.20s
-  make test: 0.20s
+  make analyze: 0.18s
+  make test: 0.18s
   make test-chess-engine: 52.00s
-  make test (internal mirror): 0.20s
+  make test (internal mirror): 0.18s
   test v2 full seconds: 52.00s
 
 SOURCE SIZE:
   Source LOC: 1757 (files: 9)
 
 NORMALIZED METRICS:
-  Build: 114.57 ms/KLOC
-  Analyze: 115.44 ms/KLOC
-  Runtime: 113.29 ms/KLOC
+  Build: 111.25 ms/KLOC
+  Analyze: 103.56 ms/KLOC
+  Runtime: 105.07 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 111.1MB, Avg 83.7MB
-  Build: Peak 7.1MB, Avg 0.0MB
-  Analyze: Peak 6.3MB, Avg 0.0MB
-  Test: Peak 4.7MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.0MB, Avg 61.5MB
+  Image: Peak 110.7MB, Avg 83.4MB
+  Build: Peak 6.9MB, Avg 0.0MB
+  Analyze: Peak 7.3MB, Avg 0.0MB
+  Test: Peak 7.2MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.3MB, Avg 61.7MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
@@ -71,8 +71,8 @@ CHESS ENGINE TESTS: 0 passed, 1 failed
 DOCKER TESTS:
   Image build: ✅ (0.28s)
   make build: ✅ (0.20s)
-  make analyze: ✅ (0.20s)
-  make test: ✅ (0.20s)
+  make analyze: ✅ (0.18s)
+  make test: ✅ (0.18s)
   make test-chess-engine (track=v2-full): ❌ (52.00s)
   make test score: 1/1
   make test-chess-engine score: 0/18

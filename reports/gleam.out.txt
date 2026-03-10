@@ -17,7 +17,7 @@ make: *** [Makefile:24: clean] Error 127
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-gleam .
-  ✅ Docker build completed in 1.12s
+  ✅ Docker build completed in 0.89s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -29,48 +29,48 @@ make: *** [Makefile:24: clean] Error 127
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-08 06:15:36
+Generated: 2026-03-10 22:00:24
 ================================================================================
 
 PERFORMANCE SUMMARY
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-gleam        completed  0        0.4s/18MB          0.4s/7MB           0.8s/75MB          52.9s/62MB                1/1              0/14              
+gleam        completed  0        0.3s/18MB          0.4s/7MB           0.8s/75MB          52.9s/61MB                1/1              0/14              
 
 ============================================================
 DETAILED RESULTS: GLEAM
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 1.12s
-  make build: 0.42s
-  make analyze: 0.38s
-  make test: 0.82s
-  make test-chess-engine: 52.91s
-  make test (internal mirror): 0.82s
-  test v2 full seconds: 52.91s
+  docker build image: 0.89s
+  make build: 0.33s
+  make analyze: 0.37s
+  make test: 0.79s
+  make test-chess-engine: 52.90s
+  make test (internal mirror): 0.79s
+  test v2 full seconds: 52.90s
 
 SOURCE SIZE:
   Source LOC: 0 (files: 0)
 
 MEMORY USAGE:
-  Image: Peak 116.0MB, Avg 90.6MB
-  Build: Peak 17.8MB, Avg 0.0MB
+  Image: Peak 115.6MB, Avg 94.0MB
+  Build: Peak 18.1MB, Avg 0.0MB
   Analyze: Peak 7.3MB, Avg 0.0MB
-  Test: Peak 75.3MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.8MB, Avg 61.5MB
+  Test: Peak 74.8MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.4MB, Avg 61.0MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (1.12s)
-  make build: ✅ (0.42s)
-  make analyze: ✅ (0.38s)
-  make test: ✅ (0.82s)
-  make test-chess-engine (track=v2-full): ❌ (52.91s)
+  Image build: ✅ (0.89s)
+  make build: ✅ (0.33s)
+  make analyze: ✅ (0.37s)
+  make test: ✅ (0.79s)
+  make test-chess-engine (track=v2-full): ❌ (52.90s)
   make test score: 1/1
   make test-chess-engine score: 0/14
 
