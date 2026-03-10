@@ -24,50 +24,50 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.20389366149902344,
-      "build_seconds": 0.1816697120666504,
-      "analyze_seconds": 0.17704200744628906,
-      "test_seconds": 0.1887674331665039,
-      "test_internal_seconds": 0.1887674331665039,
-      "test_chess_engine_seconds": 8.442708492279053,
-      "test_v2_full_seconds": 8.442708492279053
+      "image_build_seconds": 0.20988082885742188,
+      "build_seconds": 0.19499444961547852,
+      "analyze_seconds": 0.1875290870666504,
+      "test_seconds": 0.19606256484985352,
+      "test_internal_seconds": 0.19606256484985352,
+      "test_chess_engine_seconds": 9.922433853149414,
+      "test_v2_full_seconds": 9.922433853149414
     },
     "memory": {
       "image": {
-        "memory_mb": 110.85546875,
-        "peak_memory_mb": 110.85546875,
-        "avg_memory_mb": 70.708984375,
+        "memory_mb": 17.4140625,
+        "peak_memory_mb": 110.59765625,
+        "avg_memory_mb": 52.846354166666664,
         "avg_cpu_percent": 0.0,
-        "samples": 2,
+        "samples": 3,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 4.72265625,
-        "peak_memory_mb": 4.72265625,
+        "memory_mb": 7.34375,
+        "peak_memory_mb": 7.34375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 6.6015625,
-        "peak_memory_mb": 6.6015625,
+        "memory_mb": 7.0390625,
+        "peak_memory_mb": 7.0390625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 6.59765625,
-        "peak_memory_mb": 6.59765625,
+        "memory_mb": 7.09765625,
+        "peak_memory_mb": 7.09765625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.77734375,
-        "peak_memory_mb": 61.328125,
-        "avg_memory_mb": 59.07326600609756,
+        "memory_mb": 31.7734375,
+        "peak_memory_mb": 61.734375,
+        "avg_memory_mb": 59.780680338541664,
         "avg_cpu_percent": 0.0,
-        "samples": 82,
+        "samples": 96,
         "psutil_available": true
       }
     },
@@ -76,27 +76,27 @@
       "source_files": 17
     },
     "normalized": {
-      "build_ms_per_kloc": 90.97131300282943,
-      "analyze_ms_per_kloc": 88.65398470019481,
-      "runtime_ms_per_kloc": 94.52550484051272
+      "build_ms_per_kloc": 97.64369034325414,
+      "analyze_ms_per_kloc": 93.90540163577886,
+      "runtime_ms_per_kloc": 98.17855025030221
     },
     "docker": {
-      "build_time": 0.20389366149902344,
+      "build_time": 0.20988082885742188,
       "build_success": true,
-      "image_build_time": 0.20389366149902344,
+      "image_build_time": 0.20988082885742188,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.1816697120666504,
+      "make_build_time": 0.19499444961547852,
       "make_build_success": true,
-      "make_analyze_time": 0.17704200744628906,
+      "make_analyze_time": 0.1875290870666504,
       "make_analyze_success": true,
-      "test_time": 0.1887674331665039,
+      "test_time": 0.19606256484985352,
       "test_success": true,
-      "make_test_time": 0.1887674331665039,
+      "make_test_time": 0.19606256484985352,
       "make_test_success": true,
-      "test_chess_engine_time": 8.442708492279053,
+      "test_chess_engine_time": 9.922433853149414,
       "test_chess_engine_success": false,
-      "track_test_time": 8.442708492279053,
+      "track_test_time": 9.922433853149414,
       "track_test_success": false
     },
     "task_results": {
@@ -113,9 +113,9 @@
       },
       "make_test_chess_engine": {
         "passed": 2,
-        "failed": 12,
+        "failed": 14,
         "errors": 0,
-        "total": 14
+        "total": 16
       }
     },
     "test_results": {
@@ -125,7 +125,7 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting typescript implementation at implementations/typescript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: Ne"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting typescript implementation at implementations/typescript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Hands"
     ],
     "status": "completed"
   }

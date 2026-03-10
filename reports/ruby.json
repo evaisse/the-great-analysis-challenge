@@ -25,21 +25,21 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.4393484592437744,
+      "image_build_seconds": 0.2941703796386719,
       "build_seconds": null,
-      "analyze_seconds": 2.032444477081299,
-      "test_seconds": 0.23543190956115723,
-      "test_internal_seconds": 0.23543190956115723,
-      "test_chess_engine_seconds": 8.369956970214844,
-      "test_v2_full_seconds": 8.369956970214844
+      "analyze_seconds": 2.238387107849121,
+      "test_seconds": 0.27934861183166504,
+      "test_internal_seconds": 0.27934861183166504,
+      "test_chess_engine_seconds": 12.036153793334961,
+      "test_v2_full_seconds": 12.036153793334961
     },
     "memory": {
       "image": {
-        "memory_mb": 116.41796875,
-        "peak_memory_mb": 116.41796875,
-        "avg_memory_mb": 94.8078125,
+        "memory_mb": 115.64453125,
+        "peak_memory_mb": 115.64453125,
+        "avg_memory_mb": 84.41536458333333,
         "avg_cpu_percent": 0.0,
-        "samples": 5,
+        "samples": 3,
         "psutil_available": true
       },
       "build": {
@@ -50,25 +50,25 @@
         "source": "skipped"
       },
       "analyze": {
-        "memory_mb": 232.0234375,
-        "peak_memory_mb": 232.0234375,
+        "memory_mb": 229.4453125,
+        "peak_memory_mb": 229.4453125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 9.015625,
-        "peak_memory_mb": 9.015625,
+        "memory_mb": 9.1484375,
+        "peak_memory_mb": 9.1484375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.1015625,
-        "peak_memory_mb": 62.21484375,
-        "avg_memory_mb": 59.8988662347561,
+        "memory_mb": 31.99609375,
+        "peak_memory_mb": 62.0078125,
+        "avg_memory_mb": 60.33505434782609,
         "avg_cpu_percent": 0.0,
-        "samples": 82,
+        "samples": 115,
         "psutil_available": true
       }
     },
@@ -78,26 +78,26 @@
     },
     "normalized": {
       "build_ms_per_kloc": 0.0,
-      "analyze_ms_per_kloc": 1066.3402293186248,
-      "runtime_ms_per_kloc": 123.52146356828815
+      "analyze_ms_per_kloc": 1174.3898781999587,
+      "runtime_ms_per_kloc": 146.56275542060075
     },
     "docker": {
-      "build_time": 0.4393484592437744,
+      "build_time": 0.2941703796386719,
       "build_success": true,
-      "image_build_time": 0.4393484592437744,
+      "image_build_time": 0.2941703796386719,
       "image_build_success": true,
       "make_build_skipped": true,
       "make_build_time": null,
       "make_build_success": true,
-      "make_analyze_time": 2.032444477081299,
+      "make_analyze_time": 2.238387107849121,
       "make_analyze_success": true,
-      "test_time": 0.23543190956115723,
+      "test_time": 0.27934861183166504,
       "test_success": true,
-      "make_test_time": 0.23543190956115723,
+      "make_test_time": 0.27934861183166504,
       "make_test_success": true,
-      "test_chess_engine_time": 8.369956970214844,
+      "test_chess_engine_time": 12.036153793334961,
       "test_chess_engine_success": false,
-      "track_test_time": 8.369956970214844,
+      "track_test_time": 12.036153793334961,
       "track_test_success": false
     },
     "task_results": {
@@ -114,9 +114,9 @@
       },
       "make_test_chess_engine": {
         "passed": 2,
-        "failed": 12,
+        "failed": 14,
         "errors": 0,
-        "total": 14
+        "total": 16
       }
     },
     "test_results": {
@@ -126,7 +126,7 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting ruby implementation at implementations/ruby\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Positio"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting ruby implementation at implementations/ruby\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunni"
     ],
     "status": "completed"
   }

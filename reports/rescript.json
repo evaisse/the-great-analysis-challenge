@@ -24,40 +24,40 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.39808011054992676,
-      "build_seconds": 0.20314264297485352,
-      "analyze_seconds": 0.19015192985534668,
-      "test_seconds": 0.2128913402557373,
-      "test_internal_seconds": 0.2128913402557373,
-      "test_chess_engine_seconds": 180.01589274406433,
-      "test_v2_full_seconds": 180.01589274406433
+      "image_build_seconds": 0.34763121604919434,
+      "build_seconds": 0.20367217063903809,
+      "analyze_seconds": 0.19083762168884277,
+      "test_seconds": 0.1814253330230713,
+      "test_internal_seconds": 0.1814253330230713,
+      "test_chess_engine_seconds": 180.0833284854889,
+      "test_v2_full_seconds": 180.0833284854889
     },
     "memory": {
       "image": {
-        "memory_mb": 115.8046875,
-        "peak_memory_mb": 115.8046875,
-        "avg_memory_mb": 92.31640625,
+        "memory_mb": 115.63671875,
+        "peak_memory_mb": 115.63671875,
+        "avg_memory_mb": 91.8525390625,
         "avg_cpu_percent": 0.0,
         "samples": 4,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 6.765625,
-        "peak_memory_mb": 6.765625,
+        "memory_mb": 6.57421875,
+        "peak_memory_mb": 6.57421875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 6.86328125,
-        "peak_memory_mb": 6.86328125,
+        "memory_mb": 6.58984375,
+        "peak_memory_mb": 6.58984375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 7.05078125,
-        "peak_memory_mb": 7.05078125,
+        "memory_mb": 4.76171875,
+        "peak_memory_mb": 4.76171875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
@@ -69,22 +69,22 @@
     },
     "normalized": {},
     "docker": {
-      "build_time": 0.39808011054992676,
+      "build_time": 0.34763121604919434,
       "build_success": true,
-      "image_build_time": 0.39808011054992676,
+      "image_build_time": 0.34763121604919434,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.20314264297485352,
+      "make_build_time": 0.20367217063903809,
       "make_build_success": true,
-      "make_analyze_time": 0.19015192985534668,
+      "make_analyze_time": 0.19083762168884277,
       "make_analyze_success": true,
-      "test_time": 0.2128913402557373,
+      "test_time": 0.1814253330230713,
       "test_success": true,
-      "make_test_time": 0.2128913402557373,
+      "make_test_time": 0.1814253330230713,
       "make_test_success": true,
-      "test_chess_engine_time": 180.01589274406433,
+      "test_chess_engine_time": 180.0833284854889,
       "test_chess_engine_success": false,
-      "track_test_time": 180.01589274406433,
+      "track_test_time": 180.0833284854889,
       "track_test_success": false
     },
     "task_results": {
@@ -113,7 +113,7 @@
       ]
     },
     "errors": [
-      "track v2-full suite timeout after 180.0s"
+      "track v2-full suite timeout after 180.1s"
     ],
     "status": "completed"
   }

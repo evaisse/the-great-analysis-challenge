@@ -15,7 +15,7 @@ Path: implementations/haskell
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-haskell .
-  ✅ Docker build completed in 1.81s
+  ✅ Docker build completed in 0.46s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,59 +27,59 @@ Path: implementations/haskell
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 22:01:21
+Generated: 2026-03-10 23:23:50
 ================================================================================
 
 PERFORMANCE SUMMARY
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-haskell      completed  1085     0.3s/38MB          0.2s/7MB           0.2s/7MB           52.8s/61MB                1/1              0/14              
+haskell      completed  1085     0.4s/38MB          0.2s/6MB           0.2s/6MB           70.4s/62MB                1/1              0/16              
 
 ============================================================
 DETAILED RESULTS: HASKELL
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 1.81s
-  make build: 0.34s
-  make analyze: 0.20s
-  make test: 0.22s
-  make test-chess-engine: 52.80s
-  make test (internal mirror): 0.22s
-  test v2 full seconds: 52.80s
+  docker build image: 0.46s
+  make build: 0.36s
+  make analyze: 0.21s
+  make test: 0.23s
+  make test-chess-engine: 70.41s
+  make test (internal mirror): 0.23s
+  test v2 full seconds: 70.41s
 
 SOURCE SIZE:
   Source LOC: 1085 (files: 7)
 
 NORMALIZED METRICS:
-  Build: 309.58 ms/KLOC
-  Analyze: 187.41 ms/KLOC
-  Runtime: 198.37 ms/KLOC
+  Build: 329.97 ms/KLOC
+  Analyze: 190.53 ms/KLOC
+  Runtime: 211.96 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 114.1MB, Avg 109.0MB
-  Build: Peak 38.0MB, Avg 0.0MB
-  Analyze: Peak 6.9MB, Avg 0.0MB
-  Test: Peak 6.9MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.5MB, Avg 61.2MB
+  Image: Peak 116.1MB, Avg 95.6MB
+  Build: Peak 37.7MB, Avg 0.0MB
+  Analyze: Peak 6.3MB, Avg 0.0MB
+  Test: Peak 6.3MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.2MB, Avg 61.5MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (1.81s)
-  make build: ✅ (0.34s)
-  make analyze: ✅ (0.20s)
-  make test: ✅ (0.22s)
-  make test-chess-engine (track=v2-full): ❌ (52.80s)
+  Image build: ✅ (0.46s)
+  make build: ✅ (0.36s)
+  make analyze: ✅ (0.21s)
+  make test: ✅ (0.23s)
+  make test-chess-engine (track=v2-full): ❌ (70.41s)
   make test score: 1/1
-  make test-chess-engine score: 0/14
+  make test-chess-engine score: 0/16
 
 ERRORS:
   ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 14 tests from test/suites/v2_full.json
+Loaded 16 tests from test/suites/v2_full.json
 
 Testing haskell implementation at implementations/haskell
 ----------------------------------------
@@ -90,9 +90,9 @@ Running test: Go Movetime ✗
 Running test: PGN Show ✗
 Running test: PGN Fixture Morphy ✗
 Running test: PGN Fixture Byrne-Fischer ✗
+Running test: Book Load Stats ✗
+Running test: Book AI Move ✗
 Running test: UCI Handshake ✗
-Running test: UCI Fixture Handshake ✗
-Running test: New960 P
 
 ================================================================================
 📄 JSON results saved to reports/haskell.json (1 valid benchmark(s))

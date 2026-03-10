@@ -24,79 +24,79 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.3819725513458252,
-      "build_seconds": 0.5062949657440186,
-      "analyze_seconds": 1.2509346008300781,
-      "test_seconds": 1.1495838165283203,
-      "test_internal_seconds": 1.1495838165283203,
-      "test_chess_engine_seconds": 8.629829168319702,
-      "test_v2_full_seconds": 8.629829168319702
+      "image_build_seconds": 0.3502628803253174,
+      "build_seconds": 0.5301823616027832,
+      "analyze_seconds": 1.1877944469451904,
+      "test_seconds": 1.0833323001861572,
+      "test_internal_seconds": 1.0833323001861572,
+      "test_chess_engine_seconds": 10.031206369400024,
+      "test_v2_full_seconds": 10.031206369400024
     },
     "memory": {
       "image": {
-        "memory_mb": 115.81640625,
-        "peak_memory_mb": 115.81640625,
-        "avg_memory_mb": 92.2802734375,
+        "memory_mb": 116.0859375,
+        "peak_memory_mb": 116.0859375,
+        "avg_memory_mb": 93.0439453125,
         "avg_cpu_percent": 0.0,
         "samples": 4,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 69.32421875,
-        "peak_memory_mb": 69.32421875,
+        "memory_mb": 79.66015625,
+        "peak_memory_mb": 79.66015625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 110.49609375,
-        "peak_memory_mb": 110.49609375,
+        "memory_mb": 110.57421875,
+        "peak_memory_mb": 110.57421875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 113.93359375,
-        "peak_memory_mb": 113.93359375,
+        "memory_mb": 110.11328125,
+        "peak_memory_mb": 110.11328125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.92578125,
-        "peak_memory_mb": 61.921875,
-        "avg_memory_mb": 59.65464984939759,
+        "memory_mb": 31.890625,
+        "peak_memory_mb": 61.84765625,
+        "avg_memory_mb": 59.916921713917525,
         "avg_cpu_percent": 0.0,
-        "samples": 83,
+        "samples": 97,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 2638,
+      "source_loc": 3352,
       "source_files": 7
     },
     "normalized": {
-      "build_ms_per_kloc": 191.9237929279828,
-      "analyze_ms_per_kloc": 474.19810493937763,
-      "runtime_ms_per_kloc": 435.77855061725563
+      "build_ms_per_kloc": 158.16896229199978,
+      "analyze_ms_per_kloc": 354.3539519526225,
+      "runtime_ms_per_kloc": 323.18982702450995
     },
     "docker": {
-      "build_time": 0.3819725513458252,
+      "build_time": 0.3502628803253174,
       "build_success": true,
-      "image_build_time": 0.3819725513458252,
+      "image_build_time": 0.3502628803253174,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.5062949657440186,
+      "make_build_time": 0.5301823616027832,
       "make_build_success": true,
-      "make_analyze_time": 1.2509346008300781,
+      "make_analyze_time": 1.1877944469451904,
       "make_analyze_success": true,
-      "test_time": 1.1495838165283203,
+      "test_time": 1.0833323001861572,
       "test_success": true,
-      "make_test_time": 1.1495838165283203,
+      "make_test_time": 1.0833323001861572,
       "make_test_success": true,
-      "test_chess_engine_time": 8.629829168319702,
+      "test_chess_engine_time": 10.031206369400024,
       "test_chess_engine_success": true,
-      "track_test_time": 8.629829168319702,
+      "track_test_time": 10.031206369400024,
       "track_test_success": true
     },
     "task_results": {
@@ -112,10 +112,10 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 14,
+        "passed": 16,
         "failed": 0,
         "errors": 0,
-        "total": 14
+        "total": 16
       }
     },
     "test_results": {

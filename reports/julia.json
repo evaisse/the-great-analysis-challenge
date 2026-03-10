@@ -25,19 +25,19 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.25057506561279297,
+      "image_build_seconds": 0.24203109741210938,
       "build_seconds": null,
-      "analyze_seconds": 0.18737411499023438,
-      "test_seconds": 0.18547558784484863,
-      "test_internal_seconds": 0.18547558784484863,
-      "test_chess_engine_seconds": 10.646971225738525,
-      "test_v2_full_seconds": 10.646971225738525
+      "analyze_seconds": 0.1898200511932373,
+      "test_seconds": 0.19239592552185059,
+      "test_internal_seconds": 0.19239592552185059,
+      "test_chess_engine_seconds": 12.323476314544678,
+      "test_v2_full_seconds": 12.323476314544678
     },
     "memory": {
       "image": {
-        "memory_mb": 111.125,
-        "peak_memory_mb": 111.125,
-        "avg_memory_mb": 84.18359375,
+        "memory_mb": 110.65234375,
+        "peak_memory_mb": 110.65234375,
+        "avg_memory_mb": 84.38932291666667,
         "avg_cpu_percent": 0.0,
         "samples": 3,
         "psutil_available": true
@@ -50,25 +50,25 @@
         "source": "skipped"
       },
       "analyze": {
-        "memory_mb": 7.0078125,
-        "peak_memory_mb": 7.0078125,
+        "memory_mb": 6.33984375,
+        "peak_memory_mb": 6.33984375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 7.109375,
-        "peak_memory_mb": 7.109375,
+        "memory_mb": 7.1328125,
+        "peak_memory_mb": 7.1328125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.7578125,
-        "peak_memory_mb": 61.609375,
-        "avg_memory_mb": 59.797330097087375,
+        "memory_mb": 31.765625,
+        "peak_memory_mb": 61.65625,
+        "avg_memory_mb": 60.32686705508475,
         "avg_cpu_percent": 0.0,
-        "samples": 103,
+        "samples": 118,
         "psutil_available": true
       }
     },
@@ -78,26 +78,26 @@
     },
     "normalized": {
       "build_ms_per_kloc": 0.0,
-      "analyze_ms_per_kloc": 114.88296443300698,
-      "runtime_ms_per_kloc": 113.71893797967421
+      "analyze_ms_per_kloc": 116.38261875734966,
+      "runtime_ms_per_kloc": 117.96194084724131
     },
     "docker": {
-      "build_time": 0.25057506561279297,
+      "build_time": 0.24203109741210938,
       "build_success": true,
-      "image_build_time": 0.25057506561279297,
+      "image_build_time": 0.24203109741210938,
       "image_build_success": true,
       "make_build_skipped": true,
       "make_build_time": null,
       "make_build_success": true,
-      "make_analyze_time": 0.18737411499023438,
+      "make_analyze_time": 0.1898200511932373,
       "make_analyze_success": true,
-      "test_time": 0.18547558784484863,
+      "test_time": 0.19239592552185059,
       "test_success": true,
-      "make_test_time": 0.18547558784484863,
+      "make_test_time": 0.19239592552185059,
       "make_test_success": true,
-      "test_chess_engine_time": 10.646971225738525,
+      "test_chess_engine_time": 12.323476314544678,
       "test_chess_engine_success": false,
-      "track_test_time": 10.646971225738525,
+      "track_test_time": 12.323476314544678,
       "track_test_success": false
     },
     "task_results": {
@@ -114,9 +114,9 @@
       },
       "make_test_chess_engine": {
         "passed": 2,
-        "failed": 12,
+        "failed": 14,
         "errors": 0,
-        "total": 14
+        "total": 16
       }
     },
     "test_results": {
@@ -126,7 +126,7 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 14 tests from test/suites/v2_full.json\n\nTesting julia implementation at implementations/julia\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: UCI Handshake \u2717\nRunning test: UCI Fixture Handshake \u2717\nRunning test: New960 Posit"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting julia implementation at implementations/julia\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRun"
     ],
     "status": "completed"
   }

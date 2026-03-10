@@ -20,28 +20,28 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 
 | Language | Status | LOC | make build | make analyze | make test | make test-chess-engine | make test score | make test-chess-engine score | Features |
 |----------|--------|-----|------------|--------------|-----------|------------------------|-----------------|------------------------------|----------|
-| 📦 Bun | 🟢 | [669](implementations/bun/chess.js) | -, - MB | 219ms, 7 MB | 211ms, 7 MB | 65292ms, 62 MB | 1/1 | 2/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 💠 Crystal | 🟢 | [1692](implementations/crystal/src/chess_engine.cr) | 1320ms, 249 MB | 1006ms, 195 MB | 2461ms, 525 MB | 8423ms, 62 MB | 1/1 | 5/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🎯 Dart | 🟡 | [2052](implementations/dart/bin/main.dart) | 191ms, 6 MB | 181ms, 7 MB | 182ms, 7 MB | 13706ms, 62 MB | 1/1 | 14/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🌳 Elm | 🟢 | [1663](implementations/elm/src/ChessEngine.elm) | 201ms, 7 MB | 195ms, 7 MB | 188ms, 6 MB | 8398ms, 64 MB | 1/1 | 3/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| ✨ Gleam | 🟢 | [1917](implementations/gleam/src/chess_engine.gleam) | 334ms, 18 MB | 369ms, 7 MB | 794ms, 75 MB | 52900ms, 61 MB | 1/1 | 0/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🐹 Go | 🟢 | [2638](implementations/go/chess.go) | 506ms, 69 MB | 1251ms, 110 MB | 1150ms, 114 MB | 8630ms, 62 MB | 1/1 | 14/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 📐 Haskell | 🟢 | [1085](implementations/haskell/src/Main.hs) | 336ms, 38 MB | 203ms, 7 MB | 215ms, 7 MB | 52804ms, 61 MB | 1/1 | 0/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🪶 Imba | 🟡 | [700](implementations/imba/chess.imba) | 214ms, 7 MB | 199ms, 7 MB | 203ms, 6 MB | 93531ms, 62 MB | 1/1 | 2/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🟨 Javascript | 🟡 | [682](implementations/javascript/chess.js) | -, - MB | 218ms, 7 MB | 230ms, 7 MB | 65348ms, 62 MB | 1/1 | 2/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🔮 Julia | 🟢 | [1369](implementations/julia/chess.jl) | -, - MB | 187ms, 7 MB | 185ms, 7 MB | 10647ms, 62 MB | 1/1 | 2/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🧡 Kotlin | 🟡 | [1524](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 202ms, 7 MB | 187ms, 7 MB | 181ms, 6 MB | 8484ms, 62 MB | 1/1 | 2/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🪐 Lua | 🟢 | [1547](implementations/lua/chess.lua) | -, - MB | 199ms, 7 MB | 204ms, 7 MB | 8424ms, 62 MB | 1/1 | 14/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🔥 Mojo | 🟢 | [275](implementations/mojo/chess.mojo) | 10053ms, - MB | 10091ms, - MB | 10032ms, - MB | 10662ms, 62 MB | 0/1 | 0/49 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🦊 Nim | 🟢 | [1105](implementations/nim/chess.nim) | 192ms, 7 MB | 198ms, 7 MB | 175ms, 5 MB | 8320ms, 62 MB | 1/1 | 2/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🐘 Php | 🟢 | [2384](implementations/php/chess.php) | -, - MB | 347ms, 9 MB | 209ms, 9 MB | 8551ms, 62 MB | 1/1 | 14/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🐍 Python | 🟡 | [2614](implementations/python/chess.py) | -, - MB | 195ms, 7 MB | 205ms, 7 MB | 8591ms, 61 MB | 1/1 | 14/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🧠 Rescript | 🟡 | [1678](implementations/rescript/src/Chess.res) | 203ms, 7 MB | 190ms, 7 MB | 213ms, 7 MB | 180016ms, - MB | 1/1 | 0/1 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| ❤️ Ruby | 🟡 | [1906](implementations/ruby/chess.rb) | -, - MB | 2032ms, 232 MB | 235ms, 9 MB | 8370ms, 62 MB | 1/1 | 2/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🦀 Rust | 🟢 | [1852](implementations/rust/src/main.rs) | 184ms, 7 MB | 187ms, 7 MB | 179ms, 7 MB | 8312ms, 62 MB | 1/1 | 2/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🐦 Swift | 🟢 | [856](implementations/swift/src/main.swift) | 204ms, 6 MB | 201ms, 7 MB | 201ms, 7 MB | 180086ms, - MB | 1/1 | 0/1 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 📘 Typescript | 🟡 | [1773](implementations/typescript/src/chess.ts) | 182ms, 5 MB | 177ms, 7 MB | 189ms, 7 MB | 8443ms, 61 MB | 1/1 | 2/14 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| ⚡ Zig | 🟢 | [1589](implementations/zig/src/main.zig) | 195ms, 7 MB | 182ms, 7 MB | 185ms, 7 MB | 51998ms, 62 MB | 1/1 | 0/18 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 📦 Bun | 🟢 | [669](implementations/bun/chess.js) | -, - MB | 223ms, 7 MB | 209ms, 7 MB | 98046ms, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 💠 Crystal | 🟢 | [1692](implementations/crystal/src/chess_engine.cr) | 1303ms, 250 MB | 967ms, 195 MB | 2388ms, 524 MB | 9826ms, 62 MB | 1/1 | 5/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🎯 Dart | 🟡 | [2742](implementations/dart/bin/main.dart) | -, - MB | 188ms, 7 MB | 192ms, 7 MB | 15068ms, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🌳 Elm | 🟢 | [1663](implementations/elm/src/ChessEngine.elm) | 148ms, 6 MB | 144ms, 7 MB | 162ms, 7 MB | 9745ms, 62 MB | 1/1 | 3/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| ✨ Gleam | 🟢 | [1917](implementations/gleam/src/chess_engine.gleam) | 443ms, 18 MB | 360ms, 7 MB | 824ms, 77 MB | 70240ms, 62 MB | 1/1 | 0/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🐹 Go | 🟢 | [3352](implementations/go/chess.go) | 530ms, 80 MB | 1188ms, 111 MB | 1083ms, 110 MB | 10031ms, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 📐 Haskell | 🟢 | [1085](implementations/haskell/src/Main.hs) | 358ms, 38 MB | 207ms, 6 MB | 230ms, 6 MB | 70408ms, 62 MB | 1/1 | 0/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🪶 Imba | 🟡 | [700](implementations/imba/chess.imba) | 168ms, 7 MB | 166ms, 7 MB | 169ms, 7 MB | 110879ms, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🟨 Javascript | 🟡 | [682](implementations/javascript/chess.js) | -, - MB | 209ms, 7 MB | 190ms, 7 MB | 85603ms, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🔮 Julia | 🟢 | [1369](implementations/julia/chess.jl) | -, - MB | 190ms, 6 MB | 192ms, 7 MB | 12323ms, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🧡 Kotlin | 🟡 | [1524](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 191ms, 7 MB | 185ms, 7 MB | 185ms, 7 MB | 10000ms, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🪐 Lua | 🟢 | [2230](implementations/lua/chess.lua) | -, - MB | 146ms, 7 MB | 149ms, 7 MB | 10020ms, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🔥 Mojo | 🟢 | [275](implementations/mojo/chess.mojo) | 10073ms, - MB | 10052ms, - MB | 10042ms, - MB | 10753ms, 62 MB | 0/1 | 0/58 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🦊 Nim | 🟢 | [1105](implementations/nim/chess.nim) | 185ms, 7 MB | 200ms, 7 MB | 192ms, 6 MB | 9733ms, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🐘 Php | 🟢 | [2936](implementations/php/chess.php) | -, - MB | 329ms, 9 MB | 214ms, 9 MB | 9949ms, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🐍 Python | 🟡 | [3077](implementations/python/chess.py) | -, - MB | 204ms, 7 MB | 185ms, 7 MB | 10001ms, 61 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🧠 Rescript | 🟡 | [1678](implementations/rescript/src/Chess.res) | 204ms, 7 MB | 191ms, 7 MB | 181ms, 5 MB | 180083ms, - MB | 1/1 | 0/1 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| ❤️ Ruby | 🟡 | [1906](implementations/ruby/chess.rb) | -, - MB | 2238ms, 229 MB | 279ms, 9 MB | 12036ms, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🦀 Rust | 🟢 | [1852](implementations/rust/src/main.rs) | 187ms, 7 MB | 182ms, 7 MB | 181ms, 7 MB | 9714ms, 61 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🐦 Swift | 🟢 | [856](implementations/swift/src/main.swift) | 192ms, 6 MB | 185ms, 7 MB | 187ms, 6 MB | 180082ms, - MB | 1/1 | 0/1 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 📘 Typescript | 🟡 | [1773](implementations/typescript/src/chess.ts) | 195ms, 7 MB | 188ms, 7 MB | 196ms, 7 MB | 9922ms, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| ⚡ Zig | 🟢 | [1589](implementations/zig/src/main.zig) | 184ms, 7 MB | 205ms, 5 MB | 184ms, 7 MB | 58003ms, 62 MB | 1/1 | 0/36 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 <!-- status-table-end -->
 
 Legend:
@@ -57,38 +57,38 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 #### `make build`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
-| 1 | 📘 Typescript | 182ms | `####################` |
-| 2 | 🦀 Rust | 184ms | `####################` |
-| 3 | 🎯 Dart | 191ms | `###################` |
-| 4 | 🦊 Nim | 192ms | `###################` |
-| 5 | ⚡ Zig | 195ms | `###################` |
+| 1 | 🌳 Elm | 148ms | `####################` |
+| 2 | 🪶 Imba | 168ms | `##################` |
+| 3 | ⚡ Zig | 184ms | `################` |
+| 4 | 🦊 Nim | 185ms | `################` |
+| 5 | 🦀 Rust | 187ms | `################` |
 
 #### `make analyze`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
-| 1 | 📘 Typescript | 177ms | `####################` |
-| 2 | 🎯 Dart | 181ms | `####################` |
-| 3 | ⚡ Zig | 182ms | `###################` |
-| 4 | 🦀 Rust | 187ms | `###################` |
-| 5 | 🧡 Kotlin | 187ms | `###################` |
+| 1 | 🌳 Elm | 144ms | `####################` |
+| 2 | 🪐 Lua | 146ms | `####################` |
+| 3 | 🪶 Imba | 166ms | `#################` |
+| 4 | 🦀 Rust | 182ms | `################` |
+| 5 | 🧡 Kotlin | 185ms | `################` |
 
 #### `make test`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
-| 1 | 🦊 Nim | 175ms | `####################` |
-| 2 | 🦀 Rust | 179ms | `####################` |
-| 3 | 🧡 Kotlin | 181ms | `###################` |
-| 4 | 🎯 Dart | 182ms | `###################` |
-| 5 | ⚡ Zig | 185ms | `###################` |
+| 1 | 🪐 Lua | 149ms | `####################` |
+| 2 | 🌳 Elm | 162ms | `##################` |
+| 3 | 🪶 Imba | 169ms | `##################` |
+| 4 | 🦀 Rust | 181ms | `################` |
+| 5 | 🧠 Rescript | 181ms | `################` |
 
 #### `make test-chess-engine`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
-| 1 | 🦀 Rust | 8312ms | `####################` |
-| 2 | 🦊 Nim | 8320ms | `####################` |
-| 3 | ❤️ Ruby | 8370ms | `####################` |
-| 4 | 🌳 Elm | 8398ms | `####################` |
-| 5 | 💠 Crystal | 8423ms | `####################` |
+| 1 | 🦀 Rust | 9714ms | `####################` |
+| 2 | 🦊 Nim | 9733ms | `####################` |
+| 3 | 🌳 Elm | 9745ms | `####################` |
+| 4 | 💠 Crystal | 9826ms | `####################` |
+| 5 | 📘 Typescript | 9922ms | `####################` |
 <!-- speed-chart-end -->
 
 ## Quick Commands

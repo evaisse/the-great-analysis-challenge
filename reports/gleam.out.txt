@@ -17,7 +17,7 @@ make: *** [Makefile:24: clean] Error 127
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-gleam .
-  ✅ Docker build completed in 0.89s
+  ✅ Docker build completed in 1.20s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -29,54 +29,54 @@ make: *** [Makefile:24: clean] Error 127
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 22:00:24
+Generated: 2026-03-10 23:23:08
 ================================================================================
 
 PERFORMANCE SUMMARY
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-gleam        completed  0        0.3s/18MB          0.4s/7MB           0.8s/75MB          52.9s/61MB                1/1              0/14              
+gleam        completed  0        0.4s/18MB          0.4s/7MB           0.8s/77MB          70.2s/62MB                1/1              0/16              
 
 ============================================================
 DETAILED RESULTS: GLEAM
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.89s
-  make build: 0.33s
-  make analyze: 0.37s
-  make test: 0.79s
-  make test-chess-engine: 52.90s
-  make test (internal mirror): 0.79s
-  test v2 full seconds: 52.90s
+  docker build image: 1.20s
+  make build: 0.44s
+  make analyze: 0.36s
+  make test: 0.82s
+  make test-chess-engine: 70.24s
+  make test (internal mirror): 0.82s
+  test v2 full seconds: 70.24s
 
 SOURCE SIZE:
   Source LOC: 0 (files: 0)
 
 MEMORY USAGE:
-  Image: Peak 115.6MB, Avg 94.0MB
-  Build: Peak 18.1MB, Avg 0.0MB
-  Analyze: Peak 7.3MB, Avg 0.0MB
-  Test: Peak 74.8MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.4MB, Avg 61.0MB
+  Image: Peak 115.8MB, Avg 95.4MB
+  Build: Peak 17.7MB, Avg 0.0MB
+  Analyze: Peak 7.2MB, Avg 0.0MB
+  Test: Peak 76.6MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.0MB, Avg 61.7MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.89s)
-  make build: ✅ (0.33s)
-  make analyze: ✅ (0.37s)
-  make test: ✅ (0.79s)
-  make test-chess-engine (track=v2-full): ❌ (52.90s)
+  Image build: ✅ (1.20s)
+  make build: ✅ (0.44s)
+  make analyze: ✅ (0.36s)
+  make test: ✅ (0.82s)
+  make test-chess-engine (track=v2-full): ❌ (70.24s)
   make test score: 1/1
-  make test-chess-engine score: 0/14
+  make test-chess-engine score: 0/16
 
 ERRORS:
   ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 14 tests from test/suites/v2_full.json
+Loaded 16 tests from test/suites/v2_full.json
 
 Testing gleam implementation at implementations/gleam
 ----------------------------------------
@@ -87,9 +87,10 @@ Running test: Go Movetime ✗
 Running test: PGN Show ✗
 Running test: PGN Fixture Morphy ✗
 Running test: PGN Fixture Byrne-Fischer ✗
+Running test: Book Load Stats ✗
+Running test: Book AI Move ✗
 Running test: UCI Handshake ✗
-Running test: UCI Fixture Handshake ✗
-Running test: New960 Posit
+Run
 
 ================================================================================
 📄 JSON results saved to reports/gleam.json (1 valid benchmark(s))

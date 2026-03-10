@@ -15,7 +15,7 @@ Path: implementations/bun
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-bun .
-  ✅ Docker build completed in 1.77s
+  ✅ Docker build completed in 0.54s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
@@ -26,58 +26,58 @@ Path: implementations/bun
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 22:01:36
+Generated: 2026-03-10 23:24:29
 ================================================================================
 
 PERFORMANCE SUMMARY
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-bun          completed  669      -/-MB              0.2s/7MB           0.2s/7MB           65.3s/62MB                1/1              2/14              
+bun          completed  669      -/-MB              0.2s/7MB           0.2s/7MB           98.0s/62MB                1/1              2/16              
 
 ============================================================
 DETAILED RESULTS: BUN
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 1.77s
+  docker build image: 0.54s
   make analyze: 0.22s
   make test: 0.21s
-  make test-chess-engine: 65.29s
+  make test-chess-engine: 98.05s
   make test (internal mirror): 0.21s
-  test v2 full seconds: 65.29s
+  test v2 full seconds: 98.05s
 
 SOURCE SIZE:
   Source LOC: 669 (files: 4)
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 327.38 ms/KLOC
-  Runtime: 315.02 ms/KLOC
+  Analyze: 334.00 ms/KLOC
+  Runtime: 312.46 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 116.0MB, Avg 110.2MB
+  Image: Peak 116.6MB, Avg 100.4MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 7.0MB, Avg 0.0MB
-  Test: Peak 6.9MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 61.6MB
+  Analyze: Peak 6.6MB, Avg 0.0MB
+  Test: Peak 6.6MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.7MB, Avg 61.5MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (1.77s)
+  Image build: ✅ (0.54s)
   make build: ⏭️ skipped
   make analyze: ✅ (0.22s)
   make test: ✅ (0.21s)
-  make test-chess-engine (track=v2-full): ❌ (65.29s)
+  make test-chess-engine (track=v2-full): ❌ (98.05s)
   make test score: 1/1
-  make test-chess-engine score: 2/14
+  make test-chess-engine score: 2/16
 
 ERRORS:
   ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 14 tests from test/suites/v2_full.json
+Loaded 16 tests from test/suites/v2_full.json
 
 Testing bun implementation at implementations/bun
 ----------------------------------------
@@ -88,9 +88,10 @@ Running test: Go Movetime ✗
 Running test: PGN Show ✗
 Running test: PGN Fixture Morphy ✗
 Running test: PGN Fixture Byrne-Fischer ✗
+Running test: Book Load Stats ✗
+Running test: Book AI Move ✗
 Running test: UCI Handshake ✗
-Running test: UCI Fixture Handshake ✗
-Running test: New960 Position 
+Running
 
 ================================================================================
 📄 JSON results saved to reports/bun.json (1 valid benchmark(s))

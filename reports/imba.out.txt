@@ -15,7 +15,7 @@ Path: implementations/imba
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-imba .
-  ✅ Docker build completed in 0.59s
+  ✅ Docker build completed in 0.35s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,59 +27,59 @@ Path: implementations/imba
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 22:02:06
+Generated: 2026-03-10 23:24:42
 ================================================================================
 
 PERFORMANCE SUMMARY
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-imba         completed  700      0.2s/7MB           0.2s/7MB           0.2s/6MB           93.5s/62MB                1/1              2/14              
+imba         completed  700      0.2s/7MB           0.2s/7MB           0.2s/7MB           110.9s/62MB               1/1              2/16              
 
 ============================================================
 DETAILED RESULTS: IMBA
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.59s
-  make build: 0.21s
-  make analyze: 0.20s
-  make test: 0.20s
-  make test-chess-engine: 93.53s
-  make test (internal mirror): 0.20s
-  test v2 full seconds: 93.53s
+  docker build image: 0.35s
+  make build: 0.17s
+  make analyze: 0.17s
+  make test: 0.17s
+  make test-chess-engine: 110.88s
+  make test (internal mirror): 0.17s
+  test v2 full seconds: 110.88s
 
 SOURCE SIZE:
   Source LOC: 700 (files: 1)
 
 NORMALIZED METRICS:
-  Build: 305.06 ms/KLOC
-  Analyze: 284.16 ms/KLOC
-  Runtime: 289.66 ms/KLOC
+  Build: 239.98 ms/KLOC
+  Analyze: 237.08 ms/KLOC
+  Runtime: 241.93 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 115.6MB, Avg 99.1MB
-  Build: Peak 7.0MB, Avg 0.0MB
-  Analyze: Peak 7.1MB, Avg 0.0MB
-  Test: Peak 6.3MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 61.7MB
+  Image: Peak 116.5MB, Avg 91.6MB
+  Build: Peak 6.9MB, Avg 0.0MB
+  Analyze: Peak 6.9MB, Avg 0.0MB
+  Test: Peak 7.0MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.2MB, Avg 62.0MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.59s)
-  make build: ✅ (0.21s)
-  make analyze: ✅ (0.20s)
-  make test: ✅ (0.20s)
-  make test-chess-engine (track=v2-full): ❌ (93.53s)
+  Image build: ✅ (0.35s)
+  make build: ✅ (0.17s)
+  make analyze: ✅ (0.17s)
+  make test: ✅ (0.17s)
+  make test-chess-engine (track=v2-full): ❌ (110.88s)
   make test score: 1/1
-  make test-chess-engine score: 2/14
+  make test-chess-engine score: 2/16
 
 ERRORS:
   ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 14 tests from test/suites/v2_full.json
+Loaded 16 tests from test/suites/v2_full.json
 
 Testing imba implementation at implementations/imba
 ----------------------------------------
@@ -90,9 +90,10 @@ Running test: Go Movetime ✗
 Running test: PGN Show ✗
 Running test: PGN Fixture Morphy ✗
 Running test: PGN Fixture Byrne-Fischer ✗
+Running test: Book Load Stats ✗
+Running test: Book AI Move ✗
 Running test: UCI Handshake ✗
-Running test: UCI Fixture Handshake ✗
-Running test: New960 Positio
+Runni
 
 ================================================================================
 📄 JSON results saved to reports/imba.json (1 valid benchmark(s))
