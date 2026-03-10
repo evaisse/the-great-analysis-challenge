@@ -279,13 +279,36 @@ class ChessEngine {
         }
         
         [$move, $eval, $time_ms] = $result;
-        
+        $this->apply_ai_move($move, intval($eval), intval($time_ms), $depth);
+    }
+
+    private function handle_ai_move_timed(int $time_limit_ms, int $max_depth = 64): void {
+        if ($time_limit_ms <= 0) {
+            echo "ERROR: Time limit must be > 0\n";
+            return;
+        }
+
+        $result = $this->ai->find_best_move_timed($time_limit_ms, $max_depth);
+        if ($result === null) {
+            echo "ERROR: No legal moves available\n";
+            return;
+        }
+
+        /** @var Move $move */
+        $move = $result['move'];
+        $eval = intval($result['score'] ?? 0);
+        $time_ms = intval($result['time_ms'] ?? 0);
+        $depth = max(1, intval($result['depth'] ?? 1));
+        $this->apply_ai_move($move, $eval, $time_ms, $depth);
+    }
+
+    private function apply_ai_move(Move $move, int $eval, int $time_ms, int $depth): void {
         $this->board->make_move($move);
-        
+
         // Check for game end first
         $is_checkmate = $this->move_gen->is_checkmate();
         $is_stalemate = $this->move_gen->is_stalemate();
-        
+
         if ($is_checkmate) {
             $winner = $this->board->current_player === CHESS_WHITE ? "Black" : "White";
             echo "CHECKMATE: $winner wins\n";
@@ -297,11 +320,10 @@ class ChessEngine {
                 $reason = DrawDetection::is_draw_by_repetition($this->board) ? "repetition" : "50-move rule";
                 echo "DRAW: by $reason\n";
             } else {
-                // Only output AI message if game continues
                 echo "AI: " . $move->to_string() . " (depth=$depth, eval=$eval, time={$time_ms}ms)\n";
             }
         }
-        
+
         echo $this->board->display();
     }
     
@@ -359,7 +381,7 @@ class ChessEngine {
 
     private function handle_go(array $args): void {
         if (count($args) === 0) {
-            echo "ERROR: go requires subcommand (movetime <ms>|infinite)\n";
+            echo "ERROR: go requires subcommand (movetime|wtime|infinite)\n";
             return;
         }
 
@@ -376,12 +398,24 @@ class ChessEngine {
                 return;
             }
 
-            $this->handle_ai_move($this->depth_for_movetime($movetime));
+            $this->handle_ai_move_timed($movetime);
+            return;
+        }
+
+        if ($sub === 'wtime' || $sub === 'btime') {
+            $parsed = $this->parse_go_time_control($args);
+            if (is_string($parsed)) {
+                echo $parsed . "\n";
+                return;
+            }
+
+            $movetime = $this->compute_go_movetime($parsed);
+            $this->handle_ai_move_timed($movetime);
             return;
         }
 
         if ($sub === 'infinite') {
-            echo "OK: go infinite acknowledged (use stop to terminate)\n";
+            $this->handle_ai_move_timed($this->infinite_go_budget_ms());
             return;
         }
 
@@ -389,6 +423,7 @@ class ChessEngine {
     }
 
     private function handle_stop(): void {
+        $this->ai->request_stop();
         echo "OK: stop\n";
     }
 
@@ -593,12 +628,80 @@ class ChessEngine {
         }
     }
 
-    private function depth_for_movetime(int $movetime): int {
-        if ($movetime <= 200) return 1;
-        if ($movetime <= 500) return 2;
-        if ($movetime <= 2000) return 3;
-        if ($movetime <= 5000) return 4;
-        return 5;
+    private function parse_go_time_control(array $args): array|string {
+        $options = [
+            'wtime' => null,
+            'btime' => null,
+            'winc' => null,
+            'binc' => null,
+            'movestogo' => null,
+        ];
+
+        $n = count($args);
+        for ($i = 0; $i < $n; $i += 2) {
+            $key = strtolower($args[$i]);
+            if (!array_key_exists($key, $options)) {
+                return "ERROR: Unsupported go parameter";
+            }
+            if (!isset($args[$i + 1])) {
+                return "ERROR: Missing value for go parameter '$key'";
+            }
+
+            $raw_value = trim($args[$i + 1]);
+            if (!preg_match('/^-?\d+$/', $raw_value)) {
+                return "ERROR: Invalid numeric value for go parameter '$key'";
+            }
+
+            $value = intval($raw_value);
+            if ($value < 0) {
+                return "ERROR: go parameter '$key' must be >= 0";
+            }
+
+            $options[$key] = $value;
+        }
+
+        foreach (['wtime', 'btime', 'winc', 'binc'] as $required) {
+            if ($options[$required] === null) {
+                return "ERROR: go wtime/btime/winc/binc are required";
+            }
+        }
+
+        if ($options['movestogo'] !== null && $options['movestogo'] <= 0) {
+            return "ERROR: go movestogo must be > 0";
+        }
+
+        return $options;
+    }
+
+    private function compute_go_movetime(array $options): int {
+        $is_white = $this->board->current_player === CHESS_WHITE;
+        $remaining = $is_white ? intval($options['wtime']) : intval($options['btime']);
+        $increment = $is_white ? intval($options['winc']) : intval($options['binc']);
+        $moves_to_go = intval($options['movestogo'] ?? 0);
+        if ($moves_to_go <= 0) {
+            $moves_to_go = 30;
+        }
+
+        if ($remaining <= 0) {
+            return 1;
+        }
+
+        $reserve = max(10, min(500, intdiv($remaining, 20)));
+        $spendable = max(1, $remaining - $reserve);
+        $base = intdiv($spendable, max(1, $moves_to_go));
+        $increment_share = intdiv($increment * 3, 4);
+        $budget = $base + $increment_share;
+
+        if ($remaining < 100) {
+            return max(1, min($remaining, 25));
+        }
+
+        return max(10, min($budget, $spendable));
+    }
+
+    private function infinite_go_budget_ms(): int {
+        // "infinite" is cooperative in this single-threaded CLI; use a long bounded search.
+        return 15000;
     }
 
     private function get_repetition_count(): int {
@@ -697,8 +800,9 @@ Available commands:
   draws                       - Show draw detection status
   history                     - Show position hash history
   go movetime <ms>            - Time-managed AI move
-  go infinite                 - Start infinite search mode (stub)
-  stop                        - Stop infinite search mode
+  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-managed AI move
+  go infinite                 - Long bounded iterative search
+  stop                        - Cooperative stop request (backward-compatible)
   pgn load|show|moves         - PGN command family
   uci                         - Enter/respond to UCI handshake
   isready                     - UCI readiness probe

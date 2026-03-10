@@ -1,11 +1,24 @@
 package main
 
+import (
+	"sort"
+	"time"
+)
+
 const (
 	MATE_VALUE   = 20000
 	DRAW_VALUE   = 0
 	MAX_DEPTH    = 5
 	INFINITY     = 999999
 	NEG_INFINITY = -999999
+)
+
+type ttFlag int
+
+const (
+	ttExact ttFlag = iota
+	ttLowerBound
+	ttUpperBound
 )
 
 var pieceValues = map[PieceType]int{
@@ -84,96 +97,382 @@ var kingMiddlegameTable = [8][8]int{
 	{20, 30, 10, 0, 0, 10, 30, 20},
 }
 
+type TTEntry struct {
+	Depth       int
+	Score       int
+	Flag        ttFlag
+	BestMove    Move
+	HasBestMove bool
+}
+
+type SearchResult struct {
+	Move   Move
+	Score  int
+	Depth  int
+	Aborted bool
+}
+
+type searchContext struct {
+	deadline    time.Time
+	hasDeadline bool
+	aborted     bool
+}
+
+func (ctx *searchContext) shouldStop() bool {
+	if !ctx.hasDeadline || ctx.aborted {
+		return ctx.aborted
+	}
+
+	if !time.Now().Before(ctx.deadline) {
+		ctx.aborted = true
+	}
+
+	return ctx.aborted
+}
+
 type AI struct {
 	nodesEvaluated int
+	transposition  map[uint64]TTEntry
 }
 
 func NewAI() *AI {
-	return &AI{nodesEvaluated: 0}
+	return &AI{
+		nodesEvaluated: 0,
+		transposition:  make(map[uint64]TTEntry, 1<<16),
+	}
 }
 
 func (ai *AI) FindBestMove(gs *GameState, depth int) Move {
-	ai.nodesEvaluated = 0
-
 	if depth < 1 || depth > MAX_DEPTH {
 		depth = 3
 	}
 
-	_, bestMove := ai.minimax(gs, depth, NEG_INFINITY, INFINITY, true)
-	return bestMove
+	result := ai.findBestMoveIterative(gs, depth, 0)
+	return result.Move
 }
 
-func (ai *AI) minimax(gs *GameState, depth int, alpha, beta int, maximizingPlayer bool) (int, Move) {
+func (ai *AI) FindBestMoveWithDepth(gs *GameState, depth int) SearchResult {
+	if depth < 1 || depth > MAX_DEPTH {
+		depth = 3
+	}
+	return ai.findBestMoveIterative(gs, depth, 0)
+}
+
+func (ai *AI) FindBestMoveTimed(gs *GameState, movetime time.Duration, maxDepth int) SearchResult {
+	if maxDepth < 1 || maxDepth > MAX_DEPTH {
+		maxDepth = MAX_DEPTH
+	}
+	if movetime < 0 {
+		movetime = 0
+	}
+	return ai.findBestMoveIterative(gs, maxDepth, movetime)
+}
+
+func (ai *AI) findBestMoveIterative(gs *GameState, maxDepth int, movetime time.Duration) SearchResult {
+	ai.nodesEvaluated = 0
+
+	legalMoves := gs.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		return SearchResult{}
+	}
+
+	ctx := &searchContext{}
+	if movetime > 0 {
+		ctx.hasDeadline = true
+		ctx.deadline = time.Now().Add(movetime)
+	}
+
+	ttMove, hasTTMove := ai.getTTMove(gs.ZobristHash)
+	orderedFallback := ai.orderMoves(legalMoves, ttMove, hasTTMove)
+
+	result := SearchResult{
+		Move:   orderedFallback[0],
+		Score:  ai.evaluate(gs),
+		Depth:  0,
+		Aborted: false,
+	}
+
+	for depth := 1; depth <= maxDepth; depth++ {
+		if ctx.shouldStop() {
+			break
+		}
+
+		score, bestMove, completed := ai.negamaxRoot(gs, depth, ctx)
+		if !completed {
+			break
+		}
+
+		result.Score = score
+		result.Move = bestMove
+		result.Depth = depth
+	}
+
+	result.Aborted = ctx.aborted
+	return result
+}
+
+func (ai *AI) negamaxRoot(gs *GameState, depth int, ctx *searchContext) (int, Move, bool) {
+	moves := gs.GenerateLegalMoves()
+	if len(moves) == 0 {
+		if gs.IsInCheck(gs.ActiveColor) {
+			return -MATE_VALUE, Move{}, true
+		}
+		return DRAW_VALUE, Move{}, true
+	}
+
+	alpha := NEG_INFINITY
+	beta := INFINITY
+	alphaOrig := alpha
+	betaOrig := beta
+
+	ttMove, hasTTMove, cutoff, ttScore := ai.probeTT(gs.ZobristHash, depth, &alpha, &beta)
+	if cutoff {
+		ordered := ai.orderMoves(moves, ttMove, hasTTMove)
+		return ttScore, ordered[0], true
+	}
+
+	orderedMoves := ai.orderMoves(moves, ttMove, hasTTMove)
+	bestScore := NEG_INFINITY
+	bestMove := orderedMoves[0]
+
+	for i, move := range orderedMoves {
+		if ctx.shouldStop() {
+			return 0, Move{}, false
+		}
+
+		testState := gs.Clone()
+		testState.MakeMove(move)
+
+		score, completed := ai.negamax(testState, depth-1, -beta, -alpha, 1, ctx)
+		if !completed {
+			return 0, Move{}, false
+		}
+		score = -score
+
+		if i == 0 || score > bestScore {
+			bestScore = score
+			bestMove = move
+		}
+
+		if score > alpha {
+			alpha = score
+		}
+		if alpha >= beta {
+			break
+		}
+	}
+
+	ai.storeTT(gs.ZobristHash, depth, bestScore, alphaOrig, betaOrig, bestMove)
+	return bestScore, bestMove, true
+}
+
+func (ai *AI) negamax(gs *GameState, depth int, alpha, beta int, ply int, ctx *searchContext) (int, bool) {
+	if ctx.shouldStop() {
+		return 0, false
+	}
+
 	ai.nodesEvaluated++
 
 	if depth == 0 {
-		return ai.evaluate(gs), Move{}
+		return ai.evaluate(gs), true
 	}
 
 	moves := gs.GenerateLegalMoves()
-
-	// Check for terminal positions
 	if len(moves) == 0 {
 		if gs.IsInCheck(gs.ActiveColor) {
-			// Checkmate
-			if maximizingPlayer {
-				return -MATE_VALUE + (MAX_DEPTH - depth), Move{}
-			} else {
-				return MATE_VALUE - (MAX_DEPTH - depth), Move{}
-			}
-		} else {
-			// Stalemate
-			return DRAW_VALUE, Move{}
+			return -MATE_VALUE + ply, true
+		}
+		return DRAW_VALUE, true
+	}
+
+	alphaOrig := alpha
+	betaOrig := beta
+
+	ttMove, hasTTMove, cutoff, ttScore := ai.probeTT(gs.ZobristHash, depth, &alpha, &beta)
+	if cutoff {
+		return ttScore, true
+	}
+
+	orderedMoves := ai.orderMoves(moves, ttMove, hasTTMove)
+	bestScore := NEG_INFINITY
+	bestMove := orderedMoves[0]
+
+	for i, move := range orderedMoves {
+		if ctx.shouldStop() {
+			return 0, false
+		}
+
+		testState := gs.Clone()
+		testState.MakeMove(move)
+
+		score, completed := ai.negamax(testState, depth-1, -beta, -alpha, ply+1, ctx)
+		if !completed {
+			return 0, false
+		}
+		score = -score
+
+		if i == 0 || score > bestScore {
+			bestScore = score
+			bestMove = move
+		}
+
+		if score > alpha {
+			alpha = score
+		}
+		if alpha >= beta {
+			break
 		}
 	}
 
-	var bestMove Move
+	ai.storeTT(gs.ZobristHash, depth, bestScore, alphaOrig, betaOrig, bestMove)
+	return bestScore, true
+}
 
-	if maximizingPlayer {
-		maxEval := NEG_INFINITY
-
-		for _, move := range moves {
-			// Make move
-			testState := gs.Clone()
-			testState.MakeMove(move)
-
-			eval, _ := ai.minimax(testState, depth-1, alpha, beta, false)
-
-			if eval > maxEval {
-				maxEval = eval
-				bestMove = move
-			}
-
-			alpha = max(alpha, eval)
-			if beta <= alpha {
-				break // Alpha-beta pruning
-			}
-		}
-
-		return maxEval, bestMove
-	} else {
-		minEval := INFINITY
-
-		for _, move := range moves {
-			// Make move
-			testState := gs.Clone()
-			testState.MakeMove(move)
-
-			eval, _ := ai.minimax(testState, depth-1, alpha, beta, true)
-
-			if eval < minEval {
-				minEval = eval
-				bestMove = move
-			}
-
-			beta = min(beta, eval)
-			if beta <= alpha {
-				break // Alpha-beta pruning
-			}
-		}
-
-		return minEval, bestMove
+func (ai *AI) probeTT(hash uint64, depth int, alpha, beta *int) (Move, bool, bool, int) {
+	entry, ok := ai.transposition[hash]
+	if !ok {
+		return Move{}, false, false, 0
 	}
+
+	if entry.Depth < depth {
+		return entry.BestMove, entry.HasBestMove, false, 0
+	}
+
+	switch entry.Flag {
+	case ttExact:
+		return entry.BestMove, entry.HasBestMove, true, entry.Score
+	case ttLowerBound:
+		if entry.Score > *alpha {
+			*alpha = entry.Score
+		}
+	case ttUpperBound:
+		if entry.Score < *beta {
+			*beta = entry.Score
+		}
+	}
+
+	if *alpha >= *beta {
+		return entry.BestMove, entry.HasBestMove, true, entry.Score
+	}
+
+	return entry.BestMove, entry.HasBestMove, false, 0
+}
+
+func (ai *AI) storeTT(hash uint64, depth int, score int, alphaOrig int, betaOrig int, bestMove Move) {
+	flag := ttExact
+	if score <= alphaOrig {
+		flag = ttUpperBound
+	} else if score >= betaOrig {
+		flag = ttLowerBound
+	}
+
+	if existing, ok := ai.transposition[hash]; ok && existing.Depth > depth {
+		return
+	}
+
+	if len(ai.transposition) >= 1<<20 {
+		ai.transposition = make(map[uint64]TTEntry, 1<<16)
+	}
+
+	ai.transposition[hash] = TTEntry{
+		Depth:       depth,
+		Score:       score,
+		Flag:        flag,
+		BestMove:    bestMove,
+		HasBestMove: true,
+	}
+}
+
+func (ai *AI) getTTMove(hash uint64) (Move, bool) {
+	entry, ok := ai.transposition[hash]
+	if !ok || !entry.HasBestMove {
+		return Move{}, false
+	}
+	return entry.BestMove, true
+}
+
+type scoredMove struct {
+	move     Move
+	score    int
+	notation string
+}
+
+func (ai *AI) orderMoves(moves []Move, ttMove Move, hasTTMove bool) []Move {
+	scored := make([]scoredMove, 0, len(moves))
+	for _, move := range moves {
+		score := ai.moveOrderScore(move)
+		if hasTTMove && movesEqual(move, ttMove) {
+			score += 1_000_000
+		}
+		scored = append(scored, scoredMove{
+			move:     move,
+			score:    score,
+			notation: moveToNotation(move),
+		})
+	}
+
+	sort.SliceStable(scored, func(i, j int) bool {
+		if scored[i].score != scored[j].score {
+			return scored[i].score > scored[j].score
+		}
+		return scored[i].notation < scored[j].notation
+	})
+
+	ordered := make([]Move, len(scored))
+	for i := range scored {
+		ordered[i] = scored[i].move
+	}
+	return ordered
+}
+
+func (ai *AI) moveOrderScore(move Move) int {
+	score := 0
+
+	if move.IsCapture {
+		victimValue := 0
+		if move.Captured != nil {
+			victimValue = pieceValues[move.Captured.Type]
+		}
+		attackerValue := pieceValues[move.Piece.Type]
+		score += victimValue*10 - attackerValue
+	}
+
+	if move.IsPromotion {
+		score += pieceValues[move.PromoteTo] * 10
+	}
+
+	if move.IsCastle {
+		score += 25
+	}
+
+	return score
+}
+
+func moveToNotation(move Move) string {
+	notation := move.From.ToAlgebraic() + move.To.ToAlgebraic()
+	if move.IsPromotion {
+		switch move.PromoteTo {
+		case Queen:
+			notation += "q"
+		case Rook:
+			notation += "r"
+		case Bishop:
+			notation += "b"
+		case Knight:
+			notation += "n"
+		}
+	}
+	return notation
+}
+
+func movesEqual(a, b Move) bool {
+	if a.From != b.From || a.To != b.To || a.IsPromotion != b.IsPromotion {
+		return false
+	}
+	if a.IsPromotion {
+		return a.PromoteTo == b.PromoteTo
+	}
+	return true
 }
 
 func (ai *AI) evaluate(gs *GameState) int {

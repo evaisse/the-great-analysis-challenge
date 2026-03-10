@@ -25,6 +25,10 @@ local trace_enabled = false
 local trace_level = "info"
 local trace_events = {}
 local trace_command_count = 0
+local transposition_table = {}
+local tt_entry_count = 0
+local search_stop_requested = false
+local active_search = nil
 
 local zobrist_keys = {
     pieces = {},
@@ -767,6 +771,9 @@ local function import_fen(fen_str)
     fullmove_number = tonumber(parts[6]) or 1
     
     move_history = {}
+    position_history = {}
+    irreversible_history = {}
+    zobrist_hash = compute_hash()
     return true, "OK"
 end
 
@@ -835,61 +842,276 @@ local function evaluate_position()
     return score
 end
 
--- Minimax with alpha-beta pruning
-local function minimax(depth, alpha, beta, maximizing)
-    if depth == 0 then
-        return evaluate_position(), nil
+-- Negamax search with iterative deepening and transposition table
+local SEARCH_INF = 2000000000
+local MATE_SCORE = 1000000
+local TT_FLAG_EXACT = "exact"
+local TT_FLAG_LOWER = "lower"
+local TT_FLAG_UPPER = "upper"
+local TT_MAX_ENTRIES = 200000
+local SEARCH_TIME_CHECK_INTERVAL = 512
+local GO_INFINITE_BUDGET_MS = 5000
+local GO_MAX_DEPTH = 64
+
+local function clone_move(move)
+    if not move then return nil end
+    if move[5] then
+        return {move[1], move[2], move[3], move[4], move[5]}
     end
-    
+    return {move[1], move[2], move[3], move[4]}
+end
+
+local function moves_equal(a, b)
+    if not a or not b then return false end
+    return a[1] == b[1] and a[2] == b[2] and a[3] == b[3] and a[4] == b[4] and a[5] == b[5]
+end
+
+local function move_to_string(move)
+    local move_str = indices_to_algebraic(move[1], move[2]) .. indices_to_algebraic(move[3], move[4])
+    if move[5] then
+        move_str = move_str .. move[5]
+    end
+    return move_str
+end
+
+local function clear_transposition_table()
+    transposition_table = {}
+    tt_entry_count = 0
+end
+
+local function store_tt_entry(hash_key, depth, score, flag, best_move)
+    local existing = transposition_table[hash_key]
+    if existing and existing.depth and existing.depth > depth and flag ~= TT_FLAG_EXACT then
+        return
+    end
+
+    if not existing then
+        if tt_entry_count >= TT_MAX_ENTRIES then
+            clear_transposition_table()
+        end
+        tt_entry_count = tt_entry_count + 1
+    end
+
+    transposition_table[hash_key] = {
+        depth = depth,
+        score = score,
+        flag = flag,
+        best_move = clone_move(best_move)
+    }
+end
+
+local function score_move_for_ordering(move, tt_move)
+    local score = 0
+    if tt_move and moves_equal(move, tt_move) then
+        score = score + 1000000
+    end
+
+    local target_piece = board[move[3]][move[4]]
+    if target_piece ~= "." then
+        score = score + 100000 + math.abs(PIECE_VALUES[target_piece] or 0)
+    end
+
+    if move[5] then
+        score = score + 50000
+    end
+
+    return score
+end
+
+local function order_moves(moves, tt_move)
+    table.sort(moves, function(a, b)
+        return score_move_for_ordering(a, tt_move) > score_move_for_ordering(b, tt_move)
+    end)
+end
+
+local function search_should_abort(depth)
+    if search_stop_requested then
+        if active_search then
+            active_search.aborted = true
+        end
+        return true
+    end
+
+    if not active_search or not active_search.deadline_clock then
+        return false
+    end
+
+    active_search.nodes = active_search.nodes + 1
+    if depth <= 1 or (active_search.nodes % SEARCH_TIME_CHECK_INTERVAL == 0) then
+        if os.clock() >= active_search.deadline_clock then
+            active_search.aborted = true
+            return true
+        end
+    end
+
+    return false
+end
+
+local function negamax(depth, alpha, beta, ply)
+    if search_should_abort(depth) then
+        return nil, nil, true
+    end
+
+    local hash_key = zobrist_hash
+    local alpha_orig = alpha
+    local beta_orig = beta
+    local tt_entry = transposition_table[hash_key]
+
+    if tt_entry and tt_entry.depth >= depth then
+        if tt_entry.flag == TT_FLAG_EXACT then
+            return tt_entry.score, clone_move(tt_entry.best_move), false
+        elseif tt_entry.flag == TT_FLAG_LOWER then
+            alpha = math.max(alpha, tt_entry.score)
+        elseif tt_entry.flag == TT_FLAG_UPPER then
+            beta = math.min(beta, tt_entry.score)
+        end
+
+        if alpha >= beta then
+            return tt_entry.score, clone_move(tt_entry.best_move), false
+        end
+    end
+
+    if depth == 0 then
+        local side_sign = white_to_move and 1 or -1
+        return side_sign * evaluate_position(), nil, false
+    end
+
     local moves = generate_legal_moves()
-    
     if #moves == 0 then
         if is_in_check(white_to_move) then
-            return maximizing and -100000 or 100000, nil
-        else
-            return 0, nil  -- Stalemate
+            return -MATE_SCORE + ply, nil, false
         end
+        return 0, nil, false
     end
-    
+
+    local tt_move = tt_entry and tt_entry.best_move or nil
+    order_moves(moves, tt_move)
+
+    local best_score = -SEARCH_INF
     local best_move = nil
-    
-    if maximizing then
-        local max_eval = -math.huge
-        for _, move in ipairs(moves) do
-            make_move_internal(move[1], move[2], move[3], move[4], move[5])
-            local eval, _ = minimax(depth - 1, alpha, beta, false)
-            undo_move()
-            
-            if eval > max_eval then
-                max_eval = eval
-                best_move = move
-            end
-            
-            alpha = math.max(alpha, eval)
-            if beta <= alpha then
-                break
-            end
+
+    for _, move in ipairs(moves) do
+        make_move_internal(move[1], move[2], move[3], move[4], move[5])
+        local child_score, _, aborted = negamax(depth - 1, -beta, -alpha, ply + 1)
+        undo_move()
+
+        if aborted then
+            return nil, nil, true
         end
-        return max_eval, best_move
-    else
-        local min_eval = math.huge
-        for _, move in ipairs(moves) do
-            make_move_internal(move[1], move[2], move[3], move[4], move[5])
-            local eval, _ = minimax(depth - 1, alpha, beta, true)
-            undo_move()
-            
-            if eval < min_eval then
-                min_eval = eval
-                best_move = move
-            end
-            
-            beta = math.min(beta, eval)
-            if beta <= alpha then
-                break
-            end
+
+        local score = -child_score
+        if score > best_score then
+            best_score = score
+            best_move = clone_move(move)
         end
-        return min_eval, best_move
+
+        if score > alpha then
+            alpha = score
+        end
+        if alpha >= beta then
+            break
+        end
     end
+
+    local flag = TT_FLAG_EXACT
+    if best_score <= alpha_orig then
+        flag = TT_FLAG_UPPER
+    elseif best_score >= beta_orig then
+        flag = TT_FLAG_LOWER
+    end
+    store_tt_entry(hash_key, depth, best_score, flag, best_move)
+
+    return best_score, best_move, false
+end
+
+local function choose_fallback_move()
+    local moves = generate_legal_moves()
+    if #moves == 0 then
+        return nil
+    end
+
+    local best_move = moves[1]
+    local best_score = score_move_for_ordering(best_move, nil)
+    for i = 2, #moves do
+        local move = moves[i]
+        local score = score_move_for_ordering(move, nil)
+        if score > best_score then
+            best_score = score
+            best_move = move
+        end
+    end
+
+    return clone_move(best_move)
+end
+
+local function run_iterative_search(max_depth, time_limit_ms)
+    local start_clock = os.clock()
+    clear_transposition_table()
+
+    local deadline_clock = nil
+    if time_limit_ms and time_limit_ms > 0 then
+        deadline_clock = start_clock + (time_limit_ms / 1000)
+    end
+
+    active_search = {
+        start_clock = start_clock,
+        deadline_clock = deadline_clock,
+        nodes = 0,
+        aborted = false
+    }
+
+    local best_score = nil
+    local best_move = nil
+    local completed_depth = 0
+
+    for depth = 1, max_depth do
+        if search_should_abort(depth) then
+            break
+        end
+
+        local score, move, aborted = negamax(depth, -SEARCH_INF, SEARCH_INF, 0)
+        if aborted then
+            break
+        end
+
+        completed_depth = depth
+        best_score = score
+        best_move = clone_move(move)
+
+        if math.abs(score) >= MATE_SCORE - 128 then
+            break
+        end
+    end
+
+    local elapsed_ms = math.floor((os.clock() - start_clock) * 1000)
+    active_search = nil
+
+    return best_score, best_move, completed_depth, elapsed_ms
+end
+
+local function perform_ai_search(max_depth, time_limit_ms, allow_fallback)
+    search_stop_requested = false
+
+    local eval, best_move, reached_depth, elapsed = run_iterative_search(max_depth, time_limit_ms)
+    if allow_fallback and not best_move then
+        best_move = choose_fallback_move()
+        if best_move then
+            eval = eval or 0
+        end
+    end
+
+    if not best_move then
+        return false, "ERROR: No legal moves"
+    end
+
+    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    return true, string.format(
+        "AI: %s (depth=%d, eval=%d, time=%d)",
+        move_to_string(best_move),
+        reached_depth,
+        math.floor(eval or 0),
+        elapsed
+    )
 end
 
 -- AI move
@@ -898,24 +1120,18 @@ local function ai_move(depth)
     if depth < 1 or depth > 5 then
         return false, "ERROR: AI depth must be 1-5"
     end
-    
-    local start_time = os.clock()
-    local eval, best_move = minimax(depth, -math.huge, math.huge, white_to_move)
-    local elapsed = math.floor((os.clock() - start_time) * 1000)
-    
-    if not best_move then
-        return false, "ERROR: No legal moves"
+
+    return perform_ai_search(depth, nil, false)
+end
+
+local function ai_move_timed(time_limit_ms, max_depth)
+    local budget = tonumber(time_limit_ms)
+    if not budget or budget <= 0 then
+        return false, "ERROR: Search time must be > 0"
     end
-    
-    local move_str = indices_to_algebraic(best_move[1], best_move[2]) .. 
-                     indices_to_algebraic(best_move[3], best_move[4])
-    if best_move[5] then
-        move_str = move_str .. best_move[5]
-    end
-    
-    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
-    
-    return true, string.format("AI: %s (depth=%d, eval=%d, time=%d)", move_str, depth, eval, elapsed)
+
+    local depth_cap = max_depth or GO_MAX_DEPTH
+    return perform_ai_search(depth_cap, math.floor(budget), true)
 end
 
 local function load_pgn(path)

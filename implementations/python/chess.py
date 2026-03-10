@@ -8,7 +8,7 @@ import sys
 import re
 import json
 import time
-from typing import Optional
+from typing import Optional, Dict
 from lib.board import Board
 from lib.move_generator import MoveGenerator
 from lib.fen_parser import FenParser
@@ -19,6 +19,8 @@ from lib.types import Move, Color, PieceType
 
 class ChessEngine:
     """Main chess engine class that handles user commands and game flow."""
+    GO_MAX_DEPTH = 5
+    GO_INFINITE_MOVETIME_MS = 10000
     
     def __init__(self):
         self.board = Board()
@@ -227,27 +229,44 @@ class ChessEngine:
             print('ERROR: AI depth must be 1-5')
             return
         
-        import time
         start_time = time.time()
         
         best_move, eval_score = self.ai.get_best_move(depth)
         
         end_time = time.time()
         elapsed_ms = int((end_time - start_time) * 1000)
-        
+        self._apply_ai_move(best_move, eval_score, depth, elapsed_ms)
+
+    def handle_ai_timed_move(self, movetime_ms: int, max_depth: int = GO_MAX_DEPTH):
+        """Handle time-managed AI move."""
+        if movetime_ms <= 0:
+            print('ERROR: movetime must be > 0')
+            return
+
+        bounded_depth = max(1, min(max_depth, self.GO_MAX_DEPTH))
+        start_time = time.time()
+        best_move, eval_score, completed_depth = self.ai.get_best_move_timed(
+            movetime_ms,
+            max_depth=bounded_depth
+        )
+        elapsed_ms = int((time.time() - start_time) * 1000)
+        reported_depth = completed_depth if completed_depth > 0 else 1
+        self._apply_ai_move(best_move, eval_score, reported_depth, elapsed_ms)
+
+    def _apply_ai_move(self, best_move: Optional[Move], eval_score: int, depth: int, elapsed_ms: int):
+        """Apply a computed AI move and print standard outputs."""
         if not best_move:
             print('ERROR: No legal moves available')
             return
-        
-        # Make the AI move
+
         self.move_history.append(best_move)
         self.board.make_move(best_move)
-        
+
         move_str = best_move.to_algebraic()
         print(f'AI: {move_str} (depth={depth}, eval={eval_score}, time={elapsed_ms}ms)')
-        
+
         print(self.board.display())
-        
+
         # Check for game end
         game_status = self.board.get_game_status()
         if game_status == 'checkmate':
@@ -319,7 +338,7 @@ class ChessEngine:
     def handle_go(self, args):
         """Handle go command."""
         if not args:
-            print('ERROR: go requires subcommand (movetime <ms>|infinite)')
+            print('ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|infinite)')
             return
 
         subcommand = args[0].lower()
@@ -337,13 +356,24 @@ class ChessEngine:
                 print('ERROR: go movetime must be > 0')
                 return
 
-            depth = self.depth_for_movetime(movetime_ms)
-            self.handle_ai_move(depth)
+            self.handle_ai_timed_move(movetime_ms, max_depth=self.GO_MAX_DEPTH)
             return
 
         if subcommand == 'infinite':
             self._go_infinite = True
-            print('OK: go infinite acknowledged (use stop to terminate)')
+            try:
+                # Wave-1 cooperative behavior: bounded long search instead of pure ack-only stub.
+                self.handle_ai_timed_move(self.GO_INFINITE_MOVETIME_MS, max_depth=self.GO_MAX_DEPTH)
+            finally:
+                self._go_infinite = False
+            return
+
+        if subcommand in ('wtime', 'btime', 'winc', 'binc', 'movestogo'):
+            controls = self._parse_go_time_controls(args)
+            if controls is None:
+                return
+            movetime_ms = self._compute_go_movetime(controls)
+            self.handle_ai_timed_move(movetime_ms, max_depth=self.GO_MAX_DEPTH)
             return
 
         print('ERROR: Unsupported go command')
@@ -352,6 +382,75 @@ class ChessEngine:
         """Handle stop command."""
         self._go_infinite = False
         print('OK: stop')
+
+    def _parse_go_time_controls(self, args) -> Optional[Dict[str, int]]:
+        """Parse key-value go time controls."""
+        allowed = {'wtime', 'btime', 'winc', 'binc', 'movestogo'}
+        parsed: Dict[str, int] = {}
+        idx = 0
+
+        while idx < len(args):
+            key = args[idx].lower()
+            if key not in allowed:
+                print(f'ERROR: Unsupported go parameter: {key}')
+                return None
+
+            if idx + 1 >= len(args):
+                print(f'ERROR: go {key} requires an integer value')
+                return None
+
+            if key in parsed:
+                print(f'ERROR: Duplicate go parameter: {key}')
+                return None
+
+            try:
+                value = int(args[idx + 1])
+            except ValueError:
+                print(f'ERROR: go {key} requires an integer value')
+                return None
+
+            if key == 'movestogo':
+                if value <= 0:
+                    print('ERROR: go movestogo must be > 0')
+                    return None
+            elif value < 0:
+                print(f'ERROR: go {key} must be >= 0')
+                return None
+
+            parsed[key] = value
+            idx += 2
+
+        required = ('wtime', 'btime', 'winc', 'binc')
+        missing = [field for field in required if field not in parsed]
+        if missing:
+            print(f"ERROR: go time controls missing required fields: {' '.join(missing)}")
+            return None
+
+        return parsed
+
+    def _compute_go_movetime(self, controls: Dict[str, int]) -> int:
+        """Compute a practical per-move time budget from clock controls."""
+        if self.board.to_move == Color.WHITE:
+            remaining_ms = controls['wtime']
+            increment_ms = controls['winc']
+        else:
+            remaining_ms = controls['btime']
+            increment_ms = controls['binc']
+
+        moves_to_go = controls.get('movestogo', 30)
+
+        if remaining_ms <= 0:
+            return max(25, min(1000, increment_ms))
+
+        reserve_ms = max(50, remaining_ms // 20)
+        usable_ms = max(1, remaining_ms - reserve_ms)
+        budget_ms = usable_ms // max(1, moves_to_go)
+        budget_ms += increment_ms // 2
+        budget_ms = max(25, budget_ms)
+        budget_ms = min(budget_ms, usable_ms)
+
+        # Keep command responsive even with very large remaining clocks.
+        return min(budget_ms, 30000)
 
     def handle_pgn(self, args):
         """Handle pgn command family."""
@@ -527,18 +626,6 @@ class ChessEngine:
         if len(self._trace_events) > 256:
             self._trace_events = self._trace_events[-256:]
 
-    def depth_for_movetime(self, movetime_ms: int) -> int:
-        """Convert movetime budget to a practical search depth."""
-        if movetime_ms <= 200:
-            return 1
-        if movetime_ms <= 500:
-            return 2
-        if movetime_ms <= 2000:
-            return 3
-        if movetime_ms <= 5000:
-            return 4
-        return 5
-
     def get_repetition_count(self) -> int:
         """Count current position repetitions since last irreversible move."""
         current_hash = self.board.zobrist_hash
@@ -623,8 +710,9 @@ Available commands:
   draws                      - Show draw detection status
   history                    - Show position hash history
   go movetime <ms>           - Time-managed AI move
-  go infinite                - Start infinite search mode (stub)
-  stop                       - Stop infinite search mode
+  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-managed AI move
+  go infinite                - Run bounded long iterative search
+  stop                       - Cooperative stop signal
   pgn load|show|moves        - PGN command family
   uci                        - Enter/respond to UCI handshake
   isready                    - UCI readiness probe

@@ -300,6 +300,13 @@ func (engine *ChessEngine) handleStatus() {
 }
 
 func (engine *ChessEngine) handleAI(depth int) {
+	if depth < 1 || depth > MAX_DEPTH {
+		depth = 3
+	}
+	engine.handleAISearch(depth, 0, depth)
+}
+
+func (engine *ChessEngine) handleAISearch(maxDepth int, movetime time.Duration, reportedDepth int) {
 	start := time.Now()
 
 	legalMoves := engine.gameState.GenerateLegalMoves()
@@ -308,12 +315,19 @@ func (engine *ChessEngine) handleAI(depth int) {
 		return
 	}
 
-	bestMove := engine.ai.FindBestMove(engine.gameState, depth)
+	var searchResult SearchResult
+	if movetime > 0 {
+		searchResult = engine.ai.FindBestMoveTimed(engine.gameState, movetime, maxDepth)
+	} else {
+		searchResult = engine.ai.FindBestMoveWithDepth(engine.gameState, maxDepth)
+	}
+
+	bestMove := searchResult.Move
 
 	// Validate that we got a legal move
 	validMove := false
 	for _, move := range legalMoves {
-		if move.From == bestMove.From && move.To == bestMove.To {
+		if movesEqual(move, bestMove) || (!bestMove.IsPromotion && move.From == bestMove.From && move.To == bestMove.To) {
 			bestMove = move // Use the complete move with all flags
 			validMove = true
 			break
@@ -329,20 +343,15 @@ func (engine *ChessEngine) handleAI(depth int) {
 
 	elapsed := time.Since(start)
 	score := engine.ai.evaluate(engine.gameState)
-
-	moveStr := fmt.Sprintf("%s%s", bestMove.From.ToAlgebraic(), bestMove.To.ToAlgebraic())
-	if bestMove.IsPromotion {
-		switch bestMove.PromoteTo {
-		case Queen:
-			moveStr += "q"
-		case Rook:
-			moveStr += "r"
-		case Bishop:
-			moveStr += "b"
-		case Knight:
-			moveStr += "n"
-		}
+	depthToReport := reportedDepth
+	if depthToReport <= 0 {
+		depthToReport = searchResult.Depth
 	}
+	if depthToReport <= 0 {
+		depthToReport = 1
+	}
+
+	moveStr := moveToNotation(bestMove)
 
 	// Check for game end conditions
 	nextLegalMoves := engine.gameState.GenerateLegalMoves()
@@ -358,7 +367,7 @@ func (engine *ChessEngine) handleAI(depth int) {
 			fmt.Printf("AI: %s (DRAW: by %s)\n", moveStr, drawReason)
 		} else {
 			fmt.Printf("AI: %s (depth=%d, eval=%d, time=%d)\n",
-				moveStr, depth, score, elapsed.Milliseconds())
+				moveStr, depthToReport, score, elapsed.Milliseconds())
 		}
 	}
 
@@ -380,25 +389,110 @@ func (engine *ChessEngine) repetitionCount() int {
 	return count
 }
 
-func depthForMovetime(movetimeMs int) int {
-	if movetimeMs <= 200 {
-		return 1
+type goTimeControl struct {
+	wtime     int
+	btime     int
+	winc      int
+	binc      int
+	movestogo int
+}
+
+func parseGoTimeControl(args []string) (goTimeControl, error) {
+	tc := goTimeControl{movestogo: 0}
+	seen := map[string]bool{
+		"wtime": false,
+		"btime": false,
+		"winc":  false,
+		"binc":  false,
 	}
-	if movetimeMs <= 500 {
-		return 2
+
+	for i := 0; i < len(args); i++ {
+		key := strings.ToLower(args[i])
+		switch key {
+		case "wtime", "btime", "winc", "binc", "movestogo":
+			if i+1 >= len(args) {
+				return tc, fmt.Errorf("go %s requires an integer value", key)
+			}
+
+			value, err := strconv.Atoi(args[i+1])
+			if err != nil {
+				return tc, fmt.Errorf("go %s requires an integer value", key)
+			}
+			if value < 0 {
+				return tc, fmt.Errorf("go %s must be >= 0", key)
+			}
+
+			switch key {
+			case "wtime":
+				tc.wtime = value
+			case "btime":
+				tc.btime = value
+			case "winc":
+				tc.winc = value
+			case "binc":
+				tc.binc = value
+			case "movestogo":
+				if value == 0 {
+					return tc, fmt.Errorf("go movestogo must be > 0")
+				}
+				tc.movestogo = value
+			}
+
+			if _, ok := seen[key]; ok {
+				seen[key] = true
+			}
+			i++
+		default:
+			return tc, fmt.Errorf("unsupported go token: %s", args[i])
+		}
 	}
-	if movetimeMs <= 2000 {
-		return 3
+
+	if !seen["wtime"] || !seen["btime"] || !seen["winc"] || !seen["binc"] {
+		return tc, fmt.Errorf("go requires wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]")
 	}
-	if movetimeMs <= 5000 {
-		return 4
+
+	return tc, nil
+}
+
+func deriveThinkTimeMs(activeColor Color, tc goTimeControl) int {
+	remaining := tc.wtime
+	increment := tc.winc
+	if activeColor == Black {
+		remaining = tc.btime
+		increment = tc.binc
 	}
-	return 5
+
+	movesToGo := tc.movestogo
+	if movesToGo <= 0 {
+		movesToGo = 30
+	}
+
+	thinkMs := remaining/movesToGo + increment/2
+	if thinkMs < 20 {
+		thinkMs = 20
+	}
+
+	maxSpend := remaining - 50
+	if maxSpend < 1 {
+		maxSpend = remaining / 2
+	}
+	if maxSpend < 1 {
+		maxSpend = 1
+	}
+
+	if thinkMs > maxSpend {
+		thinkMs = maxSpend
+	}
+	if thinkMs > 5000 {
+		thinkMs = 5000
+	}
+
+	return thinkMs
 }
 
 func (engine *ChessEngine) handleGo(args []string) {
 	if len(args) == 0 {
-		fmt.Println("ERROR: go requires subcommand (movetime <ms>|infinite)")
+		fmt.Println("ERROR: go requires movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|infinite")
 		return
 	}
 
@@ -417,11 +511,18 @@ func (engine *ChessEngine) handleGo(args []string) {
 			fmt.Println("ERROR: go movetime must be > 0")
 			return
 		}
-		engine.handleAI(depthForMovetime(movetimeMs))
+		engine.handleAISearch(MAX_DEPTH, time.Duration(movetimeMs)*time.Millisecond, 0)
 	case "infinite":
-		fmt.Println("OK: go infinite acknowledged (use stop to terminate)")
+		// "Infinite" remains bounded in this wave; search uses iterative deepening + deadline.
+		engine.handleAISearch(MAX_DEPTH, 2*time.Second, 0)
 	default:
-		fmt.Println("ERROR: Unsupported go command")
+		tc, err := parseGoTimeControl(args)
+		if err != nil {
+			fmt.Printf("ERROR: %s\n", err.Error())
+			return
+		}
+		thinkMs := deriveThinkTimeMs(engine.gameState.ActiveColor, tc)
+		engine.handleAISearch(MAX_DEPTH, time.Duration(thinkMs)*time.Millisecond, 0)
 	}
 }
 
@@ -688,7 +789,8 @@ func (engine *ChessEngine) showHelp() {
 	fmt.Println("  export       - Export current position as FEN")
 	fmt.Println("  ai <depth>   - Let AI make a move (depth 1-5, default 3)")
 	fmt.Println("  go movetime <ms> - Time-managed AI move")
-	fmt.Println("  go infinite  - Start infinite search mode (stub)")
+	fmt.Println("  go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>] - Clock-based AI move")
+	fmt.Println("  go infinite  - Run a bounded timed iterative search")
 	fmt.Println("  stop         - Stop infinite search mode")
 	fmt.Println("  pgn load|show|moves - PGN command family")
 	fmt.Println("  uci          - Enter/respond to UCI handshake")

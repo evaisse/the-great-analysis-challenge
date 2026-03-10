@@ -1,0 +1,3 @@
+new
+book load /repo/test/fixtures/book/opening.book
+book stats
