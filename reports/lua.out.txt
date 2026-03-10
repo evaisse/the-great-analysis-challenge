@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing lua implementation
 Path: implementations/lua
 ============================================================
-📏 Source size: 2230 LOC across 1 files
+📏 Source size: 2230 LOC across 1 files, 16287 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,61 +15,62 @@ Path: implementations/lua
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-lua .
-  ✅ Docker build completed in 0.22s
+  ✅ Docker build completed in 0.50s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ✅ All Docker tests passed (image: 0.2s, make build: skipped, make analyze: 0.1s, make test: 0.1s, make test-chess-engine: 10.0s)
+  ✅ All Docker tests passed (image: 0.5s, make build: skipped, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 10.0s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:20:34
+Generated: 2026-03-10 23:41:29
 ================================================================================
 
 PERFORMANCE SUMMARY
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-lua          completed  2230     -/-MB              0.1s/7MB           0.1s/7MB           10.0s/62MB                1/1              16/16             
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+lua          completed  16287      2230     -/-MB              0.2s/7MB           0.2s/6MB           10.0s/62MB                1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: LUA
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.22s
-  make analyze: 0.15s
-  make test: 0.15s
-  make test-chess-engine: 10.02s
-  make test (internal mirror): 0.15s
-  test v2 full seconds: 10.02s
+  docker build image: 0.50s
+  make analyze: 0.19s
+  make test: 0.18s
+  make test-chess-engine: 10.04s
+  make test (internal mirror): 0.18s
+  test v2 full seconds: 10.04s
 
 SOURCE SIZE:
   Source LOC: 2230 (files: 1)
+  TOKENS (tokens-v2): 16287
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 65.28 ms/KLOC
-  Runtime: 66.90 ms/KLOC
+  Analyze: 85.48 ms/KLOC
+  Runtime: 80.61 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 113.6MB, Avg 83.7MB
+  Image: Peak 111.6MB, Avg 95.4MB
   Build: Peak 0.0MB, Avg 0.0MB
   Analyze: Peak 7.2MB, Avg 0.0MB
-  Test: Peak 7.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 60.0MB
+  Test: Peak 6.3MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.4MB, Avg 60.5MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.22s)
+  Image build: ✅ (0.50s)
   make build: ⏭️ skipped
-  make analyze: ✅ (0.15s)
-  make test: ✅ (0.15s)
-  make test-chess-engine (track=v2-full): ✅ (10.02s)
+  make analyze: ✅ (0.19s)
+  make test: ✅ (0.18s)
+  make test-chess-engine (track=v2-full): ✅ (10.04s)
   make test score: 1/1
   make test-chess-engine score: 16/16
 

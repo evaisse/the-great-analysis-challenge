@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing rust implementation
 Path: implementations/rust
 ============================================================
-📏 Source size: 1852 LOC across 9 files
+📏 Source size: 1852 LOC across 9 files, 12770 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,7 +15,7 @@ Path: implementations/rust
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-rust .
-  ✅ Docker build completed in 0.23s
+  ✅ Docker build completed in 0.35s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,53 +27,54 @@ Path: implementations/rust
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:20:42
+Generated: 2026-03-10 23:40:52
 ================================================================================
 
 PERFORMANCE SUMMARY
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-rust         completed  1852     0.2s/7MB           0.2s/7MB           0.2s/7MB           9.7s/61MB                 1/1              2/16              
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+rust         completed  12770      1852     0.2s/7MB           0.2s/7MB           0.2s/7MB           9.7s/62MB                 1/1              2/16              
 
 ============================================================
 DETAILED RESULTS: RUST
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.23s
-  make build: 0.19s
-  make analyze: 0.18s
-  make test: 0.18s
-  make test-chess-engine: 9.71s
-  make test (internal mirror): 0.18s
-  test v2 full seconds: 9.71s
+  docker build image: 0.35s
+  make build: 0.20s
+  make analyze: 0.19s
+  make test: 0.20s
+  make test-chess-engine: 9.74s
+  make test (internal mirror): 0.20s
+  test v2 full seconds: 9.74s
 
 SOURCE SIZE:
   Source LOC: 1852 (files: 9)
+  TOKENS (tokens-v2): 12770
 
 NORMALIZED METRICS:
-  Build: 100.87 ms/KLOC
-  Analyze: 98.08 ms/KLOC
-  Runtime: 97.68 ms/KLOC
+  Build: 105.53 ms/KLOC
+  Analyze: 100.20 ms/KLOC
+  Runtime: 106.11 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 111.4MB, Avg 84.3MB
+  Image: Peak 110.6MB, Avg 90.1MB
   Build: Peak 6.6MB, Avg 0.0MB
-  Analyze: Peak 7.1MB, Avg 0.0MB
-  Test: Peak 6.9MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.4MB, Avg 59.4MB
+  Analyze: Peak 6.6MB, Avg 0.0MB
+  Test: Peak 6.6MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.8MB, Avg 59.8MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.23s)
-  make build: ✅ (0.19s)
-  make analyze: ✅ (0.18s)
-  make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ❌ (9.71s)
+  Image build: ✅ (0.35s)
+  make build: ✅ (0.20s)
+  make analyze: ✅ (0.19s)
+  make test: ✅ (0.20s)
+  make test-chess-engine (track=v2-full): ❌ (9.74s)
   make test score: 1/1
   make test-chess-engine score: 2/16
 

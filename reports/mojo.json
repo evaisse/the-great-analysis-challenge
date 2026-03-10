@@ -16,6 +16,9 @@
       ],
       "max_ai_depth": 5,
       "estimated_perft4_ms": 1000,
+      "source_exts": [
+        ".mojo"
+      ],
       "build": "mojo build chess.mojo",
       "test": "mojo chess.mojo",
       "analyze": "mojo chess.mojo --no-run",
@@ -24,21 +27,21 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.5103669166564941,
-      "build_seconds": 10.073354244232178,
-      "analyze_seconds": 10.05160665512085,
-      "test_seconds": 10.04158878326416,
-      "test_internal_seconds": 10.04158878326416,
-      "test_chess_engine_seconds": 10.752640008926392,
-      "test_v2_full_seconds": 10.752640008926392
+      "image_build_seconds": 0.543311357498169,
+      "build_seconds": 11.28733205795288,
+      "analyze_seconds": 11.36979365348816,
+      "test_seconds": 11.371036767959595,
+      "test_internal_seconds": 11.371036767959595,
+      "test_chess_engine_seconds": 12.224654912948608,
+      "test_v2_full_seconds": 12.224654912948608
     },
     "memory": {
       "image": {
-        "memory_mb": 115.98046875,
-        "peak_memory_mb": 115.98046875,
-        "avg_memory_mb": 96.80546875,
+        "memory_mb": 115.94921875,
+        "peak_memory_mb": 115.94921875,
+        "avg_memory_mb": 99.49088541666667,
         "avg_cpu_percent": 0.0,
-        "samples": 5,
+        "samples": 6,
         "psutil_available": true
       },
       "build": {
@@ -63,36 +66,44 @@
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.73046875,
-        "peak_memory_mb": 61.69140625,
-        "avg_memory_mb": 59.87302791262136,
+        "memory_mb": 31.84765625,
+        "peak_memory_mb": 61.55078125,
+        "avg_memory_mb": 59.96501068376068,
         "avg_cpu_percent": 0.0,
-        "samples": 103,
+        "samples": 117,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 0,
-      "source_files": 0
+      "source_loc": 275,
+      "source_files": 1
     },
-    "normalized": {},
+    "metrics": {
+      "tokens_count": 1820,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 41044.84384710138,
+      "analyze_ms_per_kloc": 41344.704194502396,
+      "runtime_ms_per_kloc": 41349.22461076216
+    },
     "docker": {
-      "build_time": 0.5103669166564941,
+      "build_time": 0.543311357498169,
       "build_success": true,
-      "image_build_time": 0.5103669166564941,
+      "image_build_time": 0.543311357498169,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 10.073354244232178,
+      "make_build_time": 11.28733205795288,
       "make_build_success": false,
-      "make_analyze_time": 10.05160665512085,
+      "make_analyze_time": 11.36979365348816,
       "make_analyze_success": false,
-      "test_time": 10.04158878326416,
+      "test_time": 11.371036767959595,
       "test_success": false,
-      "make_test_time": 10.04158878326416,
+      "make_test_time": 11.371036767959595,
       "make_test_success": false,
-      "test_chess_engine_time": 10.752640008926392,
+      "test_chess_engine_time": 12.224654912948608,
       "test_chess_engine_success": false,
-      "track_test_time": 10.752640008926392,
+      "track_test_time": 12.224654912948608,
       "track_test_success": false
     },
     "task_results": {
@@ -124,9 +135,9 @@
       ]
     },
     "errors": [
-      "make build failed: 23:27:18.950 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
-      "make analyze failed: 23:27:28.981 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
-      "make test failed: 23:27:39.046 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
+      "make build failed: 23:47:35.899 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
+      "make analyze failed: 23:47:47.268 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
+      "make test failed: 23:47:58.649 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
       "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting mojo implementation at implementations/mojo\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunni"
     ],
     "status": "completed"

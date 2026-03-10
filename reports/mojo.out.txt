@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing mojo implementation
 Path: implementations/mojo
 ============================================================
-📏 Source size: 0 LOC across 0 files
+📏 Source size: 275 LOC across 1 files, 1820 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,7 +15,7 @@ Path: implementations/mojo
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-mojo .
-  ✅ Docker build completed in 0.51s
+  ✅ Docker build completed in 0.54s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,37 +27,43 @@ Path: implementations/mojo
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:27:50
+Generated: 2026-03-10 23:48:11
 ================================================================================
 
 PERFORMANCE SUMMARY
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-mojo         completed  0        10.1s/-MB          10.1s/-MB          10.0s/-MB          10.8s/62MB                0/1              0/58              
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+mojo         completed  1820       275      11.3s/-MB          11.4s/-MB          11.4s/-MB          12.2s/62MB                0/1              0/58              
 
 ============================================================
 DETAILED RESULTS: MOJO
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.51s
-  make build: 10.07s
-  make analyze: 10.05s
-  make test: 10.04s
-  make test-chess-engine: 10.75s
-  make test (internal mirror): 10.04s
-  test v2 full seconds: 10.75s
+  docker build image: 0.54s
+  make build: 11.29s
+  make analyze: 11.37s
+  make test: 11.37s
+  make test-chess-engine: 12.22s
+  make test (internal mirror): 11.37s
+  test v2 full seconds: 12.22s
 
 SOURCE SIZE:
-  Source LOC: 0 (files: 0)
+  Source LOC: 275 (files: 1)
+  TOKENS (tokens-v2): 1820
+
+NORMALIZED METRICS:
+  Build: 41044.84 ms/KLOC
+  Analyze: 41344.70 ms/KLOC
+  Runtime: 41349.22 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 116.0MB, Avg 96.8MB
+  Image: Peak 115.9MB, Avg 99.5MB
   Build: Peak 0.0MB, Avg 0.0MB
   Analyze: Peak 0.0MB, Avg 0.0MB
   Test: Peak 0.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.7MB, Avg 59.9MB
+  Test_Chess_Engine: Peak 61.6MB, Avg 60.0MB
 
 CHESS ENGINE TESTS: 0 passed, 4 failed
   Failed tests:
@@ -67,28 +73,28 @@ CHESS ENGINE TESTS: 0 passed, 4 failed
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.51s)
-  make build: ❌ (10.07s)
-  make analyze: ❌ (10.05s)
-  make test: ❌ (10.04s)
-  make test-chess-engine (track=v2-full): ❌ (10.75s)
+  Image build: ✅ (0.54s)
+  make build: ❌ (11.29s)
+  make analyze: ❌ (11.37s)
+  make test: ❌ (11.37s)
+  make test-chess-engine (track=v2-full): ❌ (12.22s)
   make test score: 0/1
   make test-chess-engine score: 0/58
 
 ERRORS:
-  ❌ make build failed: 23:27:18.950 INFO: Metrics initialized.
+  ❌ make build failed: 23:47:35.899 INFO: Metrics initialized.
 Usage: python -m max.entrypoints.pipelines serve [OPTIONS]
 Try 'python -m max.entrypoints.pipelines serve --help' for help.
 
 Error: No such option: -c
 
-  ❌ make analyze failed: 23:27:28.981 INFO: Metrics initialized.
+  ❌ make analyze failed: 23:47:47.268 INFO: Metrics initialized.
 Usage: python -m max.entrypoints.pipelines serve [OPTIONS]
 Try 'python -m max.entrypoints.pipelines serve --help' for help.
 
 Error: No such option: -c
 
-  ❌ make test failed: 23:27:39.046 INFO: Metrics initialized.
+  ❌ make test failed: 23:47:58.649 INFO: Metrics initialized.
 Usage: python -m max.entrypoints.pipelines serve [OPTIONS]
 Try 'python -m max.entrypoints.pipelines serve --help' for help.
 

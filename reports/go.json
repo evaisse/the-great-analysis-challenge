@@ -16,6 +16,9 @@
       ],
       "max_ai_depth": 5,
       "estimated_perft4_ms": 800,
+      "source_exts": [
+        ".go"
+      ],
       "build": "go build -o chess .",
       "test": "go test ./...",
       "analyze": "go vet ./... && gofmt -d .",
@@ -24,48 +27,48 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.3502628803253174,
-      "build_seconds": 0.5301823616027832,
-      "analyze_seconds": 1.1877944469451904,
-      "test_seconds": 1.0833323001861572,
-      "test_internal_seconds": 1.0833323001861572,
-      "test_chess_engine_seconds": 10.031206369400024,
-      "test_v2_full_seconds": 10.031206369400024
+      "image_build_seconds": 0.5730235576629639,
+      "build_seconds": 0.5114810466766357,
+      "analyze_seconds": 1.1869211196899414,
+      "test_seconds": 1.1074836254119873,
+      "test_internal_seconds": 1.1074836254119873,
+      "test_chess_engine_seconds": 10.033712148666382,
+      "test_v2_full_seconds": 10.033712148666382
     },
     "memory": {
       "image": {
-        "memory_mb": 116.0859375,
-        "peak_memory_mb": 116.0859375,
-        "avg_memory_mb": 93.0439453125,
+        "memory_mb": 114.6640625,
+        "peak_memory_mb": 114.6640625,
+        "avg_memory_mb": 99.54427083333333,
         "avg_cpu_percent": 0.0,
-        "samples": 4,
+        "samples": 6,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 79.66015625,
-        "peak_memory_mb": 79.66015625,
+        "memory_mb": 79.26953125,
+        "peak_memory_mb": 79.26953125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 110.57421875,
-        "peak_memory_mb": 110.57421875,
+        "memory_mb": 108.171875,
+        "peak_memory_mb": 108.171875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 110.11328125,
-        "peak_memory_mb": 110.11328125,
+        "memory_mb": 114.11328125,
+        "peak_memory_mb": 114.11328125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.890625,
-        "peak_memory_mb": 61.84765625,
-        "avg_memory_mb": 59.916921713917525,
+        "memory_mb": 32.62890625,
+        "peak_memory_mb": 61.76953125,
+        "avg_memory_mb": 59.862153672680414,
         "avg_cpu_percent": 0.0,
         "samples": 97,
         "psutil_available": true
@@ -75,28 +78,32 @@
       "source_loc": 3352,
       "source_files": 7
     },
+    "metrics": {
+      "tokens_count": 21391,
+      "metric_version": "tokens-v2"
+    },
     "normalized": {
-      "build_ms_per_kloc": 158.16896229199978,
-      "analyze_ms_per_kloc": 354.3539519526225,
-      "runtime_ms_per_kloc": 323.18982702450995
+      "build_ms_per_kloc": 152.58981106104886,
+      "analyze_ms_per_kloc": 354.0934127953286,
+      "runtime_ms_per_kloc": 330.39487631622535
     },
     "docker": {
-      "build_time": 0.3502628803253174,
+      "build_time": 0.5730235576629639,
       "build_success": true,
-      "image_build_time": 0.3502628803253174,
+      "image_build_time": 0.5730235576629639,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.5301823616027832,
+      "make_build_time": 0.5114810466766357,
       "make_build_success": true,
-      "make_analyze_time": 1.1877944469451904,
+      "make_analyze_time": 1.1869211196899414,
       "make_analyze_success": true,
-      "test_time": 1.0833323001861572,
+      "test_time": 1.1074836254119873,
       "test_success": true,
-      "make_test_time": 1.0833323001861572,
+      "make_test_time": 1.1074836254119873,
       "make_test_success": true,
-      "test_chess_engine_time": 10.031206369400024,
+      "test_chess_engine_time": 10.033712148666382,
       "test_chess_engine_success": true,
-      "track_test_time": 10.031206369400024,
+      "track_test_time": 10.033712148666382,
       "track_test_success": true
     },
     "task_results": {

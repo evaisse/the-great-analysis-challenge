@@ -16,6 +16,9 @@
       ],
       "max_ai_depth": 5,
       "estimated_perft4_ms": 800,
+      "source_exts": [
+        ".cr"
+      ],
       "build": "crystal build src/chess_engine.cr --release -o chess_engine",
       "run": "./chess_engine",
       "test": "crystal spec",
@@ -24,48 +27,48 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.24945545196533203,
-      "build_seconds": 1.3031818866729736,
-      "analyze_seconds": 0.9673793315887451,
-      "test_seconds": 2.3876266479492188,
-      "test_internal_seconds": 2.3876266479492188,
-      "test_chess_engine_seconds": 9.826009511947632,
-      "test_v2_full_seconds": 9.826009511947632
+      "image_build_seconds": 0.40471434593200684,
+      "build_seconds": 1.2767724990844727,
+      "analyze_seconds": 0.9530880451202393,
+      "test_seconds": 2.408212900161743,
+      "test_internal_seconds": 2.408212900161743,
+      "test_chess_engine_seconds": 9.825918436050415,
+      "test_v2_full_seconds": 9.825918436050415
     },
     "memory": {
       "image": {
-        "memory_mb": 115.7734375,
-        "peak_memory_mb": 115.7734375,
-        "avg_memory_mb": 85.02604166666667,
+        "memory_mb": 113.953125,
+        "peak_memory_mb": 113.953125,
+        "avg_memory_mb": 92.2822265625,
         "avg_cpu_percent": 0.0,
-        "samples": 3,
+        "samples": 4,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 250.39453125,
-        "peak_memory_mb": 250.39453125,
+        "memory_mb": 249.26171875,
+        "peak_memory_mb": 249.26171875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 195.34375,
-        "peak_memory_mb": 195.34375,
+        "memory_mb": 195.890625,
+        "peak_memory_mb": 195.890625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 524.2265625,
-        "peak_memory_mb": 524.2265625,
+        "memory_mb": 524.453125,
+        "peak_memory_mb": 524.453125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.69140625,
-        "peak_memory_mb": 62.31640625,
-        "avg_memory_mb": 60.3015625,
+        "memory_mb": 32.02734375,
+        "peak_memory_mb": 62.1953125,
+        "avg_memory_mb": 60.19465460526316,
         "avg_cpu_percent": 0.0,
         "samples": 95,
         "psutil_available": true
@@ -75,28 +78,32 @@
       "source_loc": 1692,
       "source_files": 7
     },
+    "metrics": {
+      "tokens_count": 9441,
+      "metric_version": "tokens-v2"
+    },
     "normalized": {
-      "build_ms_per_kloc": 770.2020606814265,
-      "analyze_ms_per_kloc": 571.7371936103694,
-      "runtime_ms_per_kloc": 1411.126860490082
+      "build_ms_per_kloc": 754.5936755818396,
+      "analyze_ms_per_kloc": 563.2908068086521,
+      "runtime_ms_per_kloc": 1423.2936762185243
     },
     "docker": {
-      "build_time": 0.24945545196533203,
+      "build_time": 0.40471434593200684,
       "build_success": true,
-      "image_build_time": 0.24945545196533203,
+      "image_build_time": 0.40471434593200684,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 1.3031818866729736,
+      "make_build_time": 1.2767724990844727,
       "make_build_success": true,
-      "make_analyze_time": 0.9673793315887451,
+      "make_analyze_time": 0.9530880451202393,
       "make_analyze_success": true,
-      "test_time": 2.3876266479492188,
+      "test_time": 2.408212900161743,
       "test_success": true,
-      "make_test_time": 2.3876266479492188,
+      "make_test_time": 2.408212900161743,
       "make_test_success": true,
-      "test_chess_engine_time": 9.826009511947632,
+      "test_chess_engine_time": 9.825918436050415,
       "test_chess_engine_success": false,
-      "track_test_time": 9.826009511947632,
+      "track_test_time": 9.825918436050415,
       "track_test_success": false
     },
     "task_results": {

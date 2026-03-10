@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing javascript implementation
 Path: implementations/javascript
 ============================================================
-📏 Source size: 682 LOC across 4 files
+📏 Source size: 682 LOC across 4 files, 6596 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,7 +15,7 @@ Path: implementations/javascript
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-javascript .
-  ✅ Docker build completed in 0.48s
+  ✅ Docker build completed in 0.57s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
@@ -26,52 +26,53 @@ Path: implementations/javascript
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:24:25
+Generated: 2026-03-10 23:45:18
 ================================================================================
 
 PERFORMANCE SUMMARY
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-javascript   completed  682      -/-MB              0.2s/7MB           0.2s/7MB           85.6s/62MB                1/1              2/16              
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+javascript   completed  6596       682      -/-MB              0.2s/7MB           0.2s/5MB           93.2s/62MB                1/1              2/16              
 
 ============================================================
 DETAILED RESULTS: JAVASCRIPT
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.48s
-  make analyze: 0.21s
-  make test: 0.19s
-  make test-chess-engine: 85.60s
-  make test (internal mirror): 0.19s
-  test v2 full seconds: 85.60s
+  docker build image: 0.57s
+  make analyze: 0.20s
+  make test: 0.21s
+  make test-chess-engine: 93.22s
+  make test (internal mirror): 0.21s
+  test v2 full seconds: 93.22s
 
 SOURCE SIZE:
   Source LOC: 682 (files: 4)
+  TOKENS (tokens-v2): 6596
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 306.73 ms/KLOC
-  Runtime: 278.50 ms/KLOC
+  Analyze: 299.35 ms/KLOC
+  Runtime: 302.55 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 116.3MB, Avg 97.3MB
+  Image: Peak 114.0MB, Avg 98.3MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 6.6MB, Avg 0.0MB
-  Test: Peak 6.6MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 61.6MB
+  Analyze: Peak 6.9MB, Avg 0.0MB
+  Test: Peak 4.8MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.7MB, Avg 61.4MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.48s)
+  Image build: ✅ (0.57s)
   make build: ⏭️ skipped
-  make analyze: ✅ (0.21s)
-  make test: ✅ (0.19s)
-  make test-chess-engine (track=v2-full): ❌ (85.60s)
+  make analyze: ✅ (0.20s)
+  make test: ✅ (0.21s)
+  make test-chess-engine (track=v2-full): ❌ (93.22s)
   make test score: 1/1
   make test-chess-engine score: 2/16
 

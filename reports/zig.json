@@ -16,6 +16,9 @@
       ],
       "max_ai_depth": 5,
       "estimated_perft4_ms": 800,
+      "source_exts": [
+        ".zig"
+      ],
       "build": "zig build -Doptimize=ReleaseFast",
       "run": "./zig-out/bin/chess",
       "test": "./zig-out/bin/chess --test",
@@ -24,79 +27,83 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.2283310890197754,
-      "build_seconds": 0.18355822563171387,
-      "analyze_seconds": 0.20478105545043945,
-      "test_seconds": 0.18394827842712402,
-      "test_internal_seconds": 0.18394827842712402,
-      "test_chess_engine_seconds": 58.00321006774902,
-      "test_v2_full_seconds": 58.00321006774902
+      "image_build_seconds": 0.20218729972839355,
+      "build_seconds": 0.18996834754943848,
+      "analyze_seconds": 0.1935746669769287,
+      "test_seconds": 0.18992280960083008,
+      "test_internal_seconds": 0.18992280960083008,
+      "test_chess_engine_seconds": 58.0020797252655,
+      "test_v2_full_seconds": 58.0020797252655
     },
     "memory": {
       "image": {
-        "memory_mb": 111.15625,
-        "peak_memory_mb": 111.15625,
-        "avg_memory_mb": 83.92708333333333,
+        "memory_mb": 109.9296875,
+        "peak_memory_mb": 109.9296875,
+        "avg_memory_mb": 69.74609375,
         "avg_cpu_percent": 0.0,
-        "samples": 3,
+        "samples": 2,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 6.86328125,
-        "peak_memory_mb": 6.86328125,
+        "memory_mb": 7.11328125,
+        "peak_memory_mb": 7.11328125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 4.71875,
-        "peak_memory_mb": 4.71875,
+        "memory_mb": 6.56640625,
+        "peak_memory_mb": 6.56640625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 7.078125,
-        "peak_memory_mb": 7.078125,
+        "memory_mb": 4.953125,
+        "peak_memory_mb": 4.953125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.78125,
-        "peak_memory_mb": 61.76171875,
-        "avg_memory_mb": 61.40715467908438,
+        "memory_mb": 31.81640625,
+        "peak_memory_mb": 61.671875,
+        "avg_memory_mb": 61.30048723118279,
         "avg_cpu_percent": 0.0,
-        "samples": 557,
+        "samples": 558,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1757,
-      "source_files": 9
+      "source_loc": 1627,
+      "source_files": 8
+    },
+    "metrics": {
+      "tokens_count": 13302,
+      "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 104.47252454849965,
-      "analyze_ms_per_kloc": 116.55153981242998,
-      "runtime_ms_per_kloc": 104.69452386290497
+      "build_ms_per_kloc": 116.75989400703041,
+      "analyze_ms_per_kloc": 118.97643944494696,
+      "runtime_ms_per_kloc": 116.73190510192383
     },
     "docker": {
-      "build_time": 0.2283310890197754,
+      "build_time": 0.20218729972839355,
       "build_success": true,
-      "image_build_time": 0.2283310890197754,
+      "image_build_time": 0.20218729972839355,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.18355822563171387,
+      "make_build_time": 0.18996834754943848,
       "make_build_success": true,
-      "make_analyze_time": 0.20478105545043945,
+      "make_analyze_time": 0.1935746669769287,
       "make_analyze_success": true,
-      "test_time": 0.18394827842712402,
+      "test_time": 0.18992280960083008,
       "test_success": true,
-      "make_test_time": 0.18394827842712402,
+      "make_test_time": 0.18992280960083008,
       "make_test_success": true,
-      "test_chess_engine_time": 58.00321006774902,
+      "test_chess_engine_time": 58.0020797252655,
       "test_chess_engine_success": false,
-      "track_test_time": 58.00321006774902,
+      "track_test_time": 58.0020797252655,
       "track_test_success": false
     },
     "task_results": {

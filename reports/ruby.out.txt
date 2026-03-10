@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing ruby implementation
 Path: implementations/ruby
 ============================================================
-📏 Source size: 1906 LOC across 10 files
+📏 Source size: 1906 LOC across 10 files, 9600 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,7 +15,7 @@ Path: implementations/ruby
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-ruby .
-  ✅ Docker build completed in 0.29s
+  ✅ Docker build completed in 0.40s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
@@ -26,52 +26,53 @@ Path: implementations/ruby
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:21:30
+Generated: 2026-03-10 23:42:16
 ================================================================================
 
 PERFORMANCE SUMMARY
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ruby         completed  1906     -/-MB              2.2s/229MB         0.3s/9MB           12.0s/62MB                1/1              2/16              
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ruby         completed  9600       1906     -/-MB              2.3s/231MB         0.3s/9MB           12.1s/62MB                1/1              2/16              
 
 ============================================================
 DETAILED RESULTS: RUBY
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.29s
-  make analyze: 2.24s
-  make test: 0.28s
-  make test-chess-engine: 12.04s
-  make test (internal mirror): 0.28s
-  test v2 full seconds: 12.04s
+  docker build image: 0.40s
+  make analyze: 2.26s
+  make test: 0.30s
+  make test-chess-engine: 12.14s
+  make test (internal mirror): 0.30s
+  test v2 full seconds: 12.14s
 
 SOURCE SIZE:
   Source LOC: 1906 (files: 10)
+  TOKENS (tokens-v2): 9600
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 1174.39 ms/KLOC
-  Runtime: 146.56 ms/KLOC
+  Analyze: 1186.30 ms/KLOC
+  Runtime: 155.41 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 115.6MB, Avg 84.4MB
+  Image: Peak 116.3MB, Avg 91.8MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 229.4MB, Avg 0.0MB
-  Test: Peak 9.1MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.0MB, Avg 60.3MB
+  Analyze: Peak 231.0MB, Avg 0.0MB
+  Test: Peak 9.3MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.9MB, Avg 60.3MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.29s)
+  Image build: ✅ (0.40s)
   make build: ⏭️ skipped
-  make analyze: ✅ (2.24s)
-  make test: ✅ (0.28s)
-  make test-chess-engine (track=v2-full): ❌ (12.04s)
+  make analyze: ✅ (2.26s)
+  make test: ✅ (0.30s)
+  make test-chess-engine (track=v2-full): ❌ (12.14s)
   make test score: 1/1
   make test-chess-engine score: 2/16
 

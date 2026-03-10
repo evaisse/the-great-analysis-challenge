@@ -16,6 +16,9 @@
       ],
       "max_ai_depth": 5,
       "estimated_perft4_ms": 600,
+      "source_exts": [
+        ".rs"
+      ],
       "build": "cargo build --release",
       "test": "cargo test",
       "analyze": "cargo check --all-targets",
@@ -24,48 +27,48 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.22573065757751465,
-      "build_seconds": 0.18680286407470703,
-      "analyze_seconds": 0.1816399097442627,
-      "test_seconds": 0.180894136428833,
-      "test_internal_seconds": 0.180894136428833,
-      "test_chess_engine_seconds": 9.714391708374023,
-      "test_v2_full_seconds": 9.714391708374023
+      "image_build_seconds": 0.3485107421875,
+      "build_seconds": 0.19543719291687012,
+      "analyze_seconds": 0.18557214736938477,
+      "test_seconds": 0.19650912284851074,
+      "test_internal_seconds": 0.19650912284851074,
+      "test_chess_engine_seconds": 9.737553358078003,
+      "test_v2_full_seconds": 9.737553358078003
     },
     "memory": {
       "image": {
-        "memory_mb": 111.41796875,
-        "peak_memory_mb": 111.41796875,
-        "avg_memory_mb": 84.30208333333333,
+        "memory_mb": 110.59375,
+        "peak_memory_mb": 110.59375,
+        "avg_memory_mb": 90.14453125,
         "avg_cpu_percent": 0.0,
-        "samples": 3,
+        "samples": 4,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 6.56640625,
-        "peak_memory_mb": 6.56640625,
+        "memory_mb": 6.578125,
+        "peak_memory_mb": 6.578125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 7.05859375,
-        "peak_memory_mb": 7.05859375,
+        "memory_mb": 6.57421875,
+        "peak_memory_mb": 6.57421875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 6.8984375,
-        "peak_memory_mb": 6.8984375,
+        "memory_mb": 6.60546875,
+        "peak_memory_mb": 6.60546875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.73046875,
-        "peak_memory_mb": 61.44140625,
-        "avg_memory_mb": 59.445437167553195,
+        "memory_mb": 32.06640625,
+        "peak_memory_mb": 61.7734375,
+        "avg_memory_mb": 59.78902094414894,
         "avg_cpu_percent": 0.0,
         "samples": 94,
         "psutil_available": true
@@ -75,28 +78,32 @@
       "source_loc": 1852,
       "source_files": 9
     },
+    "metrics": {
+      "tokens_count": 12770,
+      "metric_version": "tokens-v2"
+    },
     "normalized": {
-      "build_ms_per_kloc": 100.86547736215282,
-      "analyze_ms_per_kloc": 98.0777050454982,
-      "runtime_ms_per_kloc": 97.67501966999622
+      "build_ms_per_kloc": 105.52764196375276,
+      "analyze_ms_per_kloc": 100.20094350398745,
+      "runtime_ms_per_kloc": 106.10643782316994
     },
     "docker": {
-      "build_time": 0.22573065757751465,
+      "build_time": 0.3485107421875,
       "build_success": true,
-      "image_build_time": 0.22573065757751465,
+      "image_build_time": 0.3485107421875,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.18680286407470703,
+      "make_build_time": 0.19543719291687012,
       "make_build_success": true,
-      "make_analyze_time": 0.1816399097442627,
+      "make_analyze_time": 0.18557214736938477,
       "make_analyze_success": true,
-      "test_time": 0.180894136428833,
+      "test_time": 0.19650912284851074,
       "test_success": true,
-      "make_test_time": 0.180894136428833,
+      "make_test_time": 0.19650912284851074,
       "make_test_success": true,
-      "test_chess_engine_time": 9.714391708374023,
+      "test_chess_engine_time": 9.737553358078003,
       "test_chess_engine_success": false,
-      "track_test_time": 9.714391708374023,
+      "track_test_time": 9.737553358078003,
       "track_test_success": false
     },
     "task_results": {
