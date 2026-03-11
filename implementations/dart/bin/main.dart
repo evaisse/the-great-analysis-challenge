@@ -1100,12 +1100,13 @@ Map<String, dynamic> _buildConcurrencyPayload(String profile) {
   final runs = profile == 'quick' ? 10 : 50;
   final opsPerRun = profile == 'quick' ? 10000 : 40000;
   final checksums = <String>[];
+  final multiplier = BigInt.parse('6364136223846793005');
+  final increment = BigInt.parse('1442695040888963407');
+  final mask = BigInt.parse('ffffffffffffffff', radix: 16);
 
-  var checksum = seed;
+  var checksum = BigInt.from(seed);
   for (var i = 0; i < runs; i++) {
-    checksum =
-        (checksum * 6364136223846793005 + 1442695040888963407 + i) &
-        0xFFFFFFFFFFFFFFFF;
+    checksum = (checksum * multiplier + increment + BigInt.from(i)) & mask;
     checksums.add(checksum.toRadixString(16).padLeft(16, '0'));
   }
   stopwatch.stop();
