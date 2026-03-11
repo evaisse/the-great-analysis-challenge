@@ -911,17 +911,59 @@ class ChessEngine {
             return;
         }
 
+        $profile_config = $profile === 'quick'
+            ? [
+                'workers' => 2,
+                'runs' => 10,
+                'sequences_per_worker' => 4,
+                'plies_per_sequence' => 4,
+            ]
+            : [
+                'workers' => 4,
+                'runs' => 50,
+                'sequences_per_worker' => 6,
+                'plies_per_sequence' => 6,
+            ];
+        $scenarios = [
+            'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            'rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3',
+            'r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1',
+            '4k3/6P1/8/8/8/8/8/4K3 w - - 0 1',
+        ];
+
         $start_ms = (int) round(microtime(true) * 1000);
         $seed = 12345;
-        $workers = 1;
-        $runs = $profile === 'quick' ? 10 : 50;
-        $ops_per_run = $profile === 'quick' ? 10000 : 40000;
-        $checksum = $seed;
+        $workers = $profile_config['workers'];
+        $runs = $profile_config['runs'];
+        $sequences_per_worker = $profile_config['sequences_per_worker'];
+        $plies_per_sequence = $profile_config['plies_per_sequence'];
+        $ops_per_run = $workers * $sequences_per_worker * $plies_per_sequence;
         $checksums = [];
+        $invariant_errors = 0;
 
-        for ($i = 0; $i < $runs; $i++) {
-            $checksum = ($checksum * 1103515245 + 12345 + $i) & 0x7fffffff;
-            $checksums[] = sprintf('%016x', $checksum);
+        for ($run = 0; $run < $runs; $run++) {
+            $run_checksum = $this->concurrency_checksum_mix(
+                (2166136261 ^ $seed ^ (($run + 1) * 173)) & 0xffffffff,
+                "run:$profile:$run"
+            );
+
+            for ($worker = 0; $worker < $workers; $worker++) {
+                [$worker_checksum, $worker_errors] = $this->run_concurrency_worker(
+                    $seed,
+                    $run,
+                    $worker,
+                    $sequences_per_worker,
+                    $plies_per_sequence,
+                    $scenarios
+                );
+                $invariant_errors += $worker_errors;
+                $run_checksum = $this->concurrency_checksum_mix(
+                    $run_checksum,
+                    $worker . ':' . $worker_checksum
+                );
+            }
+
+            $checksums[] = $this->format_concurrency_checksum($run_checksum);
         }
 
         $elapsed_ms = max(0, (int) round(microtime(true) * 1000) - $start_ms);
@@ -932,14 +974,156 @@ class ChessEngine {
             'runs' => $runs,
             'checksums' => $checksums,
             'deterministic' => true,
-            'invariant_errors' => 0,
+            'invariant_errors' => $invariant_errors,
             'deadlocks' => 0,
             'timeouts' => 0,
             'elapsed_ms' => $elapsed_ms,
-            'ops_total' => $runs * $ops_per_run * $workers,
+            'ops_total' => $runs * $ops_per_run,
         ];
 
         echo "CONCURRENCY: " . json_encode($payload, JSON_UNESCAPED_SLASHES) . "\n";
+    }
+
+    private function run_concurrency_worker(
+        int $seed,
+        int $run,
+        int $worker,
+        int $sequences_per_worker,
+        int $plies_per_sequence,
+        array $scenarios
+    ): array {
+        $checksum = (2166136261 ^ $seed ^ (($run + 1) * 97) ^ (($worker + 1) * 131)) & 0xffffffff;
+        $checksum = $this->concurrency_checksum_mix($checksum, "worker:$run:$worker");
+        $invariant_errors = 0;
+
+        for ($sequence = 0; $sequence < $sequences_per_worker; $sequence++) {
+            $scenario_index = ($run + $worker + $sequence) % count($scenarios);
+            [$board, $move_gen, $fen_parser] = $this->create_concurrency_state($scenarios[$scenario_index]);
+            $baseline_fen = $fen_parser->export_fen();
+            $baseline_hash = $this->concurrency_hash_hex($board->zobrist_hash);
+            $checksum = $this->concurrency_checksum_mix(
+                $checksum,
+                "seq:$scenario_index:$baseline_hash:$baseline_fen"
+            );
+            $applied_moves = 0;
+
+            for ($ply = 0; $ply < $plies_per_sequence; $ply++) {
+                $legal_moves = $move_gen->generate_moves();
+                usort($legal_moves, fn(Move $left, Move $right): int => strcmp($left->to_string(), $right->to_string()));
+                $checksum = $this->concurrency_checksum_mix($checksum, 'legal:' . count($legal_moves));
+                if (count($legal_moves) === 0) {
+                    $invariant_errors++;
+                    $checksum = $this->concurrency_checksum_mix($checksum, "empty:$sequence:$ply");
+                    break;
+                }
+
+                $selected = $this->choose_concurrency_move(
+                    $legal_moves,
+                    $seed,
+                    $run,
+                    $worker,
+                    $sequence,
+                    $ply
+                );
+                $before_fen = $fen_parser->export_fen();
+                $before_hash = $this->concurrency_hash_hex($board->zobrist_hash);
+                $move_str = $selected->to_string();
+
+                $board->make_move($selected);
+                $applied_moves++;
+                $after_fen = $fen_parser->export_fen();
+                $after_hash = $this->concurrency_hash_hex($board->zobrist_hash);
+                $checksum = $this->concurrency_checksum_mix(
+                    $checksum,
+                    "move:$move_str:$before_hash:$before_fen:$after_hash:$after_fen"
+                );
+
+                [$reloaded_board, $_reload_moves, $reloaded_parser] = $this->create_concurrency_state($after_fen);
+                $reloaded_hash = $this->concurrency_hash_hex($reloaded_board->zobrist_hash);
+                if ($reloaded_parser->export_fen() !== $after_fen || $reloaded_hash !== $after_hash) {
+                    $invariant_errors++;
+                    $checksum = $this->concurrency_checksum_mix(
+                        $checksum,
+                        "reload-error:$sequence:$ply:$reloaded_hash"
+                    );
+                }
+            }
+
+            for ($ply = 0; $ply < $applied_moves; $ply++) {
+                if (!$board->undo_move()) {
+                    $invariant_errors++;
+                    $checksum = $this->concurrency_checksum_mix($checksum, "undo-missing:$sequence:$ply");
+                    break;
+                }
+            }
+
+            $restored_fen = $fen_parser->export_fen();
+            $restored_hash = $this->concurrency_hash_hex($board->zobrist_hash);
+            if ($restored_fen !== $baseline_fen || $restored_hash !== $baseline_hash) {
+                $invariant_errors++;
+                $checksum = $this->concurrency_checksum_mix(
+                    $checksum,
+                    "undo-error:$sequence:$restored_hash:$restored_fen"
+                );
+            } else {
+                $checksum = $this->concurrency_checksum_mix($checksum, "undo-ok:$restored_hash");
+            }
+        }
+
+        return [$this->format_concurrency_checksum($checksum), $invariant_errors];
+    }
+
+    private function create_concurrency_state(string $fen): array {
+        $board = new Board();
+        $fen_parser = new FenParser($board);
+        if (!$fen_parser->load_fen($fen)) {
+            throw new \RuntimeException("Invalid concurrency FEN: $fen");
+        }
+
+        $board->game_history = [];
+        $board->position_history = [];
+        $board->irreversible_history = [];
+        $board->zobrist_hash = Zobrist::getInstance()->compute_hash($board);
+
+        return [$board, new MoveGenerator($board), $fen_parser];
+    }
+
+    private function choose_concurrency_move(
+        array $legal_moves,
+        int $seed,
+        int $run,
+        int $worker,
+        int $sequence,
+        int $ply
+    ): Move {
+        $special_moves = array_values(array_filter(
+            $legal_moves,
+            fn(Move $move): bool => $move->is_castling || $move->is_en_passant || $move->promotion !== null
+        ));
+        if (count($special_moves) > 0 && (($run + $worker + $sequence + $ply) % 3) === 0) {
+            return $special_moves[0];
+        }
+
+        $selector = $seed + ($run * 17) + ($worker * 31) + ($sequence * 43) + ($ply * 59);
+        return $legal_moves[$selector % count($legal_moves)];
+    }
+
+    private function concurrency_checksum_mix(int $checksum, string $text): int {
+        $length = strlen($text);
+        for ($i = 0; $i < $length; $i++) {
+            $checksum ^= ord($text[$i]);
+            $checksum = ($checksum * 16777619) & 0xffffffff;
+        }
+
+        return $checksum;
+    }
+
+    private function format_concurrency_checksum(int $checksum): string {
+        return sprintf('%08x', $checksum & 0xffffffff);
+    }
+
+    private function concurrency_hash_hex(int $hash): string {
+        return sprintf('%016x', $hash);
     }
 
     private function trace(string $event, string $detail): void {
