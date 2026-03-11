@@ -132,50 +132,71 @@ class ChessEngineTester:
             fl = fcntl.fcntl(fd, fcntl.F_GETFL)
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
             try:
-                while self.process.stdout.read(1024): pass
-            except:
-                pass
-            fcntl.fcntl(fd, fcntl.F_SETFL, fl)
+                while True:
+                    try:
+                        chunk = os.read(fd, 4096)
+                    except BlockingIOError:
+                        break
+                    if not chunk:
+                        break
 
-            # Send command
-            self.process.stdin.write(command + "\n")
-            self.process.stdin.flush()
-            
-            start_time = time.time()
-            output_lines = []
-            end_seen_at = None
-            
-            # Keywords that signal the end of an engine response
-            end_keywords = [
-                "OK:", "ERROR:", "CHECKMATE:", "STALEMATE:", 
-                "FEN:", "AI:", "EVALUATION:", "HASH:", 
-                "REPETITION:", "DRAW:", "DRAWS:", "CONCURRENCY:",
-                "960:",
-                "UCIOK", "READYOK", "BESTMOVE", "INFO ", "ID NAME", "ID AUTHOR",
-                "PGN", "TRACE",
-            ]
-            
-            while time.time() - start_time < timeout:
-                if self.process.poll() is not None:
-                    break
+                # Send command
+                self.process.stdin.write(command + "\n")
+                self.process.stdin.flush()
                 
-                # Use select to wait for data with a short timeout
-                ready, _, _ = select.select([self.process.stdout], [], [], 0.1)
+                start_time = time.time()
+                output_lines = []
+                end_seen_at = None
+                pending = ""
                 
-                if ready:
-                    line = self.process.stdout.readline()
-                    if line:
-                        stripped_line = line.strip()
-                        output_lines.append(stripped_line)
-                        if any(kw in stripped_line.upper() for kw in end_keywords):
-                            end_seen_at = time.time()
+                # Keywords that signal the end of an engine response
+                end_keywords = [
+                    "OK:", "ERROR:", "CHECKMATE:", "STALEMATE:", 
+                    "FEN:", "AI:", "EVALUATION:", "HASH:", 
+                    "REPETITION:", "DRAW:", "DRAWS:", "CONCURRENCY:",
+                    "NODES:",
+                    "960:",
+                    "UCIOK", "READYOK", "BESTMOVE", "INFO ", "ID NAME", "ID AUTHOR",
+                    "PGN", "TRACE",
+                ]
+                
+                while time.time() - start_time < timeout:
+                    if self.process.poll() is not None:
+                        break
+                    
+                    # Use select to wait for data with a short timeout
+                    ready, _, _ = select.select([fd], [], [], 0.1)
+                    
+                    if ready:
+                        while True:
+                            try:
+                                chunk = os.read(fd, 4096)
+                            except BlockingIOError:
+                                break
+                            if not chunk:
+                                break
+                            pending += chunk.decode("utf-8", errors="replace")
 
-                # Give a short grace period after an end marker so trailing lines
-                # from the same response (e.g. board + metadata) are captured.
-                if end_seen_at is not None and (time.time() - end_seen_at) >= 0.12:
-                    break
+                        while "\n" in pending:
+                            line, pending = pending.split("\n", 1)
+                            stripped_line = line.strip()
+                            if not stripped_line:
+                                continue
+                            output_lines.append(stripped_line)
+                            if any(kw in stripped_line.upper() for kw in end_keywords):
+                                end_seen_at = time.time()
 
-            return "\n".join(output_lines)
+                    # Give a short grace period after an end marker so trailing lines
+                    # from the same response (e.g. board + metadata) are captured.
+                    if end_seen_at is not None and (time.time() - end_seen_at) >= 0.12:
+                        break
+
+                if pending.strip():
+                    output_lines.append(pending.strip())
+
+                return "\n".join(output_lines)
+            finally:
+                fcntl.fcntl(fd, fcntl.F_SETFL, fl)
             
         except Exception as e:
             self.results["errors"].append(f"Command error: {e}")
