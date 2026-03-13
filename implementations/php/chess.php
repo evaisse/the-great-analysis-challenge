@@ -56,6 +56,9 @@ class ChessEngine {
     private int $trace_ai_nodes = 0;
     private int $trace_ai_eval_calls = 0;
     private int $trace_ai_nps = 0;
+    private int $trace_ai_tt_hits = 0;
+    private int $trace_ai_tt_misses = 0;
+    private int $trace_ai_beta_cutoffs = 0;
     
     public function __construct() {
         $this->board = new Board();
@@ -338,7 +341,7 @@ class ChessEngine {
             return;
         }
 
-        [$move, $eval, $depth_used, $time_ms, $timed_out, $nodes, $eval_calls] = $this->ai->search($max_depth, $movetime_ms);
+        [$move, $eval, $depth_used, $time_ms, $timed_out, $nodes, $eval_calls, $tt_hits, $tt_misses, $beta_cutoffs] = $this->ai->search($max_depth, $movetime_ms);
 
         if ($move === null) {
             echo "ERROR: No legal moves available\n";
@@ -347,7 +350,19 @@ class ChessEngine {
 
         $this->board->make_move($move);
         $move_str = strtolower($move->to_string());
-        $this->record_trace_ai('search', $move_str, $depth_used, $eval, $time_ms, $timed_out, $nodes, $eval_calls);
+        $this->record_trace_ai(
+            'search',
+            $move_str,
+            $depth_used,
+            $eval,
+            $time_ms,
+            $timed_out,
+            $nodes,
+            $eval_calls,
+            $tt_hits,
+            $tt_misses,
+            $beta_cutoffs
+        );
         echo "AI: {$move_str} (depth=$depth_used, eval=$eval, time={$time_ms}ms)\n";
 
         // Check for game end first
@@ -446,7 +461,7 @@ class ChessEngine {
             $book_move = $this->choose_book_move($legal_moves);
             if ($book_move !== null) {
                 $move_str = strtolower($book_move->to_string());
-                $this->record_trace_ai('uci-book', $move_str, 0, 0, 0, false, 0, 0);
+                $this->record_trace_ai('uci-book', $move_str, 0, 0, 0, false, 0, 0, 0, 0, 0);
                 echo "info string bookmove {$move_str}\n";
                 echo "bestmove {$move_str}\n";
                 return;
@@ -456,20 +471,32 @@ class ChessEngine {
             if ($endgame_choice !== null) {
                 $move_str = strtolower($endgame_choice['move']->to_string());
                 $info = $endgame_choice['info'];
-                $this->record_trace_ai('uci-endgame', $move_str, 0, intval($info['score_white']), 0, false, 0, 0);
+                $this->record_trace_ai('uci-endgame', $move_str, 0, intval($info['score_white']), 0, false, 0, 0, 0, 0, 0);
                 echo "info string endgame {$info['type']} score cp {$info['score_white']}\n";
                 echo "bestmove {$move_str}\n";
                 return;
             }
 
-            [$move, $eval, $depth_used, $time_ms, $timed_out, $nodes, $eval_calls] = $this->ai->search($depth, 0);
+            [$move, $eval, $depth_used, $time_ms, $timed_out, $nodes, $eval_calls, $tt_hits, $tt_misses, $beta_cutoffs] = $this->ai->search($depth, 0);
             if ($move === null) {
                 echo "bestmove 0000\n";
                 return;
             }
             $move_str = strtolower($move->to_string());
-            $this->record_trace_ai('uci-search', $move_str, $depth_used, $eval, $time_ms, $timed_out, $nodes, $eval_calls);
-            echo "info depth {$depth_used} score cp {$eval} time {$time_ms} nodes 0\n";
+            $this->record_trace_ai(
+                'uci-search',
+                $move_str,
+                $depth_used,
+                $eval,
+                $time_ms,
+                $timed_out,
+                $nodes,
+                $eval_calls,
+                $tt_hits,
+                $tt_misses,
+                $beta_cutoffs
+            );
+            echo "info depth {$depth_used} score cp {$eval} time {$time_ms} nodes {$nodes}\n";
             echo "bestmove {$move_str}\n";
             return;
         }
@@ -1192,11 +1219,14 @@ class ChessEngine {
         $this->trace_ai_nodes = 0;
         $this->trace_ai_eval_calls = 0;
         $this->trace_ai_nps = 0;
+        $this->trace_ai_tt_hits = 0;
+        $this->trace_ai_tt_misses = 0;
+        $this->trace_ai_beta_cutoffs = 0;
     }
 
     private function format_trace_report(): string {
         $enabled = $this->trace_enabled ? 'true' : 'false';
-        return "TRACE: enabled={$enabled}; level={$this->trace_level}; events=" .
+        $report = "TRACE: enabled={$enabled}; level={$this->trace_level}; events=" .
             count($this->trace_events) . "; commands={$this->trace_command_count}; export=" .
             $this->format_trace_report_segment(
                 $this->trace_export_count,
@@ -1208,6 +1238,11 @@ class ChessEngine {
                 $this->trace_chrome_last_target,
                 $this->trace_chrome_last_bytes
             ) . "; last_ai=" . $this->format_trace_ai_summary();
+        $search_metrics = $this->format_trace_search_metrics();
+        if ($search_metrics !== null) {
+            $report .= "; search_metrics={$search_metrics}";
+        }
+        return $report;
     }
 
     private function format_trace_report_segment(int $count, ?string $target, int $byte_count): string {
@@ -1247,6 +1282,14 @@ class ChessEngine {
         return $summary;
     }
 
+    private function format_trace_search_metrics(): ?string {
+        if ($this->trace_ai_source === null || !str_contains($this->trace_ai_source, 'search')) {
+            return null;
+        }
+
+        return "nodes={$this->trace_ai_nodes},eval_calls={$this->trace_ai_eval_calls},tt_hits={$this->trace_ai_tt_hits},tt_misses={$this->trace_ai_tt_misses},beta_cutoffs={$this->trace_ai_beta_cutoffs},nps={$this->trace_ai_nps}";
+    }
+
     private function record_trace_ai(
         string $source,
         string $move,
@@ -1255,7 +1298,10 @@ class ChessEngine {
         int $elapsed_ms,
         bool $timed_out,
         int $nodes,
-        int $eval_calls
+        int $eval_calls,
+        int $tt_hits,
+        int $tt_misses,
+        int $beta_cutoffs
     ): void {
         $this->trace_ai_source = $source;
         $this->trace_ai_move = $move;
@@ -1267,6 +1313,9 @@ class ChessEngine {
         $this->trace_ai_eval_calls = $eval_calls;
         $divisor = $elapsed_ms > 0 ? $elapsed_ms : 1;
         $this->trace_ai_nps = $nodes > 0 ? (int) floor(($nodes * 1000) / $divisor) : 0;
+        $this->trace_ai_tt_hits = $tt_hits;
+        $this->trace_ai_tt_misses = $tt_misses;
+        $this->trace_ai_beta_cutoffs = $beta_cutoffs;
         $this->trace('ai', $this->format_trace_ai_summary());
     }
 
@@ -1285,6 +1334,9 @@ class ChessEngine {
             'nodes' => $this->trace_ai_nodes,
             'eval_calls' => $this->trace_ai_eval_calls,
             'nps' => $this->trace_ai_nps,
+            'tt_hits' => $this->trace_ai_tt_hits,
+            'tt_misses' => $this->trace_ai_tt_misses,
+            'beta_cutoffs' => $this->trace_ai_beta_cutoffs,
             'summary' => $this->format_trace_ai_summary(),
         ];
     }
@@ -1545,7 +1597,7 @@ class ChessEngine {
         $this->board->make_move($move);
         $this->book_played++;
         $move_str = strtolower($move->to_string());
-        $this->record_trace_ai('book', $move_str, 0, 0, 0, false, 0, 0);
+        $this->record_trace_ai('book', $move_str, 0, 0, 0, false, 0, 0, 0, 0, 0);
 
         $is_checkmate = $this->move_gen->is_checkmate();
         $is_stalemate = $this->move_gen->is_stalemate();
@@ -1773,7 +1825,7 @@ class ChessEngine {
     private function apply_endgame_move(Move $move, array $info): void {
         $this->board->make_move($move);
         $move_str = strtolower($move->to_string());
-        $this->record_trace_ai('endgame', $move_str, 0, intval($info['score_white']), 0, false, 0, 0);
+        $this->record_trace_ai('endgame', $move_str, 0, intval($info['score_white']), 0, false, 0, 0, 0, 0, 0);
         echo "AI: {$move_str} (endgame {$info['type']}, score={$info['score_white']})\n";
 
         // Check for game end first

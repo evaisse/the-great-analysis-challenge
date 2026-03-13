@@ -21,6 +21,9 @@ class AI {
     private bool $stop_requested = false;
     private int $nodes_visited = 0;
     private int $eval_calls = 0;
+    private int $tt_hits = 0;
+    private int $tt_misses = 0;
+    private int $beta_cutoffs = 0;
 
     public function __construct(Board $board, MoveGenerator $move_gen) {
         $this->board = $board;
@@ -45,7 +48,7 @@ class AI {
     }
 
     /**
-     * @return array{0:?Move,1:int,2:int,3:int,4:bool,5:int,6:int}
+     * @return array{0:?Move,1:int,2:int,3:int,4:bool,5:int,6:int,7:int,8:int,9:int}
      */
     public function search(int $max_depth, int $movetime_ms = 0): array {
         if ($max_depth < 1) {
@@ -56,13 +59,16 @@ class AI {
 
         $moves = $this->move_gen->generate_moves();
         if (empty($moves)) {
-            return [null, 0, 0, 0, false, 0, 0];
+            return [null, 0, 0, 0, false, 0, 0, 0, 0, 0];
         }
 
         $this->timed_out = false;
         $this->stop_requested = false;
         $this->nodes_visited = 0;
         $this->eval_calls = 0;
+        $this->tt_hits = 0;
+        $this->tt_misses = 0;
+        $this->beta_cutoffs = 0;
         $start = microtime(true);
         $this->deadline = $movetime_ms > 0 ? ($start + ($movetime_ms / 1000.0)) : null;
 
@@ -87,7 +93,18 @@ class AI {
         }
 
         $elapsed_ms = (int) round((microtime(true) - $start) * 1000);
-        return [$best_move, $best_score, $completed_depth, $elapsed_ms, $this->timed_out, $this->nodes_visited, $this->eval_calls];
+        return [
+            $best_move,
+            $best_score,
+            $completed_depth,
+            $elapsed_ms,
+            $this->timed_out,
+            $this->nodes_visited,
+            $this->eval_calls,
+            $this->tt_hits,
+            $this->tt_misses,
+            $this->beta_cutoffs,
+        ];
     }
 
     /**
@@ -105,6 +122,11 @@ class AI {
         }
 
         $entry = $this->tt[(string) $this->board->zobrist_hash] ?? null;
+        if ($entry !== null) {
+            $this->tt_hits++;
+        } else {
+            $this->tt_misses++;
+        }
         $tt_move = $entry['best_move'] ?? null;
         $ordered = $this->order_moves($moves, $tt_move);
 
@@ -152,6 +174,7 @@ class AI {
         $best_from_tt = null;
         $entry = $this->tt[$key] ?? null;
         if ($entry !== null && $entry['depth'] >= $depth) {
+            $this->tt_hits++;
             if ($entry['flag'] === 'exact') {
                 return [$entry['score'], $entry['best_move'], true];
             }
@@ -161,9 +184,12 @@ class AI {
                 $beta = min($beta, $entry['score']);
             }
             if ($alpha >= $beta) {
+                $this->beta_cutoffs++;
                 return [$entry['score'], $entry['best_move'], true];
             }
             $best_from_tt = $entry['best_move'];
+        } else {
+            $this->tt_misses++;
         }
 
         if ($depth === 0) {
@@ -207,6 +233,7 @@ class AI {
                 $alpha = $score;
             }
             if ($alpha >= $beta) {
+                $this->beta_cutoffs++;
                 break;
             }
         }

@@ -108,18 +108,25 @@ class AI:
         self._stop_requested = False
         self._nodes_visited = 0
         self._eval_calls = 0
+        self._tt_hits = 0
+        self._tt_misses = 0
+        self._beta_cutoffs = 0
 
     def get_best_move(self, depth: int) -> Tuple[Optional[Move], int]:
         """Backward-compatible API used by `ai <depth>` command."""
-        best_move, best_score, _, _, _, _, _ = self.search(depth, 0)
+        best_move, best_score, _, _, _, _, _, _, _, _ = self.search(depth, 0)
         return best_move, best_score
 
     def request_stop(self) -> None:
         """Cooperative stop flag for ongoing search."""
         self._stop_requested = True
 
-    def search(self, max_depth: int, movetime_ms: int) -> Tuple[Optional[Move], int, int, int, bool, int, int]:
-        """Return (best_move, score, depth_reached, elapsed_ms, timed_out, nodes, eval_calls)."""
+    def search(
+        self,
+        max_depth: int,
+        movetime_ms: int,
+    ) -> Tuple[Optional[Move], int, int, int, bool, int, int, int, int, int]:
+        """Return (best_move, score, depth_reached, elapsed_ms, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)."""
         if max_depth < 1:
             max_depth = 1
         if max_depth > 5:
@@ -127,12 +134,15 @@ class AI:
 
         legal_moves = self.move_generator.generate_legal_moves()
         if not legal_moves:
-            return None, 0, 0, 0, False, 0, 0
+            return None, 0, 0, 0, False, 0, 0, 0, 0, 0
 
         self._timed_out = False
         self._stop_requested = False
         self._nodes_visited = 0
         self._eval_calls = 0
+        self._tt_hits = 0
+        self._tt_misses = 0
+        self._beta_cutoffs = 0
         start = time.monotonic()
         self._deadline = start + (movetime_ms / 1000.0) if movetime_ms > 0 else None
 
@@ -161,6 +171,9 @@ class AI:
             self._timed_out,
             self._nodes_visited,
             self._eval_calls,
+            self._tt_hits,
+            self._tt_misses,
+            self._beta_cutoffs,
         )
 
     def _search_root(self, depth: int) -> Tuple[int, Optional[Move], bool]:
@@ -173,6 +186,10 @@ class AI:
             return 0, None, True
 
         entry = self._tt.get(self.board.zobrist_hash)
+        if entry is not None:
+            self._tt_hits += 1
+        else:
+            self._tt_misses += 1
         ordered_moves = self._order_moves(moves, entry.best_move if entry else None)
 
         alpha = -INFINITY
@@ -209,6 +226,7 @@ class AI:
 
         entry = self._tt.get(key)
         if entry and entry.depth >= depth:
+            self._tt_hits += 1
             if entry.flag == 'exact':
                 return entry.score, entry.best_move, True
             if entry.flag == 'lower':
@@ -216,8 +234,11 @@ class AI:
             elif entry.flag == 'upper':
                 beta = min(beta, entry.score)
             if alpha >= beta:
+                self._beta_cutoffs += 1
                 return entry.score, entry.best_move, True
             best_from_tt = entry.best_move
+        else:
+            self._tt_misses += 1
 
         if depth == 0:
             return int(self.evaluate_position()), None, True
@@ -248,6 +269,7 @@ class AI:
             if score > alpha:
                 alpha = score
             if alpha >= beta:
+                self._beta_cutoffs += 1
                 break
 
         flag = 'exact'

@@ -15,6 +15,9 @@ typedef TraceAiRecorder =
       bool timedOut,
       int nodes,
       int evalCalls,
+      int ttHits,
+      int ttMisses,
+      int betaCutoffs,
     );
 
 Future<void> main() async {
@@ -54,6 +57,9 @@ Future<void> main() async {
   int traceLastAiNodes = 0;
   int traceLastAiEvalCalls = 0;
   int traceLastAiNps = 0;
+  int traceLastAiTtHits = 0;
+  int traceLastAiTtMisses = 0;
+  int traceLastAiBetaCutoffs = 0;
 
   void recordTrace(String event, String detail) {
     if (!traceEnabled) return;
@@ -96,6 +102,9 @@ Future<void> main() async {
     traceLastAiNodes = 0;
     traceLastAiEvalCalls = 0;
     traceLastAiNps = 0;
+    traceLastAiTtHits = 0;
+    traceLastAiTtMisses = 0;
+    traceLastAiBetaCutoffs = 0;
   }
 
   String formatTraceAiSummary() {
@@ -119,6 +128,13 @@ Future<void> main() async {
     return summary;
   }
 
+  String? formatTraceSearchMetrics() {
+    if (traceLastAiSource == null || !traceLastAiSource!.contains('search')) {
+      return null;
+    }
+    return 'nodes=$traceLastAiNodes,eval_calls=$traceLastAiEvalCalls,tt_hits=$traceLastAiTtHits,tt_misses=$traceLastAiTtMisses,beta_cutoffs=$traceLastAiBetaCutoffs,nps=$traceLastAiNps';
+  }
+
   void recordTraceAi(
     String source,
     String move,
@@ -128,6 +144,9 @@ Future<void> main() async {
     bool timedOut,
     int nodes,
     int evalCalls,
+    int ttHits,
+    int ttMisses,
+    int betaCutoffs,
   ) {
     traceLastAiSource = source;
     traceLastAiMove = move;
@@ -139,6 +158,9 @@ Future<void> main() async {
     traceLastAiEvalCalls = evalCalls;
     final divisor = elapsedMs > 0 ? elapsedMs : 1;
     traceLastAiNps = nodes > 0 ? (nodes * 1000) ~/ divisor : 0;
+    traceLastAiTtHits = ttHits;
+    traceLastAiTtMisses = ttMisses;
+    traceLastAiBetaCutoffs = betaCutoffs;
     recordTrace('ai', formatTraceAiSummary());
   }
 
@@ -157,6 +179,9 @@ Future<void> main() async {
       'nodes': traceLastAiNodes,
       'eval_calls': traceLastAiEvalCalls,
       'nps': traceLastAiNps,
+      'tt_hits': traceLastAiTtHits,
+      'tt_misses': traceLastAiTtMisses,
+      'beta_cutoffs': traceLastAiBetaCutoffs,
       'summary': formatTraceAiSummary(),
     };
   }
@@ -431,7 +456,7 @@ Future<void> main() async {
           if (boundedDepth > 5) boundedDepth = 5;
           final bookMove = chooseBookMove();
           if (bookMove != null) {
-            recordTraceAi('uci-book', bookMove, 0, 0, 0, false, 0, 0);
+            recordTraceAi('uci-book', bookMove, 0, 0, 0, false, 0, 0, 0, 0, 0);
             print('info string bookmove $bookMove');
             print('bestmove $bookMove');
             break;
@@ -445,6 +470,9 @@ Future<void> main() async {
               endgameChoice.info.scoreWhite,
               0,
               false,
+              0,
+              0,
+              0,
               0,
               0,
             );
@@ -469,9 +497,12 @@ Future<void> main() async {
             result.timedOut,
             result.nodes,
             result.evalCalls,
+            result.ttHits,
+            result.ttMisses,
+            result.betaCutoffs,
           );
           print(
-            'info depth ${result.depth} score cp ${result.score} time ${result.elapsedMs} nodes 0',
+            'info depth ${result.depth} score cp ${result.score} time ${result.elapsedMs} nodes ${result.nodes}',
           );
           print('bestmove ${move.toString()}');
           break;
@@ -802,9 +833,13 @@ Future<void> main() async {
         }
         if (sub == 'report') {
           final enabled = traceEnabled ? 'true' : 'false';
-          print(
-            'TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount; exports=$traceExportCount; last_export=${formatTraceTransferSummary(traceExportCount, traceLastExportTarget, traceLastExportEvents, traceLastExportBytes)}; chrome_exports=$traceChromeCount; last_chrome=${formatTraceTransferSummary(traceChromeCount, traceLastChromeTarget, traceLastChromeEvents, traceLastChromeBytes)}; last_ai=${formatTraceAiSummary()}',
-          );
+          var report =
+              'TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount; exports=$traceExportCount; last_export=${formatTraceTransferSummary(traceExportCount, traceLastExportTarget, traceLastExportEvents, traceLastExportBytes)}; chrome_exports=$traceChromeCount; last_chrome=${formatTraceTransferSummary(traceChromeCount, traceLastChromeTarget, traceLastChromeEvents, traceLastChromeBytes)}; last_ai=${formatTraceAiSummary()}';
+          final searchMetrics = formatTraceSearchMetrics();
+          if (searchMetrics != null) {
+            report += '; search_metrics=$searchMetrics';
+          }
+          print(report);
           break;
         }
         if (sub == 'reset') {
@@ -1610,7 +1645,7 @@ void _runAiTimedMove(
     try {
       game.move(bookMove);
       onBookPlayed?.call();
-      onAiResult?.call('book', bookMove, 0, 0, 0, false, 0, 0);
+      onAiResult?.call('book', bookMove, 0, 0, 0, false, 0, 0, 0, 0, 0);
       print('AI: $bookMove (book)');
       game.printBoard();
       _checkGameState(game);
@@ -1630,6 +1665,9 @@ void _runAiTimedMove(
         endgameInfo.scoreWhite,
         0,
         false,
+        0,
+        0,
+        0,
         0,
         0,
       );
@@ -1660,6 +1698,9 @@ void _runAiTimedMove(
     result.timedOut,
     result.nodes,
     result.evalCalls,
+    result.ttHits,
+    result.ttMisses,
+    result.betaCutoffs,
   );
   print(
     'AI: ${move.toString()} (depth=${result.depth}, eval=${result.score}, time=${result.elapsedMs}ms)',
