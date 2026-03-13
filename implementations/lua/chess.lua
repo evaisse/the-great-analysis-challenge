@@ -35,6 +35,12 @@ local trace_enabled = false
 local trace_level = "info"
 local trace_events = {}
 local trace_command_count = 0
+local trace_export_count = 0
+local trace_chrome_count = 0
+local trace_last_export_target = "(none)"
+local trace_last_export_bytes = 0
+local trace_last_chrome_target = "(none)"
+local trace_last_chrome_bytes = 0
 local tt = {}
 local search_deadline = nil
 local search_timed_out = false
@@ -1585,6 +1591,108 @@ local function trace_event(event, detail)
     end
 end
 
+local function json_escape(value)
+    value = tostring(value or "")
+    value = value:gsub("\\", "\\\\")
+    value = value:gsub("\"", "\\\"")
+    value = value:gsub("\r", "\\r")
+    value = value:gsub("\n", "\\n")
+    value = value:gsub("\t", "\\t")
+    value = value:gsub(string.char(8), "\\b")
+    value = value:gsub(string.char(12), "\\f")
+    return value
+end
+
+local function build_trace_export_payload()
+    local lines = {}
+    for index, event in ipairs(trace_events) do
+        lines[#lines + 1] = string.format(
+            "{\"type\":\"event\",\"index\":%d,\"ts_ms\":%d,\"event\":\"%s\",\"detail\":\"%s\"}",
+            index - 1,
+            event.ts_ms or 0,
+            json_escape(event.event),
+            json_escape(event.detail)
+        )
+    end
+
+    if #lines == 0 then
+        return ""
+    end
+
+    return table.concat(lines, "\n") .. "\n"
+end
+
+local function build_trace_chrome_payload()
+    local chrome_events = {}
+    local base_ts = (#trace_events > 0 and (trace_events[1].ts_ms or 0)) or 0
+
+    for index, event in ipairs(trace_events) do
+        local ts_us = ((event.ts_ms or 0) - base_ts) * 1000
+        chrome_events[#chrome_events + 1] = string.format(
+            "{\"name\":\"%s\",\"cat\":\"trace\",\"ph\":\"i\",\"s\":\"t\",\"pid\":1,\"tid\":1,\"ts\":%d,\"args\":{\"detail\":\"%s\",\"index\":%d}}",
+            json_escape(event.event),
+            ts_us,
+            json_escape(event.detail),
+            index - 1
+        )
+    end
+
+    return string.format(
+        "{\"displayTimeUnit\":\"ms\",\"traceEvents\":[%s]}",
+        table.concat(chrome_events, ",")
+    )
+end
+
+local function write_trace_payload(target, payload)
+    local bytes = #payload
+    if target == "(memory)" then
+        return true, bytes, nil
+    end
+
+    local file, open_err = io.open(target, "w")
+    if not file then
+        return false, bytes, open_err or "unable to open target"
+    end
+
+    local ok, write_err = file:write(payload)
+    if not ok then
+        file:close()
+        return false, bytes, write_err or "unable to write payload"
+    end
+
+    local close_ok, close_err = file:close()
+    if close_ok == nil then
+        return false, bytes, close_err or "unable to close target"
+    end
+
+    return true, bytes, nil
+end
+
+local function reset_trace_export_state()
+    trace_export_count = 0
+    trace_chrome_count = 0
+    trace_last_export_target = "(none)"
+    trace_last_export_bytes = 0
+    trace_last_chrome_target = "(none)"
+    trace_last_chrome_bytes = 0
+end
+
+local function trace_report_line()
+    return string.format(
+        "TRACE: enabled=%s; level=%s; events=%d; commands=%d; exports=%d; export_bytes=%d; last_export=%s; chrome_exports=%d; chrome_bytes=%d; last_chrome=%s",
+        tostring(trace_enabled),
+        trace_level,
+        #trace_events,
+        trace_command_count,
+        trace_export_count,
+        trace_last_export_bytes,
+        trace_last_export_target,
+        trace_chrome_count,
+        trace_last_chrome_bytes,
+        trace_last_chrome_target
+    )
+end
+
 local function clone_board_state(source)
     local copy = {}
     for rank = 1, 8 do
@@ -2493,23 +2601,36 @@ local function main()
                     print("TRACE: level=" .. trace_level)
                 end
             elseif subcmd == "report" then
-                print(string.format(
-                    "TRACE: enabled=%s; level=%s; events=%d; commands=%d",
-                    tostring(trace_enabled),
-                    trace_level,
-                    #trace_events,
-                    trace_command_count
-                ))
+                print(trace_report_line())
             elseif subcmd == "reset" then
                 trace_events = {}
                 trace_command_count = 0
+                reset_trace_export_state()
                 print("TRACE: reset")
             elseif subcmd == "export" then
                 local target = (subarg and subarg ~= "") and subarg or "(memory)"
-                print(string.format("TRACE: export=%s; events=%d", target, #trace_events))
+                local payload = build_trace_export_payload()
+                local ok, byte_count, err = write_trace_payload(target, payload)
+                if not ok then
+                    print("ERROR: trace export failed: " .. tostring(err))
+                else
+                    trace_export_count = trace_export_count + 1
+                    trace_last_export_target = target
+                    trace_last_export_bytes = byte_count
+                    print(string.format("TRACE: export=%s; events=%d; bytes=%d", target, #trace_events, byte_count))
+                end
             elseif subcmd == "chrome" then
                 local target = (subarg and subarg ~= "") and subarg or "(memory)"
-                print(string.format("TRACE: chrome=%s; events=%d", target, #trace_events))
+                local payload = build_trace_chrome_payload()
+                local ok, byte_count, err = write_trace_payload(target, payload)
+                if not ok then
+                    print("ERROR: trace chrome failed: " .. tostring(err))
+                else
+                    trace_chrome_count = trace_chrome_count + 1
+                    trace_last_chrome_target = target
+                    trace_last_chrome_bytes = byte_count
+                    print(string.format("TRACE: chrome=%s; events=%d; bytes=%d", target, #trace_events, byte_count))
+                end
             else
                 print("ERROR: Unsupported trace command")
             end

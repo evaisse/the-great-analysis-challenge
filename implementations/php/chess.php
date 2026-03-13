@@ -41,6 +41,12 @@ class ChessEngine {
     private string $trace_level = 'info';
     private array $trace_events = [];
     private int $trace_command_count = 0;
+    private int $trace_export_count = 0;
+    private ?string $trace_export_last_target = null;
+    private int $trace_export_last_bytes = 0;
+    private int $trace_chrome_count = 0;
+    private ?string $trace_chrome_last_target = null;
+    private int $trace_chrome_last_bytes = 0;
     
     public function __construct() {
         $this->board = new Board();
@@ -871,28 +877,35 @@ class ChessEngine {
         }
 
         if ($sub === 'report') {
-            $enabled = $this->trace_enabled ? 'true' : 'false';
-            echo "TRACE: enabled={$enabled}; level={$this->trace_level}; events=" .
-                 count($this->trace_events) . "; commands={$this->trace_command_count}\n";
+            echo $this->format_trace_report() . "\n";
             return;
         }
 
         if ($sub === 'reset') {
             $this->trace_events = [];
             $this->trace_command_count = 0;
+            $this->reset_trace_export_state();
             echo "TRACE: reset\n";
             return;
         }
 
         if ($sub === 'export') {
             $target = count($args) > 1 ? implode(' ', array_slice($args, 1)) : '(memory)';
-            echo "TRACE: export={$target}; events=" . count($this->trace_events) . "\n";
+            $event_count = count($this->trace_events);
+            $payload = $this->encode_trace_export_payload();
+            $byte_count = $this->write_trace_payload($payload, $target, count($args) > 1);
+            $this->record_trace_artifact($target, $byte_count, false);
+            echo "TRACE: export={$target}; events={$event_count}; bytes={$byte_count}\n";
             return;
         }
 
         if ($sub === 'chrome') {
             $target = count($args) > 1 ? implode(' ', array_slice($args, 1)) : '(memory)';
-            echo "TRACE: chrome={$target}; events=" . count($this->trace_events) . "\n";
+            $event_count = count($this->trace_events);
+            $payload = $this->encode_trace_chrome_payload();
+            $byte_count = $this->write_trace_payload($payload, $target, count($args) > 1);
+            $this->record_trace_artifact($target, $byte_count, true);
+            echo "TRACE: chrome={$target}; events={$event_count}; bytes={$byte_count}\n";
             return;
         }
 
@@ -1140,6 +1153,125 @@ class ChessEngine {
         if (count($this->trace_events) > 256) {
             array_shift($this->trace_events);
         }
+    }
+
+    private function reset_trace_export_state(): void {
+        $this->trace_export_count = 0;
+        $this->trace_export_last_target = null;
+        $this->trace_export_last_bytes = 0;
+        $this->trace_chrome_count = 0;
+        $this->trace_chrome_last_target = null;
+        $this->trace_chrome_last_bytes = 0;
+    }
+
+    private function format_trace_report(): string {
+        $enabled = $this->trace_enabled ? 'true' : 'false';
+        return "TRACE: enabled={$enabled}; level={$this->trace_level}; events=" .
+            count($this->trace_events) . "; commands={$this->trace_command_count}; export=" .
+            $this->format_trace_report_segment(
+                $this->trace_export_count,
+                $this->trace_export_last_target,
+                $this->trace_export_last_bytes
+            ) . "; chrome=" .
+            $this->format_trace_report_segment(
+                $this->trace_chrome_count,
+                $this->trace_chrome_last_target,
+                $this->trace_chrome_last_bytes
+            );
+    }
+
+    private function format_trace_report_segment(int $count, ?string $target, int $byte_count): string {
+        $resolved_target = $target ?? 'none';
+        return "{$count}@{$resolved_target}/{$byte_count}B";
+    }
+
+    private function record_trace_artifact(string $target, int $byte_count, bool $chrome): void {
+        if ($chrome) {
+            $this->trace_chrome_count++;
+            $this->trace_chrome_last_target = $target;
+            $this->trace_chrome_last_bytes = $byte_count;
+            return;
+        }
+
+        $this->trace_export_count++;
+        $this->trace_export_last_target = $target;
+        $this->trace_export_last_bytes = $byte_count;
+    }
+
+    private function write_trace_payload(string $payload, string $target, bool $write_to_file): int {
+        $byte_count = strlen($payload);
+        if ($write_to_file) {
+            $written = @file_put_contents($target, $payload);
+            if ($written === false || $written !== $byte_count) {
+                throw new \RuntimeException("Unable to write trace output to {$target}");
+            }
+        }
+
+        return $byte_count;
+    }
+
+    private function encode_trace_export_payload(): string {
+        $payload = [
+            'format' => 'tgac.trace.v1',
+            'engine' => 'php',
+            'generated_at_ms' => (int) round(microtime(true) * 1000),
+            'enabled' => $this->trace_enabled,
+            'level' => $this->trace_level,
+            'command_count' => $this->trace_command_count,
+            'event_count' => count($this->trace_events),
+            'events' => array_values($this->trace_events),
+        ];
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            throw new \RuntimeException('Unable to encode trace export JSON: ' . json_last_error_msg());
+        }
+
+        return $json . "\n";
+    }
+
+    private function encode_trace_chrome_payload(): string {
+        $base_ts_ms = count($this->trace_events) > 0
+            ? (int) ($this->trace_events[0]['ts_ms'] ?? round(microtime(true) * 1000))
+            : (int) round(microtime(true) * 1000);
+        $trace_events = [];
+
+        foreach ($this->trace_events as $index => $event) {
+            $event_ts_ms = isset($event['ts_ms']) ? (int) $event['ts_ms'] : $base_ts_ms;
+            $trace_events[] = [
+                'name' => (string) ($event['event'] ?? 'trace'),
+                'cat' => 'engine.trace',
+                'ph' => 'i',
+                's' => 't',
+                'ts' => max(0, $event_ts_ms - $base_ts_ms) * 1000,
+                'pid' => 1,
+                'tid' => 1,
+                'args' => [
+                    'detail' => (string) ($event['detail'] ?? ''),
+                    'index' => $index,
+                    'ts_ms' => $event_ts_ms,
+                    'level' => $this->trace_level,
+                ],
+            ];
+        }
+
+        $payload = [
+            'traceEvents' => $trace_events,
+            'displayTimeUnit' => 'ms',
+            'otherData' => [
+                'format' => 'tgac.chrome_trace.v1',
+                'engine' => 'php',
+                'generated_at_ms' => (int) round(microtime(true) * 1000),
+                'level' => $this->trace_level,
+                'command_count' => $this->trace_command_count,
+                'event_count' => count($this->trace_events),
+            ],
+        ];
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            throw new \RuntimeException('Unable to encode Chrome trace JSON: ' . json_last_error_msg());
+        }
+
+        return $json . "\n";
     }
 
     private function depth_for_movetime(int $movetime): int {

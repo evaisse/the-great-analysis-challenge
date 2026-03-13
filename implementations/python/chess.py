@@ -84,6 +84,7 @@ class ChessEngine:
         self._trace_level = 'info'
         self._trace_events = []
         self._trace_command_count = 0
+        self._reset_trace_export_state()
     
     def start(self):
         """Start the chess engine and begin accepting commands."""
@@ -795,27 +796,32 @@ class ChessEngine:
             return
 
         if subcommand == 'report':
-            print(
-                f'TRACE: enabled={str(self._trace_enabled).lower()}; '
-                f'level={self._trace_level}; events={len(self._trace_events)}; '
-                f'commands={self._trace_command_count}'
-            )
+            print(self._trace_report_line())
             return
 
         if subcommand == 'reset':
             self._trace_events = []
             self._trace_command_count = 0
+            self._reset_trace_export_state()
             print('TRACE: reset')
             return
 
         if subcommand == 'export':
             target = ' '.join(args[1:]) if len(args) > 1 else '(memory)'
-            print(f'TRACE: export={target}; events={len(self._trace_events)}')
+            event_count = len(self._trace_events)
+            payload = self._encode_trace_export_payload()
+            byte_count = self._write_trace_payload(target, payload, write_to_file=len(args) > 1)
+            self._record_trace_artifact(target, byte_count, chrome=False)
+            print(f'TRACE: export={target}; events={event_count}; bytes={byte_count}')
             return
 
         if subcommand == 'chrome':
             target = ' '.join(args[1:]) if len(args) > 1 else '(memory)'
-            print(f'TRACE: chrome={target}; events={len(self._trace_events)}')
+            event_count = len(self._trace_events)
+            payload = self._encode_trace_chrome_payload()
+            byte_count = self._write_trace_payload(target, payload, write_to_file=len(args) > 1)
+            self._record_trace_artifact(target, byte_count, chrome=True)
+            print(f'TRACE: chrome={target}; events={event_count}; bytes={byte_count}')
             return
 
         print('ERROR: Unsupported trace command')
@@ -1041,6 +1047,92 @@ class ChessEngine:
         })
         if len(self._trace_events) > 256:
             self._trace_events = self._trace_events[-256:]
+
+    def _reset_trace_export_state(self):
+        self._trace_export_count = 0
+        self._trace_export_last_target = None
+        self._trace_export_last_bytes = 0
+        self._trace_chrome_count = 0
+        self._trace_chrome_last_target = None
+        self._trace_chrome_last_bytes = 0
+
+    def _trace_report_line(self) -> str:
+        return (
+            f'TRACE: enabled={str(self._trace_enabled).lower()}; '
+            f'level={self._trace_level}; events={len(self._trace_events)}; '
+            f'commands={self._trace_command_count}; '
+            f'export={self._trace_report_segment(self._trace_export_count, self._trace_export_last_target, self._trace_export_last_bytes)}; '
+            f'chrome={self._trace_report_segment(self._trace_chrome_count, self._trace_chrome_last_target, self._trace_chrome_last_bytes)}'
+        )
+
+    def _trace_report_segment(self, count: int, target: Optional[str], byte_count: int) -> str:
+        resolved_target = target if target is not None else 'none'
+        return f'{count}@{resolved_target}/{byte_count}B'
+
+    def _record_trace_artifact(self, target: str, byte_count: int, chrome: bool):
+        if chrome:
+            self._trace_chrome_count += 1
+            self._trace_chrome_last_target = target
+            self._trace_chrome_last_bytes = byte_count
+            return
+
+        self._trace_export_count += 1
+        self._trace_export_last_target = target
+        self._trace_export_last_bytes = byte_count
+
+    def _write_trace_payload(self, target: str, payload: bytes, write_to_file: bool) -> int:
+        if write_to_file:
+            with open(target, 'wb') as handle:
+                handle.write(payload)
+        return len(payload)
+
+    def _encode_trace_export_payload(self) -> bytes:
+        payload = {
+            'format': 'tgac.trace.v1',
+            'engine': 'python',
+            'generated_at_ms': int(time.time() * 1000),
+            'enabled': self._trace_enabled,
+            'level': self._trace_level,
+            'command_count': self._trace_command_count,
+            'event_count': len(self._trace_events),
+            'events': self._trace_events,
+        }
+        return (json.dumps(payload, separators=(',', ':'), ensure_ascii=True) + '\n').encode('utf-8')
+
+    def _encode_trace_chrome_payload(self) -> bytes:
+        base_ts_ms = self._trace_events[0]['ts_ms'] if self._trace_events else int(time.time() * 1000)
+        trace_events = []
+        for index, event in enumerate(self._trace_events):
+            event_ts_ms = int(event.get('ts_ms', base_ts_ms))
+            trace_events.append({
+                'name': str(event.get('event', 'trace')),
+                'cat': 'engine.trace',
+                'ph': 'i',
+                's': 't',
+                'ts': max(0, event_ts_ms - base_ts_ms) * 1000,
+                'pid': 1,
+                'tid': 1,
+                'args': {
+                    'detail': str(event.get('detail', '')),
+                    'index': index,
+                    'ts_ms': event_ts_ms,
+                    'level': self._trace_level,
+                },
+            })
+
+        payload = {
+            'traceEvents': trace_events,
+            'displayTimeUnit': 'ms',
+            'otherData': {
+                'format': 'tgac.chrome_trace.v1',
+                'engine': 'python',
+                'generated_at_ms': int(time.time() * 1000),
+                'level': self._trace_level,
+                'command_count': self._trace_command_count,
+                'event_count': len(self._trace_events),
+            },
+        }
+        return (json.dumps(payload, separators=(',', ':'), ensure_ascii=True) + '\n').encode('utf-8')
 
     def depth_for_movetime(self, movetime_ms: int) -> int:
         """Convert movetime budget to a practical search depth."""

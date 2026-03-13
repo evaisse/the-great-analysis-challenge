@@ -25,6 +25,14 @@ Future<void> main() async {
   String traceLevel = 'info';
   final List<Map<String, dynamic>> traceEvents = [];
   int traceCommandCount = 0;
+  int traceExportCount = 0;
+  String? traceLastExportTarget;
+  int traceLastExportEvents = 0;
+  int traceLastExportBytes = 0;
+  int traceChromeCount = 0;
+  String? traceLastChromeTarget;
+  int traceLastChromeEvents = 0;
+  int traceLastChromeBytes = 0;
 
   void recordTrace(String event, String detail) {
     if (!traceEnabled) return;
@@ -36,6 +44,70 @@ Future<void> main() async {
     if (traceEvents.length > 256) {
       traceEvents.removeRange(0, traceEvents.length - 256);
     }
+  }
+
+  String resolveTraceTarget(List<String> commandParts) {
+    final rawTarget = commandParts.length > 2
+        ? commandParts.sublist(2).join(' ').trim()
+        : '';
+    return rawTarget.isEmpty ? '(memory)' : rawTarget;
+  }
+
+  String formatTraceTransferSummary(
+    int count,
+    String? target,
+    int eventCount,
+    int byteCount,
+  ) {
+    if (count == 0 || target == null) {
+      return 'none';
+    }
+    return '$target ($eventCount events, $byteCount bytes)';
+  }
+
+  String buildStructuredTraceJson() {
+    final snapshot = traceEvents
+        .map((event) => Map<String, dynamic>.from(event))
+        .toList(growable: false);
+    return '${jsonEncode({
+      'format': 'tgac.trace.v1',
+      'level': traceLevel,
+      'event_count': snapshot.length,
+      'events': snapshot,
+    })}\n';
+  }
+
+  String buildChromeTraceJson() {
+    final chromeEvents = traceEvents.map((event) {
+      final tsMs = event['ts_ms'] is int ? event['ts_ms'] as int : 0;
+      return {
+        'name': event['event'] ?? 'trace',
+        'cat': 'engine',
+        'ph': 'i',
+        's': 'p',
+        'ts': tsMs * 1000,
+        'pid': 1,
+        'tid': 1,
+        'args': {
+          'detail': event['detail'] ?? '',
+          'level': traceLevel,
+          'ts_ms': tsMs,
+        },
+      };
+    }).toList(growable: false);
+
+    return '${jsonEncode({
+      'displayTimeUnit': 'ms',
+      'traceEvents': chromeEvents,
+    })}\n';
+  }
+
+  Future<int> writeTracePayload(String target, String content) async {
+    final bytes = utf8.encode(content);
+    if (target != '(memory)') {
+      await File(target).writeAsBytes(bytes, flush: true);
+    }
+    return bytes.length;
   }
 
   String? chooseBookMove() {
@@ -604,28 +676,60 @@ Future<void> main() async {
         if (sub == 'report') {
           final enabled = traceEnabled ? 'true' : 'false';
           print(
-            'TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount',
+            'TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount; exports=$traceExportCount; last_export=${formatTraceTransferSummary(traceExportCount, traceLastExportTarget, traceLastExportEvents, traceLastExportBytes)}; chrome_exports=$traceChromeCount; last_chrome=${formatTraceTransferSummary(traceChromeCount, traceLastChromeTarget, traceLastChromeEvents, traceLastChromeBytes)}',
           );
           break;
         }
         if (sub == 'reset') {
           traceEvents.clear();
           traceCommandCount = 0;
+          traceExportCount = 0;
+          traceLastExportTarget = null;
+          traceLastExportEvents = 0;
+          traceLastExportBytes = 0;
+          traceChromeCount = 0;
+          traceLastChromeTarget = null;
+          traceLastChromeEvents = 0;
+          traceLastChromeBytes = 0;
           print('TRACE: reset');
           break;
         }
         if (sub == 'export') {
-          final target = parts.length > 2
-              ? parts.sublist(2).join(' ')
-              : '(memory)';
-          print('TRACE: export=$target; events=${traceEvents.length}');
+          final target = resolveTraceTarget(parts);
+          try {
+            final byteCount = await writeTracePayload(
+              target,
+              buildStructuredTraceJson(),
+            );
+            traceExportCount++;
+            traceLastExportTarget = target;
+            traceLastExportEvents = traceEvents.length;
+            traceLastExportBytes = byteCount;
+            print(
+              'TRACE: export=$target; events=${traceEvents.length}; bytes=$byteCount',
+            );
+          } catch (e) {
+            print('ERROR: trace export failed: $e');
+          }
           break;
         }
         if (sub == 'chrome') {
-          final target = parts.length > 2
-              ? parts.sublist(2).join(' ')
-              : '(memory)';
-          print('TRACE: chrome=$target; events=${traceEvents.length}');
+          final target = resolveTraceTarget(parts);
+          try {
+            final byteCount = await writeTracePayload(
+              target,
+              buildChromeTraceJson(),
+            );
+            traceChromeCount++;
+            traceLastChromeTarget = target;
+            traceLastChromeEvents = traceEvents.length;
+            traceLastChromeBytes = byteCount;
+            print(
+              'TRACE: chrome=$target; events=${traceEvents.length}; bytes=$byteCount',
+            );
+          } catch (e) {
+            print('ERROR: trace chrome failed: $e');
+          }
           break;
         }
         print('ERROR: Unsupported trace command');
