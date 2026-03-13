@@ -5,6 +5,16 @@ import 'dart:isolate';
 import 'dart:math';
 import 'package:chess_engine/chess_engine.dart';
 
+typedef TraceAiRecorder =
+    void Function(
+      String source,
+      String move,
+      int depth,
+      int scoreCp,
+      int elapsedMs,
+      bool timedOut,
+    );
+
 Future<void> main() async {
   final game = Game();
   var ai = AI();
@@ -33,6 +43,12 @@ Future<void> main() async {
   String? traceLastChromeTarget;
   int traceLastChromeEvents = 0;
   int traceLastChromeBytes = 0;
+  String? traceLastAiSource;
+  String? traceLastAiMove;
+  int traceLastAiDepth = 0;
+  int traceLastAiScoreCp = 0;
+  int traceLastAiElapsedMs = 0;
+  bool traceLastAiTimedOut = false;
 
   void recordTrace(String event, String detail) {
     if (!traceEnabled) return;
@@ -65,16 +81,84 @@ Future<void> main() async {
     return '$target ($eventCount events, $byteCount bytes)';
   }
 
+  void resetTraceAiState() {
+    traceLastAiSource = null;
+    traceLastAiMove = null;
+    traceLastAiDepth = 0;
+    traceLastAiScoreCp = 0;
+    traceLastAiElapsedMs = 0;
+    traceLastAiTimedOut = false;
+  }
+
+  String formatTraceAiSummary() {
+    if (traceLastAiSource == null || traceLastAiMove == null) {
+      return 'none';
+    }
+
+    var summary = '${traceLastAiSource!}:${traceLastAiMove!}';
+    if (traceLastAiSource!.contains('search')) {
+      summary +=
+          '@d$traceLastAiDepth/$traceLastAiScoreCp'
+          'cp/${traceLastAiElapsedMs}ms';
+      if (traceLastAiTimedOut) {
+        summary += '/timeout';
+      }
+    } else if (traceLastAiSource!.contains('endgame')) {
+      summary += '/${traceLastAiScoreCp}cp';
+    }
+
+    return summary;
+  }
+
+  void recordTraceAi(
+    String source,
+    String move,
+    int depth,
+    int scoreCp,
+    int elapsedMs,
+    bool timedOut,
+  ) {
+    traceLastAiSource = source;
+    traceLastAiMove = move;
+    traceLastAiDepth = depth;
+    traceLastAiScoreCp = scoreCp;
+    traceLastAiElapsedMs = elapsedMs;
+    traceLastAiTimedOut = timedOut;
+    recordTrace('ai', formatTraceAiSummary());
+  }
+
+  Map<String, dynamic>? buildTraceAiPayload() {
+    if (traceLastAiSource == null || traceLastAiMove == null) {
+      return null;
+    }
+
+    return {
+      'source': traceLastAiSource,
+      'move': traceLastAiMove,
+      'depth': traceLastAiDepth,
+      'score_cp': traceLastAiScoreCp,
+      'elapsed_ms': traceLastAiElapsedMs,
+      'timed_out': traceLastAiTimedOut,
+      'summary': formatTraceAiSummary(),
+    };
+  }
+
   String buildStructuredTraceJson() {
     final snapshot = traceEvents
         .map((event) => Map<String, dynamic>.from(event))
         .toList(growable: false);
-    return '${jsonEncode({
+    final payload = <String, dynamic>{
       'format': 'tgac.trace.v1',
       'level': traceLevel,
+      'command_count': traceCommandCount,
       'event_count': snapshot.length,
       'events': snapshot,
-    })}\n';
+    };
+    final lastAi = buildTraceAiPayload();
+    if (lastAi != null) {
+      payload['last_ai'] = lastAi;
+    }
+    return '${jsonEncode(payload)}\n';
   }
 
   String buildChromeTraceJson() {
@@ -248,6 +332,7 @@ Future<void> main() async {
           game,
           ai,
           depth,
+          onAiResult: recordTraceAi,
           bookMove: chooseBookMove(),
           onBookPlayed: () => bookPlayed++,
           endgameMove: endgameChoice?.move,
@@ -328,12 +413,21 @@ Future<void> main() async {
           if (boundedDepth > 5) boundedDepth = 5;
           final bookMove = chooseBookMove();
           if (bookMove != null) {
+            recordTraceAi('uci-book', bookMove, 0, 0, 0, false);
             print('info string bookmove $bookMove');
             print('bestmove $bookMove');
             break;
           }
           final endgameChoice = chooseEndgameMove();
           if (endgameChoice != null) {
+            recordTraceAi(
+              'uci-endgame',
+              endgameChoice.move,
+              0,
+              endgameChoice.info.scoreWhite,
+              0,
+              false,
+            );
             print(
               'info string endgame ${endgameChoice.info.type} score cp ${endgameChoice.info.scoreWhite}',
             );
@@ -346,6 +440,14 @@ Future<void> main() async {
             print('bestmove 0000');
             break;
           }
+          recordTraceAi(
+            'uci-search',
+            move.toString(),
+            result.depth,
+            result.score,
+            result.elapsedMs,
+            result.timedOut,
+          );
           print(
             'info depth ${result.depth} score cp ${result.score} time ${result.elapsedMs} nodes 0',
           );
@@ -372,6 +474,7 @@ Future<void> main() async {
             ai,
             5,
             movetime,
+            onAiResult: recordTraceAi,
             bookMove: chooseBookMove(),
             onBookPlayed: () => bookPlayed++,
             endgameMove: endgameChoice?.move,
@@ -394,6 +497,7 @@ Future<void> main() async {
             ai,
             5,
             parsed.$1,
+            onAiResult: recordTraceAi,
             bookMove: chooseBookMove(),
             onBookPlayed: () => bookPlayed++,
             endgameMove: endgameChoice?.move,
@@ -409,6 +513,7 @@ Future<void> main() async {
             ai,
             5,
             15000,
+            onAiResult: recordTraceAi,
             bookMove: chooseBookMove(),
             onBookPlayed: () => bookPlayed++,
             endgameMove: endgameChoice?.move,
@@ -676,7 +781,7 @@ Future<void> main() async {
         if (sub == 'report') {
           final enabled = traceEnabled ? 'true' : 'false';
           print(
-            'TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount; exports=$traceExportCount; last_export=${formatTraceTransferSummary(traceExportCount, traceLastExportTarget, traceLastExportEvents, traceLastExportBytes)}; chrome_exports=$traceChromeCount; last_chrome=${formatTraceTransferSummary(traceChromeCount, traceLastChromeTarget, traceLastChromeEvents, traceLastChromeBytes)}',
+            'TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount; exports=$traceExportCount; last_export=${formatTraceTransferSummary(traceExportCount, traceLastExportTarget, traceLastExportEvents, traceLastExportBytes)}; chrome_exports=$traceChromeCount; last_chrome=${formatTraceTransferSummary(traceChromeCount, traceLastChromeTarget, traceLastChromeEvents, traceLastChromeBytes)}; last_ai=${formatTraceAiSummary()}',
           );
           break;
         }
@@ -691,6 +796,7 @@ Future<void> main() async {
           traceLastChromeTarget = null;
           traceLastChromeEvents = 0;
           traceLastChromeBytes = 0;
+          resetTraceAiState();
           print('TRACE: reset');
           break;
         }
@@ -1448,6 +1554,7 @@ void _runAiMove(
   Game game,
   AI ai,
   int depth, {
+  TraceAiRecorder? onAiResult,
   String? bookMove,
   void Function()? onBookPlayed,
   String? endgameMove,
@@ -1458,6 +1565,7 @@ void _runAiMove(
     ai,
     depth,
     0,
+    onAiResult: onAiResult,
     bookMove: bookMove,
     onBookPlayed: onBookPlayed,
     endgameMove: endgameMove,
@@ -1470,6 +1578,7 @@ void _runAiTimedMove(
   AI ai,
   int maxDepth,
   int movetimeMs, {
+  TraceAiRecorder? onAiResult,
   String? bookMove,
   void Function()? onBookPlayed,
   String? endgameMove,
@@ -1479,6 +1588,7 @@ void _runAiTimedMove(
     try {
       game.move(bookMove);
       onBookPlayed?.call();
+      onAiResult?.call('book', bookMove, 0, 0, 0, false);
       print('AI: $bookMove (book)');
       game.printBoard();
       _checkGameState(game);
@@ -1491,6 +1601,14 @@ void _runAiTimedMove(
   if (endgameMove != null && endgameInfo != null) {
     try {
       game.move(endgameMove);
+      onAiResult?.call(
+        'endgame',
+        endgameMove,
+        0,
+        endgameInfo.scoreWhite,
+        0,
+        false,
+      );
       print(
         'AI: $endgameMove (endgame ${endgameInfo.type}, score=${endgameInfo.scoreWhite})',
       );
@@ -1509,6 +1627,14 @@ void _runAiTimedMove(
     return;
   }
   game.move(move.toString());
+  onAiResult?.call(
+    'search',
+    move.toString(),
+    result.depth,
+    result.score,
+    result.elapsedMs,
+    result.timedOut,
+  );
   print(
     'AI: ${move.toString()} (depth=${result.depth}, eval=${result.score}, time=${result.elapsedMs}ms)',
   );

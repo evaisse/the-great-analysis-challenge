@@ -41,10 +41,17 @@ local trace_last_export_target = "(none)"
 local trace_last_export_bytes = 0
 local trace_last_chrome_target = "(none)"
 local trace_last_chrome_bytes = 0
+local trace_last_ai_source = nil
+local trace_last_ai_move = nil
+local trace_last_ai_depth = 0
+local trace_last_ai_score_cp = 0
+local trace_last_ai_elapsed_ms = 0
+local trace_last_ai_timed_out = false
 local tt = {}
 local search_deadline = nil
 local search_timed_out = false
 local search_stop_requested = false
+local record_trace_ai
 
 local zobrist_keys = {
     pieces = {},
@@ -1078,7 +1085,7 @@ local function ai_move(max_depth, movetime_ms)
         return false, "ERROR: AI depth must be 1-5"
     end
 
-    local best_move, eval, depth_used, elapsed = search_best_move(max_depth, movetime_ms or 0)
+    local best_move, eval, depth_used, elapsed, timed_out = search_best_move(max_depth, movetime_ms or 0)
     if not best_move then
         return false, "ERROR: No legal moves"
     end
@@ -1090,6 +1097,7 @@ local function ai_move(max_depth, movetime_ms)
     end
     
     make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    record_trace_ai("search", move_str, depth_used, eval, elapsed, timed_out)
     
     return true, string.format("AI: %s (depth=%d, eval=%d, time=%d)", move_str, depth_used, eval, elapsed)
 end
@@ -1281,6 +1289,7 @@ local function apply_book_move(best_move, move_str)
 
     make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
     book_played = book_played + 1
+    record_trace_ai("book", move_str, 0, 0, 0, false)
     print("AI: " .. move_str .. " (book)")
     display_board()
 
@@ -1521,6 +1530,7 @@ local function apply_endgame_move(best_move, info, move_str)
     end
 
     make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    record_trace_ai("endgame", move_str, 0, info.score_white, 0, false)
     print(string.format("AI: %s (endgame %s, score=%d)", move_str, info.type, info.score_white))
     display_board()
 
@@ -1603,8 +1613,71 @@ local function json_escape(value)
     return value
 end
 
+local function reset_trace_ai_state()
+    trace_last_ai_source = nil
+    trace_last_ai_move = nil
+    trace_last_ai_depth = 0
+    trace_last_ai_score_cp = 0
+    trace_last_ai_elapsed_ms = 0
+    trace_last_ai_timed_out = false
+end
+
+local function format_trace_ai_summary()
+    if not trace_last_ai_source or not trace_last_ai_move then
+        return "none"
+    end
+
+    local summary = string.format("%s:%s", trace_last_ai_source, trace_last_ai_move)
+    if trace_last_ai_source:find("search", 1, true) then
+        summary = summary ..
+            string.format("@d%d/%dcp/%dms", trace_last_ai_depth, trace_last_ai_score_cp, trace_last_ai_elapsed_ms)
+        if trace_last_ai_timed_out then
+            summary = summary .. "/timeout"
+        end
+    elseif trace_last_ai_source:find("endgame", 1, true) then
+        summary = summary .. string.format("/%dcp", trace_last_ai_score_cp)
+    end
+
+    return summary
+end
+
+record_trace_ai = function(source, move, depth, score_cp, elapsed_ms, timed_out)
+    trace_last_ai_source = source
+    trace_last_ai_move = move
+    trace_last_ai_depth = depth or 0
+    trace_last_ai_score_cp = score_cp or 0
+    trace_last_ai_elapsed_ms = elapsed_ms or 0
+    trace_last_ai_timed_out = timed_out == true
+    trace_event("ai", format_trace_ai_summary())
+end
+
+local function build_trace_last_ai_json()
+    if not trace_last_ai_source or not trace_last_ai_move then
+        return "null"
+    end
+
+    return string.format(
+        "{\"source\":\"%s\",\"move\":\"%s\",\"depth\":%d,\"score_cp\":%d,\"elapsed_ms\":%d,\"timed_out\":%s,\"summary\":\"%s\"}",
+        json_escape(trace_last_ai_source),
+        json_escape(trace_last_ai_move),
+        trace_last_ai_depth,
+        trace_last_ai_score_cp,
+        trace_last_ai_elapsed_ms,
+        trace_last_ai_timed_out and "true" or "false",
+        json_escape(format_trace_ai_summary())
+    )
+end
+
 local function build_trace_export_payload()
     local lines = {}
+    lines[#lines + 1] = string.format(
+        "{\"type\":\"session\",\"format\":\"tgac.trace.v1\",\"level\":\"%s\",\"command_count\":%d,\"event_count\":%d,\"last_ai\":%s}",
+        json_escape(trace_level),
+        trace_command_count,
+        #trace_events,
+        build_trace_last_ai_json()
+    )
+
     for index, event in ipairs(trace_events) do
         lines[#lines + 1] = string.format(
             "{\"type\":\"event\",\"index\":%d,\"ts_ms\":%d,\"event\":\"%s\",\"detail\":\"%s\"}",
@@ -1613,10 +1686,6 @@ local function build_trace_export_payload()
             json_escape(event.event),
             json_escape(event.detail)
         )
-    end
-
-    if #lines == 0 then
-        return ""
     end
 
     return table.concat(lines, "\n") .. "\n"
@@ -1679,7 +1748,7 @@ end
 
 local function trace_report_line()
     return string.format(
-        "TRACE: enabled=%s; level=%s; events=%d; commands=%d; exports=%d; export_bytes=%d; last_export=%s; chrome_exports=%d; chrome_bytes=%d; last_chrome=%s",
+        "TRACE: enabled=%s; level=%s; events=%d; commands=%d; exports=%d; export_bytes=%d; last_export=%s; chrome_exports=%d; chrome_bytes=%d; last_chrome=%s; last_ai=%s",
         tostring(trace_enabled),
         trace_level,
         #trace_events,
@@ -1689,7 +1758,8 @@ local function trace_report_line()
         trace_last_export_target,
         trace_chrome_count,
         trace_last_chrome_bytes,
-        trace_last_chrome_target
+        trace_last_chrome_target,
+        format_trace_ai_summary()
     )
 end
 
@@ -2242,17 +2312,19 @@ local function main()
                     if depth > 5 then depth = 5 end
                     local book_move, book_move_str = choose_book_move()
                     if book_move and book_move_str then
+                        record_trace_ai("uci-book", book_move_str, 0, 0, 0, false)
                         print("info string bookmove " .. book_move_str)
                         print("bestmove " .. book_move_str)
                         goto continue
                     end
                     local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
                     if endgame_move and endgame_info and endgame_move_str then
+                        record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false)
                         print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
                         print("bestmove " .. endgame_move_str)
                         goto continue
                     end
-                    local best_move, eval, depth_used, elapsed = search_best_move(depth, 0)
+                    local best_move, eval, depth_used, elapsed, timed_out = search_best_move(depth, 0)
                     if not best_move then
                         print("bestmove 0000")
                     else
@@ -2261,6 +2333,7 @@ local function main()
                         if best_move[5] then
                             move_str = move_str .. best_move[5]
                         end
+                        record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out)
                         print(string.format("info depth %d score cp %d time %d nodes 0", depth_used, eval, elapsed))
                         print("bestmove " .. move_str)
                     end
@@ -2606,6 +2679,7 @@ local function main()
                 trace_events = {}
                 trace_command_count = 0
                 reset_trace_export_state()
+                reset_trace_ai_state()
                 print("TRACE: reset")
             elseif subcmd == "export" then
                 local target = (subarg and subarg ~= "") and subarg or "(memory)"

@@ -85,6 +85,7 @@ class ChessEngine:
         self._trace_events = []
         self._trace_command_count = 0
         self._reset_trace_export_state()
+        self._reset_trace_search_state()
     
     def start(self):
         """Start the chess engine and begin accepting commands."""
@@ -305,7 +306,7 @@ class ChessEngine:
             self._apply_endgame_move(endgame_choice[0], endgame_choice[1])
             return
 
-        best_move, eval_score, depth_used, elapsed_ms, _ = self.ai.search(max_depth, movetime_ms)
+        best_move, eval_score, depth_used, elapsed_ms, timed_out = self.ai.search(max_depth, movetime_ms)
         if not best_move:
             print('ERROR: No legal moves available')
             return
@@ -314,6 +315,7 @@ class ChessEngine:
         self.board.make_move(best_move)
 
         move_str = best_move.to_algebraic()
+        self._record_trace_ai('search', move_str, depth_used, eval_score, elapsed_ms, timed_out)
         print(f'AI: {move_str} (depth={depth_used}, eval={eval_score}, time={elapsed_ms}ms)')
 
         print(self.board.display())
@@ -411,6 +413,7 @@ class ChessEngine:
             book_move = self._choose_book_move(legal_moves)
             if book_move is not None:
                 move_str = book_move.to_algebraic()
+                self._record_trace_ai('uci-book', move_str, 0, 0, 0, False)
                 print(f'info string bookmove {move_str}')
                 print(f'bestmove {move_str}')
                 return
@@ -419,16 +422,19 @@ class ChessEngine:
             if endgame_choice is not None:
                 move, info = endgame_choice
                 move_str = move.to_algebraic()
+                self._record_trace_ai('uci-endgame', move_str, 0, info["score_white"], 0, False)
                 print(f'info string endgame {info["type"]} score cp {info["score_white"]}')
                 print(f'bestmove {move_str}')
                 return
 
-            best_move, eval_score, depth_used, elapsed_ms, _ = self.ai.search(depth, 0)
+            best_move, eval_score, depth_used, elapsed_ms, timed_out = self.ai.search(depth, 0)
             if not best_move:
                 print('bestmove 0000')
                 return
+            move_str = best_move.to_algebraic()
+            self._record_trace_ai('uci-search', move_str, depth_used, eval_score, elapsed_ms, timed_out)
             print(f'info depth {depth_used} score cp {eval_score} time {elapsed_ms} nodes 0')
-            print(f'bestmove {best_move.to_algebraic()}')
+            print(f'bestmove {move_str}')
             return
 
         if subcommand == 'movetime':
@@ -803,6 +809,7 @@ class ChessEngine:
             self._trace_events = []
             self._trace_command_count = 0
             self._reset_trace_export_state()
+            self._reset_trace_search_state()
             print('TRACE: reset')
             return
 
@@ -1056,18 +1063,72 @@ class ChessEngine:
         self._trace_chrome_last_target = None
         self._trace_chrome_last_bytes = 0
 
+    def _reset_trace_search_state(self):
+        self._trace_ai_source: Optional[str] = None
+        self._trace_ai_move: Optional[str] = None
+        self._trace_ai_depth = 0
+        self._trace_ai_score_cp = 0
+        self._trace_ai_elapsed_ms = 0
+        self._trace_ai_timed_out = False
+
     def _trace_report_line(self) -> str:
         return (
             f'TRACE: enabled={str(self._trace_enabled).lower()}; '
             f'level={self._trace_level}; events={len(self._trace_events)}; '
             f'commands={self._trace_command_count}; '
             f'export={self._trace_report_segment(self._trace_export_count, self._trace_export_last_target, self._trace_export_last_bytes)}; '
-            f'chrome={self._trace_report_segment(self._trace_chrome_count, self._trace_chrome_last_target, self._trace_chrome_last_bytes)}'
+            f'chrome={self._trace_report_segment(self._trace_chrome_count, self._trace_chrome_last_target, self._trace_chrome_last_bytes)}; '
+            f'last_ai={self._trace_last_ai_summary()}'
         )
 
     def _trace_report_segment(self, count: int, target: Optional[str], byte_count: int) -> str:
         resolved_target = target if target is not None else 'none'
         return f'{count}@{resolved_target}/{byte_count}B'
+
+    def _trace_last_ai_summary(self) -> str:
+        if self._trace_ai_source is None or self._trace_ai_move is None:
+            return 'none'
+
+        summary = f'{self._trace_ai_source}:{self._trace_ai_move}'
+        if 'search' in self._trace_ai_source:
+            summary += f'@d{self._trace_ai_depth}/{self._trace_ai_score_cp}cp/{self._trace_ai_elapsed_ms}ms'
+            if self._trace_ai_timed_out:
+                summary += '/timeout'
+        elif 'endgame' in self._trace_ai_source:
+            summary += f'/{self._trace_ai_score_cp}cp'
+
+        return summary
+
+    def _record_trace_ai(
+        self,
+        source: str,
+        move: str,
+        depth: int,
+        score_cp: int,
+        elapsed_ms: int,
+        timed_out: bool,
+    ):
+        self._trace_ai_source = source
+        self._trace_ai_move = move
+        self._trace_ai_depth = depth
+        self._trace_ai_score_cp = score_cp
+        self._trace_ai_elapsed_ms = elapsed_ms
+        self._trace_ai_timed_out = timed_out
+        self._trace('ai', self._trace_last_ai_summary())
+
+    def _trace_last_ai_payload(self):
+        if self._trace_ai_source is None or self._trace_ai_move is None:
+            return None
+
+        return {
+            'source': self._trace_ai_source,
+            'move': self._trace_ai_move,
+            'depth': self._trace_ai_depth,
+            'score_cp': self._trace_ai_score_cp,
+            'elapsed_ms': self._trace_ai_elapsed_ms,
+            'timed_out': self._trace_ai_timed_out,
+            'summary': self._trace_last_ai_summary(),
+        }
 
     def _record_trace_artifact(self, target: str, byte_count: int, chrome: bool):
         if chrome:
@@ -1097,6 +1158,9 @@ class ChessEngine:
             'event_count': len(self._trace_events),
             'events': self._trace_events,
         }
+        last_ai = self._trace_last_ai_payload()
+        if last_ai is not None:
+            payload['last_ai'] = last_ai
         return (json.dumps(payload, separators=(',', ':'), ensure_ascii=True) + '\n').encode('utf-8')
 
     def _encode_trace_chrome_payload(self) -> bytes:
@@ -1275,6 +1339,7 @@ class ChessEngine:
         self.board.make_move(move)
         self._book_played += 1
         move_str = move.to_algebraic()
+        self._record_trace_ai('book', move_str, 0, 0, 0, False)
 
         game_status = self.board.get_game_status()
         if game_status == 'checkmate':
@@ -1477,6 +1542,7 @@ class ChessEngine:
         self.move_history.append(move)
         self.board.make_move(move)
         move_str = move.to_algebraic()
+        self._record_trace_ai('endgame', move_str, 0, info["score_white"], 0, False)
         print(f'AI: {move_str} (endgame {info["type"]}, score={info["score_white"]})')
 
         print(self.board.display())
