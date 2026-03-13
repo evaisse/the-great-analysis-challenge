@@ -13,6 +13,8 @@ typedef TraceAiRecorder =
       int scoreCp,
       int elapsedMs,
       bool timedOut,
+      int nodes,
+      int evalCalls,
     );
 
 Future<void> main() async {
@@ -49,6 +51,9 @@ Future<void> main() async {
   int traceLastAiScoreCp = 0;
   int traceLastAiElapsedMs = 0;
   bool traceLastAiTimedOut = false;
+  int traceLastAiNodes = 0;
+  int traceLastAiEvalCalls = 0;
+  int traceLastAiNps = 0;
 
   void recordTrace(String event, String detail) {
     if (!traceEnabled) return;
@@ -88,6 +93,9 @@ Future<void> main() async {
     traceLastAiScoreCp = 0;
     traceLastAiElapsedMs = 0;
     traceLastAiTimedOut = false;
+    traceLastAiNodes = 0;
+    traceLastAiEvalCalls = 0;
+    traceLastAiNps = 0;
   }
 
   String formatTraceAiSummary() {
@@ -100,6 +108,7 @@ Future<void> main() async {
       summary +=
           '@d$traceLastAiDepth/$traceLastAiScoreCp'
           'cp/${traceLastAiElapsedMs}ms';
+      summary += '/n$traceLastAiNodes/e$traceLastAiEvalCalls/nps$traceLastAiNps';
       if (traceLastAiTimedOut) {
         summary += '/timeout';
       }
@@ -117,6 +126,8 @@ Future<void> main() async {
     int scoreCp,
     int elapsedMs,
     bool timedOut,
+    int nodes,
+    int evalCalls,
   ) {
     traceLastAiSource = source;
     traceLastAiMove = move;
@@ -124,6 +135,10 @@ Future<void> main() async {
     traceLastAiScoreCp = scoreCp;
     traceLastAiElapsedMs = elapsedMs;
     traceLastAiTimedOut = timedOut;
+    traceLastAiNodes = nodes;
+    traceLastAiEvalCalls = evalCalls;
+    final divisor = elapsedMs > 0 ? elapsedMs : 1;
+    traceLastAiNps = nodes > 0 ? (nodes * 1000) ~/ divisor : 0;
     recordTrace('ai', formatTraceAiSummary());
   }
 
@@ -139,6 +154,9 @@ Future<void> main() async {
       'score_cp': traceLastAiScoreCp,
       'elapsed_ms': traceLastAiElapsedMs,
       'timed_out': traceLastAiTimedOut,
+      'nodes': traceLastAiNodes,
+      'eval_calls': traceLastAiEvalCalls,
+      'nps': traceLastAiNps,
       'summary': formatTraceAiSummary(),
     };
   }
@@ -413,7 +431,7 @@ Future<void> main() async {
           if (boundedDepth > 5) boundedDepth = 5;
           final bookMove = chooseBookMove();
           if (bookMove != null) {
-            recordTraceAi('uci-book', bookMove, 0, 0, 0, false);
+            recordTraceAi('uci-book', bookMove, 0, 0, 0, false, 0, 0);
             print('info string bookmove $bookMove');
             print('bestmove $bookMove');
             break;
@@ -427,6 +445,8 @@ Future<void> main() async {
               endgameChoice.info.scoreWhite,
               0,
               false,
+              0,
+              0,
             );
             print(
               'info string endgame ${endgameChoice.info.type} score cp ${endgameChoice.info.scoreWhite}',
@@ -447,6 +467,8 @@ Future<void> main() async {
             result.score,
             result.elapsedMs,
             result.timedOut,
+            result.nodes,
+            result.evalCalls,
           );
           print(
             'info depth ${result.depth} score cp ${result.score} time ${result.elapsedMs} nodes 0',
@@ -1588,7 +1610,7 @@ void _runAiTimedMove(
     try {
       game.move(bookMove);
       onBookPlayed?.call();
-      onAiResult?.call('book', bookMove, 0, 0, 0, false);
+      onAiResult?.call('book', bookMove, 0, 0, 0, false, 0, 0);
       print('AI: $bookMove (book)');
       game.printBoard();
       _checkGameState(game);
@@ -1608,6 +1630,8 @@ void _runAiTimedMove(
         endgameInfo.scoreWhite,
         0,
         false,
+        0,
+        0,
       );
       print(
         'AI: $endgameMove (endgame ${endgameInfo.type}, score=${endgameInfo.scoreWhite})',
@@ -1634,6 +1658,8 @@ void _runAiTimedMove(
     result.score,
     result.elapsedMs,
     result.timedOut,
+    result.nodes,
+    result.evalCalls,
   );
   print(
     'AI: ${move.toString()} (depth=${result.depth}, eval=${result.score}, time=${result.elapsedMs}ms)',

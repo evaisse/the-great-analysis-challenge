@@ -52,6 +52,9 @@ type ChessEngine struct {
 	traceLastAIScoreCP    int
 	traceLastAIElapsedMS  int64
 	traceLastAITimedOut   bool
+	traceLastAINodes      int
+	traceLastAIEvalCalls  int
+	traceLastAINPS        int64
 }
 
 type TraceEvent struct {
@@ -469,7 +472,7 @@ func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 
 	if bookMove, ok := engine.chooseBookMove(legalMoves); ok {
 		moveStr := moveToString(bookMove)
-		engine.recordTraceAI("uci-book", moveStr, 0, 0, 0, false)
+		engine.recordTraceAI("uci-book", moveStr, 0, 0, 0, false, 0, 0)
 		fmt.Printf("info string bookmove %s\n", moveStr)
 		fmt.Printf("bestmove %s\n", moveStr)
 		return
@@ -477,7 +480,7 @@ func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 
 	if endgameMove, info, ok := engine.chooseEndgameMove(legalMoves); ok {
 		moveStr := moveToString(endgameMove)
-		engine.recordTraceAI("uci-endgame", moveStr, 0, info.WhiteScore, 0, false)
+		engine.recordTraceAI("uci-endgame", moveStr, 0, info.WhiteScore, 0, false, 0, 0)
 		fmt.Printf("info string endgame %s score cp %d\n", info.Kind, info.WhiteScore)
 		fmt.Printf("bestmove %s\n", moveStr)
 		return
@@ -486,7 +489,7 @@ func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 	result := engine.ai.Search(engine.gameState, depth, 0)
 	bestMove := normalizeBestMove(result.Move, legalMoves)
 	moveStr := moveToString(bestMove)
-	engine.recordTraceAI("uci-search", moveStr, result.Depth, result.Score, result.ElapsedMS, result.TimedOut)
+	engine.recordTraceAI("uci-search", moveStr, result.Depth, result.Score, result.ElapsedMS, result.TimedOut, result.Nodes, result.EvalCalls)
 	fmt.Printf("info depth %d score cp %d time %d nodes 0\n", result.Depth, result.Score, result.ElapsedMS)
 	fmt.Printf("bestmove %s\n", moveStr)
 }
@@ -582,7 +585,7 @@ func (engine *ChessEngine) applyAIMove(result SearchResult, legalMoves []Move, r
 	if depthUsed == 0 {
 		depthUsed = requestedDepth
 	}
-	engine.recordTraceAI("search", moveStr, depthUsed, result.Score, result.ElapsedMS, result.TimedOut)
+	engine.recordTraceAI("search", moveStr, depthUsed, result.Score, result.ElapsedMS, result.TimedOut, result.Nodes, result.EvalCalls)
 
 	// Check for game end conditions
 	nextLegalMoves := engine.gameState.GenerateLegalMoves()
@@ -837,7 +840,7 @@ func (engine *ChessEngine) applyBookAIMove(bestMove Move) {
 	engine.bookPlayed++
 
 	moveStr := moveToString(bestMove)
-	engine.recordTraceAI("book", moveStr, 0, 0, 0, false)
+	engine.recordTraceAI("book", moveStr, 0, 0, 0, false, 0, 0)
 	nextLegalMoves := engine.gameState.GenerateLegalMoves()
 	if len(nextLegalMoves) == 0 {
 		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
@@ -1124,7 +1127,7 @@ func (engine *ChessEngine) chooseEndgameMove(legalMoves []Move) (Move, EndgameIn
 func (engine *ChessEngine) applyEndgameAIMove(bestMove Move, info EndgameInfo) {
 	engine.gameState.MakeMove(bestMove)
 	moveStr := moveToString(bestMove)
-	engine.recordTraceAI("endgame", moveStr, 0, info.WhiteScore, 0, false)
+	engine.recordTraceAI("endgame", moveStr, 0, info.WhiteScore, 0, false, 0, 0)
 
 	nextLegalMoves := engine.gameState.GenerateLegalMoves()
 	if len(nextLegalMoves) == 0 {
@@ -1467,6 +1470,9 @@ func (engine *ChessEngine) resetTraceSearchState() {
 	engine.traceLastAIScoreCP = 0
 	engine.traceLastAIElapsedMS = 0
 	engine.traceLastAITimedOut = false
+	engine.traceLastAINodes = 0
+	engine.traceLastAIEvalCalls = 0
+	engine.traceLastAINPS = 0
 }
 
 func (engine *ChessEngine) formatTraceAISummary() string {
@@ -1476,7 +1482,7 @@ func (engine *ChessEngine) formatTraceAISummary() string {
 
 	summary := fmt.Sprintf("%s:%s", engine.traceLastAISource, engine.traceLastAIMove)
 	if strings.Contains(engine.traceLastAISource, "search") {
-		summary += fmt.Sprintf("@d%d/%dcp/%dms", engine.traceLastAIDepth, engine.traceLastAIScoreCP, engine.traceLastAIElapsedMS)
+		summary += fmt.Sprintf("@d%d/%dcp/%dms/n%d/e%d/nps%d", engine.traceLastAIDepth, engine.traceLastAIScoreCP, engine.traceLastAIElapsedMS, engine.traceLastAINodes, engine.traceLastAIEvalCalls, engine.traceLastAINPS)
 		if engine.traceLastAITimedOut {
 			summary += "/timeout"
 		}
@@ -1487,13 +1493,24 @@ func (engine *ChessEngine) formatTraceAISummary() string {
 	return summary
 }
 
-func (engine *ChessEngine) recordTraceAI(source, move string, depth, scoreCP int, elapsedMS int64, timedOut bool) {
+func (engine *ChessEngine) recordTraceAI(source, move string, depth, scoreCP int, elapsedMS int64, timedOut bool, nodes, evalCalls int) {
 	engine.traceLastAISource = source
 	engine.traceLastAIMove = move
 	engine.traceLastAIDepth = depth
 	engine.traceLastAIScoreCP = scoreCP
 	engine.traceLastAIElapsedMS = elapsedMS
 	engine.traceLastAITimedOut = timedOut
+	engine.traceLastAINodes = nodes
+	engine.traceLastAIEvalCalls = evalCalls
+	if nodes > 0 {
+		divisor := elapsedMS
+		if divisor <= 0 {
+			divisor = 1
+		}
+		engine.traceLastAINPS = int64(nodes) * 1000 / divisor
+	} else {
+		engine.traceLastAINPS = 0
+	}
 	engine.trace("ai", engine.formatTraceAISummary())
 }
 
@@ -1509,6 +1526,9 @@ func (engine *ChessEngine) traceLastAIPayload() map[string]interface{} {
 		"score_cp":   engine.traceLastAIScoreCP,
 		"elapsed_ms": engine.traceLastAIElapsedMS,
 		"timed_out":  engine.traceLastAITimedOut,
+		"nodes":      engine.traceLastAINodes,
+		"eval_calls": engine.traceLastAIEvalCalls,
+		"nps":        engine.traceLastAINPS,
 		"summary":    engine.formatTraceAISummary(),
 	}
 }

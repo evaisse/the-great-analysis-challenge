@@ -19,6 +19,8 @@ class SearchResult {
   final int depth;
   final int elapsedMs;
   final bool timedOut;
+  final int nodes;
+  final int evalCalls;
 
   SearchResult(
     this.move,
@@ -26,6 +28,8 @@ class SearchResult {
     this.depth,
     this.elapsedMs,
     this.timedOut,
+    this.nodes,
+    this.evalCalls,
   );
 }
 
@@ -51,6 +55,8 @@ class AI {
   DateTime? _deadline;
   bool _timedOut = false;
   bool _stopRequested = false;
+  int _nodesVisited = 0;
+  int _evalCalls = 0;
 
   Move findBestMove(Board board, int depth) {
     final result = search(board, depth);
@@ -71,11 +77,13 @@ class AI {
 
     final legalMoves = board.generateMoves();
     if (legalMoves.isEmpty) {
-      return SearchResult(null, 0, 0, 0, false);
+      return SearchResult(null, 0, 0, 0, false, 0, 0);
     }
 
     _timedOut = false;
     _stopRequested = false;
+    _nodesVisited = 0;
+    _evalCalls = 0;
     final started = DateTime.now();
     _deadline = movetimeMs > 0
         ? started.add(Duration(milliseconds: movetimeMs))
@@ -109,6 +117,8 @@ class AI {
       completedDepth,
       elapsedMs,
       _timedOut,
+      _nodesVisited,
+      _evalCalls,
     );
   }
 
@@ -116,6 +126,7 @@ class AI {
     if (_timeExceeded()) {
       return _NodeResult(0, null, false);
     }
+    _nodesVisited++;
 
     final moves = board.generateMoves();
     if (moves.isEmpty) {
@@ -159,6 +170,7 @@ class AI {
     if (_timeExceeded()) {
       return _NodeResult(0, null, false);
     }
+    _nodesVisited++;
 
     final originalAlpha = alpha;
     final key = board.zobristHash;
@@ -299,6 +311,7 @@ class AI {
   }
 
   int evaluate(Board board) {
+    _evalCalls++;
     var score = 0;
     for (var i = 0; i < 8; i++) {
       for (var j = 0; j < 8; j++) {

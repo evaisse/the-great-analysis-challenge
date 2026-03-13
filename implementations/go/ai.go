@@ -91,6 +91,7 @@ var kingMiddlegameTable = [8][8]int{
 
 type AI struct {
 	nodesEvaluated int
+	evalCalls      int
 	tt            map[uint64]TTEntry
 	deadline      time.Time
 	timedOut      bool
@@ -117,6 +118,8 @@ type SearchResult struct {
 	Depth     int
 	TimedOut  bool
 	ElapsedMS int64
+	Nodes     int
+	EvalCalls int
 }
 
 func NewAI() *AI {
@@ -133,6 +136,7 @@ func (ai *AI) FindBestMove(gs *GameState, depth int) Move {
 
 func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 	ai.nodesEvaluated = 0
+	ai.evalCalls = 0
 	ai.timedOut = false
 
 	if depth < 1 || depth > MAX_DEPTH {
@@ -154,6 +158,8 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 			Depth:     0,
 			TimedOut:  false,
 			ElapsedMS: time.Since(start).Milliseconds(),
+			Nodes:     0,
+			EvalCalls: 0,
 		}
 	}
 
@@ -185,6 +191,8 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 		Depth:     completedDepth,
 		TimedOut:  ai.timedOut,
 		ElapsedMS: time.Since(start).Milliseconds(),
+		Nodes:     ai.nodesEvaluated,
+		EvalCalls: ai.evalCalls,
 	}
 }
 
@@ -192,6 +200,7 @@ func (ai *AI) searchRoot(gs *GameState, depth int) (int, Move, bool) {
 	if ai.timeExceeded() {
 		return 0, Move{}, false
 	}
+	ai.nodesEvaluated++
 
 	moves := gs.GenerateLegalMoves()
 	if len(moves) == 0 {
@@ -450,6 +459,7 @@ func (ai *AI) minimax(gs *GameState, depth int, alpha, beta int, maximizingPlaye
 }
 
 func (ai *AI) evaluate(gs *GameState) int {
+	ai.evalCalls++
 	score := 0
 
 	// Material and positional evaluation
@@ -568,6 +578,10 @@ func (ai *AI) isOpenFile(file int, color Color) bool {
 
 func (ai *AI) GetNodesEvaluated() int {
 	return ai.nodesEvaluated
+}
+
+func (ai *AI) GetEvalCalls() int {
+	return ai.evalCalls
 }
 
 func max(a, b int) int {

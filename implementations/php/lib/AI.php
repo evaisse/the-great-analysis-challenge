@@ -19,6 +19,8 @@ class AI {
     private ?float $deadline = null;
     private bool $timed_out = false;
     private bool $stop_requested = false;
+    private int $nodes_visited = 0;
+    private int $eval_calls = 0;
 
     public function __construct(Board $board, MoveGenerator $move_gen) {
         $this->board = $board;
@@ -35,7 +37,7 @@ class AI {
      * @return array{0:Move,1:int,2:int}|null
      */
     public function find_best_move(int $depth): ?array {
-        [$move, $score, , $time_ms, ] = $this->search($depth, 0);
+        [$move, $score, , $time_ms] = $this->search($depth, 0);
         if ($move === null) {
             return null;
         }
@@ -43,7 +45,7 @@ class AI {
     }
 
     /**
-     * @return array{0:?Move,1:int,2:int,3:int,4:bool}
+     * @return array{0:?Move,1:int,2:int,3:int,4:bool,5:int,6:int}
      */
     public function search(int $max_depth, int $movetime_ms = 0): array {
         if ($max_depth < 1) {
@@ -54,11 +56,13 @@ class AI {
 
         $moves = $this->move_gen->generate_moves();
         if (empty($moves)) {
-            return [null, 0, 0, 0, false];
+            return [null, 0, 0, 0, false, 0, 0];
         }
 
         $this->timed_out = false;
         $this->stop_requested = false;
+        $this->nodes_visited = 0;
+        $this->eval_calls = 0;
         $start = microtime(true);
         $this->deadline = $movetime_ms > 0 ? ($start + ($movetime_ms / 1000.0)) : null;
 
@@ -83,7 +87,7 @@ class AI {
         }
 
         $elapsed_ms = (int) round((microtime(true) - $start) * 1000);
-        return [$best_move, $best_score, $completed_depth, $elapsed_ms, $this->timed_out];
+        return [$best_move, $best_score, $completed_depth, $elapsed_ms, $this->timed_out, $this->nodes_visited, $this->eval_calls];
     }
 
     /**
@@ -93,6 +97,7 @@ class AI {
         if ($this->time_exceeded()) {
             return [0, null, false];
         }
+        $this->nodes_visited++;
 
         $moves = $this->move_gen->generate_moves();
         if (empty($moves)) {
@@ -140,6 +145,7 @@ class AI {
         if ($this->time_exceeded()) {
             return [0, null, false];
         }
+        $this->nodes_visited++;
 
         $original_alpha = $alpha;
         $key = (string) $this->board->zobrist_hash;
@@ -279,6 +285,7 @@ class AI {
     }
     
     public function evaluate(): int {
+        $this->eval_calls++;
         $score = 0;
         
         // Material evaluation

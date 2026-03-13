@@ -106,18 +106,20 @@ class AI:
         self._deadline: Optional[float] = None
         self._timed_out = False
         self._stop_requested = False
-    
+        self._nodes_visited = 0
+        self._eval_calls = 0
+
     def get_best_move(self, depth: int) -> Tuple[Optional[Move], int]:
         """Backward-compatible API used by `ai <depth>` command."""
-        best_move, best_score, _, _, _ = self.search(depth, 0)
+        best_move, best_score, _, _, _, _, _ = self.search(depth, 0)
         return best_move, best_score
 
     def request_stop(self) -> None:
         """Cooperative stop flag for ongoing search."""
         self._stop_requested = True
 
-    def search(self, max_depth: int, movetime_ms: int) -> Tuple[Optional[Move], int, int, int, bool]:
-        """Return (best_move, score, depth_reached, elapsed_ms, timed_out)."""
+    def search(self, max_depth: int, movetime_ms: int) -> Tuple[Optional[Move], int, int, int, bool, int, int]:
+        """Return (best_move, score, depth_reached, elapsed_ms, timed_out, nodes, eval_calls)."""
         if max_depth < 1:
             max_depth = 1
         if max_depth > 5:
@@ -125,10 +127,12 @@ class AI:
 
         legal_moves = self.move_generator.generate_legal_moves()
         if not legal_moves:
-            return None, 0, 0, 0, False
+            return None, 0, 0, 0, False, 0, 0
 
         self._timed_out = False
         self._stop_requested = False
+        self._nodes_visited = 0
+        self._eval_calls = 0
         start = time.monotonic()
         self._deadline = start + (movetime_ms / 1000.0) if movetime_ms > 0 else None
 
@@ -149,11 +153,20 @@ class AI:
             completed_depth = 1
 
         elapsed_ms = int((time.monotonic() - start) * 1000)
-        return best_move, int(best_score), completed_depth, elapsed_ms, self._timed_out
+        return (
+            best_move,
+            int(best_score),
+            completed_depth,
+            elapsed_ms,
+            self._timed_out,
+            self._nodes_visited,
+            self._eval_calls,
+        )
 
     def _search_root(self, depth: int) -> Tuple[int, Optional[Move], bool]:
         if self._time_exceeded():
             return 0, None, False
+        self._nodes_visited += 1
 
         moves = self.move_generator.generate_legal_moves()
         if not moves:
@@ -188,6 +201,7 @@ class AI:
     def _negamax(self, depth: int, alpha: int, beta: int) -> Tuple[int, Optional[Move], bool]:
         if self._time_exceeded():
             return 0, None, False
+        self._nodes_visited += 1
 
         original_alpha = alpha
         key = self.board.zobrist_hash
@@ -285,6 +299,7 @@ class AI:
     
     def evaluate_position(self) -> int:
         """Evaluate the current position."""
+        self._eval_calls += 1
         score = 0
         
         for row in range(8):
