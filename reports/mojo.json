@@ -27,21 +27,21 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.543311357498169,
-      "build_seconds": 11.28733205795288,
-      "analyze_seconds": 11.36979365348816,
-      "test_seconds": 11.371036767959595,
-      "test_internal_seconds": 11.371036767959595,
-      "test_chess_engine_seconds": 12.224654912948608,
-      "test_v2_full_seconds": 12.224654912948608
+      "image_build_seconds": 0.8522045612335205,
+      "build_seconds": 12.423478603363037,
+      "analyze_seconds": 12.902129173278809,
+      "test_seconds": 12.49092149734497,
+      "test_internal_seconds": 12.49092149734497,
+      "test_chess_engine_seconds": 13.566460371017456,
+      "test_v2_full_seconds": 13.566460371017456
     },
     "memory": {
       "image": {
-        "memory_mb": 115.94921875,
-        "peak_memory_mb": 115.94921875,
-        "avg_memory_mb": 99.49088541666667,
+        "memory_mb": 17.45703125,
+        "peak_memory_mb": 116.04296875,
+        "avg_memory_mb": 90.57769097222223,
         "avg_cpu_percent": 0.0,
-        "samples": 6,
+        "samples": 9,
         "psutil_available": true
       },
       "build": {
@@ -66,11 +66,11 @@
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.84765625,
-        "peak_memory_mb": 61.55078125,
-        "avg_memory_mb": 59.96501068376068,
+        "memory_mb": 31.91796875,
+        "peak_memory_mb": 62.0,
+        "avg_memory_mb": 60.532430959302324,
         "avg_cpu_percent": 0.0,
-        "samples": 117,
+        "samples": 129,
         "psutil_available": true
       }
     },
@@ -83,27 +83,27 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 41044.84384710138,
-      "analyze_ms_per_kloc": 41344.704194502396,
-      "runtime_ms_per_kloc": 41349.22461076216
+      "build_ms_per_kloc": 45176.28583041104,
+      "analyze_ms_per_kloc": 46916.83335737748,
+      "runtime_ms_per_kloc": 45421.53271761807
     },
     "docker": {
-      "build_time": 0.543311357498169,
+      "build_time": 0.8522045612335205,
       "build_success": true,
-      "image_build_time": 0.543311357498169,
+      "image_build_time": 0.8522045612335205,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 11.28733205795288,
+      "make_build_time": 12.423478603363037,
       "make_build_success": false,
-      "make_analyze_time": 11.36979365348816,
+      "make_analyze_time": 12.902129173278809,
       "make_analyze_success": false,
-      "test_time": 11.371036767959595,
+      "test_time": 12.49092149734497,
       "test_success": false,
-      "make_test_time": 11.371036767959595,
+      "make_test_time": 12.49092149734497,
       "make_test_success": false,
-      "test_chess_engine_time": 12.224654912948608,
+      "test_chess_engine_time": 13.566460371017456,
       "test_chess_engine_success": false,
-      "track_test_time": 12.224654912948608,
+      "track_test_time": 13.566460371017456,
       "track_test_success": false
     },
     "task_results": {
@@ -120,9 +120,9 @@
       },
       "make_test_chess_engine": {
         "passed": 0,
-        "failed": 58,
-        "errors": 42,
-        "total": 58
+        "failed": 57,
+        "errors": 41,
+        "total": 57
       }
     },
     "test_results": {
@@ -135,9 +135,9 @@
       ]
     },
     "errors": [
-      "make build failed: 23:47:35.899 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
-      "make analyze failed: 23:47:47.268 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
-      "make test failed: 23:47:58.649 INFO: Metrics initialized.\nUsage: python -m max.entrypoints.pipelines serve [OPTIONS]\nTry 'python -m max.entrypoints.pipelines serve --help' for help.\n\nError: No such option: -c\n",
+      "make build failed: ",
+      "make analyze failed: ",
+      "make test failed: ",
       "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting mojo implementation at implementations/mojo\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunni"
     ],
     "status": "completed"

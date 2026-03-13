@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing lua implementation
 Path: implementations/lua
 ============================================================
-📏 Source size: 2230 LOC across 1 files, 16287 TOKENS
+📏 Source size: 2616 LOC across 1 files, 18838 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,62 +15,62 @@ Path: implementations/lua
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-lua .
-  ✅ Docker build completed in 0.50s
+  ✅ Docker build completed in 0.40s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ✅ All Docker tests passed (image: 0.5s, make build: skipped, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 10.0s)
+  ✅ All Docker tests passed (image: 0.4s, make build: skipped, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 10.7s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:41:29
+Generated: 2026-03-13 15:54:43
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-lua          completed  16287      2230     -/-MB              0.2s/7MB           0.2s/6MB           10.0s/62MB                1/1              16/16             
+lua          completed  18838      2616     -/-MB              0.2s/7MB           0.2s/7MB           10.7s/63MB                1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: LUA
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.50s
-  make analyze: 0.19s
-  make test: 0.18s
-  make test-chess-engine: 10.04s
-  make test (internal mirror): 0.18s
-  test v2 full seconds: 10.04s
+  docker build image: 0.40s
+  make analyze: 0.16s
+  make test: 0.15s
+  make test-chess-engine: 10.71s
+  make test (internal mirror): 0.15s
+  test v2 full seconds: 10.71s
 
 SOURCE SIZE:
-  Source LOC: 2230 (files: 1)
-  TOKENS (tokens-v2): 16287
+  Source LOC: 2616 (files: 1)
+  TOKENS (tokens-v2): 18838
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 85.48 ms/KLOC
-  Runtime: 80.61 ms/KLOC
+  Analyze: 60.82 ms/KLOC
+  Runtime: 58.97 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 111.6MB, Avg 95.4MB
+  Image: Peak 111.6MB, Avg 90.4MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 7.2MB, Avg 0.0MB
-  Test: Peak 6.3MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.4MB, Avg 60.5MB
+  Analyze: Peak 6.6MB, Avg 0.0MB
+  Test: Peak 7.4MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 63.2MB, Avg 61.2MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.50s)
+  Image build: ✅ (0.40s)
   make build: ⏭️ skipped
-  make analyze: ✅ (0.19s)
-  make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ✅ (10.04s)
+  make analyze: ✅ (0.16s)
+  make test: ✅ (0.15s)
+  make test-chess-engine (track=v2-full): ✅ (10.71s)
   make test score: 1/1
   make test-chess-engine score: 16/16
 

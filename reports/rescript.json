@@ -28,43 +28,51 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.4894752502441406,
-      "build_seconds": 0.1936173439025879,
-      "analyze_seconds": 0.19304180145263672,
-      "test_seconds": 0.18530821800231934,
-      "test_internal_seconds": 0.18530821800231934,
-      "test_chess_engine_seconds": 180.00825667381287,
-      "test_v2_full_seconds": 180.00825667381287
+      "image_build_seconds": 0.4066629409790039,
+      "build_seconds": 0.20153188705444336,
+      "analyze_seconds": 0.19002413749694824,
+      "test_seconds": 0.17584609985351562,
+      "test_internal_seconds": 0.17584609985351562,
+      "test_chess_engine_seconds": 9.937327146530151,
+      "test_v2_full_seconds": 9.937327146530151
     },
     "memory": {
       "image": {
-        "memory_mb": 116.01953125,
-        "peak_memory_mb": 116.01953125,
-        "avg_memory_mb": 97.32734375,
+        "memory_mb": 112.765625,
+        "peak_memory_mb": 112.765625,
+        "avg_memory_mb": 91.486328125,
         "avg_cpu_percent": 0.0,
-        "samples": 5,
+        "samples": 4,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 6.5703125,
-        "peak_memory_mb": 6.5703125,
+        "memory_mb": 6.55859375,
+        "peak_memory_mb": 6.55859375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 7.4453125,
-        "peak_memory_mb": 7.4453125,
+        "memory_mb": 6.9609375,
+        "peak_memory_mb": 6.9609375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 6.56640625,
-        "peak_memory_mb": 6.56640625,
+        "memory_mb": 6.9765625,
+        "peak_memory_mb": 6.9765625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
+      },
+      "test_chess_engine": {
+        "memory_mb": 32.1953125,
+        "peak_memory_mb": 61.90234375,
+        "avg_memory_mb": 59.95556640625,
+        "avg_cpu_percent": 0.0,
+        "samples": 96,
+        "psutil_available": true
       }
     },
     "size": {
@@ -76,27 +84,27 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 115.38578301703689,
-      "analyze_ms_per_kloc": 115.04278990026026,
-      "runtime_ms_per_kloc": 110.43397973916528
+      "build_ms_per_kloc": 120.10243567010927,
+      "analyze_ms_per_kloc": 113.2444204391825,
+      "runtime_ms_per_kloc": 104.79505354798309
     },
     "docker": {
-      "build_time": 0.4894752502441406,
+      "build_time": 0.4066629409790039,
       "build_success": true,
-      "image_build_time": 0.4894752502441406,
+      "image_build_time": 0.4066629409790039,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.1936173439025879,
+      "make_build_time": 0.20153188705444336,
       "make_build_success": true,
-      "make_analyze_time": 0.19304180145263672,
+      "make_analyze_time": 0.19002413749694824,
       "make_analyze_success": true,
-      "test_time": 0.18530821800231934,
+      "test_time": 0.17584609985351562,
       "test_success": true,
-      "make_test_time": 0.18530821800231934,
+      "make_test_time": 0.17584609985351562,
       "make_test_success": true,
-      "test_chess_engine_time": 180.00825667381287,
+      "test_chess_engine_time": 9.937327146530151,
       "test_chess_engine_success": false,
-      "track_test_time": 180.00825667381287,
+      "track_test_time": 9.937327146530151,
       "track_test_success": false
     },
     "task_results": {
@@ -112,10 +120,10 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 0,
-        "failed": 1,
-        "errors": 1,
-        "total": 1
+        "passed": 2,
+        "failed": 14,
+        "errors": 0,
+        "total": 16
       }
     },
     "test_results": {
@@ -125,7 +133,7 @@
       ]
     },
     "errors": [
-      "track v2-full suite timeout after 180.0s"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting rescript implementation at implementations/rescript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake"
     ],
     "status": "completed"
   }

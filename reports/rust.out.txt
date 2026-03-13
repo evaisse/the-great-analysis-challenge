@@ -15,7 +15,7 @@ Path: implementations/rust
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-rust .
-  ✅ Docker build completed in 0.35s
+  ✅ Docker build completed in 0.30s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,7 +27,7 @@ Path: implementations/rust
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:40:52
+Generated: 2026-03-13 15:54:42
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -41,40 +41,40 @@ DETAILED RESULTS: RUST
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.35s
+  docker build image: 0.30s
   make build: 0.20s
   make analyze: 0.19s
-  make test: 0.20s
-  make test-chess-engine: 9.74s
-  make test (internal mirror): 0.20s
-  test v2 full seconds: 9.74s
+  make test: 0.19s
+  make test-chess-engine: 9.75s
+  make test (internal mirror): 0.19s
+  test v2 full seconds: 9.75s
 
 SOURCE SIZE:
   Source LOC: 1852 (files: 9)
   TOKENS (tokens-v2): 12770
 
 NORMALIZED METRICS:
-  Build: 105.53 ms/KLOC
-  Analyze: 100.20 ms/KLOC
-  Runtime: 106.11 ms/KLOC
+  Build: 107.35 ms/KLOC
+  Analyze: 103.79 ms/KLOC
+  Runtime: 102.90 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 110.6MB, Avg 90.1MB
+  Image: Peak 111.1MB, Avg 83.7MB
   Build: Peak 6.6MB, Avg 0.0MB
   Analyze: Peak 6.6MB, Avg 0.0MB
   Test: Peak 6.6MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.8MB, Avg 59.8MB
+  Test_Chess_Engine: Peak 61.6MB, Avg 59.7MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.35s)
+  Image build: ✅ (0.30s)
   make build: ✅ (0.20s)
   make analyze: ✅ (0.19s)
-  make test: ✅ (0.20s)
-  make test-chess-engine (track=v2-full): ❌ (9.74s)
+  make test: ✅ (0.19s)
+  make test-chess-engine (track=v2-full): ❌ (9.75s)
   make test score: 1/1
   make test-chess-engine score: 2/16
 

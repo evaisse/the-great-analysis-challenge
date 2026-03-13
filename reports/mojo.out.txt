@@ -15,7 +15,7 @@ Path: implementations/mojo
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-mojo .
-  ✅ Docker build completed in 0.54s
+  ✅ Docker build completed in 0.85s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,43 +27,43 @@ Path: implementations/mojo
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:48:11
+Generated: 2026-03-13 16:00:52
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-mojo         completed  1820       275      11.3s/-MB          11.4s/-MB          11.4s/-MB          12.2s/62MB                0/1              0/58              
+mojo         completed  1820       275      12.4s/-MB          12.9s/-MB          12.5s/-MB          13.6s/62MB                0/1              0/57              
 
 ============================================================
 DETAILED RESULTS: MOJO
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.54s
-  make build: 11.29s
-  make analyze: 11.37s
-  make test: 11.37s
-  make test-chess-engine: 12.22s
-  make test (internal mirror): 11.37s
-  test v2 full seconds: 12.22s
+  docker build image: 0.85s
+  make build: 12.42s
+  make analyze: 12.90s
+  make test: 12.49s
+  make test-chess-engine: 13.57s
+  make test (internal mirror): 12.49s
+  test v2 full seconds: 13.57s
 
 SOURCE SIZE:
   Source LOC: 275 (files: 1)
   TOKENS (tokens-v2): 1820
 
 NORMALIZED METRICS:
-  Build: 41044.84 ms/KLOC
-  Analyze: 41344.70 ms/KLOC
-  Runtime: 41349.22 ms/KLOC
+  Build: 45176.29 ms/KLOC
+  Analyze: 46916.83 ms/KLOC
+  Runtime: 45421.53 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 115.9MB, Avg 99.5MB
+  Image: Peak 116.0MB, Avg 90.6MB
   Build: Peak 0.0MB, Avg 0.0MB
   Analyze: Peak 0.0MB, Avg 0.0MB
   Test: Peak 0.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.6MB, Avg 60.0MB
+  Test_Chess_Engine: Peak 62.0MB, Avg 60.5MB
 
 CHESS ENGINE TESTS: 0 passed, 4 failed
   Failed tests:
@@ -73,33 +73,18 @@ CHESS ENGINE TESTS: 0 passed, 4 failed
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.54s)
-  make build: ❌ (11.29s)
-  make analyze: ❌ (11.37s)
-  make test: ❌ (11.37s)
-  make test-chess-engine (track=v2-full): ❌ (12.22s)
+  Image build: ✅ (0.85s)
+  make build: ❌ (12.42s)
+  make analyze: ❌ (12.90s)
+  make test: ❌ (12.49s)
+  make test-chess-engine (track=v2-full): ❌ (13.57s)
   make test score: 0/1
-  make test-chess-engine score: 0/58
+  make test-chess-engine score: 0/57
 
 ERRORS:
-  ❌ make build failed: 23:47:35.899 INFO: Metrics initialized.
-Usage: python -m max.entrypoints.pipelines serve [OPTIONS]
-Try 'python -m max.entrypoints.pipelines serve --help' for help.
-
-Error: No such option: -c
-
-  ❌ make analyze failed: 23:47:47.268 INFO: Metrics initialized.
-Usage: python -m max.entrypoints.pipelines serve [OPTIONS]
-Try 'python -m max.entrypoints.pipelines serve --help' for help.
-
-Error: No such option: -c
-
-  ❌ make test failed: 23:47:58.649 INFO: Metrics initialized.
-Usage: python -m max.entrypoints.pipelines serve [OPTIONS]
-Try 'python -m max.entrypoints.pipelines serve --help' for help.
-
-Error: No such option: -c
-
+  ❌ make build failed: 
+  ❌ make analyze failed: 
+  ❌ make test failed: 
   ❌ track v2-full suite failed: Found 1 implementation(s)
 Loaded 16 tests from test/suites/v2_full.json
 

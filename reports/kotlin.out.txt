@@ -30,14 +30,14 @@ make: *** [Makefile:24: clean] Error 1
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:41:41
+Generated: 2026-03-13 15:54:51
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-kotlin       completed  9666       1524     0.2s/7MB           0.2s/7MB           0.2s/7MB           10.0s/62MB                1/1              2/16              
+kotlin       completed  9666       1524     0.2s/6MB           0.2s/7MB           0.2s/7MB           10.0s/62MB                1/1              2/16              
 
 ============================================================
 DETAILED RESULTS: KOTLIN
@@ -45,8 +45,8 @@ DETAILED RESULTS: KOTLIN
 
 TIMING BREAKDOWN:
   docker build image: 0.29s
-  make build: 0.17s
-  make analyze: 0.16s
+  make build: 0.16s
+  make analyze: 0.17s
   make test: 0.16s
   make test-chess-engine: 9.96s
   make test (internal mirror): 0.16s
@@ -57,16 +57,16 @@ SOURCE SIZE:
   TOKENS (tokens-v2): 9666
 
 NORMALIZED METRICS:
-  Build: 111.32 ms/KLOC
-  Analyze: 102.89 ms/KLOC
-  Runtime: 103.17 ms/KLOC
+  Build: 102.65 ms/KLOC
+  Analyze: 112.52 ms/KLOC
+  Runtime: 103.39 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 110.9MB, Avg 82.4MB
-  Build: Peak 6.9MB, Avg 0.0MB
-  Analyze: Peak 6.6MB, Avg 0.0MB
-  Test: Peak 7.1MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 60.0MB
+  Image: Peak 111.0MB, Avg 82.5MB
+  Build: Peak 6.4MB, Avg 0.0MB
+  Analyze: Peak 7.1MB, Avg 0.0MB
+  Test: Peak 7.0MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.1MB, Avg 60.2MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
@@ -74,8 +74,8 @@ CHESS ENGINE TESTS: 0 passed, 1 failed
 
 DOCKER TESTS:
   Image build: ✅ (0.29s)
-  make build: ✅ (0.17s)
-  make analyze: ✅ (0.16s)
+  make build: ✅ (0.16s)
+  make analyze: ✅ (0.17s)
   make test: ✅ (0.16s)
   make test-chess-engine (track=v2-full): ❌ (9.96s)
   make test score: 1/1
