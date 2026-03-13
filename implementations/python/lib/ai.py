@@ -106,18 +106,27 @@ class AI:
         self._deadline: Optional[float] = None
         self._timed_out = False
         self._stop_requested = False
-    
+        self._nodes_visited = 0
+        self._eval_calls = 0
+        self._tt_hits = 0
+        self._tt_misses = 0
+        self._beta_cutoffs = 0
+
     def get_best_move(self, depth: int) -> Tuple[Optional[Move], int]:
         """Backward-compatible API used by `ai <depth>` command."""
-        best_move, best_score, _, _, _ = self.search(depth, 0)
+        best_move, best_score, _, _, _, _, _, _, _, _ = self.search(depth, 0)
         return best_move, best_score
 
     def request_stop(self) -> None:
         """Cooperative stop flag for ongoing search."""
         self._stop_requested = True
 
-    def search(self, max_depth: int, movetime_ms: int) -> Tuple[Optional[Move], int, int, int, bool]:
-        """Return (best_move, score, depth_reached, elapsed_ms, timed_out)."""
+    def search(
+        self,
+        max_depth: int,
+        movetime_ms: int,
+    ) -> Tuple[Optional[Move], int, int, int, bool, int, int, int, int, int]:
+        """Return (best_move, score, depth_reached, elapsed_ms, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)."""
         if max_depth < 1:
             max_depth = 1
         if max_depth > 5:
@@ -125,10 +134,15 @@ class AI:
 
         legal_moves = self.move_generator.generate_legal_moves()
         if not legal_moves:
-            return None, 0, 0, 0, False
+            return None, 0, 0, 0, False, 0, 0, 0, 0, 0
 
         self._timed_out = False
         self._stop_requested = False
+        self._nodes_visited = 0
+        self._eval_calls = 0
+        self._tt_hits = 0
+        self._tt_misses = 0
+        self._beta_cutoffs = 0
         start = time.monotonic()
         self._deadline = start + (movetime_ms / 1000.0) if movetime_ms > 0 else None
 
@@ -149,17 +163,33 @@ class AI:
             completed_depth = 1
 
         elapsed_ms = int((time.monotonic() - start) * 1000)
-        return best_move, int(best_score), completed_depth, elapsed_ms, self._timed_out
+        return (
+            best_move,
+            int(best_score),
+            completed_depth,
+            elapsed_ms,
+            self._timed_out,
+            self._nodes_visited,
+            self._eval_calls,
+            self._tt_hits,
+            self._tt_misses,
+            self._beta_cutoffs,
+        )
 
     def _search_root(self, depth: int) -> Tuple[int, Optional[Move], bool]:
         if self._time_exceeded():
             return 0, None, False
+        self._nodes_visited += 1
 
         moves = self.move_generator.generate_legal_moves()
         if not moves:
             return 0, None, True
 
         entry = self._tt.get(self.board.zobrist_hash)
+        if entry is not None:
+            self._tt_hits += 1
+        else:
+            self._tt_misses += 1
         ordered_moves = self._order_moves(moves, entry.best_move if entry else None)
 
         alpha = -INFINITY
@@ -188,6 +218,7 @@ class AI:
     def _negamax(self, depth: int, alpha: int, beta: int) -> Tuple[int, Optional[Move], bool]:
         if self._time_exceeded():
             return 0, None, False
+        self._nodes_visited += 1
 
         original_alpha = alpha
         key = self.board.zobrist_hash
@@ -195,6 +226,7 @@ class AI:
 
         entry = self._tt.get(key)
         if entry and entry.depth >= depth:
+            self._tt_hits += 1
             if entry.flag == 'exact':
                 return entry.score, entry.best_move, True
             if entry.flag == 'lower':
@@ -202,8 +234,11 @@ class AI:
             elif entry.flag == 'upper':
                 beta = min(beta, entry.score)
             if alpha >= beta:
+                self._beta_cutoffs += 1
                 return entry.score, entry.best_move, True
             best_from_tt = entry.best_move
+        else:
+            self._tt_misses += 1
 
         if depth == 0:
             return int(self.evaluate_position()), None, True
@@ -234,6 +269,7 @@ class AI:
             if score > alpha:
                 alpha = score
             if alpha >= beta:
+                self._beta_cutoffs += 1
                 break
 
         flag = 'exact'
@@ -285,6 +321,7 @@ class AI:
     
     def evaluate_position(self) -> int:
         """Evaluate the current position."""
+        self._eval_calls += 1
         score = 0
         
         for row in range(8):

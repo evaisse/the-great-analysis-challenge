@@ -35,10 +35,34 @@ local trace_enabled = false
 local trace_level = "info"
 local trace_events = {}
 local trace_command_count = 0
+local trace_export_count = 0
+local trace_chrome_count = 0
+local trace_last_export_target = "(none)"
+local trace_last_export_bytes = 0
+local trace_last_chrome_target = "(none)"
+local trace_last_chrome_bytes = 0
+local trace_last_ai_source = nil
+local trace_last_ai_move = nil
+local trace_last_ai_depth = 0
+local trace_last_ai_score_cp = 0
+local trace_last_ai_elapsed_ms = 0
+local trace_last_ai_timed_out = false
+local trace_last_ai_nodes = 0
+local trace_last_ai_eval_calls = 0
+local trace_last_ai_nps = 0
+local trace_last_ai_tt_hits = 0
+local trace_last_ai_tt_misses = 0
+local trace_last_ai_beta_cutoffs = 0
 local tt = {}
 local search_deadline = nil
 local search_timed_out = false
 local search_stop_requested = false
+local record_trace_ai
+local search_nodes_visited = 0
+local search_eval_calls = 0
+local search_tt_hits = 0
+local search_tt_misses = 0
+local search_beta_cutoffs = 0
 
 local zobrist_keys = {
     pieces = {},
@@ -823,6 +847,7 @@ end
 
 -- Evaluate board position
 local function evaluate_position()
+    search_eval_calls = search_eval_calls + 1
     local score = 0
     
     for rank = 1, 8 do
@@ -899,6 +924,7 @@ local function negamax(depth, alpha, beta)
     if search_time_exceeded() then
         return 0, nil, false
     end
+    search_nodes_visited = search_nodes_visited + 1
 
     local original_alpha = alpha
     local key = string.format("%u", zobrist_hash)
@@ -906,6 +932,7 @@ local function negamax(depth, alpha, beta)
     local entry = tt[key]
 
     if entry and entry.depth >= depth then
+        search_tt_hits = search_tt_hits + 1
         if entry.flag == "exact" then
             return entry.score, entry.best_move_key, true
         elseif entry.flag == "lower" then
@@ -914,9 +941,12 @@ local function negamax(depth, alpha, beta)
             beta = math.min(beta, entry.score)
         end
         if alpha >= beta then
+            search_beta_cutoffs = search_beta_cutoffs + 1
             return entry.score, entry.best_move_key, true
         end
         best_from_tt = entry.best_move_key
+    else
+        search_tt_misses = search_tt_misses + 1
     end
 
     if depth == 0 then
@@ -959,6 +989,7 @@ local function negamax(depth, alpha, beta)
             alpha = score
         end
         if alpha >= beta then
+            search_beta_cutoffs = search_beta_cutoffs + 1
             break
         end
     end
@@ -983,6 +1014,7 @@ local function search_root(depth)
     if search_time_exceeded() then
         return 0, nil, false
     end
+    search_nodes_visited = search_nodes_visited + 1
 
     local moves = generate_legal_moves()
     if #moves == 0 then
@@ -990,6 +1022,11 @@ local function search_root(depth)
     end
 
     local entry = tt[string.format("%u", zobrist_hash)]
+    if entry then
+        search_tt_hits = search_tt_hits + 1
+    else
+        search_tt_misses = search_tt_misses + 1
+    end
     local ordered = order_moves(moves, entry and entry.best_move_key or nil)
     local best_score = -math.huge
     local best_move = ordered[1]
@@ -1027,12 +1064,17 @@ local function search_best_move(max_depth, movetime_ms)
 
     local legal_moves = generate_legal_moves()
     if #legal_moves == 0 then
-        return nil, 0, 0, 0, false
+        return nil, 0, 0, 0, false, 0, 0, 0, 0, 0
     end
 
     local start_clock = os.clock()
     search_timed_out = false
     search_stop_requested = false
+    search_nodes_visited = 0
+    search_eval_calls = 0
+    search_tt_hits = 0
+    search_tt_misses = 0
+    search_beta_cutoffs = 0
     search_deadline = nil
     if movetime_ms and movetime_ms > 0 then
         search_deadline = start_clock + (movetime_ms / 1000.0)
@@ -1062,7 +1104,7 @@ local function search_best_move(max_depth, movetime_ms)
     end
 
     local elapsed = math.floor((os.clock() - start_clock) * 1000)
-    return best_move, best_score, completed_depth, elapsed, search_timed_out
+    return best_move, best_score, completed_depth, elapsed, search_timed_out, search_nodes_visited, search_eval_calls, search_tt_hits, search_tt_misses, search_beta_cutoffs
 end
 
 -- AI move
@@ -1072,7 +1114,7 @@ local function ai_move(max_depth, movetime_ms)
         return false, "ERROR: AI depth must be 1-5"
     end
 
-    local best_move, eval, depth_used, elapsed = search_best_move(max_depth, movetime_ms or 0)
+    local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(max_depth, movetime_ms or 0)
     if not best_move then
         return false, "ERROR: No legal moves"
     end
@@ -1084,6 +1126,7 @@ local function ai_move(max_depth, movetime_ms)
     end
     
     make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    record_trace_ai("search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
     
     return true, string.format("AI: %s (depth=%d, eval=%d, time=%d)", move_str, depth_used, eval, elapsed)
 end
@@ -1275,6 +1318,7 @@ local function apply_book_move(best_move, move_str)
 
     make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
     book_played = book_played + 1
+    record_trace_ai("book", move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
     print("AI: " .. move_str .. " (book)")
     display_board()
 
@@ -1515,6 +1559,7 @@ local function apply_endgame_move(best_move, info, move_str)
     end
 
     make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    record_trace_ai("endgame", move_str, 0, info.score_white, 0, false, 0, 0, 0, 0, 0)
     print(string.format("AI: %s (endgame %s, score=%d)", move_str, info.type, info.score_white))
     display_board()
 
@@ -1583,6 +1628,212 @@ local function trace_event(event, detail)
     if #trace_events > 256 then
         table.remove(trace_events, 1)
     end
+end
+
+local function json_escape(value)
+    value = tostring(value or "")
+    value = value:gsub("\\", "\\\\")
+    value = value:gsub("\"", "\\\"")
+    value = value:gsub("\r", "\\r")
+    value = value:gsub("\n", "\\n")
+    value = value:gsub("\t", "\\t")
+    value = value:gsub(string.char(8), "\\b")
+    value = value:gsub(string.char(12), "\\f")
+    return value
+end
+
+local function reset_trace_ai_state()
+    trace_last_ai_source = nil
+    trace_last_ai_move = nil
+    trace_last_ai_depth = 0
+    trace_last_ai_score_cp = 0
+    trace_last_ai_elapsed_ms = 0
+    trace_last_ai_timed_out = false
+    trace_last_ai_nodes = 0
+    trace_last_ai_eval_calls = 0
+    trace_last_ai_nps = 0
+    trace_last_ai_tt_hits = 0
+    trace_last_ai_tt_misses = 0
+    trace_last_ai_beta_cutoffs = 0
+end
+
+local function format_trace_ai_summary()
+    if not trace_last_ai_source or not trace_last_ai_move then
+        return "none"
+    end
+
+    local summary = string.format("%s:%s", trace_last_ai_source, trace_last_ai_move)
+    if trace_last_ai_source:find("search", 1, true) then
+        summary = summary ..
+            string.format("@d%d/%dcp/%dms/n%d/e%d/nps%d", trace_last_ai_depth, trace_last_ai_score_cp, trace_last_ai_elapsed_ms, trace_last_ai_nodes, trace_last_ai_eval_calls, trace_last_ai_nps)
+        if trace_last_ai_timed_out then
+            summary = summary .. "/timeout"
+        end
+    elseif trace_last_ai_source:find("endgame", 1, true) then
+        summary = summary .. string.format("/%dcp", trace_last_ai_score_cp)
+    end
+
+    return summary
+end
+
+local function format_trace_search_metrics()
+    if not trace_last_ai_source or not trace_last_ai_source:find("search", 1, true) then
+        return nil
+    end
+
+    return string.format(
+        "nodes=%d,eval_calls=%d,tt_hits=%d,tt_misses=%d,beta_cutoffs=%d,nps=%d",
+        trace_last_ai_nodes,
+        trace_last_ai_eval_calls,
+        trace_last_ai_tt_hits,
+        trace_last_ai_tt_misses,
+        trace_last_ai_beta_cutoffs,
+        trace_last_ai_nps
+    )
+end
+
+record_trace_ai = function(source, move, depth, score_cp, elapsed_ms, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+    trace_last_ai_source = source
+    trace_last_ai_move = move
+    trace_last_ai_depth = depth or 0
+    trace_last_ai_score_cp = score_cp or 0
+    trace_last_ai_elapsed_ms = elapsed_ms or 0
+    trace_last_ai_timed_out = timed_out == true
+    trace_last_ai_nodes = nodes or 0
+    trace_last_ai_eval_calls = eval_calls or 0
+    trace_last_ai_tt_hits = tt_hits or 0
+    trace_last_ai_tt_misses = tt_misses or 0
+    trace_last_ai_beta_cutoffs = beta_cutoffs or 0
+    local divisor = (trace_last_ai_elapsed_ms and trace_last_ai_elapsed_ms > 0) and trace_last_ai_elapsed_ms or 1
+    if trace_last_ai_nodes > 0 then
+        trace_last_ai_nps = math.floor((trace_last_ai_nodes * 1000) / divisor)
+    else
+        trace_last_ai_nps = 0
+    end
+    trace_event("ai", format_trace_ai_summary())
+end
+
+local function build_trace_last_ai_json()
+    if not trace_last_ai_source or not trace_last_ai_move then
+        return "null"
+    end
+
+    return string.format(
+        "{\"source\":\"%s\",\"move\":\"%s\",\"depth\":%d,\"score_cp\":%d,\"elapsed_ms\":%d,\"timed_out\":%s,\"nodes\":%d,\"eval_calls\":%d,\"nps\":%d,\"tt_hits\":%d,\"tt_misses\":%d,\"beta_cutoffs\":%d,\"summary\":\"%s\"}",
+        json_escape(trace_last_ai_source),
+        json_escape(trace_last_ai_move),
+        trace_last_ai_depth,
+        trace_last_ai_score_cp,
+        trace_last_ai_elapsed_ms,
+        trace_last_ai_timed_out and "true" or "false",
+        trace_last_ai_nodes,
+        trace_last_ai_eval_calls,
+        trace_last_ai_nps,
+        trace_last_ai_tt_hits,
+        trace_last_ai_tt_misses,
+        trace_last_ai_beta_cutoffs,
+        json_escape(format_trace_ai_summary())
+    )
+end
+
+local function build_trace_export_payload()
+    local lines = {}
+    lines[#lines + 1] = string.format(
+        "{\"type\":\"session\",\"format\":\"tgac.trace.v1\",\"level\":\"%s\",\"command_count\":%d,\"event_count\":%d,\"last_ai\":%s}",
+        json_escape(trace_level),
+        trace_command_count,
+        #trace_events,
+        build_trace_last_ai_json()
+    )
+
+    for index, event in ipairs(trace_events) do
+        lines[#lines + 1] = string.format(
+            "{\"type\":\"event\",\"index\":%d,\"ts_ms\":%d,\"event\":\"%s\",\"detail\":\"%s\"}",
+            index - 1,
+            event.ts_ms or 0,
+            json_escape(event.event),
+            json_escape(event.detail)
+        )
+    end
+
+    return table.concat(lines, "\n") .. "\n"
+end
+
+local function build_trace_chrome_payload()
+    local chrome_events = {}
+    local base_ts = (#trace_events > 0 and (trace_events[1].ts_ms or 0)) or 0
+
+    for index, event in ipairs(trace_events) do
+        local ts_us = ((event.ts_ms or 0) - base_ts) * 1000
+        chrome_events[#chrome_events + 1] = string.format(
+            "{\"name\":\"%s\",\"cat\":\"trace\",\"ph\":\"i\",\"s\":\"t\",\"pid\":1,\"tid\":1,\"ts\":%d,\"args\":{\"detail\":\"%s\",\"index\":%d}}",
+            json_escape(event.event),
+            ts_us,
+            json_escape(event.detail),
+            index - 1
+        )
+    end
+
+    return string.format(
+        "{\"displayTimeUnit\":\"ms\",\"traceEvents\":[%s]}",
+        table.concat(chrome_events, ",")
+    )
+end
+
+local function write_trace_payload(target, payload)
+    local bytes = #payload
+    if target == "(memory)" then
+        return true, bytes, nil
+    end
+
+    local file, open_err = io.open(target, "w")
+    if not file then
+        return false, bytes, open_err or "unable to open target"
+    end
+
+    local ok, write_err = file:write(payload)
+    if not ok then
+        file:close()
+        return false, bytes, write_err or "unable to write payload"
+    end
+
+    local close_ok, close_err = file:close()
+    if close_ok == nil then
+        return false, bytes, close_err or "unable to close target"
+    end
+
+    return true, bytes, nil
+end
+
+local function reset_trace_export_state()
+    trace_export_count = 0
+    trace_chrome_count = 0
+    trace_last_export_target = "(none)"
+    trace_last_export_bytes = 0
+    trace_last_chrome_target = "(none)"
+    trace_last_chrome_bytes = 0
+end
+
+local function trace_report_line()
+    local report = string.format(
+        "TRACE: enabled=%s; level=%s; events=%d; commands=%d; exports=%d; export_bytes=%d; last_export=%s; chrome_exports=%d; chrome_bytes=%d; last_chrome=%s; last_ai=%s",
+        tostring(trace_enabled),
+        trace_level,
+        #trace_events,
+        trace_command_count,
+        trace_export_count,
+        trace_last_export_bytes,
+        trace_last_export_target,
+        trace_chrome_count,
+        trace_last_chrome_bytes,
+        trace_last_chrome_target,
+        format_trace_ai_summary()
+    )
+    local search_metrics = format_trace_search_metrics()
+    if search_metrics then
+        report = report .. "; search_metrics=" .. search_metrics
+    end
+    return report
 end
 
 local function clone_board_state(source)
@@ -2134,17 +2385,19 @@ local function main()
                     if depth > 5 then depth = 5 end
                     local book_move, book_move_str = choose_book_move()
                     if book_move and book_move_str then
+                        record_trace_ai("uci-book", book_move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
                         print("info string bookmove " .. book_move_str)
                         print("bestmove " .. book_move_str)
                         goto continue
                     end
                     local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
                     if endgame_move and endgame_info and endgame_move_str then
+                        record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false, 0, 0, 0, 0, 0)
                         print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
                         print("bestmove " .. endgame_move_str)
                         goto continue
                     end
-                    local best_move, eval, depth_used, elapsed = search_best_move(depth, 0)
+                    local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(depth, 0)
                     if not best_move then
                         print("bestmove 0000")
                     else
@@ -2153,7 +2406,8 @@ local function main()
                         if best_move[5] then
                             move_str = move_str .. best_move[5]
                         end
-                        print(string.format("info depth %d score cp %d time %d nodes 0", depth_used, eval, elapsed))
+                        record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+                        print(string.format("info depth %d score cp %d time %d nodes %d", depth_used, eval, elapsed, nodes))
                         print("bestmove " .. move_str)
                     end
                 end
@@ -2493,23 +2747,37 @@ local function main()
                     print("TRACE: level=" .. trace_level)
                 end
             elseif subcmd == "report" then
-                print(string.format(
-                    "TRACE: enabled=%s; level=%s; events=%d; commands=%d",
-                    tostring(trace_enabled),
-                    trace_level,
-                    #trace_events,
-                    trace_command_count
-                ))
+                print(trace_report_line())
             elseif subcmd == "reset" then
                 trace_events = {}
                 trace_command_count = 0
+                reset_trace_export_state()
+                reset_trace_ai_state()
                 print("TRACE: reset")
             elseif subcmd == "export" then
                 local target = (subarg and subarg ~= "") and subarg or "(memory)"
-                print(string.format("TRACE: export=%s; events=%d", target, #trace_events))
+                local payload = build_trace_export_payload()
+                local ok, byte_count, err = write_trace_payload(target, payload)
+                if not ok then
+                    print("ERROR: trace export failed: " .. tostring(err))
+                else
+                    trace_export_count = trace_export_count + 1
+                    trace_last_export_target = target
+                    trace_last_export_bytes = byte_count
+                    print(string.format("TRACE: export=%s; events=%d; bytes=%d", target, #trace_events, byte_count))
+                end
             elseif subcmd == "chrome" then
                 local target = (subarg and subarg ~= "") and subarg or "(memory)"
-                print(string.format("TRACE: chrome=%s; events=%d", target, #trace_events))
+                local payload = build_trace_chrome_payload()
+                local ok, byte_count, err = write_trace_payload(target, payload)
+                if not ok then
+                    print("ERROR: trace chrome failed: " .. tostring(err))
+                else
+                    trace_chrome_count = trace_chrome_count + 1
+                    trace_last_chrome_target = target
+                    trace_last_chrome_bytes = byte_count
+                    print(string.format("TRACE: chrome=%s; events=%d; bytes=%d", target, #trace_events, byte_count))
+                end
             else
                 print("ERROR: Unsupported trace command")
             end

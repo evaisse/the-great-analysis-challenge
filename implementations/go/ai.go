@@ -91,6 +91,10 @@ var kingMiddlegameTable = [8][8]int{
 
 type AI struct {
 	nodesEvaluated int
+	evalCalls      int
+	ttHits         int
+	ttMisses       int
+	betaCutoffs    int
 	tt            map[uint64]TTEntry
 	deadline      time.Time
 	timedOut      bool
@@ -117,11 +121,19 @@ type SearchResult struct {
 	Depth     int
 	TimedOut  bool
 	ElapsedMS int64
+	Nodes     int
+	EvalCalls int
+	TTHits    int
+	TTMisses  int
+	BetaCutoffs int
 }
 
 func NewAI() *AI {
 	return &AI{
 		nodesEvaluated: 0,
+		ttHits:         0,
+		ttMisses:       0,
+		betaCutoffs:    0,
 		tt:            make(map[uint64]TTEntry, 1<<16),
 	}
 }
@@ -133,6 +145,10 @@ func (ai *AI) FindBestMove(gs *GameState, depth int) Move {
 
 func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 	ai.nodesEvaluated = 0
+	ai.evalCalls = 0
+	ai.ttHits = 0
+	ai.ttMisses = 0
+	ai.betaCutoffs = 0
 	ai.timedOut = false
 
 	if depth < 1 || depth > MAX_DEPTH {
@@ -154,6 +170,11 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 			Depth:     0,
 			TimedOut:  false,
 			ElapsedMS: time.Since(start).Milliseconds(),
+			Nodes:     0,
+			EvalCalls: 0,
+			TTHits:    0,
+			TTMisses:  0,
+			BetaCutoffs: 0,
 		}
 	}
 
@@ -185,6 +206,11 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 		Depth:     completedDepth,
 		TimedOut:  ai.timedOut,
 		ElapsedMS: time.Since(start).Milliseconds(),
+		Nodes:     ai.nodesEvaluated,
+		EvalCalls: ai.evalCalls,
+		TTHits:    ai.ttHits,
+		TTMisses:  ai.ttMisses,
+		BetaCutoffs: ai.betaCutoffs,
 	}
 }
 
@@ -192,6 +218,7 @@ func (ai *AI) searchRoot(gs *GameState, depth int) (int, Move, bool) {
 	if ai.timeExceeded() {
 		return 0, Move{}, false
 	}
+	ai.nodesEvaluated++
 
 	moves := gs.GenerateLegalMoves()
 	if len(moves) == 0 {
@@ -200,7 +227,10 @@ func (ai *AI) searchRoot(gs *GameState, depth int) (int, Move, bool) {
 
 	ttMove := Move{}
 	if entry, ok := ai.tt[gs.ZobristHash]; ok {
+		ai.ttHits++
 		ttMove = entry.BestMove
+	} else {
+		ai.ttMisses++
 	}
 	orderedMoves := ai.orderMoves(moves, ttMove)
 
@@ -243,23 +273,31 @@ func (ai *AI) negamax(gs *GameState, depth int, alpha int, beta int) (int, Move,
 	originalAlpha := alpha
 	bestMove := Move{}
 
-	if entry, ok := ai.tt[gs.ZobristHash]; ok && entry.Depth >= depth {
-		switch entry.Flag {
-		case TTExact:
-			return entry.Score, entry.BestMove, true
-		case TTLowerBound:
-			if entry.Score > alpha {
-				alpha = entry.Score
+	if entry, ok := ai.tt[gs.ZobristHash]; ok {
+		if entry.Depth >= depth {
+			ai.ttHits++
+			switch entry.Flag {
+			case TTExact:
+				return entry.Score, entry.BestMove, true
+			case TTLowerBound:
+				if entry.Score > alpha {
+					alpha = entry.Score
+				}
+			case TTUpperBound:
+				if entry.Score < beta {
+					beta = entry.Score
+				}
 			}
-		case TTUpperBound:
-			if entry.Score < beta {
-				beta = entry.Score
+			if alpha >= beta {
+				ai.betaCutoffs++
+				return entry.Score, entry.BestMove, true
 			}
+			bestMove = entry.BestMove
+		} else {
+			ai.ttMisses++
 		}
-		if alpha >= beta {
-			return entry.Score, entry.BestMove, true
-		}
-		bestMove = entry.BestMove
+	} else {
+		ai.ttMisses++
 	}
 
 	if depth == 0 {
@@ -299,6 +337,7 @@ func (ai *AI) negamax(gs *GameState, depth int, alpha int, beta int) (int, Move,
 			alpha = score
 		}
 		if alpha >= beta {
+			ai.betaCutoffs++
 			break
 		}
 	}
@@ -450,6 +489,7 @@ func (ai *AI) minimax(gs *GameState, depth int, alpha, beta int, maximizingPlaye
 }
 
 func (ai *AI) evaluate(gs *GameState) int {
+	ai.evalCalls++
 	score := 0
 
 	// Material and positional evaluation
@@ -568,6 +608,10 @@ func (ai *AI) isOpenFile(file int, color Color) bool {
 
 func (ai *AI) GetNodesEvaluated() int {
 	return ai.nodesEvaluated
+}
+
+func (ai *AI) GetEvalCalls() int {
+	return ai.evalCalls
 }
 
 func max(a, b int) int {
