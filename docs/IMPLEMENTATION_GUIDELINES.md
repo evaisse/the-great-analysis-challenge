@@ -68,6 +68,10 @@ Board rendering, move legality, error messages, and output format must match the
 - `org.chess.analyze`
 - `org.chess.run`
 
+Optional benchmark labels:
+- `org.chess.bugit`
+- `org.chess.fix`
+
 ## Functional Requirements Checklist
 
 - Correct board state representation and turn tracking
@@ -97,6 +101,9 @@ make build DIR=<language>
 make analyze DIR=<language>
 make test DIR=<language>
 make test-chess-engine DIR=<language>
+make bugit DIR=<language>
+make fix DIR=<language>
+make benchmark-analysis-error DIR=<language>
 ```
 
 Manual smoke checks:
