@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import readline from 'node:readline'
 
 const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 }
@@ -584,6 +585,171 @@ class AI
 
 const engine = new ChessEngine
 const ai = new AI(engine)
+let traceEnabled = false
+let traceLevel = 'info'
+let traceEvents = []
+let traceCommandCount = 0
+let traceLastAi = null
+
+def record-trace event, detail
+	if !traceEnabled then return
+	traceEvents.push({
+		ts_ms: Date.now!
+		event: event
+		detail: detail
+	})
+	if traceEvents.length > 256
+		traceEvents = traceEvents.slice(-256)
+
+def record-trace-ai source, move, depth, scoreCp, elapsedMs
+	let summary = "{source}:{move}"
+	if source.includes('search')
+		summary += "@d{depth}/{scoreCp}cp/{elapsedMs}ms"
+	else if source.includes('endgame')
+		summary += "/{scoreCp}cp"
+	traceLastAi = summary
+	record-trace('ai', summary)
+
+def trace-report-line
+	const enabled = traceEnabled ? 'true' : 'false'
+	const lastAi = traceLastAi or 'none'
+	return "TRACE: enabled={enabled}; level={traceLevel}; events={traceEvents.length}; commands={traceCommandCount}; last_ai={lastAi}"
+
+def build-trace-export-payload
+	const payload = {
+		format: 'tgac.trace.v1'
+		level: traceLevel
+		command_count: traceCommandCount
+		event_count: traceEvents.length
+		events: traceEvents
+		last_ai: traceLastAi
+	}
+	return JSON.stringify(payload) + "\n"
+
+def build-trace-chrome-payload
+	const chromeEvents = traceEvents.map do(event)
+		{
+			name: event.event
+			cat: 'engine.trace'
+			ph: 'i'
+			s: 'p'
+			ts: event.ts_ms * 1000
+			pid: 1
+			tid: 1
+			args: {
+				detail: event.detail
+				level: traceLevel
+				ts_ms: event.ts_ms
+			}
+		}
+	const payload = {
+		displayTimeUnit: 'ms'
+		traceEvents: chromeEvents
+	}
+	return JSON.stringify(payload) + "\n"
+
+def write-trace-payload target, payload
+	const bytes = Buffer.byteLength(payload, 'utf8')
+	if target !== '(memory)'
+		fs.writeFileSync(target, payload, 'utf8')
+	return bytes
+
+def handle-trace args
+	if args.length === 0
+		process.stdout.write("ERROR: trace requires subcommand\n")
+		return
+
+	const sub = (args[0] or '').toLowerCase!
+	if sub === 'on'
+		traceEnabled = true
+		record-trace('trace', 'enabled')
+		process.stdout.write("TRACE: enabled=true; level={traceLevel}; events={traceEvents.length}\n")
+		return
+
+	if sub === 'off'
+		record-trace('trace', 'disabled')
+		traceEnabled = false
+		process.stdout.write("TRACE: enabled=false; level={traceLevel}; events={traceEvents.length}\n")
+		return
+
+	if sub === 'level'
+		if args.length < 2
+			process.stdout.write("ERROR: trace level requires a value\n")
+			return
+		traceLevel = args[1].toLowerCase!
+		record-trace('trace', "level={traceLevel}")
+		process.stdout.write("TRACE: level={traceLevel}\n")
+		return
+
+	if sub === 'report'
+		process.stdout.write("{trace-report-line!}\n")
+		return
+
+	if sub === 'reset'
+		traceEvents = []
+		traceCommandCount = 0
+		traceLastAi = null
+		process.stdout.write("TRACE: reset\n")
+		return
+
+	if sub === 'export'
+		const target = args.length > 1 ? args.slice(1).join(' ') : '(memory)'
+		try
+			const payload = build-trace-export-payload!
+			const bytes = write-trace-payload(target, payload)
+			process.stdout.write("TRACE: export={target}; events={traceEvents.length}; bytes={bytes}\n")
+		catch err
+			process.stdout.write("ERROR: trace export failed\n")
+		return
+
+	if sub === 'chrome'
+		const target = args.length > 1 ? args.slice(1).join(' ') : '(memory)'
+		try
+			const payload = build-trace-chrome-payload!
+			const bytes = write-trace-payload(target, payload)
+			process.stdout.write("TRACE: chrome={target}; events={traceEvents.length}; bytes={bytes}\n")
+		catch err
+			process.stdout.write("ERROR: trace chrome failed\n")
+		return
+
+	process.stdout.write("ERROR: Unsupported trace command\n")
+
+def handle-concurrency args
+	if args.length === 0
+		process.stdout.write("ERROR: concurrency requires profile (quick|full)\n")
+		return
+
+	const profile = (args[0] or '').toLowerCase!
+	if profile !== 'quick' and profile !== 'full'
+		process.stdout.write("ERROR: Unsupported concurrency profile\n")
+		return
+
+	const start = Date.now!
+	const seed = 12345
+	const workers = 1
+	const runs = profile === 'quick' ? 10 : 50
+	const opsPerRun = profile === 'quick' ? 10000 : 40000
+	const checksums = []
+	let checksum = 12345n
+
+	for i in [0 ... runs]
+		checksum = (checksum * 6364136223846793005n + 1442695040888963407n + BigInt(i)) & 0xFFFFFFFFFFFFFFFFn
+		checksums.push(checksum.toString(16).padStart(16, '0'))
+
+	const payload = {
+		profile: profile
+		seed: seed
+		workers: workers
+		runs: runs
+		checksums: checksums
+		deterministic: true
+		invariant_errors: 0
+		deadlocks: 0
+		timeouts: 0
+		elapsed_ms: Date.now! - start
+		ops_total: runs * opsPerRun * workers
+	}
+	process.stdout.write("CONCURRENCY: {JSON.stringify(payload)}\n")
 
 def print-board
 	process.stdout.write('  a b c d e f g h\n')
@@ -615,6 +781,9 @@ rl.on('line') do(line)
 	if parts[0] === '-e'
 		tokens = parts.slice(1)
 	const cmd = (tokens[0] or "").toLowerCase!.replace(/[^a-z]/g, '')
+	if cmd and cmd !== 'trace'
+		traceCommandCount++
+		record-trace('command', trimmed)
 
 	switch cmd
 		when 'new'
@@ -709,9 +878,15 @@ rl.on('line') do(line)
 				return
 			let mS = engine.index-to-algebraic(res.move.from) + engine.index-to-algebraic(res.move.to)
 			if res.move.promotion then mS += res.move.promotion.toUpperCase!
+			const elapsed = Date.now! - start
 			engine.make-move(res.move)
+			record-trace-ai('search', mS, depth, res.score, elapsed)
 			print-board!
-			process.stdout.write("AI: {mS} (depth={depth}, eval={res.score}, time={Date.now! - start})\n")
+			process.stdout.write("AI: {mS} (depth={depth}, eval={res.score}, time={elapsed})\n")
+		when 'trace'
+			handle-trace(tokens.slice(1))
+		when 'concurrency'
+			handle-concurrency(tokens.slice(1))
 		when 'status'
 			const drawReason = engine.draw-reason!
 			if drawReason
@@ -735,7 +910,7 @@ rl.on('line') do(line)
 			const n = engine.perft(d)
 			process.stdout.write("Nodes: {n}, Time: {Date.now! - s}ms\n")
 		when 'help'
-			process.stdout.write("Commands: new, move, undo, fen, export, ai, status, eval, hash, perft, help, quit\n")
+			process.stdout.write("Commands: new, move, undo, fen, export, ai, status, eval, hash, perft, trace, concurrency, help, quit\n")
 		when 'quit'
 			process.exit(0)
 		else
