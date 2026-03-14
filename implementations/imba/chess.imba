@@ -585,6 +585,7 @@ class AI
 
 const engine = new ChessEngine
 const ai = new AI(engine)
+const shouldRenderBoard = !!process.stdout.isTTY
 let traceEnabled = false
 let traceLevel = 'info'
 let traceEvents = []
@@ -765,13 +766,17 @@ def print-board
 	process.stdout.write('  a b c d e f g h\n\n')
 	process.stdout.write("{engine.state.turn === 'w' ? 'White' : 'Black'} to move\n")
 
+def render-board-if-interactive
+	if shouldRenderBoard
+		print-board!
+
 const rl = readline.createInterface({
 	input: process.stdin
 	output: process.stdout
 	terminal: false
 })
 
-print-board!
+render-board-if-interactive!
 
 rl.on('line') do(line)
 	const cleaned = line.replace(/\r/g, '')
@@ -793,7 +798,7 @@ rl.on('line') do(line)
 			else
 				engine.state = startState
 				engine.history = []
-				print-board!
+				render-board-if-interactive!
 				process.stdout.write("OK: NEW\n")
 		when 'move'
 			const mStr = tokens[1] or ""
@@ -843,7 +848,7 @@ rl.on('line') do(line)
 			
 			if legal
 				engine.make-move(legal)
-				print-board!
+				render-board-if-interactive!
 				process.stdout.write("OK: {mStr}\n")
 			else
 				process.stdout.write("ERROR: King would be in check\n")
@@ -852,7 +857,7 @@ rl.on('line') do(line)
 				process.stdout.write("ERROR: No moves to undo\n")
 			else
 				engine.undo!
-				print-board!
+				render-board-if-interactive!
 				process.stdout.write("OK: UNDO\n")
 		when 'fen'
 			const fenStr = tokens.slice(1).join(' ')
@@ -862,7 +867,7 @@ rl.on('line') do(line)
 			else
 				engine.state = nextState
 				engine.history = []
-				print-board!
+				render-board-if-interactive!
 				process.stdout.write("OK: FEN\n")
 		when 'export'
 			process.stdout.write("FEN: {engine.export-fen!}\n")
@@ -881,7 +886,7 @@ rl.on('line') do(line)
 			const elapsed = Date.now! - start
 			engine.make-move(res.move)
 			record-trace-ai('search', mS, depth, res.score, elapsed)
-			print-board!
+			render-board-if-interactive!
 			process.stdout.write("AI: {mS} (depth={depth}, eval={res.score}, time={elapsed})\n")
 		when 'trace'
 			handle-trace(tokens.slice(1))
