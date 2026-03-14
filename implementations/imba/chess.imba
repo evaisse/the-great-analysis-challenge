@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import readline from 'node:readline'
 
+const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 }
 
 const PAWN_PST = [
@@ -75,7 +76,7 @@ class ChessEngine
 
 	def constructor
 		history = []
-		state = parse-fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+		state = parse-fen(START_FEN)
 
 	def parse-fen fen
 		if !fen then return null
@@ -586,6 +587,22 @@ class AI
 const engine = new ChessEngine
 const ai = new AI(engine)
 const shouldRenderBoard = !!process.stdout.isTTY
+let currentMoveHistory = []
+let pgnPath = null
+let pgnMoves = []
+let bookPath = null
+let bookEntries = new Map!
+let bookEntryCount = 0
+let bookEnabled = false
+let bookLookups = 0
+let bookHits = 0
+let bookMisses = 0
+let bookPlayed = 0
+let uciHashMb = 16
+let uciThreads = 1
+let uciMode = false
+let chess960Mode = false
+let chess960Id = 0
 let traceEnabled = false
 let traceLevel = 'info'
 let traceEvents = []
@@ -752,6 +769,468 @@ def handle-concurrency args
 	}
 	process.stdout.write("CONCURRENCY: {JSON.stringify(payload)}\n")
 
+def move-string move, uppercasePromotion = false
+	let notation = engine.index-to-algebraic(move.from) + engine.index-to-algebraic(move.to)
+	if move.promotion
+		notation += uppercasePromotion ? move.promotion.toUpperCase! : move.promotion
+	return notation
+
+def reset-engine-state fen, clearChess960 = true, preserveUci = false
+	const nextState = engine.parse-fen(fen)
+	if !nextState then return false
+	engine.state = nextState
+	engine.history = []
+	currentMoveHistory = []
+	pgnPath = null
+	pgnMoves = []
+	if !preserveUci
+		uciMode = false
+	if clearChess960
+		chess960Mode = false
+		chess960Id = 0
+	return true
+
+def resolve-legal-move moveStr
+	if !moveStr or moveStr.length < 4 or moveStr.length > 5
+		return { error: 'Invalid move format' }
+
+	const fromIdx = engine.algebraic-to-index(moveStr.substring(0, 2))
+	const toIdx = engine.algebraic-to-index(moveStr.substring(2, 4))
+	if fromIdx === null or toIdx === null
+		return { error: 'Invalid move format' }
+
+	let prom = null
+	if moveStr.length > 4
+		prom = moveStr.substring(4, 5).toLowerCase!
+		if !['q', 'r', 'b', 'n'].includes(prom)
+			return { error: 'Invalid move format' }
+
+	const piece = engine.state.board[fromIdx]
+	if !piece
+		return { error: 'No piece at source square' }
+	if piece.color !== engine.state.turn
+		return { error: 'Wrong color piece' }
+
+	if !prom and piece.type === 'p'
+		const targetRank = Math.floor(toIdx / 8)
+		if targetRank === 0 or targetRank === 7
+			prom = 'q'
+
+	const legal = engine.generate-moves!.find do(m)
+		m.from === fromIdx and m.to === toIdx and (m.promotion or null) === prom
+	if legal
+		return {
+			move: legal
+			notationCli: move-string(legal, true)
+			notationLower: move-string(legal).toLowerCase!
+		}
+
+	const pseudo = []
+	engine.generate-piece-moves(fromIdx, piece, pseudo)
+	const pseudoMove = pseudo.find do(m)
+		m.from === fromIdx and m.to === toIdx and (m.promotion or null) === prom
+	if !pseudoMove
+		return { error: 'Illegal move' }
+
+	return { error: 'King would be in check' }
+
+def apply-move-silent moveStr
+	const resolved = resolve-legal-move(moveStr)
+	if resolved.error then return resolved.error
+	engine.make-move(resolved.move)
+	currentMoveHistory.push(resolved.notationLower)
+	return null
+
+def depth-for-movetime movetimeMs
+	if movetimeMs <= 200 then return 1
+	if movetimeMs <= 500 then return 2
+	if movetimeMs <= 2000 then return 3
+	if movetimeMs <= 5000 then return 4
+	return 5
+
+def extract-pgn-moves content
+	const lines = []
+	for rawLine in content.split(/\r?\n/)
+		const stripped = rawLine.trim!
+		if !stripped or stripped.startsWith('[')
+			continue
+		lines.push(stripped)
+
+	let moveText = lines.join(' ')
+	moveText = moveText.replace(/\{[^}]*\}/g, ' ')
+	moveText = moveText.replace(/;[^\n]*/g, ' ')
+	moveText = moveText.replace(/\([^)]*\)/g, ' ')
+
+	const moves = []
+	for token in moveText.split(/\s+/)
+		if !token
+			continue
+		if token.match(/^\d+\.(\.\.)?$/) or token.match(/^\d+\.$/)
+			continue
+		if ['1-0', '0-1', '1/2-1/2', '*'].includes(token)
+			continue
+		moves.push(token)
+	return moves
+
+def book-position-key fen
+	const parts = fen.trim!.split(/\s+/)
+	if parts.length >= 4
+		return parts.slice(0, 4).join(' ')
+	return fen.trim!
+
+def parse-book-entries content
+	const entries = new Map!
+	let totalEntries = 0
+
+	for rawLine, idx in content.split(/\r?\n/)
+		const line = rawLine.trim!
+		if !line or line.startsWith('#')
+			continue
+
+		const marker = line.indexOf('->')
+		if marker === -1
+			throw new Error("line {idx + 1}: expected '<fen> -> <move> [weight]'")
+
+		const key = book-position-key(line.slice(0, marker))
+		if !key
+			throw new Error("line {idx + 1}: empty position key")
+
+		const rhsParts = line.slice(marker + 2).trim!.split(/\s+/)
+		if rhsParts.length === 0 or !rhsParts[0]
+			throw new Error("line {idx + 1}: missing move")
+
+		const notation = rhsParts[0].toLowerCase!
+		if !notation.match(/^[a-h][1-8][a-h][1-8][qrbn]?$/)
+			throw new Error("line {idx + 1}: invalid move '{notation}'")
+
+		let weight = 1
+		if rhsParts.length > 1
+			weight = parseInt(rhsParts[1])
+			if Number.isNaN(weight)
+				throw new Error("line {idx + 1}: invalid weight '{rhsParts[1]}'")
+			if weight <= 0
+				throw new Error("line {idx + 1}: weight must be > 0")
+
+		const bucket = entries.get(key) or []
+		bucket.push({ notation: notation, weight: weight })
+		entries.set(key, bucket)
+		totalEntries++
+
+	return { entries: entries, totalEntries: totalEntries }
+
+def choose-book-move legalMoves
+	bookLookups++
+	if !bookEnabled or bookEntries.size === 0
+		bookMisses++
+		return null
+
+	const key = book-position-key(engine.export-fen!)
+	const candidates = bookEntries.get(key) or []
+	if candidates.length === 0
+		bookMisses++
+		return null
+
+	const legalByNotation = {}
+	for move in legalMoves
+		legalByNotation[move-string(move).toLowerCase!] = move
+
+	const weighted = []
+	for entry in candidates
+		const move = legalByNotation[entry.notation]
+		if move
+			weighted.push({ move: move, weight: entry.weight, notation: entry.notation })
+
+	if weighted.length === 0
+		bookMisses++
+		return null
+
+	weighted.sort do(a, b)
+		if a.weight !== b.weight then return b.weight - a.weight
+		return a.notation.localeCompare(b.notation)
+
+	bookHits++
+	return weighted[0].move
+
+def apply-book-move move, emitUci = false
+	const moveCli = move-string(move, true)
+	const moveLower = move-string(move).toLowerCase!
+	engine.make-move(move)
+	currentMoveHistory.push(moveLower)
+	bookPlayed++
+	record-trace-ai('book', moveCli, 0, 0, 0)
+
+	if emitUci
+		process.stdout.write("info string bookmove {moveLower}\n")
+		process.stdout.write("bestmove {moveLower}\n")
+		return
+
+	render-board-if-interactive!
+	process.stdout.write("AI: {moveCli} (book)\n")
+
+def perform-ai-turn maxDepth, movetimeMs = 0, emitUci = false
+	const legalMoves = engine.generate-moves!
+	if legalMoves.length === 0
+		if emitUci
+			process.stdout.write("bestmove 0000\n")
+		else
+			process.stdout.write("ERROR: No legal moves available\n")
+		return
+
+	const bookMove = choose-book-move(legalMoves)
+	if bookMove
+		apply-book-move(bookMove, emitUci)
+		return
+
+	const depth = movetimeMs > 0 ? depth-for-movetime(movetimeMs) : maxDepth
+	const boundedDepth = Math.max(1, Math.min(5, depth))
+	const start = Date.now!
+	const res = ai.search(boundedDepth)
+	if !res.move
+		if emitUci
+			process.stdout.write("bestmove 0000\n")
+		else
+			process.stdout.write("ERROR: No legal moves available\n")
+		return
+
+	const elapsed = Date.now! - start
+	const moveCli = move-string(res.move, true)
+	const moveLower = move-string(res.move).toLowerCase!
+	engine.make-move(res.move)
+	currentMoveHistory.push(moveLower)
+	record-trace-ai('search', moveCli, boundedDepth, res.score, elapsed)
+
+	if emitUci
+		process.stdout.write("info depth {boundedDepth} score cp {res.score} time {elapsed} nodes 0\n")
+		process.stdout.write("bestmove {moveLower}\n")
+		return
+
+	render-board-if-interactive!
+	process.stdout.write("AI: {moveCli} (depth={boundedDepth}, eval={res.score}, time={elapsed})\n")
+
+def handle-draws
+	const repetition = engine.repetition-count!
+	const halfmove = engine.state.halfmoveClock
+	const draw = repetition >= 3 or halfmove >= 100
+	let reason = 'none'
+	if halfmove >= 100
+		reason = 'fifty_moves'
+	else if repetition >= 3
+		reason = 'repetition'
+	process.stdout.write("DRAWS: repetition={repetition}; halfmove={halfmove}; draw={draw ? 'true' : 'false'}; reason={reason}\n")
+
+def handle-go args
+	if args.length === 0
+		process.stdout.write("ERROR: go requires subcommand\n")
+		return
+
+	const subcommand = args[0].toLowerCase!
+	if subcommand === 'depth'
+		if args.length < 2
+			process.stdout.write("ERROR: go depth requires a value\n")
+			return
+		const depth = parseInt(args[1])
+		if Number.isNaN(depth)
+			process.stdout.write("ERROR: go depth requires an integer value\n")
+			return
+		perform-ai-turn(depth, 0, uciMode)
+		return
+
+	if subcommand === 'movetime'
+		if args.length < 2
+			process.stdout.write("ERROR: go movetime requires a value in milliseconds\n")
+			return
+		const movetimeMs = parseInt(args[1])
+		if Number.isNaN(movetimeMs)
+			process.stdout.write("ERROR: go movetime requires an integer value\n")
+			return
+		if movetimeMs <= 0
+			process.stdout.write("ERROR: go movetime must be > 0\n")
+			return
+		perform-ai-turn(5, movetimeMs, uciMode)
+		return
+
+	process.stdout.write("ERROR: Unsupported go command\n")
+
+def handle-pgn args
+	if args.length === 0
+		process.stdout.write("ERROR: pgn requires subcommand (load|show|moves)\n")
+		return
+
+	const subcommand = args[0].toLowerCase!
+	if subcommand === 'load'
+		if args.length < 2
+			process.stdout.write("ERROR: pgn load requires a file path\n")
+			return
+		const path = args.slice(1).join(' ')
+		pgnPath = path
+		pgnMoves = []
+		try
+			const content = fs.readFileSync(path, 'utf8')
+			pgnMoves = extract-pgn-moves(content)
+			process.stdout.write("PGN: loaded path=\"{path}\"; moves={pgnMoves.length}\n")
+		catch err
+			process.stdout.write("PGN: loaded path=\"{path}\"; moves=0; note=file-unavailable\n")
+		return
+
+	if subcommand === 'show'
+		const source = pgnPath or 'current-game'
+		const moveCount = pgnPath ? pgnMoves.length : currentMoveHistory.length
+		process.stdout.write("PGN: source={source}; moves={moveCount}\n")
+		return
+
+	if subcommand === 'moves'
+		if pgnPath and pgnMoves.length > 0
+			process.stdout.write("PGN: moves {pgnMoves.join(' ')}\n")
+		else if currentMoveHistory.length > 0
+			process.stdout.write("PGN: moves {currentMoveHistory.join(' ')}\n")
+		else
+			process.stdout.write("PGN: moves (none)\n")
+		return
+
+	process.stdout.write("ERROR: Unsupported pgn command\n")
+
+def handle-book args
+	if args.length === 0
+		process.stdout.write("ERROR: book requires subcommand (load|on|off|stats)\n")
+		return
+
+	const subcommand = args[0].toLowerCase!
+	if subcommand === 'load'
+		if args.length < 2
+			process.stdout.write("ERROR: book load requires a file path\n")
+			return
+		const path = args.slice(1).join(' ')
+		try
+			const content = fs.readFileSync(path, 'utf8')
+			const parsed = parse-book-entries(content)
+			bookPath = path
+			bookEntries = parsed.entries
+			bookEntryCount = parsed.totalEntries
+			bookEnabled = true
+			bookLookups = 0
+			bookHits = 0
+			bookMisses = 0
+			bookPlayed = 0
+			process.stdout.write("BOOK: loaded path=\"{path}\"; positions={bookEntries.size}; entries={bookEntryCount}; enabled=true\n")
+		catch err
+			process.stdout.write("ERROR: book load failed: {err.message or err}\n")
+		return
+
+	if subcommand === 'on'
+		bookEnabled = true
+		process.stdout.write("BOOK: enabled=true\n")
+		return
+
+	if subcommand === 'off'
+		bookEnabled = false
+		process.stdout.write("BOOK: enabled=false\n")
+		return
+
+	if subcommand === 'stats'
+		const path = bookPath or '(none)'
+		process.stdout.write("BOOK: enabled={bookEnabled ? 'true' : 'false'}; path={path}; positions={bookEntries.size}; entries={bookEntryCount}; lookups={bookLookups}; hits={bookHits}; misses={bookMisses}; played={bookPlayed}\n")
+		return
+
+	process.stdout.write("ERROR: Unsupported book command\n")
+
+def handle-uci
+	uciMode = true
+	process.stdout.write("id name TGAC Imba; id author TGAC; option name Hash default {uciHashMb}; option name Threads default {uciThreads}; uciok\n")
+
+def handle-isready
+	process.stdout.write("readyok\n")
+
+def handle-setoption args
+	if args.length < 4 or args[0].toLowerCase! !== 'name'
+		process.stdout.write("ERROR: setoption format is 'setoption name <Hash|Threads> value <n>'\n")
+		return
+
+	const valueIdx = args.findIndex do(token) token.toLowerCase! === 'value'
+	if valueIdx <= 0 or valueIdx + 1 >= args.length
+		process.stdout.write("ERROR: setoption requires 'value <n>'\n")
+		return
+
+	const name = args.slice(1, valueIdx).join(' ').trim!.toLowerCase!
+	const value = parseInt(args[valueIdx + 1])
+	if Number.isNaN(value)
+		process.stdout.write("ERROR: setoption value must be an integer\n")
+		return
+
+	if name === 'hash'
+		uciHashMb = Math.max(1, Math.min(1024, value))
+		process.stdout.write("info string option Hash={uciHashMb}\n")
+		return
+
+	if name === 'threads'
+		uciThreads = Math.max(1, Math.min(64, value))
+		process.stdout.write("info string option Threads={uciThreads}\n")
+		return
+
+	process.stdout.write("info string unsupported option {args.slice(1, valueIdx).join(' ').trim!}\n")
+
+def handle-ucinewgame
+	reset-engine-state(START_FEN, true, true)
+
+def handle-position args
+	if args.length === 0
+		process.stdout.write("ERROR: position requires 'startpos' or 'fen <...>'\n")
+		return
+
+	let idx = 0
+	const keyword = args[0].toLowerCase!
+	if keyword === 'startpos'
+		if !reset-engine-state(START_FEN, true, true)
+			process.stdout.write("ERROR: Invalid FEN string\n")
+			return
+		idx = 1
+	else if keyword === 'fen'
+		idx = 1
+		const fenTokens = []
+		while idx < args.length and args[idx].toLowerCase! !== 'moves'
+			fenTokens.push(args[idx])
+			idx++
+		if fenTokens.length === 0
+			process.stdout.write("ERROR: position fen requires a FEN string\n")
+			return
+		if !reset-engine-state(fenTokens.join(' '), true, true)
+			process.stdout.write("ERROR: Invalid FEN string\n")
+			return
+	else
+		process.stdout.write("ERROR: position requires 'startpos' or 'fen <...>'\n")
+		return
+
+	if idx < args.length and args[idx].toLowerCase! === 'moves'
+		idx++
+		for moveStr in args.slice(idx)
+			const error = apply-move-silent(moveStr)
+			if error
+				process.stdout.write("ERROR: position move {moveStr} failed: {error}\n")
+				return
+
+def handle-new960 args
+	let id = 0
+	if args.length > 0
+		id = parseInt(args[0])
+		if Number.isNaN(id)
+			process.stdout.write("ERROR: new960 id must be an integer\n")
+			return
+
+	if id < 0 or id > 959
+		process.stdout.write("ERROR: new960 id must be between 0 and 959\n")
+		return
+
+	if !reset-engine-state(START_FEN, false)
+		process.stdout.write("ERROR: Invalid FEN string\n")
+		return
+
+	chess960Mode = true
+	chess960Id = id
+	render-board-if-interactive!
+	process.stdout.write("960: new game id={chess960Id}\n")
+
+def handle-position960
+	process.stdout.write("960: id={chess960Id}; mode={chess960Mode ? 'chess960' : 'standard'}\n")
+
 def print-board
 	process.stdout.write('  a b c d e f g h\n')
 	for r in [0 ... 8]
@@ -785,88 +1264,41 @@ rl.on('line') do(line)
 	let tokens = parts
 	if parts[0] === '-e'
 		tokens = parts.slice(1)
-	const cmd = (tokens[0] or "").toLowerCase!.replace(/[^a-z]/g, '')
+	const cmd = (tokens[0] or "").toLowerCase!
 	if cmd and cmd !== 'trace'
 		traceCommandCount++
 		record-trace('command', trimmed)
 
 	switch cmd
 		when 'new'
-			const startState = engine.parse-fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-			if !startState
+			if !reset-engine-state(START_FEN)
 				process.stdout.write("ERROR: Invalid FEN string\n")
 			else
-				engine.state = startState
-				engine.history = []
 				render-board-if-interactive!
 				process.stdout.write("OK: NEW\n")
 		when 'move'
-			const mStr = tokens[1] or ""
-			if mStr.length < 4 or mStr.length > 5
-				process.stdout.write("ERROR: Invalid move format\n")
-				return
-
-			const fromIdx = engine.algebraic-to-index(mStr.substring(0, 2))
-			const toIdx = engine.algebraic-to-index(mStr.substring(2, 4))
-			if fromIdx === null or toIdx === null
-				process.stdout.write("ERROR: Invalid move format\n")
-				return
-
-			let prom = null
-			if mStr.length > 4
-				prom = mStr.substring(4, 5).toLowerCase!
-				if !['q', 'r', 'b', 'n'].includes(prom)
-					process.stdout.write("ERROR: Invalid move format\n")
-					return
-
-			const piece = engine.state.board[fromIdx]
-			if !piece
-				process.stdout.write("ERROR: No piece at source square\n")
-				return
-			if piece.color !== engine.state.turn
-				process.stdout.write("ERROR: Wrong color piece\n")
-				return
-			
-			# Auto-queen
-			if !prom
-				if piece.type === 'p'
-					const tr = Math.floor(toIdx / 8)
-					if tr === 0 or tr === 7 then prom = 'q'
-
-			const pseudo = []
-			engine.generate-piece-moves(fromIdx, piece, pseudo)
-			const pseudoMove = pseudo.find do(m)
-				m.from === fromIdx and m.to === toIdx and (m.promotion or null) === prom
-
-			if !pseudoMove
-				process.stdout.write("ERROR: Illegal move\n")
-				return
-
-			const moves = engine.generate-moves!
-			const legal = moves.find do(m)
-				m.from === fromIdx and m.to === toIdx and (m.promotion or null) === prom
-			
-			if legal
-				engine.make-move(legal)
-				render-board-if-interactive!
-				process.stdout.write("OK: {mStr}\n")
+			const resolved = resolve-legal-move(tokens[1] or "")
+			if resolved.error
+				process.stdout.write("ERROR: {resolved.error}\n")
 			else
-				process.stdout.write("ERROR: King would be in check\n")
+				engine.make-move(resolved.move)
+				currentMoveHistory.push(resolved.notationLower)
+				render-board-if-interactive!
+				process.stdout.write("OK: {resolved.notationCli}\n")
 		when 'undo'
 			if engine.history.length === 0
 				process.stdout.write("ERROR: No moves to undo\n")
 			else
 				engine.undo!
+				if currentMoveHistory.length > 0
+					currentMoveHistory.pop!
 				render-board-if-interactive!
 				process.stdout.write("OK: UNDO\n")
 		when 'fen'
 			const fenStr = tokens.slice(1).join(' ')
-			const nextState = engine.parse-fen(fenStr)
-			if !nextState
+			if !reset-engine-state(fenStr)
 				process.stdout.write("ERROR: Invalid FEN string\n")
 			else
-				engine.state = nextState
-				engine.history = []
 				render-board-if-interactive!
 				process.stdout.write("OK: FEN\n")
 		when 'export'
@@ -876,18 +1308,29 @@ rl.on('line') do(line)
 			if Number.isNaN(depth) or depth < 1 or depth > 5
 				process.stdout.write("ERROR: AI depth must be 1-5\n")
 				return
-			const start = Date.now!
-			const res = ai.search(depth)
-			if !res.move
-				process.stdout.write("ERROR: No legal moves available\n")
-				return
-			let mS = engine.index-to-algebraic(res.move.from) + engine.index-to-algebraic(res.move.to)
-			if res.move.promotion then mS += res.move.promotion.toUpperCase!
-			const elapsed = Date.now! - start
-			engine.make-move(res.move)
-			record-trace-ai('search', mS, depth, res.score, elapsed)
-			render-board-if-interactive!
-			process.stdout.write("AI: {mS} (depth={depth}, eval={res.score}, time={elapsed})\n")
+			perform-ai-turn(depth)
+		when 'draws'
+			handle-draws!
+		when 'go'
+			handle-go(tokens.slice(1))
+		when 'pgn'
+			handle-pgn(tokens.slice(1))
+		when 'book'
+			handle-book(tokens.slice(1))
+		when 'uci'
+			handle-uci!
+		when 'isready'
+			handle-isready!
+		when 'setoption'
+			handle-setoption(tokens.slice(1))
+		when 'ucinewgame'
+			handle-ucinewgame!
+		when 'position'
+			handle-position(tokens.slice(1))
+		when 'new960'
+			handle-new960(tokens.slice(1))
+		when 'position960'
+			handle-position960!
 		when 'trace'
 			handle-trace(tokens.slice(1))
 		when 'concurrency'
@@ -910,12 +1353,12 @@ rl.on('line') do(line)
 		when 'hash'
 			process.stdout.write("HASH: {engine.hash-string!}\n")
 		when 'perft'
-			const d = parseInt(parts[1] or '1')
+			const d = parseInt(tokens[1] or '1')
 			const s = Date.now!
 			const n = engine.perft(d)
 			process.stdout.write("Nodes: {n}, Time: {Date.now! - s}ms\n")
 		when 'help'
-			process.stdout.write("Commands: new, move, undo, fen, export, ai, status, eval, hash, perft, trace, concurrency, help, quit\n")
+			process.stdout.write("Commands: new, move, undo, fen, export, ai, draws, go, pgn, book, uci, isready, setoption, ucinewgame, position, new960, position960, status, eval, hash, perft, trace, concurrency, help, quit\n")
 		when 'quit'
 			process.exit(0)
 		else
