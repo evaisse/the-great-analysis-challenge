@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,11 @@ from run_metadata_phase import PhaseExecution, docker_image_exists, execute_phas
 
 WORKSPACE_ROOT = REPO_ROOT / "reports" / "error-analysis-workspaces"
 REPORT_ROOT = REPO_ROOT / "reports" / "error-analysis"
+ANSI_ESCAPE_PATTERN = re.compile(r"\x1b\[[0-9;]*m")
+VOLATILE_DURATION_PATTERN = re.compile(
+    r"\b\d+(?:\.\d+)?(?: ?(?:ms|s|milliseconds?|seconds?|kb|mb|gb))\b",
+    re.IGNORECASE,
+)
 
 
 def default_workspace_path(impl_name: str) -> Path:
@@ -96,6 +102,20 @@ def execution_to_dict(execution: PhaseExecution, duration_s: float | None = None
     return payload
 
 
+def phase_signature(phase: dict[str, object]) -> tuple[object, object, object]:
+    def normalize_output(value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        without_ansi = ANSI_ESCAPE_PATTERN.sub("", value)
+        return VOLATILE_DURATION_PATTERN.sub("<duration>", without_ansi)
+
+    return (
+        phase.get("returncode"),
+        normalize_output(phase.get("stdout")),
+        normalize_output(phase.get("stderr")),
+    )
+
+
 def build_text_report(report: dict[str, object]) -> str:
     summary = report["summary"]
     phases = report["phases"]
@@ -109,10 +129,11 @@ def build_text_report(report: dict[str, object]) -> str:
         "",
         "SUMMARY",
         "-" * 80,
+        f"Baseline analyzer green: {summary['baseline_green']}",
         f"Bug injected: {summary['bugit_success']}",
         f"Analyzer detected bug: {summary['bug_detected']}",
         f"Fix applied: {summary['fix_success']}",
-        f"Analyzer green after fix: {summary['recovered']}",
+        f"Analyzer restored to baseline after fix: {summary['recovered']}",
         "",
         "PHASES",
         "-" * 80,
@@ -126,6 +147,14 @@ def build_text_report(report: dict[str, object]) -> str:
 
     lines.extend(
         [
+            "",
+            "BASELINE ANALYZE STDERR",
+            "-" * 80,
+            str(phases["baseline_analyze"]["stderr"]).rstrip() or "(empty)",
+            "",
+            "BASELINE ANALYZE STDOUT",
+            "-" * 80,
+            str(phases["baseline_analyze"]["stdout"]).rstrip() or "(empty)",
             "",
             "ANALYZE WITH BUG STDERR",
             "-" * 80,
@@ -197,6 +226,7 @@ def run_benchmark(
     ensure_image_exists(image, impl_path.name)
     seed_workspace(image, workspace)
 
+    baseline_analyze = record_phase(impl_path, "analyze", image, workspace)
     bugit_phase = record_phase(impl_path, "bugit", image, workspace)
     analyze_with_bug = record_phase(impl_path, "analyze", image, workspace)
     fix_phase = record_phase(impl_path, "fix", image, workspace)
@@ -208,16 +238,18 @@ def run_benchmark(
         "workspace": str(workspace),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "phases": {
+            "baseline_analyze": baseline_analyze,
             "bugit": bugit_phase,
             "analyze_with_bug": analyze_with_bug,
             "fix": fix_phase,
             "analyze_after_fix": analyze_after_fix,
         },
         "summary": {
+            "baseline_green": bool(baseline_analyze["success"]),
             "bugit_success": bool(bugit_phase["success"]),
-            "bug_detected": not bool(analyze_with_bug["success"]),
+            "bug_detected": phase_signature(analyze_with_bug) != phase_signature(baseline_analyze),
             "fix_success": bool(fix_phase["success"]),
-            "recovered": bool(analyze_after_fix["success"]),
+            "recovered": phase_signature(analyze_after_fix) == phase_signature(baseline_analyze),
         },
     }
     write_report(report, json_path, text_path)
@@ -226,6 +258,7 @@ def run_benchmark(
     print(f"Text report: {text_path}")
     print(
         "Summary: "
+        f"baseline_green={report['summary']['baseline_green']} "
         f"bugit_success={report['summary']['bugit_success']} "
         f"bug_detected={report['summary']['bug_detected']} "
         f"fix_success={report['summary']['fix_success']} "

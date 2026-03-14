@@ -3,13 +3,13 @@
 all: build
 
 build:
-	bun --version
+	bun build chess.js --outdir dist --target bun
 
 test:
 	bun test
 
 analyze:
-	bun --version
+	bun build chess.js --outdir /tmp/tgac-bun-check --target bun
 
 clean:
 	rm -rf node_modules bun.lockb

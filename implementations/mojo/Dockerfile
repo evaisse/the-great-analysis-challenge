@@ -12,5 +12,7 @@ LABEL org.chess.source_exts=".mojo"
 LABEL org.chess.build="mojo build chess.mojo"
 LABEL org.chess.test="mojo chess.mojo"
 LABEL org.chess.analyze="mojo chess.mojo --no-run"
+LABEL org.chess.bugit="if [ -f .bugit/chess.mojo.bak ]; then echo 'bugit already active for mojo'; else mkdir -p .bugit && cp chess.mojo .bugit/chess.mojo.bak && printf '\n)\n' >> chess.mojo; fi"
+LABEL org.chess.fix="if [ -f .bugit/chess.mojo.bak ]; then mv .bugit/chess.mojo.bak chess.mojo && rmdir .bugit 2>/dev/null || true; else echo 'no mojo bugit backup to restore'; fi"
 
 CMD ["mojo", "chess.mojo"]

@@ -10,8 +10,7 @@ test:
 	@echo "No internal tests defined"
 
 analyze:
-	# Imba doesn't have a standalone static analyzer like tsc yet
-	@echo "No static analysis tool defined"
+	imba build chess.imba --platform node --base . --outdir /tmp/tgac-imba-check
 
 clean:
 	rm -rf node_modules dist
