@@ -13,5 +13,7 @@ LABEL org.chess.benchmark.build="skip"
 LABEL org.chess.build="python3 -m py_compile chess.py"
 LABEL org.chess.test="python3 test_engine.py"
 LABEL org.chess.analyze="python3 -m py_compile chess.py lib/*.py"
+LABEL org.chess.bugit="if [ -f .bugit/chess.py.bak ]; then echo 'bugit already active for python'; else mkdir -p .bugit && cp chess.py .bugit/chess.py.bak && printf '\ndef __bugit__(:\n' >> chess.py; fi"
+LABEL org.chess.fix="if [ -f .bugit/chess.py.bak ]; then mv .bugit/chess.py.bak chess.py && rmdir .bugit 2>/dev/null || true; else echo 'no python bugit backup to restore'; fi"
 
 CMD ["python3", "chess.py"]

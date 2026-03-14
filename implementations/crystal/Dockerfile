@@ -15,5 +15,7 @@ LABEL org.chess.build="crystal build src/chess_engine.cr --release -o chess_engi
 LABEL org.chess.run="./chess_engine"
 LABEL org.chess.test="crystal spec"
 LABEL org.chess.analyze="crystal tool format --check"
+LABEL org.chess.bugit="if [ -f .bugit/chess_engine.cr.bak ]; then echo 'bugit already active for crystal'; else mkdir -p .bugit && cp src/chess_engine.cr .bugit/chess_engine.cr.bak && printf '\n)\n' >> src/chess_engine.cr; fi"
+LABEL org.chess.fix="if [ -f .bugit/chess_engine.cr.bak ]; then mv .bugit/chess_engine.cr.bak src/chess_engine.cr && rmdir .bugit 2>/dev/null || true; else echo 'no crystal bugit backup to restore'; fi"
 
 CMD ["./chess_engine"]

@@ -14,5 +14,7 @@ LABEL org.chess.source_exts=".res,.resi"
 LABEL org.chess.build="npm run build"
 LABEL org.chess.test="node lib/es6/src/Chess.js --test"
 LABEL org.chess.analyze="npx rescript build"
+LABEL org.chess.bugit="if [ -f .bugit/Chess.res.bak ]; then echo 'bugit already active for rescript'; else mkdir -p .bugit && cp src/Chess.res .bugit/Chess.res.bak && printf '\n)\n' >> src/Chess.res; fi"
+LABEL org.chess.fix="if [ -f .bugit/Chess.res.bak ]; then mv .bugit/Chess.res.bak src/Chess.res && rmdir .bugit 2>/dev/null || true; else echo 'no rescript bugit backup to restore'; fi"
 
 CMD ["node", "lib/es6/src/Chess.js"]

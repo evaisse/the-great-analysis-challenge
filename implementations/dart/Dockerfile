@@ -15,5 +15,7 @@ LABEL org.chess.source_exts=".dart"
 LABEL org.chess.build="printf 'quit\n' | dart --packages=package_config.json bin/main.dart"
 LABEL org.chess.test="printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | dart --packages=package_config.json bin/main.dart"
 LABEL org.chess.analyze="dart format --output=none bin lib"
+LABEL org.chess.bugit="if [ -f .bugit/main.dart.bak ]; then echo 'bugit already active for dart'; else mkdir -p .bugit && cp bin/main.dart .bugit/main.dart.bak && printf '\n)\n' >> bin/main.dart; fi"
+LABEL org.chess.fix="if [ -f .bugit/main.dart.bak ]; then mv .bugit/main.dart.bak bin/main.dart && rmdir .bugit 2>/dev/null || true; else echo 'no dart bugit backup to restore'; fi"
 
 CMD ["dart", "--packages=package_config.json", "bin/main.dart"]

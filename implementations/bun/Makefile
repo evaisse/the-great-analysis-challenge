@@ -3,13 +3,13 @@
 all: build
 
 build:
-	bun --version
+	bun build chess.js --outdir dist --target bun
 
 test:
 	bun test
 
 analyze:
-	bun --version
+	bun build chess.js --outdir /tmp/tgac-bun-check --target bun
 
 clean:
 	rm -rf node_modules bun.lockb
@@ -22,3 +22,11 @@ docker-build:
 
 docker-test: docker-build
 	docker run --network none --rm -i chess-bun sh -c "printf 'new\nmove e2e4\nmove e7e5\nexport\nquit\n' | bun run chess.js"
+
+.PHONY: bugit fix
+
+bugit:
+	python3 ../../scripts/error_analysis_benchmark.py bugit --impl .
+
+fix:
+	python3 ../../scripts/error_analysis_benchmark.py fix --impl .

@@ -10,8 +10,7 @@ test:
 	@echo "No internal tests defined"
 
 analyze:
-	# Imba doesn't have a standalone static analyzer like tsc yet
-	@echo "No static analysis tool defined"
+	imba build chess.imba --platform node --base . --outdir /tmp/tgac-imba-check
 
 clean:
 	rm -rf node_modules dist
@@ -24,3 +23,11 @@ docker-build:
 
 docker-test: docker-build
 	docker run --network none --rm -i chess-imba sh -c "echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | node dist/chess.js"
+
+.PHONY: bugit fix
+
+bugit:
+	python3 ../../scripts/error_analysis_benchmark.py bugit --impl .
+
+fix:
+	python3 ../../scripts/error_analysis_benchmark.py fix --impl .

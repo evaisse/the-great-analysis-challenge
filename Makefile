@@ -2,7 +2,7 @@
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 # Convention over Configuration: This Makefile is 100% implementation-agnostic
 
-.PHONY: all image test-chess-engine test build analyze clean help website analyze-tools list-implementations verify workflow validate-website-metadata install-hooks benchmark-stress benchmark-concurrency
+.PHONY: all image test-chess-engine test build analyze bugit fix benchmark-analysis-error clean help website analyze-tools list-implementations verify workflow validate-website-metadata install-hooks benchmark-stress benchmark-concurrency
 
 # Auto-discover all implementations with Dockerfiles
 IMPLEMENTATIONS := $(shell find implementations -mindepth 1 -maxdepth 1 -type d -exec test -f {}/Dockerfile \; -exec basename {} \; 2>/dev/null | sort)
@@ -23,6 +23,8 @@ help:
 	@echo "  make image [DIR=<impl>]             - Build Docker image(s) only"
 	@echo "  make build [DIR=<impl>]             - Run compilation command(s) only"
 	@echo "  make analyze [DIR=<impl>]           - Run static analysis/lint command(s) only"
+	@echo "  make bugit DIR=<impl>               - Inject a reproducible static-analysis bug in a benchmark workspace"
+	@echo "  make fix DIR=<impl>                 - Restore the injected benchmark bug in that workspace"
 	@echo "  make test [DIR=<impl>]              - Run internal implementation test command(s) only"
 	@echo "  make test-chess-engine [DIR=<impl>] [TRACK=v1|v2-foundation|v2-functional|v2-system|v2-full|v3-book]"
 	@echo "                                     - Run shared chess engine suite only"
@@ -30,6 +32,8 @@ help:
 	@echo "                                     - Run performance benchmark suite with normalized metrics"
 	@echo "  make benchmark-concurrency [DIR=<impl>] [PROFILE=quick|full]"
 	@echo "                                     - Run concurrency safety harness"
+	@echo "  make benchmark-analysis-error DIR=<impl>"
+	@echo "                                     - Benchmark analyzer behavior before/after a reproducible injected bug"
 	@echo "  make verify [DIR=<impl>]            - Verify implementation structure"
 	@echo "  make workflow [DIR=<impl>]          - Run full workflow (verify, image, build, analyze, test, test-chess-engine)"
 	@echo "  make clean [DIR=<impl>]             - Clean implementation image(s)"
@@ -126,6 +130,45 @@ else
 	done
 	@echo ""
 	@echo "Analysis phase complete for all implementations"
+endif
+
+# Inject a reproducible analyzer-facing bug in an extracted Docker workspace
+bugit:
+ifndef DIR
+	@echo "ERROR: DIR is required (e.g. make bugit DIR=python)"
+	@exit 1
+else
+	@if [ ! -d "implementations/$(DIR)" ]; then \
+		echo "ERROR: Implementation '$(DIR)' not found"; \
+		exit 1; \
+	fi
+	@python3 scripts/error_analysis_benchmark.py bugit --impl implementations/$(DIR) --image chess-$(DIR)
+endif
+
+# Restore the reproducible benchmark bug in the extracted Docker workspace
+fix:
+ifndef DIR
+	@echo "ERROR: DIR is required (e.g. make fix DIR=python)"
+	@exit 1
+else
+	@if [ ! -d "implementations/$(DIR)" ]; then \
+		echo "ERROR: Implementation '$(DIR)' not found"; \
+		exit 1; \
+	fi
+	@python3 scripts/error_analysis_benchmark.py fix --impl implementations/$(DIR) --image chess-$(DIR)
+endif
+
+# Benchmark analyzer output with an injected bug and a repaired workspace
+benchmark-analysis-error:
+ifndef DIR
+	@echo "ERROR: DIR is required (e.g. make benchmark-analysis-error DIR=python)"
+	@exit 1
+else
+	@if [ ! -d "implementations/$(DIR)" ]; then \
+		echo "ERROR: Implementation '$(DIR)' not found"; \
+		exit 1; \
+	fi
+	@python3 scripts/error_analysis_benchmark.py benchmark --impl implementations/$(DIR) --image chess-$(DIR)
 endif
 
 # Test (implementation internal tests only) target

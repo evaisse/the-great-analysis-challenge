@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +19,18 @@ from chess_metadata import get_metadata
 TRUTHY_VALUES = {"1", "true", "yes", "y", "on"}
 SKIP_VALUES = {"skip", "skipped"}
 INTERPRETED_RUNTIME_VALUES = {"interpreted", "scripted", "jit"}
+
+
+@dataclass
+class PhaseExecution:
+    impl_name: str
+    phase: str
+    command: str
+    returncode: int
+    stdout: str
+    stderr: str
+    skipped: bool = False
+    skip_reason: str | None = None
 
 
 def resolve_impl_path(impl: str) -> Path:
@@ -42,19 +55,21 @@ def docker_image_exists(image: str) -> bool:
     return result.returncode == 0
 
 
-def _run_with_shell(image: str, shell: str, command: str) -> subprocess.CompletedProcess:
+def _run_with_shell(
+    image: str, shell: str, command: str, workdir: Path | None = None
+) -> subprocess.CompletedProcess:
+    docker_cmd = [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+    ]
+    if workdir is not None:
+        docker_cmd.extend(["-v", f"{workdir.resolve()}:/app"])
+    docker_cmd.extend([image, shell, "-c", f"cd /app && {command}"])
     return subprocess.run(
-        [
-            "docker",
-            "run",
-            "--rm",
-            "--network",
-            "none",
-            image,
-            shell,
-            "-c",
-            f"cd /app && {command}",
-        ],
+        docker_cmd,
         check=False,
         text=True,
         capture_output=True,
@@ -80,63 +95,101 @@ def _should_skip_build_phase(metadata: dict) -> bool:
     return runtime_mode in INTERPRETED_RUNTIME_VALUES
 
 
+def execute_phase(
+    impl: str | Path,
+    phase: str,
+    image: str | None = None,
+    workdir: str | Path | None = None,
+) -> PhaseExecution:
+    impl_path = resolve_impl_path(str(impl))
+    impl_name = impl_path.name
+    image_name = image or f"chess-{impl_name}"
+    metadata = get_metadata(str(impl_path))
+
+    if phase == "build" and _should_skip_build_phase(metadata):
+        return PhaseExecution(
+            impl_name=impl_name,
+            phase=phase,
+            command="",
+            returncode=0,
+            stdout="",
+            stderr="",
+            skipped=True,
+            skip_reason=f"Skipping build phase for {impl_name} (metadata benchmark/runtime flag)",
+        )
+
+    command = str(metadata.get(phase, "")).strip()
+    if not command:
+        raise ValueError(
+            f"Missing metadata command 'org.chess.{phase}' for {impl_name}"
+        )
+
+    if not docker_image_exists(image_name):
+        raise FileNotFoundError(
+            f"Docker image '{image_name}' not found. Run: make image DIR={impl_name}"
+        )
+
+    mounted_workdir = None
+    if workdir is not None:
+        mounted_workdir = Path(workdir).resolve()
+        if not mounted_workdir.exists():
+            raise FileNotFoundError(f"Workspace not found: {mounted_workdir}")
+
+    result = _run_with_shell(image_name, "sh", command, mounted_workdir)
+    if result.returncode != 0 and _shell_missing(result.stderr, "sh"):
+        result = _run_with_shell(image_name, "bash", command, mounted_workdir)
+
+    return PhaseExecution(
+        impl_name=impl_name,
+        phase=phase,
+        command=command,
+        returncode=result.returncode,
+        stdout=result.stdout or "",
+        stderr=result.stderr or "",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a metadata phase in Docker")
     parser.add_argument("--impl", required=True, help="Implementation name or path")
     parser.add_argument(
         "--phase",
         required=True,
-        choices=["build", "analyze", "test"],
+        choices=["build", "analyze", "test", "bugit", "fix"],
         help="Metadata field to execute",
     )
     parser.add_argument("--image", help="Docker image name (defaults to chess-<impl>)")
+    parser.add_argument(
+        "--workdir",
+        help="Optional host workspace mounted at /app instead of the image filesystem",
+    )
     args = parser.parse_args()
 
     try:
-        impl_path = resolve_impl_path(args.impl)
-    except FileNotFoundError as exc:
+        execution = execute_phase(
+            impl=args.impl,
+            phase=args.phase,
+            image=args.image,
+            workdir=args.workdir,
+        )
+    except (FileNotFoundError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    impl_name = impl_path.name
-    image = args.image or f"chess-{impl_name}"
-
-    metadata = get_metadata(str(impl_path))
-    command = metadata.get(args.phase, "")
-
-    if args.phase == "build" and _should_skip_build_phase(metadata):
-        print(f"Skipping build phase for {impl_name} (metadata benchmark/runtime flag)")
+    if execution.skipped:
+        print(execution.skip_reason)
         return 0
 
-    if not command:
-        print(
-            f"ERROR: Missing metadata command 'org.chess.{args.phase}' for {impl_name}",
-            file=sys.stderr,
-        )
-        return 1
+    location_hint = "workspace mount" if args.workdir else "Docker image"
+    print(f"Running {args.phase} for {execution.impl_name} in {location_hint}...")
+    print(f"Command: {execution.command}")
 
-    if not docker_image_exists(image):
-        print(
-            f"ERROR: Docker image '{image}' not found. Run: make image DIR={impl_name}",
-            file=sys.stderr,
-        )
-        return 1
+    if execution.stdout:
+        sys.stdout.write(execution.stdout)
+    if execution.stderr:
+        sys.stderr.write(execution.stderr)
 
-    print(f"Running {args.phase} for {impl_name} in Docker...")
-    print(f"Command: {command}")
-
-    # Use non-login shell execution (-c) so image PATH is preserved.
-    # Try sh first for maximum compatibility with runtime entrypoints, then fall back to bash.
-    result = _run_with_shell(image, "sh", command)
-    if result.returncode != 0 and _shell_missing(result.stderr, "sh"):
-        result = _run_with_shell(image, "bash", command)
-
-    if result.stdout:
-        sys.stdout.write(result.stdout)
-    if result.stderr:
-        sys.stderr.write(result.stderr)
-
-    return result.returncode
+    return execution.returncode
 
 
 if __name__ == "__main__":
