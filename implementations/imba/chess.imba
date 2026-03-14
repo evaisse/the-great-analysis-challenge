@@ -70,6 +70,141 @@ const KING_PST = [
 	[ 20,  30,  10,   0,   0,  10,  30,  20]
 ]
 
+const SCHARNAGL_KNIGHT_TABLE = [
+	[0, 1], [0, 2], [0, 3], [0, 4], [1, 2],
+	[1, 3], [1, 4], [2, 3], [2, 4], [3, 4]
+]
+
+def classic-castling-config
+	return {
+		whiteKingStart: 60
+		whiteKingsideRookStart: 63
+		whiteQueensideRookStart: 56
+		blackKingStart: 4
+		blackKingsideRookStart: 7
+		blackQueensideRookStart: 0
+	}
+
+def home-rank-index color, file
+	return (color === 'w' ? 7 : 0) * 8 + file
+
+def line-path startIdx, targetIdx
+	const squares = []
+	if startIdx === targetIdx then return squares
+	const step = startIdx < targetIdx ? 1 : -1
+	let square = startIdx + step
+	while true
+		squares.push(square)
+		if square === targetIdx then break
+		square += step
+	return squares
+
+def decode-chess960-backrank id
+	if id < 0 or id > 959
+		throw new Error('chess960 id out of range')
+
+	const pieces = new Array(8).fill(null)
+	let n = id
+
+	let remainder = n % 4
+	n = Math.floor(n / 4)
+	pieces[2 * remainder + 1] = 'b'
+
+	remainder = n % 4
+	n = Math.floor(n / 4)
+	pieces[2 * remainder] = 'b'
+
+	remainder = n % 6
+	n = Math.floor(n / 6)
+	let empty = []
+	for _, file in pieces
+		if !pieces[file]
+			empty.push(file)
+	pieces[empty[remainder]] = 'q'
+
+	const [k1, k2] = SCHARNAGL_KNIGHT_TABLE[n]
+	empty = []
+	for _, file in pieces
+		if !pieces[file]
+			empty.push(file)
+	pieces[empty[k1]] = 'n'
+	pieces[empty[k2]] = 'n'
+
+	empty = []
+	for _, file in pieces
+		if !pieces[file]
+			empty.push(file)
+	pieces[empty[0]] = 'r'
+	pieces[empty[1]] = 'k'
+	pieces[empty[2]] = 'r'
+
+	return pieces
+
+def build-chess960-state id
+	const backrank = decode-chess960-backrank(id)
+	const board = new Array(64).fill(null)
+
+	for pieceType, file in backrank
+		board[file] = { color: 'b', type: pieceType }
+		board[8 + file] = { color: 'b', type: 'p' }
+		board[48 + file] = { color: 'w', type: 'p' }
+		board[56 + file] = { color: 'w', type: pieceType }
+
+	const kingFile = backrank.findIndex do(pieceType) pieceType === 'k'
+	const rookFiles = []
+	for pieceType, file in backrank
+		if pieceType === 'r'
+			rookFiles.push(file)
+	rookFiles.sort do(a, b) a - b
+
+	return {
+		board: board
+		turn: 'w'
+		castling: { wK: true, wQ: true, bK: true, bQ: true }
+		enPassant: null
+		halfmoveClock: 0
+		fullmoveNumber: 1
+		chess960: true
+		chess960Id: id
+		chess960Backrank: backrank.join('')
+		castlingConfig: {
+			whiteKingStart: home-rank-index('w', kingFile)
+			whiteKingsideRookStart: home-rank-index('w', rookFiles[1])
+			whiteQueensideRookStart: home-rank-index('w', rookFiles[0])
+			blackKingStart: home-rank-index('b', kingFile)
+			blackKingsideRookStart: home-rank-index('b', rookFiles[1])
+			blackQueensideRookStart: home-rank-index('b', rookFiles[0])
+		}
+	}
+
+def find-home-rank-piece board, color, type
+	const rankStart = color === 'w' ? 56 : 0
+	for file in [0 ... 8]
+		const piece = board[rankStart + file]
+		if piece and piece.color === color and piece.type === type
+			return rankStart + file
+	return null
+
+def castle-details snapshot, color, side
+	const config = snapshot.castlingConfig or classic-castling-config!
+	const isWhite = color === 'w'
+	const kingStart = isWhite ? config.whiteKingStart : config.blackKingStart
+	let rookStart = null
+	if isWhite
+		rookStart = side === 'K' ? config.whiteKingsideRookStart : config.whiteQueensideRookStart
+	else
+		rookStart = side === 'K' ? config.blackKingsideRookStart : config.blackQueensideRookStart
+	if kingStart == null or rookStart == null then return null
+	const homeRank = isWhite ? 7 : 0
+	return {
+		color: color
+		side: side
+		kingStart: kingStart
+		rookStart: rookStart
+		kingTarget: homeRank * 8 + (side === 'K' ? 6 : 2)
+		rookTarget: homeRank * 8 + (side === 'K' ? 5 : 3)
+	}
+
 class ChessEngine
 	prop state
 	prop history
@@ -114,18 +249,63 @@ class ChessEngine
 		if turnPart !== 'w' and turnPart !== 'b' then return null
 
 		let castling = { wK: false, wQ: false, bK: false, bQ: false }
+		let chess960 = false
+		const castlingConfig = classic-castling-config!
+		const whiteHomeKing = find-home-rank-piece(board, 'w', 'k')
+		const blackHomeKing = find-home-rank-piece(board, 'b', 'k')
+		if whiteHomeKing !== null then castlingConfig.whiteKingStart = whiteHomeKing
+		if blackHomeKing !== null then castlingConfig.blackKingStart = blackHomeKing
+
 		if castlingPart !== '-'
-			if !castlingPart.match(/^[KQkq]+$/) then return null
+			if !castlingPart.match(/^[KQkqA-Ha-h]+$/) then return null
 			const seen = {}
 			for ch in castlingPart
 				if seen[ch] then return null
 				seen[ch] = true
-			castling = {
-				wK: castlingPart.includes('K')
-				wQ: castlingPart.includes('Q')
-				bK: castlingPart.includes('k')
-				bQ: castlingPart.includes('q')
-			}
+				if ch === 'K'
+					if castling.wK then return null
+					castling.wK = true
+					castlingConfig.whiteKingsideRookStart = home-rank-index('w', 7)
+				else if ch === 'Q'
+					if castling.wQ then return null
+					castling.wQ = true
+					castlingConfig.whiteQueensideRookStart = home-rank-index('w', 0)
+				else if ch === 'k'
+					if castling.bK then return null
+					castling.bK = true
+					castlingConfig.blackKingsideRookStart = home-rank-index('b', 7)
+				else if ch === 'q'
+					if castling.bQ then return null
+					castling.bQ = true
+					castlingConfig.blackQueensideRookStart = home-rank-index('b', 0)
+				else if ch.match(/[A-H]/)
+					if whiteHomeKing === null then return null
+					const rookFile = ch.charCodeAt(0) - 'A'.charCodeAt(0)
+					const kingFile = whiteHomeKing % 8
+					if rookFile === kingFile then return null
+					chess960 = true
+					if rookFile > kingFile
+						if castling.wK then return null
+						castling.wK = true
+						castlingConfig.whiteKingsideRookStart = home-rank-index('w', rookFile)
+					else
+						if castling.wQ then return null
+						castling.wQ = true
+						castlingConfig.whiteQueensideRookStart = home-rank-index('w', rookFile)
+				else
+					if blackHomeKing === null then return null
+					const rookFile = ch.charCodeAt(0) - 'a'.charCodeAt(0)
+					const kingFile = blackHomeKing % 8
+					if rookFile === kingFile then return null
+					chess960 = true
+					if rookFile > kingFile
+						if castling.bK then return null
+						castling.bK = true
+						castlingConfig.blackKingsideRookStart = home-rank-index('b', rookFile)
+					else
+						if castling.bQ then return null
+						castling.bQ = true
+						castlingConfig.blackQueensideRookStart = home-rank-index('b', rookFile)
 
 		let enPassant = null
 		if epPart !== '-'
@@ -144,9 +324,11 @@ class ChessEngine
 			board: board
 			turn: turnPart
 			castling: castling
+			castlingConfig: castlingConfig
 			enPassant: enPassant
 			halfmoveClock: halfmoveClock
 			fullmoveNumber: fullmoveNumber
+			chess960: chess960
 		}
 
 	def export-fen
@@ -175,6 +357,22 @@ class ChessEngine
 		return "{fen} {snapshot.turn} {castling} {ep} {snapshot.halfmoveClock} {snapshot.fullmoveNumber}"
 
 	def castling-string snapshot
+		if snapshot.chess960
+			let castling = ''
+			const whiteFiles = []
+			const blackFiles = []
+			if snapshot.castling.wQ then whiteFiles.push(snapshot.castlingConfig.whiteQueensideRookStart % 8)
+			if snapshot.castling.wK then whiteFiles.push(snapshot.castlingConfig.whiteKingsideRookStart % 8)
+			if snapshot.castling.bQ then blackFiles.push(snapshot.castlingConfig.blackQueensideRookStart % 8)
+			if snapshot.castling.bK then blackFiles.push(snapshot.castlingConfig.blackKingsideRookStart % 8)
+			whiteFiles.sort do(a, b) a - b
+			blackFiles.sort do(a, b) a - b
+			for file in whiteFiles
+				castling += String.fromCharCode('A'.charCodeAt(0) + file)
+			for file in blackFiles
+				castling += String.fromCharCode('a'.charCodeAt(0) + file)
+			return castling or '-'
+
 		let castling = ''
 		if snapshot.castling.wK then castling += 'K'
 		if snapshot.castling.wQ then castling += 'Q'
@@ -229,7 +427,7 @@ class ChessEngine
 	def score-move move
 		let score = 0
 		const attacker = state.board[move.from]
-		const target = state.board[move.to]
+		const target = move.castleSide ? null : state.board[move.to]
 
 		if target
 			const victimValue = PIECE_VALUES[target.type]
@@ -248,7 +446,7 @@ class ChessEngine
 		if (tr === 3 or tr === 4) and (tc === 3 or tc === 4)
 			score += 10
 
-		if attacker and attacker.type === 'k' and Math.abs(move.from - move.to) === 2
+		if move.castleSide
 			score += 50
 
 		return score
@@ -326,12 +524,37 @@ class ChessEngine
 					if !target or target.color !== piece.color then add-move(tr, tc)
 			
 			# Castling
-			if piece.color === 'w'
-				if state.castling.wK and !state.board[61] and !state.board[62] and !is-square-attacked(60, 'b') and !is-square-attacked(61, 'b') and !is-square-attacked(62, 'b') then add-move(7, 6)
-				if state.castling.wQ and !state.board[59] and !state.board[58] and !state.board[57] and !is-square-attacked(60, 'b') and !is-square-attacked(59, 'b') and !is-square-attacked(58, 'b') then add-move(7, 2)
-			else
-				if state.castling.bK and !state.board[5] and !state.board[6] and !is-square-attacked(4, 'w') and !is-square-attacked(5, 'w') and !is-square-attacked(6, 'w') then add-move(0, 6)
-				if state.castling.bQ and !state.board[3] and !state.board[2] and !state.board[1] and !is-square-attacked(4, 'w') and !is-square-attacked(3, 'w') and !is-square-attacked(2, 'w') then add-move(0, 2)
+			const try-castle = do(side)
+				let rights = false
+				if piece.color === 'w'
+					rights = side === 'K' ? state.castling.wK : state.castling.wQ
+				else
+					rights = side === 'K' ? state.castling.bK : state.castling.bQ
+				if !rights then return
+				const details = castle-details(state, piece.color, side)
+				if !details or index !== details.kingStart then return
+				const rook = state.board[details.rookStart]
+				if !rook or rook.color !== piece.color or rook.type !== 'r' then return
+
+				const blockerSeen = {}
+				for square in line-path(details.kingStart, details.kingTarget).concat(line-path(details.rookStart, details.rookTarget))
+					if blockerSeen[square] then continue
+					blockerSeen[square] = true
+					if square !== details.kingStart and square !== details.rookStart and state.board[square]
+						return
+
+				const attacker = piece.color === 'w' ? 'b' : 'w'
+				const attackSeen = {}
+				for square in [details.kingStart].concat(line-path(details.kingStart, details.kingTarget))
+					if attackSeen[square] then continue
+					attackSeen[square] = true
+					if is-square-attacked(square, attacker)
+						return
+
+				moves.push({ from: index, to: details.kingTarget, castleSide: side })
+
+			try-castle('K')
+			try-castle('Q')
 
 		else
 			let dirs = []
@@ -420,8 +643,9 @@ class ChessEngine
 		if !piece then return
 		const wasPawn = piece.type === 'p'
 
-		const target = state.board[move.to]
+		const target = move.castleSide ? null : state.board[move.to]
 		let nextEp = null
+		let handledPlacement = false
 
 		if piece.type === 'p'
 			if move.to === state.enPassant
@@ -437,19 +661,16 @@ class ChessEngine
 				piece.type = 'q'
 
 		if piece.type === 'k'
-			if Math.abs(move.from - move.to) === 2 or (move.from === 60 and (move.to === 62 or move.to === 58)) or (move.from === 4 and (move.to === 6 or move.to === 2))
-				if move.to === 62
-					state.board[61] = state.board[63]
-					state.board[63] = null
-				else if move.to === 58
-					state.board[59] = state.board[56]
-					state.board[56] = null
-				else if move.to === 6
-					state.board[5] = state.board[7]
-					state.board[7] = null
-				else if move.to === 2
-					state.board[3] = state.board[0]
-					state.board[0] = null
+			if move.castleSide
+				const details = castle-details(state, piece.color, move.castleSide)
+				const rook = details ? state.board[details.rookStart] : null
+				if details and rook and rook.color === piece.color and rook.type === 'r'
+					state.board[details.kingStart] = null
+					if details.rookStart !== details.kingStart
+						state.board[details.rookStart] = null
+					state.board[details.kingTarget] = piece
+					state.board[details.rookTarget] = rook
+					handledPlacement = true
 			
 			if piece.color === 'w'
 				state.castling.wK = false
@@ -458,13 +679,15 @@ class ChessEngine
 				state.castling.bK = false
 				state.castling.bQ = false
 
-		if move.from === 56 or move.to === 56 then state.castling.wQ = false
-		if move.from === 63 or move.to === 63 then state.castling.wK = false
-		if move.from === 0 or move.to === 0 then state.castling.bQ = false
-		if move.from === 7 or move.to === 7 then state.castling.bK = false
+		const castlingConfig = state.castlingConfig or classic-castling-config!
+		if move.from === castlingConfig.whiteQueensideRookStart or move.to === castlingConfig.whiteQueensideRookStart then state.castling.wQ = false
+		if move.from === castlingConfig.whiteKingsideRookStart or move.to === castlingConfig.whiteKingsideRookStart then state.castling.wK = false
+		if move.from === castlingConfig.blackQueensideRookStart or move.to === castlingConfig.blackQueensideRookStart then state.castling.bQ = false
+		if move.from === castlingConfig.blackKingsideRookStart or move.to === castlingConfig.blackKingsideRookStart then state.castling.bK = false
 
-		state.board[move.to] = piece
-		state.board[move.from] = null
+		if !handledPlacement
+			state.board[move.to] = piece
+			state.board[move.from] = null
 		state.enPassant = nextEp
 		
 		if wasPawn or target
@@ -775,9 +998,7 @@ def move-string move, uppercasePromotion = false
 		notation += uppercasePromotion ? move.promotion.toUpperCase! : move.promotion
 	return notation
 
-def reset-engine-state fen, clearChess960 = true, preserveUci = false
-	const nextState = engine.parse-fen(fen)
-	if !nextState then return false
+def install-engine-state nextState, preserveUci = false
 	engine.state = nextState
 	engine.history = []
 	currentMoveHistory = []
@@ -785,10 +1006,14 @@ def reset-engine-state fen, clearChess960 = true, preserveUci = false
 	pgnMoves = []
 	if !preserveUci
 		uciMode = false
-	if clearChess960
-		chess960Mode = false
-		chess960Id = 0
+	chess960Mode = !!nextState.chess960
+	chess960Id = nextState.chess960Id or 0
 	return true
+
+def reset-engine-state fen, preserveUci = false
+	const nextState = engine.parse-fen(fen)
+	if !nextState then return false
+	return install-engine-state(nextState, preserveUci)
 
 def resolve-legal-move moveStr
 	if !moveStr or moveStr.length < 4 or moveStr.length > 5
@@ -1169,7 +1394,7 @@ def handle-setoption args
 	process.stdout.write("info string unsupported option {args.slice(1, valueIdx).join(' ').trim!}\n")
 
 def handle-ucinewgame
-	reset-engine-state(START_FEN, true, true)
+	reset-engine-state(START_FEN, true)
 
 def handle-position args
 	if args.length === 0
@@ -1179,7 +1404,7 @@ def handle-position args
 	let idx = 0
 	const keyword = args[0].toLowerCase!
 	if keyword === 'startpos'
-		if !reset-engine-state(START_FEN, true, true)
+		if !reset-engine-state(START_FEN, true)
 			process.stdout.write("ERROR: Invalid FEN string\n")
 			return
 		idx = 1
@@ -1192,7 +1417,7 @@ def handle-position args
 		if fenTokens.length === 0
 			process.stdout.write("ERROR: position fen requires a FEN string\n")
 			return
-		if !reset-engine-state(fenTokens.join(' '), true, true)
+		if !reset-engine-state(fenTokens.join(' '), true)
 			process.stdout.write("ERROR: Invalid FEN string\n")
 			return
 	else
@@ -1219,12 +1444,12 @@ def handle-new960 args
 		process.stdout.write("ERROR: new960 id must be between 0 and 959\n")
 		return
 
-	if !reset-engine-state(START_FEN, false)
-		process.stdout.write("ERROR: Invalid FEN string\n")
+	try
+		install-engine-state(build-chess960-state(id))
+	catch err
+		process.stdout.write("ERROR: Invalid Chess960 position\n")
 		return
 
-	chess960Mode = true
-	chess960Id = id
 	render-board-if-interactive!
 	process.stdout.write("960: new game id={chess960Id}\n")
 
