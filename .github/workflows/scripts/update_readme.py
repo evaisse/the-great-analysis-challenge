@@ -364,25 +364,52 @@ def classify_implementation_status(impl_data):
         return 'needs_work'
 
 def format_time(seconds):
-    """Format time duration in milliseconds for better precision"""
+    """Format durations with human-friendly units for README display."""
     if seconds is None:
         return "-"
-    elif seconds == 0:
+
+    try:
+        seconds_value = float(seconds)
+    except (TypeError, ValueError):
+        return "-"
+
+    if seconds_value < 0:
+        return "-"
+
+    ms = seconds_value * 1000
+    if ms < 1:
         return "<1ms"
-    else:
-        ms = seconds * 1000
-        if ms < 1:
-            return "<1ms"
-        elif ms < 10:
-            return f"{ms:.1f}ms"
-        else:
-            return f"{ms:.0f}ms"
+    if ms < 10:
+        return f"{ms:.1f}ms"
+    if ms < 1000:
+        return f"{ms:.0f}ms"
+    if seconds_value < 60:
+        seconds_text = f"{seconds_value:.1f}".rstrip("0").rstrip(".")
+        return f"{seconds_text}s"
+
+    rounded_seconds = int(round(seconds_value))
+    minutes, remaining_seconds = divmod(rounded_seconds, 60)
+    if minutes < 60:
+        return f"{minutes}m {remaining_seconds:02d}s"
+
+    hours, remaining_minutes = divmod(minutes, 60)
+    return f"{hours}h {remaining_minutes:02d}m"
+
+def format_grouped_int(value: Optional[float]) -> str:
+    """Format integers with grouping separators."""
+    if value is None:
+        return "-"
+
+    try:
+        return f"{int(round(float(value))):,}"
+    except (TypeError, ValueError):
+        return "-"
 
 def format_memory_mb(peak_memory_mb: float) -> str:
     """Format memory in MB with fallback when unavailable."""
     if peak_memory_mb is None or peak_memory_mb <= 0:
         return "- MB"
-    return f"{int(round(peak_memory_mb))} MB"
+    return f"{format_grouped_int(peak_memory_mb)} MB"
 
 def format_step_metric(seconds, peak_memory_mb: float) -> str:
     """Format one make step as '<duration>, <memory>'."""
@@ -628,10 +655,10 @@ def update_readme() -> bool:
             lang_name = f"{lang_emoji} {language.title()}"
             tokens_display = "-"
             if isinstance(tokens_count, int) and tokens_count >= 0:
-                tokens_display = str(tokens_count)
+                tokens_display = format_grouped_int(tokens_count)
             if entrypoint_file and isinstance(tokens_count, int) and tokens_count >= 0:
                 entrypoint_repo_path = Path("implementations") / language / entrypoint_file
-                tokens_display = f"[{tokens_count}]({entrypoint_repo_path.as_posix()})"
+                tokens_display = f"[{format_grouped_int(tokens_count)}]({entrypoint_repo_path.as_posix()})"
 
             table_rows.append(
                 f"| {lang_name} | {emoji} | {tokens_display} | "

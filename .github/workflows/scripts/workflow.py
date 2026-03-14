@@ -44,7 +44,7 @@ try:
     from verify_implementations import main as verify_implementations_main
     from validate_results import main as validate_results_main
     from combine_results import main as combine_results_main
-    from update_readme import main as update_readme_main
+    from update_readme import main as update_readme_main, update_readme as update_readme_impl
     from get_test_config import main as get_test_config_main
     from test_docker import (
         main_test_basic_commands, main_test_advanced_features,
@@ -568,6 +568,17 @@ class WorkflowTool:
     def update_readme(self) -> bool:
         """Update README status table and check if it was modified."""
         print("=== Updating README Status Table ===")
+
+        try:
+            readme_changed = update_readme_impl()
+            self.write_github_output("changed", str(readme_changed).lower())
+            if readme_changed:
+                print("✅ README.md has been updated")
+            else:
+                print("⚠️ README.md was not modified")
+            return True
+        except NameError:
+            pass
         
         def load_performance_data():
             """Load performance benchmark data"""
