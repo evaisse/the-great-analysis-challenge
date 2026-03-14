@@ -8,26 +8,26 @@
     "payload": {
       "profile": "quick",
       "seed": 12345,
-      "workers": 1,
+      "workers": 2,
       "runs": 10,
       "checksums": [
-        "0000000053dc167e",
-        "00000000270427e0",
-        "00000000182b6a9b",
-        "0000000053d9ce3b",
-        "000000000d34f95c",
-        "000000007cb0646a",
-        "0000000069af3d61",
-        "000000007e56e08d",
-        "000000003d76c24a",
-        "0000000069ff75c4"
+        "28516546",
+        "9b6eee41",
+        "7faf2ac8",
+        "99a84f2e",
+        "e47a1639",
+        "9a76f2eb",
+        "e55eb104",
+        "3d4b0d2c",
+        "ce187fb5",
+        "39881c49"
       ],
       "deterministic": true,
       "invariant_errors": 0,
       "deadlocks": 0,
       "timeouts": 0,
-      "elapsed_ms": 0,
-      "ops_total": 100000
+      "elapsed_ms": 154,
+      "ops_total": 320
     }
   }
 ]

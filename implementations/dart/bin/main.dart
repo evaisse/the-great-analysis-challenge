@@ -1,9 +1,11 @@
-import 'dart:io';
-import 'dart:math';
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:isolate';
+import 'dart:math';
 import 'package:chess_engine/chess_engine.dart';
 
-void main() {
+Future<void> main() async {
   final game = Game();
   var ai = AI();
   String? pgnPath;
@@ -638,7 +640,7 @@ void main() {
           print('ERROR: Unsupported concurrency profile');
           break;
         }
-        print('CONCURRENCY: ${jsonEncode(_buildConcurrencyPayload(profile))}');
+        print('CONCURRENCY: ${jsonEncode(await _buildConcurrencyPayload(profile))}');
         break;
       case 'status':
         _checkGameState(game);
@@ -1093,36 +1095,249 @@ List<String> _extractPgnMoves(String content) {
   return moves;
 }
 
-Map<String, dynamic> _buildConcurrencyPayload(String profile) {
+const List<String> _concurrencyFixtures = <String>[
+  'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  'r3k2r/pppq1ppp/2npbn2/3Np3/3P4/2N1P3/PPP2PPP/R1BQKB1R w KQkq - 2 8',
+  'rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3',
+  '8/2k5/8/2K5/3Q4/8/8/8 w - - 0 1',
+];
+
+({int workers, int runs, int readCycles, int statefulCycles})
+_concurrencyProfile(String profile) {
+  if (profile == 'full') {
+    return (workers: 4, runs: 12, readCycles: 10, statefulCycles: 8);
+  }
+  return (workers: 2, runs: 6, readCycles: 5, statefulCycles: 4);
+}
+
+Future<Map<String, dynamic>> _buildConcurrencyPayload(String profile) async {
   final stopwatch = Stopwatch()..start();
   const seed = 12345;
-  const workers = 1;
-  final runs = profile == 'quick' ? 10 : 50;
-  final opsPerRun = profile == 'quick' ? 10000 : 40000;
+  final config = _concurrencyProfile(profile);
   final checksums = <String>[];
+  var invariantErrors = 0;
+  var opsTotal = 0;
 
-  var checksum = seed;
-  for (var i = 0; i < runs; i++) {
-    checksum =
-        (checksum * 6364136223846793005 + 1442695040888963407 + i) &
-        0xFFFFFFFFFFFFFFFF;
-    checksums.add(checksum.toRadixString(16).padLeft(16, '0'));
+  for (var runIndex = 0; runIndex < config.runs; runIndex++) {
+    final futures = <Future<Map<String, int>>>[];
+    for (var workerIndex = 0; workerIndex < config.workers; workerIndex++) {
+      futures.add(
+        Isolate.run(
+          () => _runConcurrencyWorker(
+            profile,
+            seed,
+            runIndex,
+            workerIndex,
+            config.readCycles,
+            config.statefulCycles,
+          ),
+        ),
+      );
+    }
+
+    final results = await Future.wait(futures);
+    var runChecksum = _mixChecksum(
+      seed,
+      'run:$profile:$runIndex:${config.workers}',
+    );
+
+    for (final result in results) {
+      invariantErrors += result['invariant_errors']!;
+      opsTotal += result['ops']!;
+      runChecksum = _mixChecksumInt(runChecksum, result['worker']!);
+      runChecksum = _mixChecksumInt(runChecksum, result['ops']!);
+      runChecksum = _mixChecksumInt(runChecksum, result['checksum']!);
+    }
+
+    checksums.add(_checksumHex(runChecksum));
   }
+
   stopwatch.stop();
 
   return {
     'profile': profile,
     'seed': seed,
-    'workers': workers,
-    'runs': runs,
+    'workers': config.workers,
+    'runs': config.runs,
     'checksums': checksums,
     'deterministic': true,
-    'invariant_errors': 0,
+    'invariant_errors': invariantErrors,
     'deadlocks': 0,
     'timeouts': 0,
     'elapsed_ms': stopwatch.elapsedMilliseconds,
-    'ops_total': runs * opsPerRun * workers,
+    'ops_total': opsTotal,
   };
+}
+
+Map<String, int> _runConcurrencyWorker(
+  String profile,
+  int seed,
+  int runIndex,
+  int workerIndex,
+  int readCycles,
+  int statefulCycles,
+) {
+  final game = Game();
+  var checksum = _mixChecksum(
+    seed,
+    'worker:$profile:$runIndex:$workerIndex',
+  );
+  var invariantErrors = 0;
+  var ops = 0;
+
+  for (var step = 0; step < readCycles; step++) {
+    final fen =
+        _concurrencyFixtures[(runIndex + workerIndex + step) %
+            _concurrencyFixtures.length];
+    try {
+      game.loadFen(fen);
+      final baselineFen = game.board.toFen();
+      checksum = _mixChecksum(checksum, baselineFen);
+
+      final candidates = _sortedBoardMoves(game.board);
+      checksum = _mixChecksumInt(checksum, candidates.length);
+      ops += 2;
+
+      if (candidates.isNotEmpty) {
+        final selected = candidates[_selectionIndex(
+          candidates.length,
+          seed,
+          runIndex,
+          workerIndex,
+          step,
+        )];
+        checksum = _mixChecksum(checksum, selected.notation);
+
+        final clone = game.board.clone();
+        clone.move(selected.notation);
+        checksum = _mixChecksum(checksum, clone.toFen());
+        checksum = _mixChecksum(checksum, _boardHashHex(clone));
+        ops += 3;
+      }
+
+      if (game.board.toFen() != baselineFen) {
+        invariantErrors++;
+        game.loadFen(fen);
+      }
+    } catch (_) {
+      invariantErrors++;
+      game.loadFen(
+        _concurrencyFixtures[(runIndex + workerIndex) % _concurrencyFixtures.length],
+      );
+    }
+  }
+
+  final statefulFen =
+      _concurrencyFixtures[(runIndex * 3 + workerIndex) %
+          _concurrencyFixtures.length];
+  game.loadFen(statefulFen);
+  final baselineFen = game.board.toFen();
+  final baselineHash = _boardHashHex(game.board);
+
+  for (var step = 0; step < statefulCycles; step++) {
+    try {
+      final rootMoves = _sortedBoardMoves(game.board);
+      checksum = _mixChecksumInt(checksum, rootMoves.length);
+      ops++;
+      if (rootMoves.isEmpty) {
+        game.loadFen(statefulFen);
+        continue;
+      }
+
+      final first = rootMoves[_selectionIndex(
+        rootMoves.length,
+        seed + 7,
+        runIndex,
+        workerIndex,
+        step,
+      )];
+      game.move(first.notation);
+      checksum = _mixChecksum(checksum, first.notation);
+      checksum = _mixChecksum(checksum, game.board.toFen());
+      checksum = _mixChecksum(checksum, _boardHashHex(game.board));
+      ops += 3;
+
+      final replyMoves = _sortedBoardMoves(game.board);
+      checksum = _mixChecksumInt(checksum, replyMoves.length);
+      ops++;
+      if (replyMoves.isNotEmpty) {
+        final reply = replyMoves[_selectionIndex(
+          replyMoves.length,
+          seed + 19,
+          runIndex,
+          workerIndex,
+          step,
+        )];
+        game.move(reply.notation);
+        checksum = _mixChecksum(checksum, reply.notation);
+        checksum = _mixChecksum(checksum, game.board.toFen());
+        checksum = _mixChecksum(checksum, _boardHashHex(game.board));
+        game.undo();
+        ops += 4;
+      }
+
+      game.undo();
+      final restoredFen = game.board.toFen();
+      final restoredHash = _boardHashHex(game.board);
+      checksum = _mixChecksum(checksum, restoredHash);
+      ops++;
+
+      if (restoredFen != baselineFen || restoredHash != baselineHash) {
+        invariantErrors++;
+        game.loadFen(statefulFen);
+      }
+    } catch (_) {
+      invariantErrors++;
+      game.loadFen(statefulFen);
+    }
+  }
+
+  return {
+    'worker': workerIndex,
+    'checksum': checksum,
+    'invariant_errors': invariantErrors,
+    'ops': ops,
+  };
+}
+
+List<({String notation, Move move})> _sortedBoardMoves(Board board) {
+  final moves = board.generateMoves();
+  final pairs = <({String notation, Move move})>[];
+  for (final move in moves) {
+    pairs.add((notation: move.toString().toLowerCase(), move: move));
+  }
+  pairs.sort((a, b) => a.notation.compareTo(b.notation));
+  return pairs;
+}
+
+int _selectionIndex(
+  int length,
+  int seed,
+  int runIndex,
+  int workerIndex,
+  int step,
+) {
+  return (seed + runIndex * 17 + workerIndex * 31 + step * 13) % length;
+}
+
+int _mixChecksum(int checksum, String value) {
+  var acc = checksum & 0xffffffff;
+  for (final unit in value.codeUnits) {
+    acc = ((acc ^ unit) * 16777619) & 0xffffffff;
+  }
+  return acc;
+}
+
+int _mixChecksumInt(int checksum, int value) {
+  return _mixChecksum(checksum, value.toString());
+}
+
+String _checksumHex(int checksum) {
+  return (checksum & 0xffffffff).toRadixString(16).padLeft(8, '0');
+}
+
+String _boardHashHex(Board board) {
+  return board.zobristHash.toUnsigned(64).toRadixString(16).padLeft(16, '0');
 }
 
 void _runAiMove(

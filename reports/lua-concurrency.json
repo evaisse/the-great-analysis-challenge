@@ -11,23 +11,23 @@
       "workers": 1,
       "runs": 10,
       "checksums": [
-        "0000000053dc167e",
-        "00000000270427e0",
-        "00000000182b6a9b",
-        "0000000053d9ce3b",
-        "000000000d34f95c",
-        "000000007cb0646a",
-        "0000000069af3d61",
-        "000000007e56e08d",
-        "000000003d76c24a",
-        "0000000069ff75c4"
+        "74faa4411ee743fe",
+        "5f55178bda3aa78e",
+        "e46597443700f7f2",
+        "e12009c6f7907077",
+        "4a406d956d6bec36",
+        "5810b98a118088ed",
+        "699948937536ce15",
+        "b36e0ae684e80d7f",
+        "9f44b21582dba3f4",
+        "de56e26aa6c11d87"
       ],
       "deterministic": true,
       "invariant_errors": 0,
       "deadlocks": 0,
       "timeouts": 0,
-      "elapsed_ms": 0,
-      "ops_total": 100000
+      "elapsed_ms": 63,
+      "ops_total": 2400
     }
   }
 ]

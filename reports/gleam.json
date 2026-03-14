@@ -16,6 +16,9 @@
       ],
       "max_ai_depth": 5,
       "estimated_perft4_ms": 800,
+      "source_exts": [
+        ".gleam"
+      ],
       "build": "gleam build",
       "test": "gleam test",
       "analyze": "gleam format --check && gleam check",
@@ -24,75 +27,83 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 1.204895257949829,
-      "build_seconds": 0.44321250915527344,
-      "analyze_seconds": 0.3604252338409424,
-      "test_seconds": 0.824181079864502,
-      "test_internal_seconds": 0.824181079864502,
-      "test_chess_engine_seconds": 70.23953914642334,
-      "test_v2_full_seconds": 70.23953914642334
+      "image_build_seconds": 1.0545260906219482,
+      "build_seconds": 0.38475465774536133,
+      "analyze_seconds": 0.35843753814697266,
+      "test_seconds": 0.7643043994903564,
+      "test_internal_seconds": 0.7643043994903564,
+      "test_chess_engine_seconds": 70.20213913917542,
+      "test_v2_full_seconds": 70.20213913917542
     },
     "memory": {
       "image": {
-        "memory_mb": 115.765625,
-        "peak_memory_mb": 115.765625,
-        "avg_memory_mb": 95.38313802083333,
+        "memory_mb": 116.3203125,
+        "peak_memory_mb": 116.3203125,
+        "avg_memory_mb": 95.74538352272727,
         "avg_cpu_percent": 0.0,
-        "samples": 12,
+        "samples": 11,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 17.7421875,
-        "peak_memory_mb": 17.7421875,
+        "memory_mb": 18.35546875,
+        "peak_memory_mb": 18.35546875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 7.2109375,
-        "peak_memory_mb": 7.2109375,
+        "memory_mb": 7.09765625,
+        "peak_memory_mb": 7.09765625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 76.640625,
-        "peak_memory_mb": 76.640625,
+        "memory_mb": 75.71875,
+        "peak_memory_mb": 75.71875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 31.94921875,
-        "peak_memory_mb": 62.0390625,
-        "avg_memory_mb": 61.71192855155786,
+        "memory_mb": 32.56640625,
+        "peak_memory_mb": 62.4140625,
+        "avg_memory_mb": 62.09956928152493,
         "avg_cpu_percent": 0.0,
-        "samples": 674,
+        "samples": 682,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 0,
-      "source_files": 0
+      "source_loc": 14167,
+      "source_files": 31
     },
-    "normalized": {},
+    "metrics": {
+      "tokens_count": 107698,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 27.15851328759521,
+      "analyze_ms_per_kloc": 25.3008779661871,
+      "runtime_ms_per_kloc": 53.94962938451023
+    },
     "docker": {
-      "build_time": 1.204895257949829,
+      "build_time": 1.0545260906219482,
       "build_success": true,
-      "image_build_time": 1.204895257949829,
+      "image_build_time": 1.0545260906219482,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.44321250915527344,
+      "make_build_time": 0.38475465774536133,
       "make_build_success": true,
-      "make_analyze_time": 0.3604252338409424,
+      "make_analyze_time": 0.35843753814697266,
       "make_analyze_success": true,
-      "test_time": 0.824181079864502,
+      "test_time": 0.7643043994903564,
       "test_success": true,
-      "make_test_time": 0.824181079864502,
+      "make_test_time": 0.7643043994903564,
       "make_test_success": true,
-      "test_chess_engine_time": 70.23953914642334,
+      "test_chess_engine_time": 70.20213913917542,
       "test_chess_engine_success": false,
-      "track_test_time": 70.23953914642334,
+      "track_test_time": 70.20213913917542,
       "track_test_success": false
     },
     "task_results": {
