@@ -13,5 +13,7 @@ LABEL org.chess.benchmark.build="skip"
 LABEL org.chess.build="lua -e \"assert(loadfile('chess.lua'))\""
 LABEL org.chess.test="echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | lua chess.lua"
 LABEL org.chess.analyze="lua -e \"assert(loadfile('chess.lua'))\""
+LABEL org.chess.bugit="if [ -f .bugit/chess.lua.bak ]; then echo 'bugit already active for lua'; else mkdir -p .bugit && cp chess.lua .bugit/chess.lua.bak && printf '\n)\n' >> chess.lua; fi"
+LABEL org.chess.fix="if [ -f .bugit/chess.lua.bak ]; then mv .bugit/chess.lua.bak chess.lua && rmdir .bugit 2>/dev/null || true; else echo 'no lua bugit backup to restore'; fi"
 
 CMD ["lua", "chess.lua"]

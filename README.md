@@ -32,7 +32,6 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 🔮 Julia | 🟢 | [9,783](implementations/julia/chess.jl) | -, - MB | 144ms, 6 MB | 151ms, 7 MB | 11.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🧡 Kotlin | 🟡 | [9,666](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 156ms, 6 MB | 171ms, 7 MB | 158ms, 7 MB | 10s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🪐 Lua | 🟢 | [18,838](implementations/lua/chess.lua) | -, - MB | 159ms, 7 MB | 154ms, 7 MB | 10.7s, 63 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🔥 Mojo | 🟢 | [1,820](implementations/mojo/chess.mojo) | 12.4s, - MB | 12.9s, - MB | 12.5s, - MB | 13.6s, 62 MB | 0/1 | 0/57 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🦊 Nim | 🟢 | [8,410](implementations/nim/chess.nim) | 201ms, 7 MB | 186ms, 6 MB | 182ms, 7 MB | 9.7s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐘 Php | 🟢 | [24,435](implementations/php/chess.php) | -, - MB | 328ms, 9 MB | 201ms, 9 MB | 13.6s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐍 Python | 🟡 | [24,228](implementations/python/chess.py) | -, - MB | 192ms, 7 MB | 195ms, 7 MB | 16.7s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |

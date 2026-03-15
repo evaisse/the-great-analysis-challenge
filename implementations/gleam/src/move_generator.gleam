@@ -1,14 +1,14 @@
 // Move generation and validation
 
-import gleam/list
+import board.{get_piece, make_move}
 import gleam/int
+import gleam/list
 import gleam/option.{None, Some}
 import types.{
-  type Color, type Piece, type Square, type Move, type PieceType,
-  type GameState, White, Black, King, Queen, Rook, Bishop, Knight, Pawn,
-  Piece, Move, opposite_color,
+  type Color, type GameState, type Move, type Piece, type PieceType, type Square,
+  Bishop, Black, King, Knight, Move, Pawn, Piece, Queen, Rook, White,
+  opposite_color,
 }
-import board.{get_piece, make_move}
 
 pub fn generate_moves(game_state: GameState, color: Color) -> List(Move) {
   list.range(0, 63)
@@ -64,8 +64,7 @@ fn generate_pawn_moves(
   // One square forward
   let one_forward = from + direction
   let one_forward_empty =
-    is_valid_square(one_forward)
-    && get_piece(game_state, one_forward) == None
+    is_valid_square(one_forward) && get_piece(game_state, one_forward) == None
   let moves = case one_forward_empty {
     True -> {
       let to_rank = one_forward / 8
@@ -186,8 +185,7 @@ fn generate_pawn_moves(
             let to = from + offset
             let to_file = to % 8
             case
-              to == en_passant_square
-              && int.absolute_value(to_file - file) == 1
+              to == en_passant_square && int.absolute_value(to_file - file) == 1
             {
               True -> Ok(Move(from, to, Pawn, Some(Pawn), None, False, True))
               False -> Error(Nil)
@@ -276,8 +274,14 @@ fn generate_direction_moves(
             None -> {
               let new_move =
                 Move(from, to, piece_type, None, None, False, False)
-              generate_direction_moves(game_state, to, color, direction,
-                piece_type, [new_move, ..acc])
+              generate_direction_moves(
+                game_state,
+                to,
+                color,
+                direction,
+                piece_type,
+                [new_move, ..acc],
+              )
             }
             Some(target) ->
               case target.color != color {

@@ -6,7 +6,7 @@
 **Core Principle**: Convention over Configuration — zero infrastructure changes to add a language  
 **Primary Workflow**: Docker-first development  
 **Active Languages**: Rust, TypeScript, Python, PHP, Dart, Ruby, Lua (7 in `implementations/`)  
-**WIP Languages**: Crystal, Elm, Gleam, Go, Haskell, Julia, Kotlin, Mojo, Nim, Swift, Zig (in `implementations-wip/`)
+**WIP Languages**: Crystal, Elm, Gleam, Go, Haskell, Julia, Kotlin, Nim, Swift, Zig (in `implementations-wip/`)
 
 ### Essential Commands
 

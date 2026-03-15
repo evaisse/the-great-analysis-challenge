@@ -46,6 +46,10 @@ Required Docker labels:
 - `org.chess.analyze`
 - `org.chess.run` (or inferable from `CMD`)
 
+Optional benchmark labels for issue-driven analyzer experiments:
+- `org.chess.bugit`
+- `org.chess.fix`
+
 Implementation checklist:
 - Commands: `new`, `move`, `undo`, `ai`, `export`, `quit`
 - Full legal move generation including castling, en passant, promotion
@@ -67,6 +71,9 @@ make analyze DIR=<language>
 make test DIR=<language>
 make test-unit-contract DIR=<language>
 make test-chess-engine DIR=<language>
+make bugit DIR=<language>
+make fix DIR=<language>
+make benchmark-analysis-error DIR=<language>
 ```
 
 `make test-unit-contract` is the shared unit-parity lane. It is currently opt-in per implementation via `org.chess.test_contract`; use `STRICT=1` to make missing adapters fail.

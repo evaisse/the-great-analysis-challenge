@@ -14,5 +14,7 @@ LABEL org.chess.source_exts=".nim"
 LABEL org.chess.build="nim c -d:release chess.nim"
 LABEL org.chess.test="./chess --test"
 LABEL org.chess.analyze="nim check chess.nim"
+LABEL org.chess.bugit="if [ -f .bugit/chess.nim.bak ]; then echo 'bugit already active for nim'; else mkdir -p .bugit && cp chess.nim .bugit/chess.nim.bak && printf '\n)\n' >> chess.nim; fi"
+LABEL org.chess.fix="if [ -f .bugit/chess.nim.bak ]; then mv .bugit/chess.nim.bak chess.nim && rmdir .bugit 2>/dev/null || true; else echo 'no nim bugit backup to restore'; fi"
 
 CMD ["./chess"]

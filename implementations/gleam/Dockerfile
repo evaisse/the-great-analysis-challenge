@@ -14,5 +14,7 @@ LABEL org.chess.source_exts=".gleam"
 LABEL org.chess.build="gleam build"
 LABEL org.chess.test="gleam test"
 LABEL org.chess.analyze="gleam format --check && gleam check"
+LABEL org.chess.bugit="if [ -f .bugit/chess_engine.gleam.bak ]; then echo 'bugit already active for gleam'; else mkdir -p .bugit && cp src/chess_engine.gleam .bugit/chess_engine.gleam.bak && printf '\n)\n' >> src/chess_engine.gleam; fi"
+LABEL org.chess.fix="if [ -f .bugit/chess_engine.gleam.bak ]; then mv .bugit/chess_engine.gleam.bak src/chess_engine.gleam && rmdir .bugit 2>/dev/null || true; else echo 'no gleam bugit backup to restore'; fi"
 
 CMD ["gleam", "run"]

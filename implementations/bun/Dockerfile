@@ -13,6 +13,8 @@ LABEL org.chess.benchmark.build="skip"
 LABEL org.chess.build="bun build chess.js --outdir dist --target bun"
 LABEL org.chess.run="bun run chess.js"
 LABEL org.chess.test="bun test"
-LABEL org.chess.analyze="bun --version"
+LABEL org.chess.analyze="bun build chess.js --outdir /tmp/tgac-bun-check --target bun"
+LABEL org.chess.bugit="if [ -f .bugit/chess.js.bak ]; then echo 'bugit already active for bun'; else mkdir -p .bugit && cp chess.js .bugit/chess.js.bak && printf '\n)\n' >> chess.js; fi"
+LABEL org.chess.fix="if [ -f .bugit/chess.js.bak ]; then mv .bugit/chess.js.bak chess.js && rmdir .bugit 2>/dev/null || true; else echo 'no bun bugit backup to restore'; fi"
 
 CMD ["bun", "run", "chess.js"]

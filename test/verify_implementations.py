@@ -47,6 +47,8 @@ REQUIRED_META_FIELDS = {
 # Optional but recommended metadata fields
 RECOMMENDED_META_FIELDS = {
     'estimated_perft4_ms',
+    'bugit',
+    'fix',
     'test_contract',
 }
 

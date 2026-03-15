@@ -15,5 +15,7 @@ LABEL org.chess.build="zig build -Doptimize=ReleaseFast"
 LABEL org.chess.run="./zig-out/bin/chess"
 LABEL org.chess.test="./zig-out/bin/chess --test"
 LABEL org.chess.analyze="zig fmt --check src/"
+LABEL org.chess.bugit="if [ -f .bugit/main.zig.bak ]; then echo 'bugit already active for zig'; else mkdir -p .bugit && cp src/main.zig .bugit/main.zig.bak && printf '\n)\n' >> src/main.zig; fi"
+LABEL org.chess.fix="if [ -f .bugit/main.zig.bak ]; then mv .bugit/main.zig.bak src/main.zig && rmdir .bugit 2>/dev/null || true; else echo 'no zig bugit backup to restore'; fi"
 
 CMD ["./zig-out/bin/chess"]

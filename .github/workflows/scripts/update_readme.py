@@ -47,7 +47,6 @@ CUSTOM_EMOJIS: Dict[str, str] = {
     'julia': '🔮',
     'kotlin': '🧡',
     'lua': '🪐',
-    'mojo': '🔥',
     'nim': '🦊',
     'php': '🐘',
     'rescript': '🧠',

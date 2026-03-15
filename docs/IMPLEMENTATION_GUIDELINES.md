@@ -72,6 +72,10 @@ Board rendering, move legality, error messages, and output format must match the
 Recommended for the shared unit-parity lane:
 - `org.chess.test_contract` - adapter command invoked by `test/unit_contract_harness.py`; the harness appends `--suite` and `--report`
 
+Optional benchmark labels:
+- `org.chess.bugit`
+- `org.chess.fix`
+
 ## Functional Requirements Checklist
 
 - Correct board state representation and turn tracking
@@ -102,6 +106,9 @@ make analyze DIR=<language>
 make test DIR=<language>
 make test-unit-contract DIR=<language>
 make test-chess-engine DIR=<language>
+make bugit DIR=<language>
+make fix DIR=<language>
+make benchmark-analysis-error DIR=<language>
 ```
 
 Manual smoke checks:

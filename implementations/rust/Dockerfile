@@ -14,5 +14,7 @@ LABEL org.chess.source_exts=".rs"
 LABEL org.chess.build="cargo build --release"
 LABEL org.chess.test="cargo test"
 LABEL org.chess.analyze="cargo check --all-targets"
+LABEL org.chess.bugit="if [ -f .bugit/main.rs.bak ]; then echo 'bugit already active for rust'; else mkdir -p .bugit && cp src/main.rs .bugit/main.rs.bak && printf '\n)\n' >> src/main.rs; fi"
+LABEL org.chess.fix="if [ -f .bugit/main.rs.bak ]; then mv .bugit/main.rs.bak src/main.rs && rmdir .bugit 2>/dev/null || true; else echo 'no rust bugit backup to restore'; fi"
 
 CMD ["./target/release/chess"]

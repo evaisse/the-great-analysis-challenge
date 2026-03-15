@@ -3,9 +3,9 @@
 # Default target - build the chess engine
 all: build
 
-# Build target - install dependencies
+# Build target - verify the toolchain image already provides the locked gems
 build:
-	bundle install
+	bundle check
 
 # Run basic tests
 test:
@@ -41,3 +41,10 @@ help:
 	@echo "  make clean   - Clean build artifacts"
 	@echo "  make docker-build - Build Docker image"
 	@echo "  make docker-test  - Test in Docker"
+.PHONY: bugit fix
+
+bugit:
+	python3 ../../scripts/error_analysis_benchmark.py bugit --impl .
+
+fix:
+	python3 ../../scripts/error_analysis_benchmark.py fix --impl .

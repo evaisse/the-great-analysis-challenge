@@ -2,7 +2,8 @@ FROM ghcr.io/evaisse/tgac-ruby-toolchain:latest
 
 COPY . .
 
-RUN bundle install
+# Gems are preinstalled in the toolchain image; keep implementation builds offline.
+RUN bundle check
 
 LABEL org.chess.language="ruby"
 LABEL org.chess.version="3.4"
@@ -15,5 +16,7 @@ LABEL org.chess.benchmark.build="skip"
 LABEL org.chess.build="ruby -c chess.rb"
 LABEL org.chess.test="rspec"
 LABEL org.chess.analyze="bundle exec rubocop --fail-level E"
+LABEL org.chess.bugit="if [ -f .bugit/chess.rb.bak ]; then echo 'bugit already active for ruby'; else mkdir -p .bugit && cp chess.rb .bugit/chess.rb.bak && printf '\n)\n' >> chess.rb; fi"
+LABEL org.chess.fix="if [ -f .bugit/chess.rb.bak ]; then mv .bugit/chess.rb.bak chess.rb && rmdir .bugit 2>/dev/null || true; else echo 'no ruby bugit backup to restore'; fi"
 
 CMD ["ruby", "chess.rb"]

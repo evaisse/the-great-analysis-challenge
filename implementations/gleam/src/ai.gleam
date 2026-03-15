@@ -1,15 +1,14 @@
 // AI engine with minimax and alpha-beta pruning
 
-import gleam/list
-import gleam/int
-import gleam/option.{None, Some}
-import types.{
-  type Color, type GameState, type Move, type PieceType,
-  White, Black, Pawn, King, Queen,
-  SearchResult, piece_value,
-}
 import board.{get_piece, make_move}
+import gleam/int
+import gleam/list
+import gleam/option.{None, Some}
 import move_generator.{get_legal_moves, is_in_check}
+import types.{
+  type Color, type GameState, type Move, type PieceType, Black, King, Pawn,
+  Queen, SearchResult, White, piece_value,
+}
 
 pub fn find_best_move(game_state: GameState, depth: Int) -> types.SearchResult {
   let color = game_state.turn
@@ -21,10 +20,14 @@ pub fn find_best_move(game_state: GameState, depth: Int) -> types.SearchResult {
       let #(best_move, best_eval, nodes) =
         list.fold(
           moves,
-          #(first_move, case color {
-            White -> -1_000_000
-            Black -> 1_000_000
-          }, 0),
+          #(
+            first_move,
+            case color {
+              White -> -1_000_000
+              Black -> 1_000_000
+            },
+            0,
+          ),
           fn(acc, chess_move) {
             let #(current_best, current_eval, current_nodes) = acc
             let new_state = make_move(game_state, chess_move)
@@ -70,27 +73,17 @@ fn minimax(
       case moves {
         [] -> {
           case is_in_check(game_state, color) {
-            True ->
-              #(
-                case maximizing {
-                  True -> -100_000
-                  False -> 100_000
-                },
-                1,
-              )
+            True -> #(
+              case maximizing {
+                True -> -100_000
+                False -> 100_000
+              },
+              1,
+            )
             False -> #(0, 1)
           }
         }
-        _ ->
-          minimax_moves(
-            game_state,
-            moves,
-            depth,
-            alpha,
-            beta,
-            maximizing,
-            0,
-          )
+        _ -> minimax_moves(game_state, moves, depth, alpha, beta, maximizing, 0)
       }
     }
   }

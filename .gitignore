@@ -5,4 +5,6 @@ __pycache__
 *_output.txt
 verification_results.txt
 reports/elm-stuff
+reports/error-analysis/
+reports/error-analysis-workspaces/
 implementations/*/chess

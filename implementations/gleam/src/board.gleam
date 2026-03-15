@@ -1,15 +1,14 @@
 // Board representation and game state management
 
+import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/string
-import gleam/int
 import gleam/result
+import gleam/string
 import types.{
-  type Piece, type Square, type Move, type GameState,
-  type CastlingRights, White, Black, King, Queen, Rook, Bishop, Knight, Pawn,
-  Piece, GameState, CastlingRights, new_castling_rights, opposite_color,
-  piece_to_char,
+  type CastlingRights, type GameState, type Move, type Piece, type Square,
+  Bishop, Black, CastlingRights, GameState, King, Knight, Pawn, Piece, Queen,
+  Rook, White, new_castling_rights, opposite_color, piece_to_char,
 }
 
 pub fn new_game() -> GameState {
@@ -223,9 +222,17 @@ fn update_castling_rights(
     King ->
       case piece.color {
         White ->
-          CastlingRights(..rights, white_kingside: False, white_queenside: False)
+          CastlingRights(
+            ..rights,
+            white_kingside: False,
+            white_queenside: False,
+          )
         Black ->
-          CastlingRights(..rights, black_kingside: False, black_queenside: False)
+          CastlingRights(
+            ..rights,
+            black_kingside: False,
+            black_queenside: False,
+          )
       }
     Rook ->
       case piece.color, chess_move.from {

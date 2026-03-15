@@ -1,16 +1,16 @@
 // FEN parsing and export functionality
 
+import board.{get_piece}
+import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/string
-import gleam/int
 import gleam/result
+import gleam/string
 import types.{
-  type Color, type GameState, type CastlingRights, White, Black,
-  CastlingRights, GameState, char_to_piece, piece_to_char,
-  algebraic_to_square, square_to_algebraic, no_castling_rights,
+  type CastlingRights, type Color, type GameState, Black, CastlingRights,
+  GameState, White, algebraic_to_square, char_to_piece, no_castling_rights,
+  piece_to_char, square_to_algebraic,
 }
-import board.{get_piece}
 
 pub fn parse_fen(fen: String) -> Result(GameState, String) {
   let parts = string.split(fen, " ")
@@ -38,20 +38,20 @@ fn parse_fen_parts(
   use halfmove_clock <- result.try(parse_int_field(halfmove))
   use fullmove_number <- result.try(parse_int_field(fullmove))
 
-  Ok(GameState(
-    board: board,
-    turn: color,
-    castling_rights: rights,
-    en_passant_target: en_passant_target,
-    halfmove_clock: halfmove_clock,
-    fullmove_number: fullmove_number,
-    move_history: [],
-  ))
+  Ok(
+    GameState(
+      board: board,
+      turn: color,
+      castling_rights: rights,
+      en_passant_target: en_passant_target,
+      halfmove_clock: halfmove_clock,
+      fullmove_number: fullmove_number,
+      move_history: [],
+    ),
+  )
 }
 
-fn parse_pieces(
-  pieces: String,
-) -> Result(List(Option(types.Piece)), String) {
+fn parse_pieces(pieces: String) -> Result(List(Option(types.Piece)), String) {
   let ranks = string.split(pieces, "/")
   case list.length(ranks) {
     8 -> {

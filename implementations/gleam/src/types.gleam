@@ -1,8 +1,8 @@
 // Core chess types and data structures
 
+import gleam/int
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import gleam/int
 
 pub type Color {
   White
@@ -81,7 +81,7 @@ pub fn piece_value(piece_type: PieceType) -> Int {
     Bishop -> 330
     Rook -> 500
     Queen -> 900
-    King -> 20000
+    King -> 20_000
   }
 }
 

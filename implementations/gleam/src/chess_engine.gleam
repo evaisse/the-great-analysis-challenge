@@ -1,23 +1,23 @@
 // Main chess engine with CLI interface
 
-import gleam/io
-import gleam/string
-import gleam/list
 import gleam/int
+import gleam/io
+import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/string
 
 @external(erlang, "io", "get_line")
 fn get_line(prompt: String) -> String
 
-import types.{
-  type GameState, type Move, White, Black,
-  algebraic_to_square, square_to_algebraic,
-}
-import board.{new_game, display_board, make_move, undo_move, get_piece}
-import move_generator.{get_legal_moves, is_in_check}
-import fen.{parse_fen, export_fen}
 import ai.{find_best_move}
+import board.{display_board, get_piece, make_move, new_game, undo_move}
+import fen.{export_fen, parse_fen}
+import move_generator.{get_legal_moves, is_in_check}
 import perft.{perft}
+import types.{
+  type GameState, type Move, Black, White, algebraic_to_square,
+  square_to_algebraic,
+}
 
 pub type ChessEngine {
   ChessEngine(game_state: GameState)
@@ -94,10 +94,7 @@ fn handle_move(engine: ChessEngine, move_str: String) -> ChessEngine {
                 }
                 True -> {
                   let legal_moves =
-                    get_legal_moves(
-                      engine.game_state,
-                      engine.game_state.turn,
-                    )
+                    get_legal_moves(engine.game_state, engine.game_state.turn)
                   let matching_move =
                     find_matching_move(
                       legal_moves,
@@ -109,10 +106,7 @@ fn handle_move(engine: ChessEngine, move_str: String) -> ChessEngine {
                   case matching_move {
                     None -> {
                       case
-                        is_in_check(
-                          engine.game_state,
-                          engine.game_state.turn,
-                        )
+                        is_in_check(engine.game_state, engine.game_state.turn)
                       {
                         True -> io.println("ERROR: King would be in check")
                         False -> io.println("ERROR: Illegal move")
@@ -120,8 +114,7 @@ fn handle_move(engine: ChessEngine, move_str: String) -> ChessEngine {
                       engine
                     }
                     Some(chess_move) -> {
-                      let new_state =
-                        make_move(engine.game_state, chess_move)
+                      let new_state = make_move(engine.game_state, chess_move)
                       io.println("OK: " <> move_str)
                       io.println(display_board(new_state))
                       check_game_end(new_state)
@@ -307,9 +300,7 @@ fn handle_perft(engine: ChessEngine, depth_str: String) -> ChessEngine {
 
 fn handle_help(engine: ChessEngine) -> ChessEngine {
   io.println("Available commands:")
-  io.println(
-    "  move <from><to>[promotion] - Make a move (e.g., e2e4, e7e8Q)",
-  )
+  io.println("  move <from><to>[promotion] - Make a move (e.g., e2e4, e7e8Q)")
   io.println("  undo - Undo the last move")
   io.println("  new - Start a new game")
   io.println("  ai <depth> - Let AI make a move (depth 1-5)")
