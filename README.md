@@ -100,6 +100,7 @@ make image DIR=<language>
 make build DIR=<language>
 make analyze DIR=<language>
 make test DIR=<language>
+make test-unit-contract DIR=<language>
 make test-chess-engine DIR=<language>
 ```
 
