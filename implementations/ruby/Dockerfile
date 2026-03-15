@@ -2,7 +2,8 @@ FROM ghcr.io/evaisse/tgac-ruby-toolchain:latest
 
 COPY . .
 
-RUN bundle install
+# Gems are preinstalled in the toolchain image; keep implementation builds offline.
+RUN bundle check
 
 LABEL org.chess.language="ruby"
 LABEL org.chess.version="3.4"

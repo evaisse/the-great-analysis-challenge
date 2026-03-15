@@ -3,9 +3,9 @@
 # Default target - build the chess engine
 all: build
 
-# Build target - install dependencies
+# Build target - verify the toolchain image already provides the locked gems
 build:
-	bundle install
+	bundle check
 
 # Run basic tests
 test:
