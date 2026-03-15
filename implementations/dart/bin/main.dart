@@ -640,7 +640,9 @@ Future<void> main() async {
           print('ERROR: Unsupported concurrency profile');
           break;
         }
-        print('CONCURRENCY: ${jsonEncode(await _buildConcurrencyPayload(profile))}');
+        print(
+          'CONCURRENCY: ${jsonEncode(await _buildConcurrencyPayload(profile))}',
+        );
         break;
       case 'status':
         _checkGameState(game);
@@ -1178,10 +1180,7 @@ Map<String, int> _runConcurrencyWorker(
   int statefulCycles,
 ) {
   final game = Game();
-  var checksum = _mixChecksum(
-    seed,
-    'worker:$profile:$runIndex:$workerIndex',
-  );
+  var checksum = _mixChecksum(seed, 'worker:$profile:$runIndex:$workerIndex');
   var invariantErrors = 0;
   var ops = 0;
 
@@ -1199,13 +1198,14 @@ Map<String, int> _runConcurrencyWorker(
       ops += 2;
 
       if (candidates.isNotEmpty) {
-        final selected = candidates[_selectionIndex(
-          candidates.length,
-          seed,
-          runIndex,
-          workerIndex,
-          step,
-        )];
+        final selected =
+            candidates[_selectionIndex(
+              candidates.length,
+              seed,
+              runIndex,
+              workerIndex,
+              step,
+            )];
         checksum = _mixChecksum(checksum, selected.notation);
 
         final clone = game.board.clone();
@@ -1222,7 +1222,8 @@ Map<String, int> _runConcurrencyWorker(
     } catch (_) {
       invariantErrors++;
       game.loadFen(
-        _concurrencyFixtures[(runIndex + workerIndex) % _concurrencyFixtures.length],
+        _concurrencyFixtures[(runIndex + workerIndex) %
+            _concurrencyFixtures.length],
       );
     }
   }
@@ -1244,13 +1245,14 @@ Map<String, int> _runConcurrencyWorker(
         continue;
       }
 
-      final first = rootMoves[_selectionIndex(
-        rootMoves.length,
-        seed + 7,
-        runIndex,
-        workerIndex,
-        step,
-      )];
+      final first =
+          rootMoves[_selectionIndex(
+            rootMoves.length,
+            seed + 7,
+            runIndex,
+            workerIndex,
+            step,
+          )];
       game.move(first.notation);
       checksum = _mixChecksum(checksum, first.notation);
       checksum = _mixChecksum(checksum, game.board.toFen());
@@ -1261,13 +1263,14 @@ Map<String, int> _runConcurrencyWorker(
       checksum = _mixChecksumInt(checksum, replyMoves.length);
       ops++;
       if (replyMoves.isNotEmpty) {
-        final reply = replyMoves[_selectionIndex(
-          replyMoves.length,
-          seed + 19,
-          runIndex,
-          workerIndex,
-          step,
-        )];
+        final reply =
+            replyMoves[_selectionIndex(
+              replyMoves.length,
+              seed + 19,
+              runIndex,
+              workerIndex,
+              step,
+            )];
         game.move(reply.notation);
         checksum = _mixChecksum(checksum, reply.notation);
         checksum = _mixChecksum(checksum, game.board.toFen());

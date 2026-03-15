@@ -1,12 +1,12 @@
-import gleeunit
-import gleeunit/should
+import board.{get_piece, new_game}
+import chess_engine.{new}
+import fen.{export_fen, parse_fen}
 import gleam/list
 import gleam/option.{None, Some}
-import types.{White, Black}
-import board.{new_game, get_piece}
+import gleeunit
+import gleeunit/should
 import move_generator.{get_legal_moves}
-import fen.{parse_fen, export_fen}
-import chess_engine.{new}
+import types.{Black, White}
 
 pub fn main() {
   gleeunit.main()

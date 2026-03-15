@@ -64,10 +64,12 @@ def _run_with_shell(
         "--rm",
         "--network",
         "none",
+        "--entrypoint",
+        shell,
     ]
     if workdir is not None:
         docker_cmd.extend(["-v", f"{workdir.resolve()}:/app"])
-    docker_cmd.extend([image, shell, "-c", f"cd /app && {command}"])
+    docker_cmd.extend([image, "-c", f"cd /app && {command}"])
     return subprocess.run(
         docker_cmd,
         check=False,
