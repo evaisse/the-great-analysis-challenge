@@ -253,9 +253,7 @@ const ChessEngine = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    const allocator = std.heap.page_allocator;
 
     var engine = ChessEngine.init(allocator);
     engine.bind();
