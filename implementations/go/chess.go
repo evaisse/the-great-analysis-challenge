@@ -19,25 +19,45 @@ func main() {
 }
 
 type ChessEngine struct {
-	gameState         *GameState
-	ai                *AI
-	pgnPath           string
-	pgnMoves          []string
-	bookPath          string
-	bookEnabled       bool
-	bookEntries       map[string][]BookEntry
-	bookEntryCount    int
-	bookLookups       int
-	bookHits          int
-	bookMisses        int
-	bookPlayed        int
-	uciHashMB         int
-	uciThreads        int
-	chess960ID        int
-	traceEnabled      bool
-	traceLevel        string
-	traceEvents       []TraceEvent
-	traceCommandCount int
+	gameState             *GameState
+	ai                    *AI
+	pgnPath               string
+	pgnMoves              []string
+	bookPath              string
+	bookEnabled           bool
+	bookEntries           map[string][]BookEntry
+	bookEntryCount        int
+	bookLookups           int
+	bookHits              int
+	bookMisses            int
+	bookPlayed            int
+	uciHashMB             int
+	uciThreads            int
+	chess960ID            int
+	traceEnabled          bool
+	traceLevel            string
+	traceEvents           []TraceEvent
+	traceCommandCount     int
+	traceExportCount      int
+	traceLastExportTarget string
+	traceLastExportEvents int
+	traceLastExportBytes  int
+	traceChromeCount      int
+	traceLastChromeTarget string
+	traceLastChromeEvents int
+	traceLastChromeBytes  int
+	traceLastAISource     string
+	traceLastAIMove       string
+	traceLastAIDepth      int
+	traceLastAIScoreCP    int
+	traceLastAIElapsedMS  int64
+	traceLastAITimedOut   bool
+	traceLastAINodes      int
+	traceLastAIEvalCalls  int
+	traceLastAINPS        int64
+	traceLastAITTHits     int
+	traceLastAITTMisses   int
+	traceLastAIBetaCutoffs int
 }
 
 type TraceEvent struct {
@@ -61,17 +81,17 @@ type EndgameInfo struct {
 
 func NewChessEngine() *ChessEngine {
 	return &ChessEngine{
-		gameState:    NewGameState(),
-		ai:           NewAI(),
-		pgnPath:      "",
-		pgnMoves:     make([]string, 0),
-		bookPath:     "",
-		bookEnabled:  false,
-		bookEntries:  make(map[string][]BookEntry),
-		uciHashMB:    16,
-		uciThreads:   1,
-		traceLevel:   "info",
-		traceEvents:  make([]TraceEvent, 0),
+		gameState:   NewGameState(),
+		ai:          NewAI(),
+		pgnPath:     "",
+		pgnMoves:    make([]string, 0),
+		bookPath:    "",
+		bookEnabled: false,
+		bookEntries: make(map[string][]BookEntry),
+		uciHashMB:   16,
+		uciThreads:  1,
+		traceLevel:  "info",
+		traceEvents: make([]TraceEvent, 0),
 	}
 }
 
@@ -455,6 +475,7 @@ func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 
 	if bookMove, ok := engine.chooseBookMove(legalMoves); ok {
 		moveStr := moveToString(bookMove)
+	engine.recordTraceAI("uci-book", moveStr, 0, 0, 0, false, 0, 0, 0, 0, 0)
 		fmt.Printf("info string bookmove %s\n", moveStr)
 		fmt.Printf("bestmove %s\n", moveStr)
 		return
@@ -462,6 +483,7 @@ func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 
 	if endgameMove, info, ok := engine.chooseEndgameMove(legalMoves); ok {
 		moveStr := moveToString(endgameMove)
+		engine.recordTraceAI("uci-endgame", moveStr, 0, info.WhiteScore, 0, false, 0, 0, 0, 0, 0)
 		fmt.Printf("info string endgame %s score cp %d\n", info.Kind, info.WhiteScore)
 		fmt.Printf("bestmove %s\n", moveStr)
 		return
@@ -470,7 +492,8 @@ func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 	result := engine.ai.Search(engine.gameState, depth, 0)
 	bestMove := normalizeBestMove(result.Move, legalMoves)
 	moveStr := moveToString(bestMove)
-	fmt.Printf("info depth %d score cp %d time %d nodes 0\n", result.Depth, result.Score, result.ElapsedMS)
+	engine.recordTraceAI("uci-search", moveStr, result.Depth, result.Score, result.ElapsedMS, result.TimedOut, result.Nodes, result.EvalCalls, result.TTHits, result.TTMisses, result.BetaCutoffs)
+	fmt.Printf("info depth %d score cp %d time %d nodes %d\n", result.Depth, result.Score, result.ElapsedMS, result.Nodes)
 	fmt.Printf("bestmove %s\n", moveStr)
 }
 
@@ -561,6 +584,11 @@ func (engine *ChessEngine) applyAIMove(result SearchResult, legalMoves []Move, r
 	engine.gameState.MakeMove(bestMove)
 
 	moveStr := moveToString(bestMove)
+	depthUsed := result.Depth
+	if depthUsed == 0 {
+		depthUsed = requestedDepth
+	}
+	engine.recordTraceAI("search", moveStr, depthUsed, result.Score, result.ElapsedMS, result.TimedOut, result.Nodes, result.EvalCalls, result.TTHits, result.TTMisses, result.BetaCutoffs)
 
 	// Check for game end conditions
 	nextLegalMoves := engine.gameState.GenerateLegalMoves()
@@ -575,10 +603,6 @@ func (engine *ChessEngine) applyAIMove(result SearchResult, legalMoves []Move, r
 		if drawReason != "" {
 			fmt.Printf("AI: %s (DRAW: by %s)\n", moveStr, drawReason)
 		} else {
-			depthUsed := result.Depth
-			if depthUsed == 0 {
-				depthUsed = requestedDepth
-			}
 			fmt.Printf("AI: %s (depth=%d, eval=%d, time=%d)\n",
 				moveStr, depthUsed, result.Score, result.ElapsedMS)
 		}
@@ -819,6 +843,7 @@ func (engine *ChessEngine) applyBookAIMove(bestMove Move) {
 	engine.bookPlayed++
 
 	moveStr := moveToString(bestMove)
+	engine.recordTraceAI("book", moveStr, 0, 0, 0, false, 0, 0, 0, 0, 0)
 	nextLegalMoves := engine.gameState.GenerateLegalMoves()
 	if len(nextLegalMoves) == 0 {
 		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
@@ -1105,6 +1130,7 @@ func (engine *ChessEngine) chooseEndgameMove(legalMoves []Move) (Move, EndgameIn
 func (engine *ChessEngine) applyEndgameAIMove(bestMove Move, info EndgameInfo) {
 	engine.gameState.MakeMove(bestMove)
 	moveStr := moveToString(bestMove)
+	engine.recordTraceAI("endgame", moveStr, 0, info.WhiteScore, 0, false, 0, 0, 0, 0, 0)
 
 	nextLegalMoves := engine.gameState.GenerateLegalMoves()
 	if len(nextLegalMoves) == 0 {
@@ -1359,32 +1385,260 @@ func (engine *ChessEngine) handleTrace(args []string) {
 		engine.trace("trace", "level="+engine.traceLevel)
 		fmt.Printf("TRACE: level=%s\n", engine.traceLevel)
 	case "report":
-		fmt.Printf(
-			"TRACE: enabled=%t; level=%s; events=%d; commands=%d\n",
+		report := fmt.Sprintf(
+			"TRACE: enabled=%t; level=%s; events=%d; commands=%d; exports=%d; last_export=%s; chrome_exports=%d; last_chrome=%s; last_ai=%s",
 			engine.traceEnabled,
 			engine.traceLevel,
 			len(engine.traceEvents),
 			engine.traceCommandCount,
+			engine.traceExportCount,
+			formatTraceTransferSummary(
+				engine.traceExportCount,
+				engine.traceLastExportTarget,
+				engine.traceLastExportEvents,
+				engine.traceLastExportBytes,
+			),
+			engine.traceChromeCount,
+			formatTraceTransferSummary(
+				engine.traceChromeCount,
+				engine.traceLastChromeTarget,
+				engine.traceLastChromeEvents,
+				engine.traceLastChromeBytes,
+			),
+			engine.formatTraceAISummary(),
 		)
+		if searchMetrics := engine.formatTraceSearchMetrics(); searchMetrics != "" {
+			report += "; search_metrics=" + searchMetrics
+		}
+		fmt.Println(report)
 	case "reset":
 		engine.traceEvents = engine.traceEvents[:0]
 		engine.traceCommandCount = 0
+		engine.traceExportCount = 0
+		engine.traceLastExportTarget = ""
+		engine.traceLastExportEvents = 0
+		engine.traceLastExportBytes = 0
+		engine.traceChromeCount = 0
+		engine.traceLastChromeTarget = ""
+		engine.traceLastChromeEvents = 0
+		engine.traceLastChromeBytes = 0
+		engine.resetTraceSearchState()
 		fmt.Println("TRACE: reset")
 	case "export":
-		target := "(memory)"
-		if len(args) > 1 {
-			target = strings.Join(args[1:], " ")
-		}
-		fmt.Printf("TRACE: export=%s; events=%d\n", target, len(engine.traceEvents))
+		target := resolveTraceTarget(args[1:])
+		engine.exportTracePayload(
+			"export",
+			target,
+			engine.buildStructuredTracePayload,
+			func(eventCount, byteCount int) {
+				engine.traceExportCount++
+				engine.traceLastExportTarget = target
+				engine.traceLastExportEvents = eventCount
+				engine.traceLastExportBytes = byteCount
+			},
+		)
 	case "chrome":
-		target := "(memory)"
-		if len(args) > 1 {
-			target = strings.Join(args[1:], " ")
-		}
-		fmt.Printf("TRACE: chrome=%s; events=%d\n", target, len(engine.traceEvents))
+		target := resolveTraceTarget(args[1:])
+		engine.exportTracePayload(
+			"chrome",
+			target,
+			engine.buildChromeTracePayload,
+			func(eventCount, byteCount int) {
+				engine.traceChromeCount++
+				engine.traceLastChromeTarget = target
+				engine.traceLastChromeEvents = eventCount
+				engine.traceLastChromeBytes = byteCount
+			},
+		)
 	default:
 		fmt.Println("ERROR: Unsupported trace command")
 	}
+}
+
+func resolveTraceTarget(parts []string) string {
+	target := strings.TrimSpace(strings.Join(parts, " "))
+	if target == "" {
+		return "(memory)"
+	}
+	return target
+}
+
+func formatTraceTransferSummary(count int, target string, eventCount int, byteCount int) string {
+	if count == 0 || strings.TrimSpace(target) == "" {
+		return "none"
+	}
+	return fmt.Sprintf("%s (%d events, %d bytes)", target, eventCount, byteCount)
+}
+
+func (engine *ChessEngine) resetTraceSearchState() {
+	engine.traceLastAISource = ""
+	engine.traceLastAIMove = ""
+	engine.traceLastAIDepth = 0
+	engine.traceLastAIScoreCP = 0
+	engine.traceLastAIElapsedMS = 0
+	engine.traceLastAITimedOut = false
+	engine.traceLastAINodes = 0
+	engine.traceLastAIEvalCalls = 0
+	engine.traceLastAINPS = 0
+	engine.traceLastAITTHits = 0
+	engine.traceLastAITTMisses = 0
+	engine.traceLastAIBetaCutoffs = 0
+}
+
+func (engine *ChessEngine) formatTraceAISummary() string {
+	if strings.TrimSpace(engine.traceLastAISource) == "" || strings.TrimSpace(engine.traceLastAIMove) == "" {
+		return "none"
+	}
+
+	summary := fmt.Sprintf("%s:%s", engine.traceLastAISource, engine.traceLastAIMove)
+	if strings.Contains(engine.traceLastAISource, "search") {
+		summary += fmt.Sprintf("@d%d/%dcp/%dms/n%d/e%d/nps%d", engine.traceLastAIDepth, engine.traceLastAIScoreCP, engine.traceLastAIElapsedMS, engine.traceLastAINodes, engine.traceLastAIEvalCalls, engine.traceLastAINPS)
+		if engine.traceLastAITimedOut {
+			summary += "/timeout"
+		}
+	} else if strings.Contains(engine.traceLastAISource, "endgame") {
+		summary += fmt.Sprintf("/%dcp", engine.traceLastAIScoreCP)
+	}
+
+	return summary
+}
+
+func (engine *ChessEngine) formatTraceSearchMetrics() string {
+	if !strings.Contains(engine.traceLastAISource, "search") {
+		return ""
+	}
+	return fmt.Sprintf(
+		"nodes=%d,eval_calls=%d,tt_hits=%d,tt_misses=%d,beta_cutoffs=%d,nps=%d",
+		engine.traceLastAINodes,
+		engine.traceLastAIEvalCalls,
+		engine.traceLastAITTHits,
+		engine.traceLastAITTMisses,
+		engine.traceLastAIBetaCutoffs,
+		engine.traceLastAINPS,
+	)
+}
+
+func (engine *ChessEngine) recordTraceAI(source, move string, depth, scoreCP int, elapsedMS int64, timedOut bool, nodes, evalCalls, ttHits, ttMisses, betaCutoffs int) {
+	engine.traceLastAISource = source
+	engine.traceLastAIMove = move
+	engine.traceLastAIDepth = depth
+	engine.traceLastAIScoreCP = scoreCP
+	engine.traceLastAIElapsedMS = elapsedMS
+	engine.traceLastAITimedOut = timedOut
+	engine.traceLastAINodes = nodes
+	engine.traceLastAIEvalCalls = evalCalls
+	engine.traceLastAITTHits = ttHits
+	engine.traceLastAITTMisses = ttMisses
+	engine.traceLastAIBetaCutoffs = betaCutoffs
+	if nodes > 0 {
+		divisor := elapsedMS
+		if divisor <= 0 {
+			divisor = 1
+		}
+		engine.traceLastAINPS = int64(nodes) * 1000 / divisor
+	} else {
+		engine.traceLastAINPS = 0
+	}
+	engine.trace("ai", engine.formatTraceAISummary())
+}
+
+func (engine *ChessEngine) traceLastAIPayload() map[string]interface{} {
+	if strings.TrimSpace(engine.traceLastAISource) == "" || strings.TrimSpace(engine.traceLastAIMove) == "" {
+		return nil
+	}
+
+	return map[string]interface{}{
+		"source":     engine.traceLastAISource,
+		"move":       engine.traceLastAIMove,
+		"depth":      engine.traceLastAIDepth,
+		"score_cp":   engine.traceLastAIScoreCP,
+		"elapsed_ms": engine.traceLastAIElapsedMS,
+		"timed_out":  engine.traceLastAITimedOut,
+		"nodes":      engine.traceLastAINodes,
+		"eval_calls": engine.traceLastAIEvalCalls,
+		"nps":        engine.traceLastAINPS,
+		"tt_hits":    engine.traceLastAITTHits,
+		"tt_misses":  engine.traceLastAITTMisses,
+		"beta_cutoffs": engine.traceLastAIBetaCutoffs,
+		"summary":    engine.formatTraceAISummary(),
+	}
+}
+
+func (engine *ChessEngine) exportTracePayload(
+	kind string,
+	target string,
+	build func() ([]byte, error),
+	onSuccess func(eventCount, byteCount int),
+) {
+	payload, err := build()
+	if err != nil {
+		fmt.Printf("ERROR: trace %s encoding failed: %s\n", kind, err.Error())
+		return
+	}
+
+	if target != "(memory)" {
+		if err := os.WriteFile(target, payload, 0644); err != nil {
+			fmt.Printf("ERROR: trace %s failed: %s\n", kind, err.Error())
+			return
+		}
+	}
+
+	eventCount := len(engine.traceEvents)
+	byteCount := len(payload)
+	onSuccess(eventCount, byteCount)
+	fmt.Printf("TRACE: %s=%s; events=%d; bytes=%d\n", kind, target, eventCount, byteCount)
+}
+
+func (engine *ChessEngine) buildStructuredTracePayload() ([]byte, error) {
+	snapshot := append([]TraceEvent(nil), engine.traceEvents...)
+	payload := map[string]interface{}{
+		"format":        "tgac.trace.v1",
+		"level":         engine.traceLevel,
+		"command_count": engine.traceCommandCount,
+		"event_count":   len(snapshot),
+		"events":        snapshot,
+	}
+	if lastAI := engine.traceLastAIPayload(); lastAI != nil {
+		payload["last_ai"] = lastAI
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	return append(data, '\n'), nil
+}
+
+func (engine *ChessEngine) buildChromeTracePayload() ([]byte, error) {
+	snapshot := append([]TraceEvent(nil), engine.traceEvents...)
+	chromeEvents := make([]map[string]interface{}, 0, len(snapshot))
+	for _, event := range snapshot {
+		chromeEvents = append(chromeEvents, map[string]interface{}{
+			"name": event.Event,
+			"cat":  "engine",
+			"ph":   "i",
+			"s":    "p",
+			"ts":   event.TsMS * 1000,
+			"pid":  1,
+			"tid":  1,
+			"args": map[string]interface{}{
+				"detail": event.Detail,
+				"level":  engine.traceLevel,
+				"ts_ms":  event.TsMS,
+			},
+		})
+	}
+
+	payload := map[string]interface{}{
+		"displayTimeUnit": "ms",
+		"traceEvents":     chromeEvents,
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	return append(data, '\n'), nil
 }
 
 func (engine *ChessEngine) handleConcurrency(args []string) {

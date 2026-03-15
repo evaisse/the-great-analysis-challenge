@@ -19,6 +19,11 @@ class SearchResult {
   final int depth;
   final int elapsedMs;
   final bool timedOut;
+  final int nodes;
+  final int evalCalls;
+  final int ttHits;
+  final int ttMisses;
+  final int betaCutoffs;
 
   SearchResult(
     this.move,
@@ -26,6 +31,11 @@ class SearchResult {
     this.depth,
     this.elapsedMs,
     this.timedOut,
+    this.nodes,
+    this.evalCalls,
+    this.ttHits,
+    this.ttMisses,
+    this.betaCutoffs,
   );
 }
 
@@ -51,6 +61,11 @@ class AI {
   DateTime? _deadline;
   bool _timedOut = false;
   bool _stopRequested = false;
+  int _nodesVisited = 0;
+  int _evalCalls = 0;
+  int _ttHits = 0;
+  int _ttMisses = 0;
+  int _betaCutoffs = 0;
 
   Move findBestMove(Board board, int depth) {
     final result = search(board, depth);
@@ -71,11 +86,16 @@ class AI {
 
     final legalMoves = board.generateMoves();
     if (legalMoves.isEmpty) {
-      return SearchResult(null, 0, 0, 0, false);
+      return SearchResult(null, 0, 0, 0, false, 0, 0, 0, 0, 0);
     }
 
     _timedOut = false;
     _stopRequested = false;
+    _nodesVisited = 0;
+    _evalCalls = 0;
+    _ttHits = 0;
+    _ttMisses = 0;
+    _betaCutoffs = 0;
     final started = DateTime.now();
     _deadline = movetimeMs > 0
         ? started.add(Duration(milliseconds: movetimeMs))
@@ -109,6 +129,11 @@ class AI {
       completedDepth,
       elapsedMs,
       _timedOut,
+      _nodesVisited,
+      _evalCalls,
+      _ttHits,
+      _ttMisses,
+      _betaCutoffs,
     );
   }
 
@@ -116,6 +141,7 @@ class AI {
     if (_timeExceeded()) {
       return _NodeResult(0, null, false);
     }
+    _nodesVisited++;
 
     final moves = board.generateMoves();
     if (moves.isEmpty) {
@@ -123,6 +149,11 @@ class AI {
     }
 
     final entry = _tt[board.zobristHash];
+    if (entry != null) {
+      _ttHits++;
+    } else {
+      _ttMisses++;
+    }
     final orderedMoves = _orderMoves(board, moves, entry?.bestMoveKey);
 
     var alpha = -_infinity;
@@ -159,6 +190,7 @@ class AI {
     if (_timeExceeded()) {
       return _NodeResult(0, null, false);
     }
+    _nodesVisited++;
 
     final originalAlpha = alpha;
     final key = board.zobristHash;
@@ -166,6 +198,7 @@ class AI {
 
     final entry = _tt[key];
     if (entry != null && entry.depth >= depth) {
+      _ttHits++;
       if (entry.flag == 'exact') {
         return _NodeResult(entry.score, entry.bestMoveKey, true);
       }
@@ -175,9 +208,12 @@ class AI {
         beta = min(beta, entry.score);
       }
       if (alpha >= beta) {
+        _betaCutoffs++;
         return _NodeResult(entry.score, entry.bestMoveKey, true);
       }
       bestFromTt = entry.bestMoveKey;
+    } else {
+      _ttMisses++;
     }
 
     if (depth == 0) {
@@ -220,6 +256,7 @@ class AI {
         alpha = score;
       }
       if (alpha >= beta) {
+        _betaCutoffs++;
         break;
       }
     }
@@ -299,6 +336,7 @@ class AI {
   }
 
   int evaluate(Board board) {
+    _evalCalls++;
     var score = 0;
     for (var i = 0; i < 8; i++) {
       for (var j = 0; j < 8; j++) {

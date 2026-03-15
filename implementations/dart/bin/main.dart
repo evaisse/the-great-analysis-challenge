@@ -5,6 +5,21 @@ import 'dart:isolate';
 import 'dart:math';
 import 'package:chess_engine/chess_engine.dart';
 
+typedef TraceAiRecorder =
+    void Function(
+      String source,
+      String move,
+      int depth,
+      int scoreCp,
+      int elapsedMs,
+      bool timedOut,
+      int nodes,
+      int evalCalls,
+      int ttHits,
+      int ttMisses,
+      int betaCutoffs,
+    );
+
 Future<void> main() async {
   final game = Game();
   var ai = AI();
@@ -25,6 +40,26 @@ Future<void> main() async {
   String traceLevel = 'info';
   final List<Map<String, dynamic>> traceEvents = [];
   int traceCommandCount = 0;
+  int traceExportCount = 0;
+  String? traceLastExportTarget;
+  int traceLastExportEvents = 0;
+  int traceLastExportBytes = 0;
+  int traceChromeCount = 0;
+  String? traceLastChromeTarget;
+  int traceLastChromeEvents = 0;
+  int traceLastChromeBytes = 0;
+  String? traceLastAiSource;
+  String? traceLastAiMove;
+  int traceLastAiDepth = 0;
+  int traceLastAiScoreCp = 0;
+  int traceLastAiElapsedMs = 0;
+  bool traceLastAiTimedOut = false;
+  int traceLastAiNodes = 0;
+  int traceLastAiEvalCalls = 0;
+  int traceLastAiNps = 0;
+  int traceLastAiTtHits = 0;
+  int traceLastAiTtMisses = 0;
+  int traceLastAiBetaCutoffs = 0;
 
   void recordTrace(String event, String detail) {
     if (!traceEnabled) return;
@@ -36,6 +71,170 @@ Future<void> main() async {
     if (traceEvents.length > 256) {
       traceEvents.removeRange(0, traceEvents.length - 256);
     }
+  }
+
+  String resolveTraceTarget(List<String> commandParts) {
+    final rawTarget = commandParts.length > 2
+        ? commandParts.sublist(2).join(' ').trim()
+        : '';
+    return rawTarget.isEmpty ? '(memory)' : rawTarget;
+  }
+
+  String formatTraceTransferSummary(
+    int count,
+    String? target,
+    int eventCount,
+    int byteCount,
+  ) {
+    if (count == 0 || target == null) {
+      return 'none';
+    }
+    return '$target ($eventCount events, $byteCount bytes)';
+  }
+
+  void resetTraceAiState() {
+    traceLastAiSource = null;
+    traceLastAiMove = null;
+    traceLastAiDepth = 0;
+    traceLastAiScoreCp = 0;
+    traceLastAiElapsedMs = 0;
+    traceLastAiTimedOut = false;
+    traceLastAiNodes = 0;
+    traceLastAiEvalCalls = 0;
+    traceLastAiNps = 0;
+    traceLastAiTtHits = 0;
+    traceLastAiTtMisses = 0;
+    traceLastAiBetaCutoffs = 0;
+  }
+
+  String formatTraceAiSummary() {
+    if (traceLastAiSource == null || traceLastAiMove == null) {
+      return 'none';
+    }
+
+    var summary = '${traceLastAiSource!}:${traceLastAiMove!}';
+    if (traceLastAiSource!.contains('search')) {
+      summary +=
+          '@d$traceLastAiDepth/$traceLastAiScoreCp'
+          'cp/${traceLastAiElapsedMs}ms';
+      summary +=
+          '/n$traceLastAiNodes/e$traceLastAiEvalCalls/nps$traceLastAiNps';
+      if (traceLastAiTimedOut) {
+        summary += '/timeout';
+      }
+    } else if (traceLastAiSource!.contains('endgame')) {
+      summary += '/${traceLastAiScoreCp}cp';
+    }
+
+    return summary;
+  }
+
+  String? formatTraceSearchMetrics() {
+    if (traceLastAiSource == null || !traceLastAiSource!.contains('search')) {
+      return null;
+    }
+    return 'nodes=$traceLastAiNodes,eval_calls=$traceLastAiEvalCalls,tt_hits=$traceLastAiTtHits,tt_misses=$traceLastAiTtMisses,beta_cutoffs=$traceLastAiBetaCutoffs,nps=$traceLastAiNps';
+  }
+
+  void recordTraceAi(
+    String source,
+    String move,
+    int depth,
+    int scoreCp,
+    int elapsedMs,
+    bool timedOut,
+    int nodes,
+    int evalCalls,
+    int ttHits,
+    int ttMisses,
+    int betaCutoffs,
+  ) {
+    traceLastAiSource = source;
+    traceLastAiMove = move;
+    traceLastAiDepth = depth;
+    traceLastAiScoreCp = scoreCp;
+    traceLastAiElapsedMs = elapsedMs;
+    traceLastAiTimedOut = timedOut;
+    traceLastAiNodes = nodes;
+    traceLastAiEvalCalls = evalCalls;
+    final divisor = elapsedMs > 0 ? elapsedMs : 1;
+    traceLastAiNps = nodes > 0 ? (nodes * 1000) ~/ divisor : 0;
+    traceLastAiTtHits = ttHits;
+    traceLastAiTtMisses = ttMisses;
+    traceLastAiBetaCutoffs = betaCutoffs;
+    recordTrace('ai', formatTraceAiSummary());
+  }
+
+  Map<String, dynamic>? buildTraceAiPayload() {
+    if (traceLastAiSource == null || traceLastAiMove == null) {
+      return null;
+    }
+
+    return {
+      'source': traceLastAiSource,
+      'move': traceLastAiMove,
+      'depth': traceLastAiDepth,
+      'score_cp': traceLastAiScoreCp,
+      'elapsed_ms': traceLastAiElapsedMs,
+      'timed_out': traceLastAiTimedOut,
+      'nodes': traceLastAiNodes,
+      'eval_calls': traceLastAiEvalCalls,
+      'nps': traceLastAiNps,
+      'tt_hits': traceLastAiTtHits,
+      'tt_misses': traceLastAiTtMisses,
+      'beta_cutoffs': traceLastAiBetaCutoffs,
+      'summary': formatTraceAiSummary(),
+    };
+  }
+
+  String buildStructuredTraceJson() {
+    final snapshot = traceEvents
+        .map((event) => Map<String, dynamic>.from(event))
+        .toList(growable: false);
+    final payload = <String, dynamic>{
+      'format': 'tgac.trace.v1',
+      'level': traceLevel,
+      'command_count': traceCommandCount,
+      'event_count': snapshot.length,
+      'events': snapshot,
+    };
+    final lastAi = buildTraceAiPayload();
+    if (lastAi != null) {
+      payload['last_ai'] = lastAi;
+    }
+    return '${jsonEncode(payload)}\n';
+  }
+
+  String buildChromeTraceJson() {
+    final chromeEvents = traceEvents
+        .map((event) {
+          final tsMs = event['ts_ms'] is int ? event['ts_ms'] as int : 0;
+          return {
+            'name': event['event'] ?? 'trace',
+            'cat': 'engine',
+            'ph': 'i',
+            's': 'p',
+            'ts': tsMs * 1000,
+            'pid': 1,
+            'tid': 1,
+            'args': {
+              'detail': event['detail'] ?? '',
+              'level': traceLevel,
+              'ts_ms': tsMs,
+            },
+          };
+        })
+        .toList(growable: false);
+
+    return '${jsonEncode({'displayTimeUnit': 'ms', 'traceEvents': chromeEvents})}\n';
+  }
+
+  Future<int> writeTracePayload(String target, String content) async {
+    final bytes = utf8.encode(content);
+    if (target != '(memory)') {
+      await File(target).writeAsBytes(bytes, flush: true);
+    }
+    return bytes.length;
   }
 
   String? chooseBookMove() {
@@ -176,6 +375,7 @@ Future<void> main() async {
           game,
           ai,
           depth,
+          onAiResult: recordTraceAi,
           bookMove: chooseBookMove(),
           onBookPlayed: () => bookPlayed++,
           endgameMove: endgameChoice?.move,
@@ -256,12 +456,26 @@ Future<void> main() async {
           if (boundedDepth > 5) boundedDepth = 5;
           final bookMove = chooseBookMove();
           if (bookMove != null) {
+            recordTraceAi('uci-book', bookMove, 0, 0, 0, false, 0, 0, 0, 0, 0);
             print('info string bookmove $bookMove');
             print('bestmove $bookMove');
             break;
           }
           final endgameChoice = chooseEndgameMove();
           if (endgameChoice != null) {
+            recordTraceAi(
+              'uci-endgame',
+              endgameChoice.move,
+              0,
+              endgameChoice.info.scoreWhite,
+              0,
+              false,
+              0,
+              0,
+              0,
+              0,
+              0,
+            );
             print(
               'info string endgame ${endgameChoice.info.type} score cp ${endgameChoice.info.scoreWhite}',
             );
@@ -274,8 +488,21 @@ Future<void> main() async {
             print('bestmove 0000');
             break;
           }
+          recordTraceAi(
+            'uci-search',
+            move.toString(),
+            result.depth,
+            result.score,
+            result.elapsedMs,
+            result.timedOut,
+            result.nodes,
+            result.evalCalls,
+            result.ttHits,
+            result.ttMisses,
+            result.betaCutoffs,
+          );
           print(
-            'info depth ${result.depth} score cp ${result.score} time ${result.elapsedMs} nodes 0',
+            'info depth ${result.depth} score cp ${result.score} time ${result.elapsedMs} nodes ${result.nodes}',
           );
           print('bestmove ${move.toString()}');
           break;
@@ -300,6 +527,7 @@ Future<void> main() async {
             ai,
             5,
             movetime,
+            onAiResult: recordTraceAi,
             bookMove: chooseBookMove(),
             onBookPlayed: () => bookPlayed++,
             endgameMove: endgameChoice?.move,
@@ -322,6 +550,7 @@ Future<void> main() async {
             ai,
             5,
             parsed.$1,
+            onAiResult: recordTraceAi,
             bookMove: chooseBookMove(),
             onBookPlayed: () => bookPlayed++,
             endgameMove: endgameChoice?.move,
@@ -337,6 +566,7 @@ Future<void> main() async {
             ai,
             5,
             15000,
+            onAiResult: recordTraceAi,
             bookMove: chooseBookMove(),
             onBookPlayed: () => bookPlayed++,
             endgameMove: endgameChoice?.move,
@@ -603,29 +833,66 @@ Future<void> main() async {
         }
         if (sub == 'report') {
           final enabled = traceEnabled ? 'true' : 'false';
-          print(
-            'TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount',
-          );
+          var report =
+              'TRACE: enabled=$enabled; level=$traceLevel; events=${traceEvents.length}; commands=$traceCommandCount; exports=$traceExportCount; last_export=${formatTraceTransferSummary(traceExportCount, traceLastExportTarget, traceLastExportEvents, traceLastExportBytes)}; chrome_exports=$traceChromeCount; last_chrome=${formatTraceTransferSummary(traceChromeCount, traceLastChromeTarget, traceLastChromeEvents, traceLastChromeBytes)}; last_ai=${formatTraceAiSummary()}';
+          final searchMetrics = formatTraceSearchMetrics();
+          if (searchMetrics != null) {
+            report += '; search_metrics=$searchMetrics';
+          }
+          print(report);
           break;
         }
         if (sub == 'reset') {
           traceEvents.clear();
           traceCommandCount = 0;
+          traceExportCount = 0;
+          traceLastExportTarget = null;
+          traceLastExportEvents = 0;
+          traceLastExportBytes = 0;
+          traceChromeCount = 0;
+          traceLastChromeTarget = null;
+          traceLastChromeEvents = 0;
+          traceLastChromeBytes = 0;
+          resetTraceAiState();
           print('TRACE: reset');
           break;
         }
         if (sub == 'export') {
-          final target = parts.length > 2
-              ? parts.sublist(2).join(' ')
-              : '(memory)';
-          print('TRACE: export=$target; events=${traceEvents.length}');
+          final target = resolveTraceTarget(parts);
+          try {
+            final byteCount = await writeTracePayload(
+              target,
+              buildStructuredTraceJson(),
+            );
+            traceExportCount++;
+            traceLastExportTarget = target;
+            traceLastExportEvents = traceEvents.length;
+            traceLastExportBytes = byteCount;
+            print(
+              'TRACE: export=$target; events=${traceEvents.length}; bytes=$byteCount',
+            );
+          } catch (e) {
+            print('ERROR: trace export failed: $e');
+          }
           break;
         }
         if (sub == 'chrome') {
-          final target = parts.length > 2
-              ? parts.sublist(2).join(' ')
-              : '(memory)';
-          print('TRACE: chrome=$target; events=${traceEvents.length}');
+          final target = resolveTraceTarget(parts);
+          try {
+            final byteCount = await writeTracePayload(
+              target,
+              buildChromeTraceJson(),
+            );
+            traceChromeCount++;
+            traceLastChromeTarget = target;
+            traceLastChromeEvents = traceEvents.length;
+            traceLastChromeBytes = byteCount;
+            print(
+              'TRACE: chrome=$target; events=${traceEvents.length}; bytes=$byteCount',
+            );
+          } catch (e) {
+            print('ERROR: trace chrome failed: $e');
+          }
           break;
         }
         print('ERROR: Unsupported trace command');
@@ -1347,6 +1614,7 @@ void _runAiMove(
   Game game,
   AI ai,
   int depth, {
+  TraceAiRecorder? onAiResult,
   String? bookMove,
   void Function()? onBookPlayed,
   String? endgameMove,
@@ -1357,6 +1625,7 @@ void _runAiMove(
     ai,
     depth,
     0,
+    onAiResult: onAiResult,
     bookMove: bookMove,
     onBookPlayed: onBookPlayed,
     endgameMove: endgameMove,
@@ -1369,6 +1638,7 @@ void _runAiTimedMove(
   AI ai,
   int maxDepth,
   int movetimeMs, {
+  TraceAiRecorder? onAiResult,
   String? bookMove,
   void Function()? onBookPlayed,
   String? endgameMove,
@@ -1378,6 +1648,7 @@ void _runAiTimedMove(
     try {
       game.move(bookMove);
       onBookPlayed?.call();
+      onAiResult?.call('book', bookMove, 0, 0, 0, false, 0, 0, 0, 0, 0);
       print('AI: $bookMove (book)');
       game.printBoard();
       _checkGameState(game);
@@ -1390,6 +1661,19 @@ void _runAiTimedMove(
   if (endgameMove != null && endgameInfo != null) {
     try {
       game.move(endgameMove);
+      onAiResult?.call(
+        'endgame',
+        endgameMove,
+        0,
+        endgameInfo.scoreWhite,
+        0,
+        false,
+        0,
+        0,
+        0,
+        0,
+        0,
+      );
       print(
         'AI: $endgameMove (endgame ${endgameInfo.type}, score=${endgameInfo.scoreWhite})',
       );
@@ -1408,6 +1692,19 @@ void _runAiTimedMove(
     return;
   }
   game.move(move.toString());
+  onAiResult?.call(
+    'search',
+    move.toString(),
+    result.depth,
+    result.score,
+    result.elapsedMs,
+    result.timedOut,
+    result.nodes,
+    result.evalCalls,
+    result.ttHits,
+    result.ttMisses,
+    result.betaCutoffs,
+  );
   print(
     'AI: ${move.toString()} (depth=${result.depth}, eval=${result.score}, time=${result.elapsedMs}ms)',
   );
