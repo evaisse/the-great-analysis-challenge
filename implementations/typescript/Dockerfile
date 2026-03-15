@@ -13,6 +13,7 @@ LABEL org.chess.estimated_perft4_ms=800
 LABEL org.chess.source_exts=".ts"
 LABEL org.chess.build="npm run build"
 LABEL org.chess.test="npm test"
+LABEL org.chess.test_contract="node unit_contract_runner.js"
 LABEL org.chess.analyze="npm run lint"
 
 CMD ["node", "dist/chess.js"]

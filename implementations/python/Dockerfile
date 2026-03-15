@@ -12,6 +12,7 @@ LABEL org.chess.source_exts=".py"
 LABEL org.chess.benchmark.build="skip"
 LABEL org.chess.build="python3 -m py_compile chess.py"
 LABEL org.chess.test="python3 test_engine.py"
+LABEL org.chess.test_contract="python3 test_contract_runner.py"
 LABEL org.chess.analyze="python3 -m py_compile chess.py lib/*.py"
 
 CMD ["python3", "chess.py"]
