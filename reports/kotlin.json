@@ -22,26 +22,28 @@
       "run": "java -jar build/libs/chess-1.0.0.jar",
       "build": "kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar",
       "test": "java -jar build/libs/chess-1.0.0.jar --test",
-      "analyze": "kotlinc src/main/kotlin/*.kt"
+      "analyze": "kotlinc src/main/kotlin/*.kt",
+      "bugit": "if [ -f .bugit/ChessEngine.kt.bak ]; then echo 'bugit already active for kotlin'; else mkdir -p .bugit && cp src/main/kotlin/ChessEngine.kt .bugit/ChessEngine.kt.bak && printf '\\n)\\n' >> src/main/kotlin/ChessEngine.kt; fi",
+      "fix": "if [ -f .bugit/ChessEngine.kt.bak ]; then mv .bugit/ChessEngine.kt.bak src/main/kotlin/ChessEngine.kt && rmdir .bugit 2>/dev/null || true; else echo 'no kotlin bugit backup to restore'; fi"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.28505373001098633,
-      "build_seconds": 0.15643525123596191,
-      "analyze_seconds": 0.1714775562286377,
-      "test_seconds": 0.15757226943969727,
-      "test_internal_seconds": 0.15757226943969727,
-      "test_chess_engine_seconds": 9.956977128982544,
-      "test_v2_full_seconds": 9.956977128982544
+      "image_build_seconds": 0.3614814281463623,
+      "build_seconds": 0.16668462753295898,
+      "analyze_seconds": 0.1539013385772705,
+      "test_seconds": 0.14738845825195312,
+      "test_internal_seconds": 0.14738845825195312,
+      "test_chess_engine_seconds": 9.998108625411987,
+      "test_v2_full_seconds": 9.998108625411987
     },
     "memory": {
       "image": {
-        "memory_mb": 110.98046875,
-        "peak_memory_mb": 110.98046875,
-        "avg_memory_mb": 82.47916666666667,
+        "memory_mb": 111.140625,
+        "peak_memory_mb": 111.140625,
+        "avg_memory_mb": 89.6630859375,
         "avg_cpu_percent": 0.0,
-        "samples": 3,
+        "samples": 4,
         "psutil_available": true
       },
       "build": {
@@ -52,23 +54,23 @@
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 7.125,
-        "peak_memory_mb": 7.125,
+        "memory_mb": 6.9609375,
+        "peak_memory_mb": 6.9609375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 6.9765625,
-        "peak_memory_mb": 6.9765625,
+        "memory_mb": 6.58984375,
+        "peak_memory_mb": 6.58984375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.2578125,
-        "peak_memory_mb": 62.12890625,
-        "avg_memory_mb": 60.19519168814433,
+        "memory_mb": 32.22265625,
+        "peak_memory_mb": 62.1171875,
+        "avg_memory_mb": 60.1772712628866,
         "avg_cpu_percent": 0.0,
         "samples": 97,
         "psutil_available": true
@@ -83,27 +85,27 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 102.64780264826896,
-      "analyze_ms_per_kloc": 112.51808151485413,
-      "runtime_ms_per_kloc": 103.3938775851032
+      "build_ms_per_kloc": 109.37311517910695,
+      "analyze_ms_per_kloc": 100.98513030004627,
+      "runtime_ms_per_kloc": 96.7115867794968
     },
     "docker": {
-      "build_time": 0.28505373001098633,
+      "build_time": 0.3614814281463623,
       "build_success": true,
-      "image_build_time": 0.28505373001098633,
+      "image_build_time": 0.3614814281463623,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.15643525123596191,
+      "make_build_time": 0.16668462753295898,
       "make_build_success": true,
-      "make_analyze_time": 0.1714775562286377,
+      "make_analyze_time": 0.1539013385772705,
       "make_analyze_success": true,
-      "test_time": 0.15757226943969727,
+      "test_time": 0.14738845825195312,
       "test_success": true,
-      "make_test_time": 0.15757226943969727,
+      "make_test_time": 0.14738845825195312,
       "make_test_success": true,
-      "test_chess_engine_time": 9.956977128982544,
+      "test_chess_engine_time": 9.998108625411987,
       "test_chess_engine_success": false,
-      "track_test_time": 9.956977128982544,
+      "track_test_time": 9.998108625411987,
       "track_test_success": false
     },
     "task_results": {

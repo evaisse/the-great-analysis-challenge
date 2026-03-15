@@ -22,88 +22,90 @@
       "build": "printf 'quit\\n' | dart --packages=package_config.json bin/main.dart",
       "test": "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | dart --packages=package_config.json bin/main.dart",
       "analyze": "dart format --output=none bin lib",
+      "bugit": "if [ -f .bugit/main.dart.bak ]; then echo 'bugit already active for dart'; else mkdir -p .bugit && cp bin/main.dart .bugit/main.dart.bak && printf '\\n)\\n' >> bin/main.dart; fi",
+      "fix": "if [ -f .bugit/main.dart.bak ]; then mv .bugit/main.dart.bak bin/main.dart && rmdir .bugit 2>/dev/null || true; else echo 'no dart bugit backup to restore'; fi",
       "run": "dart --packages=package_config.json bin/main.dart"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.29295825958251953,
-      "build_seconds": 0.2022852897644043,
-      "analyze_seconds": 0.19182300567626953,
-      "test_seconds": 0.1804029941558838,
-      "test_internal_seconds": 0.1804029941558838,
-      "test_chess_engine_seconds": 10.47902512550354,
-      "test_v2_full_seconds": 10.47902512550354
+      "image_build_seconds": 0.37784242630004883,
+      "build_seconds": 0.19128084182739258,
+      "analyze_seconds": 0.17738556861877441,
+      "test_seconds": 0.1832118034362793,
+      "test_internal_seconds": 0.1832118034362793,
+      "test_chess_engine_seconds": 10.468685388565063,
+      "test_v2_full_seconds": 10.468685388565063
     },
     "memory": {
       "image": {
-        "memory_mb": 110.96875,
-        "peak_memory_mb": 110.96875,
-        "avg_memory_mb": 83.1015625,
+        "memory_mb": 110.91796875,
+        "peak_memory_mb": 110.91796875,
+        "avg_memory_mb": 90.2978515625,
         "avg_cpu_percent": 0.0,
-        "samples": 3,
+        "samples": 4,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 7.1171875,
-        "peak_memory_mb": 7.1171875,
+        "memory_mb": 7.12890625,
+        "peak_memory_mb": 7.12890625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 6.5859375,
-        "peak_memory_mb": 6.5859375,
+        "memory_mb": 6.859375,
+        "peak_memory_mb": 6.859375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 6.3359375,
-        "peak_memory_mb": 6.3359375,
+        "memory_mb": 6.58203125,
+        "peak_memory_mb": 6.58203125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.39453125,
-        "peak_memory_mb": 62.37109375,
-        "avg_memory_mb": 60.51028774752475,
+        "memory_mb": 32.79296875,
+        "peak_memory_mb": 62.6953125,
+        "avg_memory_mb": 60.469948948019805,
         "avg_cpu_percent": 0.0,
         "samples": 101,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 2957,
+      "source_loc": 3295,
       "source_files": 13
     },
     "metrics": {
-      "tokens_count": 19370,
+      "tokens_count": 21057,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 68.40895832411373,
-      "analyze_ms_per_kloc": 64.8708169348223,
-      "runtime_ms_per_kloc": 61.00879071893264
+      "build_ms_per_kloc": 58.05184880952734,
+      "analyze_ms_per_kloc": 53.83477044575855,
+      "runtime_ms_per_kloc": 55.602975246215266
     },
     "docker": {
-      "build_time": 0.29295825958251953,
+      "build_time": 0.37784242630004883,
       "build_success": true,
-      "image_build_time": 0.29295825958251953,
+      "image_build_time": 0.37784242630004883,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.2022852897644043,
+      "make_build_time": 0.19128084182739258,
       "make_build_success": true,
-      "make_analyze_time": 0.19182300567626953,
+      "make_analyze_time": 0.17738556861877441,
       "make_analyze_success": true,
-      "test_time": 0.1804029941558838,
+      "test_time": 0.1832118034362793,
       "test_success": true,
-      "make_test_time": 0.1804029941558838,
+      "make_test_time": 0.1832118034362793,
       "make_test_success": true,
-      "test_chess_engine_time": 10.47902512550354,
+      "test_chess_engine_time": 10.468685388565063,
       "test_chess_engine_success": true,
-      "track_test_time": 10.47902512550354,
+      "track_test_time": 10.468685388565063,
       "track_test_success": true
     },
     "task_results": {

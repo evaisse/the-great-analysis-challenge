@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing dart implementation
 Path: implementations/dart
 ============================================================
-📏 Source size: 2957 LOC across 13 files, 19370 TOKENS
+📏 Source size: 3295 LOC across 13 files, 21057 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,7 +15,7 @@ Path: implementations/dart
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-dart .
-  ✅ Docker build completed in 0.29s
+  ✅ Docker build completed in 0.38s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -23,56 +23,56 @@ Path: implementations/dart
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ✅ All Docker tests passed (image: 0.3s, make build: 0.2s, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 10.5s)
+  ✅ All Docker tests passed (image: 0.4s, make build: 0.2s, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 10.5s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-13 15:55:23
+Generated: 2026-03-15 18:43:20
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-dart         completed  19370      2957     0.2s/7MB           0.2s/7MB           0.2s/6MB           10.5s/62MB                1/1              16/16             
+dart         completed  21057      3295     0.2s/7MB           0.2s/7MB           0.2s/7MB           10.5s/63MB                1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: DART
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.29s
-  make build: 0.20s
-  make analyze: 0.19s
+  docker build image: 0.38s
+  make build: 0.19s
+  make analyze: 0.18s
   make test: 0.18s
-  make test-chess-engine: 10.48s
+  make test-chess-engine: 10.47s
   make test (internal mirror): 0.18s
-  test v2 full seconds: 10.48s
+  test v2 full seconds: 10.47s
 
 SOURCE SIZE:
-  Source LOC: 2957 (files: 13)
-  TOKENS (tokens-v2): 19370
+  Source LOC: 3295 (files: 13)
+  TOKENS (tokens-v2): 21057
 
 NORMALIZED METRICS:
-  Build: 68.41 ms/KLOC
-  Analyze: 64.87 ms/KLOC
-  Runtime: 61.01 ms/KLOC
+  Build: 58.05 ms/KLOC
+  Analyze: 53.83 ms/KLOC
+  Runtime: 55.60 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 111.0MB, Avg 83.1MB
+  Image: Peak 110.9MB, Avg 90.3MB
   Build: Peak 7.1MB, Avg 0.0MB
-  Analyze: Peak 6.6MB, Avg 0.0MB
-  Test: Peak 6.3MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.4MB, Avg 60.5MB
+  Analyze: Peak 6.9MB, Avg 0.0MB
+  Test: Peak 6.6MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.7MB, Avg 60.5MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.29s)
-  make build: ✅ (0.20s)
-  make analyze: ✅ (0.19s)
+  Image build: ✅ (0.38s)
+  make build: ✅ (0.19s)
+  make analyze: ✅ (0.18s)
   make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ✅ (10.48s)
+  make test-chess-engine (track=v2-full): ✅ (10.47s)
   make test score: 1/1
   make test-chess-engine score: 16/16
 

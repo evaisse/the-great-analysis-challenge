@@ -23,26 +23,28 @@
       "build": "ruby -c chess.rb",
       "test": "rspec",
       "analyze": "bundle exec rubocop --fail-level E",
+      "bugit": "if [ -f .bugit/chess.rb.bak ]; then echo 'bugit already active for ruby'; else mkdir -p .bugit && cp chess.rb .bugit/chess.rb.bak && printf '\\n)\\n' >> chess.rb; fi",
+      "fix": "if [ -f .bugit/chess.rb.bak ]; then mv .bugit/chess.rb.bak chess.rb && rmdir .bugit 2>/dev/null || true; else echo 'no ruby bugit backup to restore'; fi",
       "run": "ruby chess.rb"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.6731669902801514,
+      "image_build_seconds": 0.3829822540283203,
       "build_seconds": null,
-      "analyze_seconds": 1.9510347843170166,
-      "test_seconds": 0.22986841201782227,
-      "test_internal_seconds": 0.22986841201782227,
-      "test_chess_engine_seconds": 11.930582284927368,
-      "test_v2_full_seconds": 11.930582284927368
+      "analyze_seconds": 2.0901036262512207,
+      "test_seconds": 0.2537264823913574,
+      "test_internal_seconds": 0.2537264823913574,
+      "test_chess_engine_seconds": 11.980020999908447,
+      "test_v2_full_seconds": 11.980020999908447
     },
     "memory": {
       "image": {
-        "memory_mb": 114.2578125,
-        "peak_memory_mb": 114.2578125,
-        "avg_memory_mb": 100.23660714285714,
+        "memory_mb": 114.26953125,
+        "peak_memory_mb": 114.26953125,
+        "avg_memory_mb": 89.75390625,
         "avg_cpu_percent": 0.0,
-        "samples": 7,
+        "samples": 4,
         "psutil_available": true
       },
       "build": {
@@ -53,25 +55,25 @@
         "source": "skipped"
       },
       "analyze": {
-        "memory_mb": 230.48046875,
-        "peak_memory_mb": 230.48046875,
+        "memory_mb": 231.63671875,
+        "peak_memory_mb": 231.63671875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 8.93359375,
-        "peak_memory_mb": 8.93359375,
+        "memory_mb": 8.8125,
+        "peak_memory_mb": 8.8125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.30859375,
-        "peak_memory_mb": 62.0546875,
-        "avg_memory_mb": 60.43524380387931,
+        "memory_mb": 32.81640625,
+        "peak_memory_mb": 63.01953125,
+        "avg_memory_mb": 60.974058493589745,
         "avg_cpu_percent": 0.0,
-        "samples": 116,
+        "samples": 117,
         "psutil_available": true
       }
     },
@@ -85,26 +87,26 @@
     },
     "normalized": {
       "build_ms_per_kloc": 0.0,
-      "analyze_ms_per_kloc": 1023.6279036290748,
-      "runtime_ms_per_kloc": 120.60252466832229
+      "analyze_ms_per_kloc": 1096.5916192293919,
+      "runtime_ms_per_kloc": 133.11987533649392
     },
     "docker": {
-      "build_time": 0.6731669902801514,
+      "build_time": 0.3829822540283203,
       "build_success": true,
-      "image_build_time": 0.6731669902801514,
+      "image_build_time": 0.3829822540283203,
       "image_build_success": true,
       "make_build_skipped": true,
       "make_build_time": null,
       "make_build_success": true,
-      "make_analyze_time": 1.9510347843170166,
+      "make_analyze_time": 2.0901036262512207,
       "make_analyze_success": true,
-      "test_time": 0.22986841201782227,
+      "test_time": 0.2537264823913574,
       "test_success": true,
-      "make_test_time": 0.22986841201782227,
+      "make_test_time": 0.2537264823913574,
       "make_test_success": true,
-      "test_chess_engine_time": 11.930582284927368,
+      "test_chess_engine_time": 11.980020999908447,
       "test_chess_engine_success": false,
-      "track_test_time": 11.930582284927368,
+      "track_test_time": 11.980020999908447,
       "track_test_success": false
     },
     "task_results": {

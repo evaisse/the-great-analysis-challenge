@@ -15,7 +15,7 @@ Path: implementations/rescript
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-rescript .
-  ✅ Docker build completed in 0.41s
+  ✅ Docker build completed in 0.35s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,54 +27,54 @@ Path: implementations/rescript
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-13 15:54:49
+Generated: 2026-03-15 18:42:26
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-rescript     completed  11181      1678     0.2s/7MB           0.2s/7MB           0.2s/7MB           9.9s/62MB                 1/1              2/16              
+rescript     completed  11181      1678     0.2s/5MB           0.2s/6MB           0.2s/5MB           9.9s/62MB                 1/1              2/16              
 
 ============================================================
 DETAILED RESULTS: RESCRIPT
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.41s
-  make build: 0.20s
+  docker build image: 0.35s
+  make build: 0.19s
   make analyze: 0.19s
   make test: 0.18s
-  make test-chess-engine: 9.94s
+  make test-chess-engine: 9.91s
   make test (internal mirror): 0.18s
-  test v2 full seconds: 9.94s
+  test v2 full seconds: 9.91s
 
 SOURCE SIZE:
   Source LOC: 1678 (files: 11)
   TOKENS (tokens-v2): 11181
 
 NORMALIZED METRICS:
-  Build: 120.10 ms/KLOC
-  Analyze: 113.24 ms/KLOC
-  Runtime: 104.80 ms/KLOC
+  Build: 112.49 ms/KLOC
+  Analyze: 114.74 ms/KLOC
+  Runtime: 109.57 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 112.8MB, Avg 91.5MB
-  Build: Peak 6.6MB, Avg 0.0MB
-  Analyze: Peak 7.0MB, Avg 0.0MB
-  Test: Peak 7.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 60.0MB
+  Image: Peak 110.3MB, Avg 89.7MB
+  Build: Peak 5.1MB, Avg 0.0MB
+  Analyze: Peak 6.3MB, Avg 0.0MB
+  Test: Peak 4.8MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.8MB, Avg 59.9MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.41s)
-  make build: ✅ (0.20s)
+  Image build: ✅ (0.35s)
+  make build: ✅ (0.19s)
   make analyze: ✅ (0.19s)
   make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ❌ (9.94s)
+  make test-chess-engine (track=v2-full): ❌ (9.91s)
   make test score: 1/1
   make test-chess-engine score: 2/16
 

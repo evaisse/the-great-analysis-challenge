@@ -23,26 +23,28 @@
       "build": "node --check chess.js",
       "test": "npm test",
       "analyze": "npm run lint",
+      "bugit": "if [ -f .bugit/chess.js.bak ]; then echo 'bugit already active for javascript'; else mkdir -p .bugit && cp chess.js .bugit/chess.js.bak && printf '\\nfunction __bugit__( {\\n' >> chess.js; fi",
+      "fix": "if [ -f .bugit/chess.js.bak ]; then mv .bugit/chess.js.bak chess.js && rmdir .bugit 2>/dev/null || true; else echo 'no javascript bugit backup to restore'; fi",
       "run": "node chess.js"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.2783074378967285,
+      "image_build_seconds": 0.5417618751525879,
       "build_seconds": null,
-      "analyze_seconds": 0.19869208335876465,
-      "test_seconds": 0.18919014930725098,
-      "test_internal_seconds": 0.18919014930725098,
-      "test_chess_engine_seconds": 70.16505002975464,
-      "test_v2_full_seconds": 70.16505002975464
+      "analyze_seconds": 0.19991183280944824,
+      "test_seconds": 0.19071412086486816,
+      "test_internal_seconds": 0.19071412086486816,
+      "test_chess_engine_seconds": 70.17748713493347,
+      "test_v2_full_seconds": 70.17748713493347
     },
     "memory": {
       "image": {
-        "memory_mb": 115.73046875,
-        "peak_memory_mb": 115.73046875,
-        "avg_memory_mb": 84.79947916666667,
+        "memory_mb": 116.3828125,
+        "peak_memory_mb": 116.3828125,
+        "avg_memory_mb": 100.814453125,
         "avg_cpu_percent": 0.0,
-        "samples": 3,
+        "samples": 6,
         "psutil_available": true
       },
       "build": {
@@ -53,25 +55,25 @@
         "source": "skipped"
       },
       "analyze": {
-        "memory_mb": 6.70703125,
-        "peak_memory_mb": 6.70703125,
+        "memory_mb": 7.36328125,
+        "peak_memory_mb": 7.36328125,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 7.23828125,
-        "peak_memory_mb": 7.23828125,
+        "memory_mb": 6.57421875,
+        "peak_memory_mb": 6.57421875,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.125,
-        "peak_memory_mb": 62.0078125,
-        "avg_memory_mb": 61.714184027777776,
+        "memory_mb": 32.28125,
+        "peak_memory_mb": 61.859375,
+        "avg_memory_mb": 61.561780274888555,
         "avg_cpu_percent": 0.0,
-        "samples": 675,
+        "samples": 673,
         "psutil_available": true
       }
     },
@@ -85,26 +87,26 @@
     },
     "normalized": {
       "build_ms_per_kloc": 0.0,
-      "analyze_ms_per_kloc": 291.33736562868717,
-      "runtime_ms_per_kloc": 277.40491100769935
+      "analyze_ms_per_kloc": 293.12585455930827,
+      "runtime_ms_per_kloc": 279.6394734088976
     },
     "docker": {
-      "build_time": 0.2783074378967285,
+      "build_time": 0.5417618751525879,
       "build_success": true,
-      "image_build_time": 0.2783074378967285,
+      "image_build_time": 0.5417618751525879,
       "image_build_success": true,
       "make_build_skipped": true,
       "make_build_time": null,
       "make_build_success": true,
-      "make_analyze_time": 0.19869208335876465,
+      "make_analyze_time": 0.19991183280944824,
       "make_analyze_success": true,
-      "test_time": 0.18919014930725098,
+      "test_time": 0.19071412086486816,
       "test_success": true,
-      "make_test_time": 0.18919014930725098,
+      "make_test_time": 0.19071412086486816,
       "make_test_success": true,
-      "test_chess_engine_time": 70.16505002975464,
+      "test_chess_engine_time": 70.17748713493347,
       "test_chess_engine_success": false,
-      "track_test_time": 70.16505002975464,
+      "track_test_time": 70.17748713493347,
       "track_test_success": false
     },
     "task_results": {

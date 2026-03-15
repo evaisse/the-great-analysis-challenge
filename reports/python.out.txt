@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing python implementation
 Path: implementations/python
 ============================================================
-📏 Source size: 3286 LOC across 12 files, 24228 TOKENS
+📏 Source size: 3672 LOC across 13 files, 26928 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,62 +15,62 @@ Path: implementations/python
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-python .
-  ✅ Docker build completed in 0.30s
+  ✅ Docker build completed in 0.46s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ✅ All Docker tests passed (image: 0.3s, make build: skipped, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 16.7s)
+  ✅ All Docker tests passed (image: 0.5s, make build: skipped, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 16.6s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-13 15:55:01
+Generated: 2026-03-15 18:42:38
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-python       completed  24228      3286     -/-MB              0.2s/7MB           0.2s/7MB           16.7s/62MB                1/1              16/16             
+python       completed  26928      3672     -/-MB              0.2s/7MB           0.2s/7MB           16.6s/62MB                1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: PYTHON
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.30s
-  make analyze: 0.19s
-  make test: 0.19s
-  make test-chess-engine: 16.70s
-  make test (internal mirror): 0.19s
-  test v2 full seconds: 16.70s
+  docker build image: 0.46s
+  make analyze: 0.18s
+  make test: 0.18s
+  make test-chess-engine: 16.56s
+  make test (internal mirror): 0.18s
+  test v2 full seconds: 16.56s
 
 SOURCE SIZE:
-  Source LOC: 3286 (files: 12)
-  TOKENS (tokens-v2): 24228
+  Source LOC: 3672 (files: 13)
+  TOKENS (tokens-v2): 26928
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 58.45 ms/KLOC
-  Runtime: 59.26 ms/KLOC
+  Analyze: 50.12 ms/KLOC
+  Runtime: 48.84 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 116.2MB, Avg 85.1MB
+  Image: Peak 115.0MB, Avg 97.5MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 7.4MB, Avg 0.0MB
-  Test: Peak 6.6MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.2MB, Avg 61.0MB
+  Analyze: Peak 6.9MB, Avg 0.0MB
+  Test: Peak 7.2MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.5MB, Avg 61.3MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.30s)
+  Image build: ✅ (0.46s)
   make build: ⏭️ skipped
-  make analyze: ✅ (0.19s)
-  make test: ✅ (0.19s)
-  make test-chess-engine (track=v2-full): ✅ (16.70s)
+  make analyze: ✅ (0.18s)
+  make test: ✅ (0.18s)
+  make test-chess-engine (track=v2-full): ✅ (16.56s)
   make test score: 1/1
   make test-chess-engine score: 16/16
 
