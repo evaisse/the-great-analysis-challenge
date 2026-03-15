@@ -2,7 +2,8 @@ FROM ghcr.io/evaisse/tgac-javascript-toolchain:latest
 
 COPY . .
 
-RUN npm ci
+# TypeScript tooling is preinstalled in the toolchain image; verify offline.
+RUN npm ls --depth=0
 
 LABEL org.chess.language="javascript"
 LABEL org.chess.version="1.0.0"

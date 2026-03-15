@@ -2,7 +2,8 @@ FROM ghcr.io/evaisse/tgac-elm-toolchain:latest
 
 COPY . .
 
-RUN npm install && mkdir -p dist && elm make src/ChessEngine.elm --output=src/chess.js
+# The implementation has no npm dependencies; keep image builds offline.
+RUN mkdir -p dist && elm make src/ChessEngine.elm --output=src/chess.js
 
 LABEL org.chess.language="elm"
 LABEL org.chess.version="0.19.1"

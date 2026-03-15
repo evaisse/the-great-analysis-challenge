@@ -2,7 +2,8 @@ FROM ghcr.io/evaisse/tgac-rescript-toolchain:latest
 
 COPY . .
 
-RUN npm install && npm run build
+# ReScript dependencies are preinstalled in the toolchain image; verify offline.
+RUN npm ls --depth=0 && npm run build
 
 LABEL org.chess.language="rescript"
 LABEL org.chess.version="10.0"
