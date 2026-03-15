@@ -11,6 +11,16 @@ PROFILE ?= quick
 TIMEOUT ?= 1800
 STRICT ?= 0
 
+DOCKER_PROXY_BUILD_ARGS := \
+	--build-arg HTTP_PROXY \
+	--build-arg HTTPS_PROXY \
+	--build-arg ALL_PROXY \
+	--build-arg NO_PROXY \
+	--build-arg http_proxy \
+	--build-arg https_proxy \
+	--build-arg all_proxy \
+	--build-arg no_proxy
+
 # Default target
 all: image build test test-chess-engine
 
@@ -68,7 +78,7 @@ ifdef DIR
 		exit 1; \
 	fi
 	@echo "Building image for $(DIR) implementation in Docker..."
-	@docker build -t chess-$(DIR) -f implementations/$(DIR)/Dockerfile implementations/$(DIR)
+	@docker build $(DOCKER_PROXY_BUILD_ARGS) -t chess-$(DIR) -f implementations/$(DIR)/Dockerfile implementations/$(DIR)
 else
 	@echo "Building images for all implementations in Docker..."
 	@for impl in $(IMPLEMENTATIONS); do \
