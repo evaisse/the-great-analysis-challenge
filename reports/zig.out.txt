@@ -6,7 +6,7 @@ Found 1 implementation(s) to test
 Testing zig implementation
 Path: implementations/zig
 ============================================================
-📏 Source size: 1757 LOC across 9 files
+📏 Source size: 1627 LOC across 8 files, 13302 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,7 +15,7 @@ Path: implementations/zig
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-zig .
-  ✅ Docker build completed in 0.23s
+  ✅ Docker build completed in 0.29s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,53 +27,54 @@ Path: implementations/zig
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-10 23:21:34
+Generated: 2026-03-13 15:55:41
 ================================================================================
 
 PERFORMANCE SUMMARY
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Language     Status     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-zig          completed  1757     0.2s/7MB           0.2s/5MB           0.2s/7MB           58.0s/62MB                1/1              0/36              
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+zig          completed  13302      1627     0.2s/7MB           0.2s/7MB           0.2s/7MB           58.0s/62MB                1/1              0/36              
 
 ============================================================
 DETAILED RESULTS: ZIG
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.23s
-  make build: 0.18s
+  docker build image: 0.29s
+  make build: 0.20s
   make analyze: 0.20s
-  make test: 0.18s
-  make test-chess-engine: 58.00s
-  make test (internal mirror): 0.18s
-  test v2 full seconds: 58.00s
+  make test: 0.20s
+  make test-chess-engine: 58.01s
+  make test (internal mirror): 0.20s
+  test v2 full seconds: 58.01s
 
 SOURCE SIZE:
-  Source LOC: 1757 (files: 9)
+  Source LOC: 1627 (files: 8)
+  TOKENS (tokens-v2): 13302
 
 NORMALIZED METRICS:
-  Build: 104.47 ms/KLOC
-  Analyze: 116.55 ms/KLOC
-  Runtime: 104.69 ms/KLOC
+  Build: 120.95 ms/KLOC
+  Analyze: 121.03 ms/KLOC
+  Runtime: 121.44 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 111.2MB, Avg 83.9MB
-  Build: Peak 6.9MB, Avg 0.0MB
-  Analyze: Peak 4.7MB, Avg 0.0MB
+  Image: Peak 110.4MB, Avg 82.8MB
+  Build: Peak 6.8MB, Avg 0.0MB
+  Analyze: Peak 6.6MB, Avg 0.0MB
   Test: Peak 7.1MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.8MB, Avg 61.4MB
+  Test_Chess_Engine: Peak 61.7MB, Avg 61.3MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.23s)
-  make build: ✅ (0.18s)
+  Image build: ✅ (0.29s)
+  make build: ✅ (0.20s)
   make analyze: ✅ (0.20s)
-  make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ❌ (58.00s)
+  make test: ✅ (0.20s)
+  make test-chess-engine (track=v2-full): ❌ (58.01s)
   make test score: 1/1
   make test-chess-engine score: 0/36
 

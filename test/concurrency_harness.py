@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -48,6 +49,8 @@ DEFAULT_PROFILE_SPECS = {
         "require_deterministic": True,
     },
 }
+
+CHECKSUM_RE = re.compile(r"^[0-9a-f]{8,16}$")
 
 
 def discover_implementations(base_dir: Path) -> List[Path]:
@@ -97,26 +100,87 @@ def load_profile_specs(path: Path) -> Dict[str, Dict]:
 def validate_payload(payload: Dict, profile_spec: Dict) -> List[str]:
     issues = []
 
-    if profile_spec.get("require_deterministic", True) and payload.get("deterministic") is not True:
-        issues.append("deterministic must be true")
-
-    zero_fields = profile_spec.get("expected_zero_fields", [])
-    for key in zero_fields:
-        if payload.get(key, 0) != 0:
-            issues.append(f"{key} must be 0 (got {payload.get(key)})")
-
     required_fields = profile_spec.get("required_fields", [])
     for field in required_fields:
         if field not in payload:
             issues.append(f"missing field: {field}")
 
+    if issues:
+        return issues
+
+    expected_profile = profile_spec.get("command", "").split()[-1]
+    if expected_profile and payload.get("profile") != expected_profile:
+        issues.append(
+            f"profile must match requested profile '{expected_profile}' (got {payload.get('profile')!r})"
+        )
+
+    if profile_spec.get("require_deterministic", True) and payload.get("deterministic") is not True:
+        issues.append("deterministic must be true")
+
+    zero_fields = profile_spec.get("expected_zero_fields", [])
+    for key in zero_fields:
+        value = payload.get(key, 0)
+        if value != 0:
+            issues.append(f"{key} must be 0 (got {value})")
+
+    integer_fields = {
+        "seed": 0,
+        "workers": 1,
+        "runs": 1,
+        "elapsed_ms": 0,
+        "ops_total": 1,
+    }
+    for field, minimum in integer_fields.items():
+        value = payload.get(field)
+        if isinstance(value, bool) or not isinstance(value, int):
+            issues.append(f"{field} must be an integer")
+            continue
+        if value < minimum:
+            issues.append(f"{field} must be >= {minimum} (got {value})")
+
+    checksums = payload.get("checksums")
+    if not isinstance(checksums, list) or not checksums:
+        issues.append("checksums must be a non-empty list")
+    else:
+        runs = payload.get("runs")
+        if isinstance(runs, int) and len(checksums) != runs:
+            issues.append(f"checksums length must equal runs ({len(checksums)} != {runs})")
+
+        for idx, checksum in enumerate(checksums):
+            if not isinstance(checksum, str):
+                issues.append(f"checksum[{idx}] must be a string")
+                continue
+            if not CHECKSUM_RE.fullmatch(checksum):
+                issues.append(
+                    f"checksum[{idx}] must match {CHECKSUM_RE.pattern} (got {checksum!r})"
+                )
+
     return issues
 
 
-def run_for_implementation(impl_path: Path, profile: str, profile_spec: Dict, docker_image: str) -> Dict:
+def run_single_probe(impl_path: Path, profile: str, profile_spec: Dict, docker_image: str) -> Tuple[Dict | None, List[str]]:
     metadata = get_metadata(str(impl_path))
     tester = ChessEngineTester(str(impl_path), metadata, docker_image=docker_image)
 
+    if not tester.start():
+        issues = ["engine failed to start"]
+        issues.extend(tester.results.get("errors", []))
+        return None, issues
+
+    try:
+        command = profile_spec.get("command", f"concurrency {profile}")
+        timeout_seconds = int(profile_spec.get("timeout_seconds", 120 if profile == "quick" else 300))
+        output = tester.send_command(command, timeout=timeout_seconds)
+        ok, payload, parse_error = extract_concurrency_payload(output)
+        if not ok:
+            return None, [parse_error]
+
+        return payload, []
+    finally:
+        tester.stop()
+
+
+def run_for_implementation(impl_path: Path, profile: str, profile_spec: Dict, docker_image: str) -> Dict:
     result = {
         "implementation": impl_path.name,
         "docker_image": docker_image,
@@ -126,30 +190,33 @@ def run_for_implementation(impl_path: Path, profile: str, profile_spec: Dict, do
         "payload": None,
     }
 
-    if not tester.start():
-        result["issues"].append("engine failed to start")
-        result["issues"].extend(tester.results.get("errors", []))
+    payload, issues = run_single_probe(impl_path, profile, profile_spec, docker_image)
+    if issues:
+        result["issues"].extend(issues)
         return result
 
-    try:
-        command = profile_spec.get("command", f"concurrency {profile}")
-        timeout_seconds = int(profile_spec.get("timeout_seconds", 120 if profile == "quick" else 300))
-        output = tester.send_command(command, timeout=timeout_seconds)
-        ok, payload, parse_error = extract_concurrency_payload(output)
-        if not ok:
-            result["issues"].append(parse_error)
-            return result
-
-        result["payload"] = payload
-        payload_issues = validate_payload(payload, profile_spec)
-        if payload_issues:
-            result["issues"].extend(payload_issues)
-            return result
-
-        result["status"] = "passed"
+    result["payload"] = payload
+    payload_issues = validate_payload(payload, profile_spec)
+    if payload_issues:
+        result["issues"].extend(payload_issues)
         return result
-    finally:
-        tester.stop()
+
+    rerun_payload, rerun_issues = run_single_probe(impl_path, profile, profile_spec, docker_image)
+    if rerun_issues:
+        result["issues"].extend([f"rerun: {issue}" for issue in rerun_issues])
+        return result
+
+    rerun_validation = validate_payload(rerun_payload, profile_spec)
+    if rerun_validation:
+        result["issues"].extend([f"rerun: {issue}" for issue in rerun_validation])
+        return result
+
+    if rerun_payload.get("checksums") != payload.get("checksums"):
+        result["issues"].append("checksums changed between identical runs")
+        return result
+
+    result["status"] = "passed"
+    return result
 
 
 def main() -> int:

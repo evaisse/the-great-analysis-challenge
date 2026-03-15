@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -1399,33 +1401,66 @@ func (engine *ChessEngine) handleConcurrency(args []string) {
 
 	start := time.Now()
 	seed := uint64(12345)
-	workers := 1
-	runs := 10
-	opsPerRun := 10000
-	if profile == "full" {
-		runs = 50
-		opsPerRun = 40000
+	spec := concurrencyProfileFor(profile)
+
+	resultsCh := make(chan concurrencyWorkerResult, spec.workers)
+	var wg sync.WaitGroup
+
+	for workerID := 0; workerID < spec.workers; workerID++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+
+			workerRuns := make([]concurrencyRunResult, 0, spec.runs)
+			for runIndex := 0; runIndex < spec.runs; runIndex++ {
+				workerRuns = append(workerRuns, safeRunConcurrencyWorkload(id, runIndex, seed, spec))
+			}
+
+			resultsCh <- concurrencyWorkerResult{
+				workerID: id,
+				runs:     workerRuns,
+			}
+		}(workerID)
 	}
 
-	checksums := make([]string, 0, runs)
-	checksum := seed
-	for i := 0; i < runs; i++ {
-		checksum = checksum*6364136223846793005 + 1442695040888963407 + uint64(i)
-		checksums = append(checksums, fmt.Sprintf("%016x", checksum))
+	go func() {
+		wg.Wait()
+		close(resultsCh)
+	}()
+
+	workerResults := make([][]concurrencyRunResult, spec.workers)
+	for workerResult := range resultsCh {
+		workerResults[workerResult.workerID] = workerResult.runs
+	}
+
+	invariantErrors := 0
+	opsTotal := 0
+	checksums := make([]string, 0, spec.runs)
+
+	for runIndex := 0; runIndex < spec.runs; runIndex++ {
+		runChecksum := mixConcurrencyUint64(mixConcurrencyUint64(concurrencyChecksumOffset, seed), uint64(runIndex+1))
+		for workerID := 0; workerID < spec.workers; workerID++ {
+			runResult := workerResults[workerID][runIndex]
+			invariantErrors += runResult.invariantErrors
+			opsTotal += runResult.ops
+			runChecksum = mixConcurrencyUint64(runChecksum, uint64(workerID+1))
+			runChecksum = mixConcurrencyUint64(runChecksum, runResult.checksum)
+		}
+		checksums = append(checksums, fmt.Sprintf("%016x", runChecksum))
 	}
 
 	payload := map[string]interface{}{
 		"profile":          profile,
 		"seed":             seed,
-		"workers":          workers,
-		"runs":             runs,
+		"workers":          spec.workers,
+		"runs":             spec.runs,
 		"checksums":        checksums,
 		"deterministic":    true,
-		"invariant_errors": 0,
+		"invariant_errors": invariantErrors,
 		"deadlocks":        0,
 		"timeouts":         0,
 		"elapsed_ms":       time.Since(start).Milliseconds(),
-		"ops_total":        runs * opsPerRun * workers,
+		"ops_total":        opsTotal,
 	}
 
 	encoded, err := json.Marshal(payload)
@@ -1488,6 +1523,234 @@ func extractPgnMoves(content string) []string {
 		}
 	}
 	return moves
+}
+
+type concurrencyProfile struct {
+	workers int
+	runs    int
+	steps   int
+}
+
+type concurrencyRunResult struct {
+	runIndex        int
+	checksum        uint64
+	ops             int
+	invariantErrors int
+}
+
+type concurrencyWorkerResult struct {
+	workerID int
+	runs     []concurrencyRunResult
+}
+
+var concurrencyWorkloadFENs = []string{
+	StartingPositionFEN,
+	"r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
+	"rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3",
+	"8/2k5/3p4/3P4/2P5/8/3K4/8 w - - 0 1",
+}
+
+const (
+	concurrencyChecksumOffset = uint64(1469598103934665603)
+	concurrencyChecksumPrime  = uint64(1099511628211)
+)
+
+func concurrencyProfileFor(profile string) concurrencyProfile {
+	if profile == "full" {
+		return concurrencyProfile{
+			workers: 4,
+			runs:    16,
+			steps:   24,
+		}
+	}
+
+	return concurrencyProfile{
+		workers: 2,
+		runs:    8,
+		steps:   12,
+	}
+}
+
+func mixConcurrencyUint64(current, value uint64) uint64 {
+	return (current ^ value) * concurrencyChecksumPrime
+}
+
+func mixConcurrencyString(current uint64, value string) uint64 {
+	mixed := current
+	for i := 0; i < len(value); i++ {
+		mixed = mixConcurrencyUint64(mixed, uint64(value[i]))
+	}
+	return mixed
+}
+
+func deterministicConcurrencyMoveIndex(seed uint64, workerID, runIndex, fenIndex, step, moveCount int) int {
+	selector := mixConcurrencyUint64(concurrencyChecksumOffset, seed)
+	selector = mixConcurrencyUint64(selector, uint64(workerID+1))
+	selector = mixConcurrencyUint64(selector, uint64(runIndex+1))
+	selector = mixConcurrencyUint64(selector, uint64(fenIndex+1))
+	selector = mixConcurrencyUint64(selector, uint64(step+1))
+	return int(selector % uint64(moveCount))
+}
+
+func shouldVerifyUndo(workerID, runIndex, fenIndex, step int) bool {
+	return (workerID+runIndex+fenIndex+step)%2 == 0
+}
+
+func normalizedConcurrencyMoveStrings(moves []Move) []string {
+	notations := make([]string, 0, len(moves))
+	for _, move := range moves {
+		notations = append(notations, strings.ToLower(moveToString(move)))
+	}
+	sort.Strings(notations)
+	return notations
+}
+
+func equalStringSlices(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for i := range left {
+		if left[i] != right[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func newConcurrencyGameState(fen string) (*GameState, error) {
+	gs := NewGameState()
+	if err := gs.FromFEN(fen); err != nil {
+		return nil, err
+	}
+
+	gs.MoveHistory = gs.MoveHistory[:0]
+	gs.StateHistory = gs.StateHistory[:0]
+	gs.PositionHistory = gs.PositionHistory[:0]
+	gs.ZobristHash = computeZobristHash(gs)
+
+	return gs, nil
+}
+
+func runConcurrencyWorkload(workerID, runIndex int, seed uint64, spec concurrencyProfile) concurrencyRunResult {
+	result := concurrencyRunResult{
+		runIndex: runIndex,
+		checksum: mixConcurrencyUint64(
+			mixConcurrencyUint64(concurrencyChecksumOffset, seed),
+			uint64((workerID+1)*(runIndex+1)),
+		),
+	}
+
+	for fenIndex, fen := range concurrencyWorkloadFENs {
+		gs, err := newConcurrencyGameState(fen)
+		result.ops++
+		if err != nil {
+			result.invariantErrors++
+			result.checksum = mixConcurrencyString(result.checksum, err.Error())
+			continue
+		}
+
+		result.checksum = mixConcurrencyString(result.checksum, gs.ToFEN())
+		result.checksum = mixConcurrencyUint64(result.checksum, gs.ZobristHash)
+
+		for step := 0; step < spec.steps; step++ {
+			beforeFEN := gs.ToFEN()
+			beforeHash := gs.ZobristHash
+
+			legalMoves := gs.GenerateLegalMoves()
+			result.ops++
+			if len(legalMoves) == 0 {
+				if step == 0 {
+					result.invariantErrors++
+				}
+				result.checksum = mixConcurrencyString(result.checksum, beforeFEN)
+				result.checksum = mixConcurrencyUint64(result.checksum, beforeHash)
+				break
+			}
+
+			sort.Slice(legalMoves, func(i, j int) bool {
+				return strings.ToLower(moveToString(legalMoves[i])) < strings.ToLower(moveToString(legalMoves[j]))
+			})
+
+			move := legalMoves[deterministicConcurrencyMoveIndex(seed, workerID, runIndex, fenIndex, step, len(legalMoves))]
+			moveNotation := strings.ToLower(moveToString(move))
+
+			result.checksum = mixConcurrencyString(result.checksum, moveNotation)
+			result.checksum = mixConcurrencyUint64(result.checksum, uint64(len(legalMoves)))
+
+			gs.MakeMove(move)
+			result.ops++
+
+			afterFEN := gs.ToFEN()
+			afterHash := gs.ZobristHash
+			afterMoves := gs.GenerateLegalMoves()
+			result.ops++
+
+			result.checksum = mixConcurrencyString(result.checksum, afterFEN)
+			result.checksum = mixConcurrencyUint64(result.checksum, afterHash)
+			result.checksum = mixConcurrencyUint64(result.checksum, uint64(len(afterMoves)))
+
+			if shouldVerifyUndo(workerID, runIndex, fenIndex, step) {
+				if !gs.UndoLastMove() {
+					result.invariantErrors++
+					result.checksum = mixConcurrencyString(result.checksum, "undo-failed")
+					break
+				}
+				result.ops++
+
+				if gs.ToFEN() != beforeFEN || gs.ZobristHash != beforeHash {
+					result.invariantErrors++
+				}
+
+				gs.MakeMove(move)
+				result.ops++
+
+				if gs.ToFEN() != afterFEN || gs.ZobristHash != afterHash {
+					result.invariantErrors++
+				}
+				continue
+			}
+
+			reloaded, err := newConcurrencyGameState(afterFEN)
+			result.ops++
+			if err != nil {
+				result.invariantErrors++
+				result.checksum = mixConcurrencyString(result.checksum, "reload-failed")
+				break
+			}
+
+			if reloaded.ToFEN() != afterFEN || reloaded.ZobristHash != afterHash {
+				result.invariantErrors++
+			}
+
+			reloadedMoves := reloaded.GenerateLegalMoves()
+			result.ops++
+			if !equalStringSlices(
+				normalizedConcurrencyMoveStrings(afterMoves),
+				normalizedConcurrencyMoveStrings(reloadedMoves),
+			) {
+				result.invariantErrors++
+			}
+
+			result.checksum = mixConcurrencyUint64(result.checksum, reloaded.ZobristHash)
+		}
+	}
+
+	return result
+}
+
+func safeRunConcurrencyWorkload(workerID, runIndex int, seed uint64, spec concurrencyProfile) (result concurrencyRunResult) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			result = concurrencyRunResult{
+				runIndex:        runIndex,
+				checksum:        mixConcurrencyString(mixConcurrencyUint64(concurrencyChecksumOffset, seed), fmt.Sprintf("panic:%v", recovered)),
+				ops:             0,
+				invariantErrors: 1,
+			}
+		}
+	}()
+
+	return runConcurrencyWorkload(workerID, runIndex, seed, spec)
 }
 
 func (engine *ChessEngine) handlePerft(depth int) {

@@ -8,6 +8,7 @@ import sys
 import re
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 from lib.board import Board
 from lib.move_generator import MoveGenerator
@@ -15,6 +16,44 @@ from lib.fen_parser import FenParser
 from lib.ai import AI
 from lib.perft import Perft
 from lib.types import Move, Color, PieceType
+
+CONCURRENCY_SEED = 12345
+CONCURRENCY_FIXTURES = (
+    {
+        'name': 'opening',
+        'fen': 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        'focus': 'any',
+    },
+    {
+        'name': 'castling',
+        'fen': 'r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1',
+        'focus': 'castling',
+    },
+    {
+        'name': 'en-passant',
+        'fen': 'rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3',
+        'focus': 'en_passant',
+    },
+    {
+        'name': 'promotion',
+        'fen': '4k3/6P1/8/8/8/8/7p/4K3 w - - 0 1',
+        'focus': 'promotion',
+    },
+)
+CONCURRENCY_PROFILES = {
+    'quick': {
+        'workers': 2,
+        'runs': 6,
+        'cycles_per_worker': 6,
+        'reply_stride': 2,
+    },
+    'full': {
+        'workers': 4,
+        'runs': 12,
+        'cycles_per_worker': 12,
+        'reply_stride': 1,
+    },
+}
 
 
 class ChessEngine:
@@ -792,17 +831,65 @@ class ChessEngine:
             print('ERROR: Unsupported concurrency profile')
             return
 
+        profile_config = {
+            'quick': {
+                'workers': 2,
+                'runs': 10,
+                'sequences_per_worker': 4,
+                'plies_per_sequence': 4,
+            },
+            'full': {
+                'workers': 4,
+                'runs': 50,
+                'sequences_per_worker': 6,
+                'plies_per_sequence': 6,
+            },
+        }[profile]
+        scenarios = (
+            'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            'rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3',
+            'r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1',
+            '4k3/6P1/8/8/8/8/8/4K3 w - - 0 1',
+        )
+
         start = time.time()
         seed = 12345
-        workers = 1
-        runs = 10 if profile == 'quick' else 50
-        ops_per_run = 10000 if profile == 'quick' else 40000
+        workers = profile_config['workers']
+        runs = profile_config['runs']
+        sequences_per_worker = profile_config['sequences_per_worker']
+        plies_per_sequence = profile_config['plies_per_sequence']
+        ops_per_run = workers * sequences_per_worker * plies_per_sequence
         checksums = []
+        invariant_errors = 0
 
-        checksum = seed
-        for i in range(runs):
-            checksum = (checksum * 6364136223846793005 + 1442695040888963407 + i) & 0xFFFFFFFFFFFFFFFF
-            checksums.append(f'{checksum:016x}')
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for run_index in range(runs):
+                futures = [
+                    executor.submit(
+                        self._run_concurrency_worker,
+                        seed,
+                        run_index,
+                        worker_index,
+                        sequences_per_worker,
+                        plies_per_sequence,
+                        scenarios,
+                    )
+                    for worker_index in range(workers)
+                ]
+
+                run_checksum = self._concurrency_mix_text(
+                    (2166136261 ^ seed ^ ((run_index + 1) * 173)) & 0xFFFFFFFF,
+                    f'run:{profile}:{run_index}',
+                )
+                for worker_index, future in enumerate(futures):
+                    worker_checksum, worker_errors = future.result()
+                    invariant_errors += worker_errors
+                    run_checksum = self._concurrency_mix_text(
+                        run_checksum,
+                        f'{worker_index}:{worker_checksum}',
+                    )
+
+                checksums.append(self._concurrency_format_checksum(run_checksum))
 
         elapsed_ms = int((time.time() - start) * 1000)
         payload = {
@@ -812,13 +899,135 @@ class ChessEngine:
             'runs': runs,
             'checksums': checksums,
             'deterministic': True,
-            'invariant_errors': 0,
+            'invariant_errors': invariant_errors,
             'deadlocks': 0,
             'timeouts': 0,
             'elapsed_ms': elapsed_ms,
-            'ops_total': runs * ops_per_run * workers,
+            'ops_total': runs * ops_per_run,
         }
         print(f'CONCURRENCY: {json.dumps(payload, separators=(",", ":"))}')
+
+    def _run_concurrency_worker(
+        self,
+        seed: int,
+        run_index: int,
+        worker_index: int,
+        sequences_per_worker: int,
+        plies_per_sequence: int,
+        scenarios,
+    ):
+        checksum = (2166136261 ^ seed ^ ((run_index + 1) * 97) ^ ((worker_index + 1) * 131)) & 0xFFFFFFFF
+        checksum = self._concurrency_mix_text(checksum, f'worker:{run_index}:{worker_index}')
+        invariant_errors = 0
+
+        for sequence_index in range(sequences_per_worker):
+            scenario_index = (run_index + worker_index + sequence_index) % len(scenarios)
+            board, move_generator, fen_parser = self._concurrency_state_from_fen(scenarios[scenario_index])
+            baseline_fen = fen_parser.export()
+            baseline_hash = self._concurrency_hash_hex(board.zobrist_hash)
+            checksum = self._concurrency_mix_text(
+                checksum,
+                f'seq:{scenario_index}:{baseline_hash}:{baseline_fen}',
+            )
+
+            applied_moves = []
+            for ply in range(plies_per_sequence):
+                legal_moves = sorted(move_generator.generate_legal_moves(), key=lambda move: move.to_algebraic())
+                checksum = self._concurrency_mix_text(checksum, f'legal:{len(legal_moves)}')
+                if not legal_moves:
+                    invariant_errors += 1
+                    checksum = self._concurrency_mix_text(checksum, f'empty:{sequence_index}:{ply}')
+                    break
+
+                selected = self._choose_concurrency_move(
+                    legal_moves,
+                    seed,
+                    run_index,
+                    worker_index,
+                    sequence_index,
+                    ply,
+                )
+                before_fen = fen_parser.export()
+                before_hash = self._concurrency_hash_hex(board.zobrist_hash)
+                move_str = selected.to_algebraic()
+
+                board.make_move(selected)
+                applied_moves.append(selected)
+
+                after_fen = fen_parser.export()
+                after_hash = self._concurrency_hash_hex(board.zobrist_hash)
+                checksum = self._concurrency_mix_text(
+                    checksum,
+                    f'move:{move_str}:{before_hash}:{before_fen}:{after_hash}:{after_fen}',
+                )
+
+                reloaded_board, _, reloaded_parser = self._concurrency_state_from_fen(after_fen)
+                reloaded_hash = self._concurrency_hash_hex(reloaded_board.zobrist_hash)
+                if reloaded_parser.export() != after_fen or reloaded_hash != after_hash:
+                    invariant_errors += 1
+                    checksum = self._concurrency_mix_text(
+                        checksum,
+                        f'reload-error:{sequence_index}:{ply}:{reloaded_hash}',
+                    )
+
+            for move in reversed(applied_moves):
+                board.undo_move(move)
+
+            restored_fen = fen_parser.export()
+            restored_hash = self._concurrency_hash_hex(board.zobrist_hash)
+            if restored_fen != baseline_fen or restored_hash != baseline_hash:
+                invariant_errors += 1
+                checksum = self._concurrency_mix_text(
+                    checksum,
+                    f'undo-error:{sequence_index}:{restored_hash}:{restored_fen}',
+                )
+            else:
+                checksum = self._concurrency_mix_text(checksum, f'undo-ok:{restored_hash}')
+
+        return self._concurrency_format_checksum(checksum), invariant_errors
+
+    def _concurrency_state_from_fen(self, fen: str):
+        from lib.zobrist import zobrist
+
+        board = Board()
+        fen_parser = FenParser(board)
+        fen_parser.parse(fen)
+        board.game_history = []
+        board.position_history = []
+        board.irreversible_history = []
+        board.zobrist_hash = zobrist.compute_hash(board)
+        return board, MoveGenerator(board), fen_parser
+
+    def _choose_concurrency_move(
+        self,
+        legal_moves,
+        seed: int,
+        run_index: int,
+        worker_index: int,
+        sequence_index: int,
+        ply: int,
+    ):
+        special_moves = [
+            move for move in legal_moves
+            if move.is_castling or move.is_en_passant or move.promotion is not None
+        ]
+        if special_moves and (run_index + worker_index + sequence_index + ply) % 3 == 0:
+            return special_moves[0]
+
+        selector = seed + run_index * 17 + worker_index * 31 + sequence_index * 43 + ply * 59
+        return legal_moves[selector % len(legal_moves)]
+
+    def _concurrency_mix_text(self, checksum: int, text: str) -> int:
+        for byte in text.encode('utf-8'):
+            checksum ^= byte
+            checksum = (checksum * 16777619) & 0xFFFFFFFF
+        return checksum
+
+    def _concurrency_format_checksum(self, checksum: int) -> str:
+        return f'{checksum & 0xFFFFFFFF:08x}'
+
+    def _concurrency_hash_hex(self, value: int) -> str:
+        return f'{value & 0xFFFFFFFFFFFFFFFF:016x}'
 
     def _trace(self, event: str, detail: str):
         """Record trace events while tracing is enabled."""

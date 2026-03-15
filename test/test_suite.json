@@ -8,6 +8,7 @@
         {
           "id": "basic_movement",
           "name": "Basic Piece Movement",
+          "feature": "move_execution",
           "commands": [
             {"cmd": "new"},
             {"cmd": "move e2e4"},
@@ -22,6 +23,7 @@
         {
           "id": "invalid_move",
           "name": "Invalid Move Detection",
+          "feature": "move_generation",
           "commands": [
             {"cmd": "new"},
             {"cmd": "move e2e5"}
@@ -32,6 +34,7 @@
         {
           "id": "turn_order",
           "name": "Turn Order Enforcement",
+          "feature": "move_generation",
           "commands": [
             {"cmd": "new"},
             {"cmd": "move e7e5"}
@@ -48,6 +51,7 @@
         {
           "id": "castling_kingside",
           "name": "Kingside Castling",
+          "feature": "special_moves",
           "commands": [
             {"cmd": "fen r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"},
             {"cmd": "move e1g1"},
@@ -59,6 +63,7 @@
         {
           "id": "castling_queenside",
           "name": "Queenside Castling",
+          "feature": "special_moves",
           "commands": [
             {"cmd": "fen r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"},
             {"cmd": "move e1c1"},
@@ -70,6 +75,7 @@
         {
           "id": "en_passant",
           "name": "En Passant Capture",
+          "feature": "special_moves",
           "commands": [
             {"cmd": "fen rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3"},
             {"cmd": "move e5f6"},
@@ -81,6 +87,7 @@
         {
           "id": "promotion",
           "name": "Pawn Promotion",
+          "feature": "fen",
           "commands": [
             {"cmd": "fen 8/P7/8/8/8/8/8/8 w - - 0 1"},
             {"cmd": "move a7a8"},
@@ -98,6 +105,7 @@
         {
           "id": "fools_mate",
           "name": "Fool's Mate",
+          "feature": "game_end",
           "commands": [
             {"cmd": "new"},
             {"cmd": "move f2f3"},
@@ -112,6 +120,7 @@
         {
           "id": "back_rank_mate",
           "name": "Back Rank Mate",
+          "feature": "game_end",
           "commands": [
             {"cmd": "fen 6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"},
             {"cmd": "move a1a8"},
@@ -123,6 +132,7 @@
         {
           "id": "stalemate",
           "name": "Stalemate Detection",
+          "feature": "game_end",
           "commands": [
             {"cmd": "fen 7k/5Q2/8/8/8/8/8/7K w - - 0 1"},
             {"cmd": "move f7g6"},
@@ -140,6 +150,7 @@
         {
           "id": "ai_basic",
           "name": "AI Basic Move",
+          "feature": "ai",
           "commands": [
             {"cmd": "new"},
             {"cmd": "ai 1"},
@@ -151,6 +162,7 @@
         {
           "id": "ai_capture",
           "name": "AI Obvious Capture",
+          "feature": "ai",
           "commands": [
             {"cmd": "fen rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2"},
             {"cmd": "ai 2"}
@@ -161,6 +173,7 @@
         {
           "id": "ai_mate_in_one",
           "name": "AI Finds Mate in One",
+          "feature": "ai",
           "commands": [
             {"cmd": "fen 6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"},
             {"cmd": "ai 2"}
@@ -171,6 +184,7 @@
         {
           "id": "ai_deterministic_start",
           "name": "AI Deterministic - Starting Position",
+          "feature": "ai",
           "description": "Tests that AI makes deterministic move choices from starting position",
           "commands": [
             {"cmd": "new"},
@@ -182,6 +196,7 @@
         {
           "id": "ai_promotion_choice",
           "name": "AI Promotion to Queen",
+          "feature": "ai",
           "description": "Tests that AI correctly promotes to queen",
           "commands": [
             {"cmd": "fen 4k3/P7/8/8/8/8/8/4K3 w - - 0 1"},
@@ -193,6 +208,7 @@
         {
           "id": "ai_evaluation_consistency",
           "name": "AI Evaluation Consistency",
+          "feature": "ai",
           "description": "Tests that AI evaluation is consistent and deterministic",
           "commands": [
             {"cmd": "fen rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2"},
@@ -212,6 +228,7 @@
         {
           "id": "undo_functionality",
           "name": "Undo Move",
+          "feature": "move_execution",
           "commands": [
             {"cmd": "new"},
             {"cmd": "move e2e4"},
@@ -277,6 +294,7 @@
         {
           "id": "fen_import",
           "name": "FEN Import",
+          "feature": "fen",
           "commands": [
             {"cmd": "fen rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2"},
             {"cmd": "export"}
@@ -287,6 +305,7 @@
         {
           "id": "fen_export",
           "name": "FEN Export",
+          "feature": "fen",
           "commands": [
             {"cmd": "new"},
             {"cmd": "export"}

@@ -372,7 +372,6 @@ class ChessEngine
 			for file in blackFiles
 				castling += String.fromCharCode('a'.charCodeAt(0) + file)
 			return castling or '-'
-
 		let castling = ''
 		if snapshot.castling.wK then castling += 'K'
 		if snapshot.castling.wQ then castling += 'Q'

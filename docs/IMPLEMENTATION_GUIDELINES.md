@@ -40,6 +40,7 @@ Root integration commands use:
 - `make build DIR=<language>`
 - `make analyze DIR=<language>`
 - `make test DIR=<language>`
+- `make test-unit-contract DIR=<language>`
 - `make test-chess-engine DIR=<language>`
 
 ## Required Engine Commands
@@ -67,6 +68,9 @@ Board rendering, move legality, error messages, and output format must match the
 - `org.chess.test`
 - `org.chess.analyze`
 - `org.chess.run`
+
+Recommended for the shared unit-parity lane:
+- `org.chess.test_contract` - adapter command invoked by `test/unit_contract_harness.py`; the harness appends `--suite` and `--report`
 
 ## Functional Requirements Checklist
 
@@ -96,6 +100,7 @@ make image DIR=<language>
 make build DIR=<language>
 make analyze DIR=<language>
 make test DIR=<language>
+make test-unit-contract DIR=<language>
 make test-chess-engine DIR=<language>
 ```
 
