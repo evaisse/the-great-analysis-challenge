@@ -18,7 +18,9 @@ Use this page as the main entrypoint for project documentation.
 
 - Root commands: [Makefile](../Makefile)
 - Shared test suite: [test/test_suite.json](../test/test_suite.json)
+- Shared unit contract suite: [test/contracts/unit_v1.json](../test/contracts/unit_v1.json)
 - Test harness: [test/test_harness.py](../test/test_harness.py)
+- Unit contract harness: [test/unit_contract_harness.py](../test/unit_contract_harness.py)
 - CI triage workflow notes: [docs/ISSUE_TRIAGE_WORKFLOW.md](ISSUE_TRIAGE_WORKFLOW.md)
 
 ## Additional References

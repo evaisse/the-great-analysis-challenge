@@ -148,11 +148,14 @@ class ChessEngine
 		}
 
 	def export-fen
+		return state-to-fen(state)
+
+	def state-to-fen snapshot
 		let fen = ''
 		for r in [0 ... 8]
 			let empty = 0
 			for c in [0 ... 8]
-				const piece = state.board[r * 8 + c]
+				const piece = snapshot.board[r * 8 + c]
 				if piece
 					if empty > 0
 						fen += empty
@@ -163,14 +166,45 @@ class ChessEngine
 			if empty > 0 then fen += empty
 			if r < 7 then fen += '/'
 
-		const castling = (state.castling.wK ? 'K' : '') +
-			(state.castling.wQ ? 'Q' : '') +
-			(state.castling.bK ? 'k' : '') +
-			(state.castling.bQ ? 'q' : '') or '-'
+		const castling = castling-string(snapshot)
 
-		const ep = state.enPassant === null ? '-' : index-to-algebraic(state.enPassant)
+		const ep = snapshot.enPassant === null ? '-' : index-to-algebraic(snapshot.enPassant)
 
-		return "{fen} {state.turn} {castling} {ep} {state.halfmoveClock} {state.fullmoveNumber}"
+		return "{fen} {snapshot.turn} {castling} {ep} {snapshot.halfmoveClock} {snapshot.fullmoveNumber}"
+
+	def castling-string snapshot
+		let castling = ''
+		if snapshot.castling.wK then castling += 'K'
+		if snapshot.castling.wQ then castling += 'Q'
+		if snapshot.castling.bK then castling += 'k'
+		if snapshot.castling.bQ then castling += 'q'
+		return castling or '-'
+
+	def state-key snapshot = state
+		const boardPart = state-to-fen(snapshot).split(' ').slice(0, 4)
+		return boardPart.join(' ')
+
+	def repetition-count
+		const currentKey = state-key!
+		let count = 1
+		for snapshot in history
+			if state-key(snapshot) === currentKey then count++
+		return count
+
+	def draw-reason
+		if repetition-count! >= 3 then return 'REPETITION'
+		if state.halfmoveClock >= 100 then return '50-MOVE'
+		return null
+
+	def hash-string
+		const source = export-fen!
+		let forward = 2166136261
+		let reverse = 2166136261
+		for char, i in source
+			forward = Math.imul((forward ^ char.charCodeAt(0)) >>> 0, 16777619) >>> 0
+			const reverseCode = source.charCodeAt(source.length - 1 - i)
+			reverse = Math.imul((reverse ^ reverseCode) >>> 0, 16777619) >>> 0
+		return forward.toString(16).padStart(8, '0') + reverse.toString(16).padStart(8, '0')
 
 	def algebraic-to-index sq
 		if !sq or sq.length !== 2 then return null
@@ -382,6 +416,7 @@ class ChessEngine
 		
 		const piece = state.board[move.from]
 		if !piece then return
+		const wasPawn = piece.type === 'p'
 
 		const target = state.board[move.to]
 		let nextEp = null
@@ -430,7 +465,7 @@ class ChessEngine
 		state.board[move.from] = null
 		state.enPassant = nextEp
 		
-		if piece.type === 'p' or target
+		if wasPawn or target
 			state.halfmoveClock = 0
 		else
 			state.halfmoveClock++
@@ -590,6 +625,7 @@ rl.on('line') do(line)
 				engine.state = startState
 				engine.history = []
 				print-board!
+				process.stdout.write("OK: NEW\n")
 		when 'move'
 			const mStr = tokens[1] or ""
 			if mStr.length < 4 or mStr.length > 5
@@ -648,6 +684,7 @@ rl.on('line') do(line)
 			else
 				engine.undo!
 				print-board!
+				process.stdout.write("OK: UNDO\n")
 		when 'fen'
 			const fenStr = tokens.slice(1).join(' ')
 			const nextState = engine.parse-fen(fenStr)
@@ -657,6 +694,7 @@ rl.on('line') do(line)
 				engine.state = nextState
 				engine.history = []
 				print-board!
+				process.stdout.write("OK: FEN\n")
 		when 'export'
 			process.stdout.write("FEN: {engine.export-fen!}\n")
 		when 'ai'
@@ -675,6 +713,10 @@ rl.on('line') do(line)
 			print-board!
 			process.stdout.write("AI: {mS} (depth={depth}, eval={res.score}, time={Date.now! - start})\n")
 		when 'status'
+			const drawReason = engine.draw-reason!
+			if drawReason
+				process.stdout.write("DRAW: {drawReason}\n")
+				return
 			const moves = engine.generate-moves!
 			if moves.length === 0
 				if engine.is-in-check(engine.state.turn)
@@ -686,7 +728,7 @@ rl.on('line') do(line)
 		when 'eval'
 			process.stdout.write("EVALUATION: {engine.evaluate!}\n")
 		when 'hash'
-			process.stdout.write("HASH: 0x{Math.floor(Math.random! * 0xFFFFFFFF).toString(16)}\n")
+			process.stdout.write("HASH: {engine.hash-string!}\n")
 		when 'perft'
 			const d = parseInt(parts[1] or '1')
 			const s = Date.now!

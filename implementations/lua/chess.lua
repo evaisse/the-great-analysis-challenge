@@ -1585,33 +1585,419 @@ local function trace_event(event, detail)
     end
 end
 
+local function clone_board_state(source)
+    local copy = {}
+    for rank = 1, 8 do
+        copy[rank] = {}
+        for file = 1, 8 do
+            copy[rank][file] = source[rank][file]
+        end
+    end
+    return copy
+end
+
+local function clone_castling_state(source)
+    return {
+        white_king = source.white_king,
+        white_queen = source.white_queen,
+        black_king = source.black_king,
+        black_queen = source.black_queen,
+    }
+end
+
+local function clone_square(square)
+    if not square then
+        return nil
+    end
+    return {square[1], square[2]}
+end
+
+local function clone_move_history(source)
+    local copy = {}
+    for i, entry in ipairs(source) do
+        copy[i] = {}
+        for key, value in pairs(entry) do
+            copy[i][key] = value
+        end
+    end
+    return copy
+end
+
+local function clone_irreversible_history(source)
+    local copy = {}
+    for i, entry in ipairs(source) do
+        copy[i] = {
+            castling_rights = clone_castling_state(entry.castling_rights),
+            en_passant_target = clone_square(entry.en_passant_target),
+            halfmove_clock = entry.halfmove_clock,
+            zobrist_hash = entry.zobrist_hash,
+        }
+    end
+    return copy
+end
+
+local function snapshot_engine_state()
+    local history_copy = {}
+    for i, hash in ipairs(position_history) do
+        history_copy[i] = hash
+    end
+
+    return {
+        board = clone_board_state(board),
+        white_to_move = white_to_move,
+        castling_rights = clone_castling_state(castling_rights),
+        en_passant_target = clone_square(en_passant_target),
+        halfmove_clock = halfmove_clock,
+        fullmove_number = fullmove_number,
+        move_history = clone_move_history(move_history),
+        zobrist_hash = zobrist_hash,
+        position_history = history_copy,
+        irreversible_history = clone_irreversible_history(irreversible_history),
+    }
+end
+
+local function restore_engine_state(state)
+    board = clone_board_state(state.board)
+    white_to_move = state.white_to_move
+    castling_rights = clone_castling_state(state.castling_rights)
+    en_passant_target = clone_square(state.en_passant_target)
+    halfmove_clock = state.halfmove_clock
+    fullmove_number = state.fullmove_number
+    move_history = clone_move_history(state.move_history)
+    zobrist_hash = state.zobrist_hash
+
+    position_history = {}
+    for i, hash in ipairs(state.position_history) do
+        position_history[i] = hash
+    end
+
+    irreversible_history = clone_irreversible_history(state.irreversible_history)
+end
+
+local function workload_move_notation(move)
+    local notation = indices_to_algebraic(move[1], move[2]) .. indices_to_algebraic(move[3], move[4])
+    if move[5] then
+        notation = notation .. tostring(move[5]):lower()
+    end
+    return notation:lower()
+end
+
+local function is_workload_castling_move(move)
+    local piece = board[move[1]][move[2]]
+    return (piece == "K" or piece == "k") and math.abs(move[4] - move[2]) == 2
+end
+
+local function is_workload_en_passant_move(move)
+    local piece = board[move[1]][move[2]]
+    return en_passant_target
+        and (piece == "P" or piece == "p")
+        and move[3] == en_passant_target[1]
+        and move[4] == en_passant_target[2]
+        and board[move[3]][move[4]] == "."
+end
+
+local function is_workload_promotion_move(move)
+    local piece = board[move[1]][move[2]]
+    return move[5] ~= nil or ((piece == "P" and move[3] == 8) or (piece == "p" and move[3] == 1))
+end
+
+local function workload_move_priority(move)
+    local score = 0
+    if is_workload_castling_move(move) then
+        score = score + 400
+    end
+    if is_workload_en_passant_move(move) then
+        score = score + 300
+    end
+    if is_workload_promotion_move(move) then
+        score = score + 200
+    end
+
+    local target = board[move[3]][move[4]]
+    if target and target ~= "." then
+        score = score + 100 + math.abs(PIECE_VALUES[target] or 0)
+    end
+
+    return score
+end
+
+local function choose_workload_move(moves, mode, salt)
+    local filtered = {}
+    for _, move in ipairs(moves) do
+        local include = true
+        if mode == "castle" then
+            include = is_workload_castling_move(move)
+        elseif mode == "en_passant" then
+            include = is_workload_en_passant_move(move)
+        elseif mode == "promotion" then
+            include = is_workload_promotion_move(move)
+        end
+        if include then
+            table.insert(filtered, move)
+        end
+    end
+
+    if #filtered == 0 then
+        filtered = moves
+    end
+
+    local decorated = {}
+    for _, move in ipairs(filtered) do
+        table.insert(decorated, {
+            move = move,
+            notation = workload_move_notation(move),
+            priority = workload_move_priority(move),
+        })
+    end
+
+    table.sort(decorated, function(a, b)
+        if a.priority ~= b.priority then
+            return a.priority > b.priority
+        end
+        return a.notation < b.notation
+    end)
+
+    local index = (salt % #decorated) + 1
+    return decorated[index].move, decorated[index].notation
+end
+
+local function benchmark_mix_int(checksum, value)
+    return xorshift64((checksum ~ (value & 0xFFFFFFFFFFFFFFFF)) & 0xFFFFFFFFFFFFFFFF)
+end
+
+local function benchmark_mix_string(checksum, value)
+    local mixed = benchmark_mix_int(checksum, #value)
+    for i = 1, #value do
+        mixed = benchmark_mix_int(mixed, string.byte(value, i))
+    end
+    return mixed
+end
+
+local function count_kings_on_board()
+    local white_kings = 0
+    local black_kings = 0
+    for rank = 1, 8 do
+        for file = 1, 8 do
+            local piece = board[rank][file]
+            if piece == "K" then
+                white_kings = white_kings + 1
+            elseif piece == "k" then
+                black_kings = black_kings + 1
+            end
+        end
+    end
+    return white_kings, black_kings
+end
+
+local function load_benchmark_position(fen)
+    local success, msg = import_fen(fen)
+    if not success then
+        return false, msg
+    end
+
+    move_history = {}
+    position_history = {}
+    irreversible_history = {}
+    zobrist_hash = compute_hash()
+    return true, "OK"
+end
+
+local function run_concurrency_workload(profile, seed, run_index)
+    local scenarios = {
+        {
+            name = "opening",
+            fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            mode = "any",
+        },
+        {
+            name = "castling",
+            fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
+            mode = "castle",
+        },
+        {
+            name = "en_passant",
+            fen = "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1",
+            mode = "en_passant",
+        },
+        {
+            name = "promotion",
+            fen = "4k3/P7/8/8/8/8/7p/4K3 w - - 0 1",
+            mode = "promotion",
+        },
+    }
+
+    local plies_per_scenario = profile == "quick" and 2 or 4
+    local checksum = xorshift64((seed + run_index * 97) & 0xFFFFFFFFFFFFFFFF)
+    local invariant_errors = 0
+    local ops_total = 0
+
+    local function record_invariant(condition, detail)
+        if not condition then
+            invariant_errors = invariant_errors + 1
+            checksum = benchmark_mix_string(checksum, "ERR:" .. detail)
+            return false
+        end
+        return true
+    end
+
+    for scenario_index, scenario in ipairs(scenarios) do
+        local ok, msg = load_benchmark_position(scenario.fen)
+        ops_total = ops_total + 2 -- load + recompute hash
+        if not ok then
+            record_invariant(false, scenario.name .. ":load:" .. tostring(msg))
+            break
+        end
+
+        local baseline_fen = export_fen()
+        local baseline_hash = zobrist_hash
+        ops_total = ops_total + 2 -- export + baseline hash validation
+
+        checksum = benchmark_mix_string(checksum, scenario.name)
+        checksum = benchmark_mix_string(checksum, baseline_fen)
+        checksum = benchmark_mix_int(checksum, baseline_hash)
+
+        record_invariant(compute_hash() == zobrist_hash, scenario.name .. ":baseline-hash")
+
+        local white_kings, black_kings = count_kings_on_board()
+        record_invariant(white_kings == 1 and black_kings == 1, scenario.name .. ":king-count")
+
+        for ply = 1, plies_per_scenario do
+            local pre_fen = export_fen()
+            local pre_hash = zobrist_hash
+            local pre_white_to_move = white_to_move
+            local pre_move_history_len = #move_history
+            local pre_position_history_len = #position_history
+            ops_total = ops_total + 1
+
+            local moves = generate_legal_moves()
+            ops_total = ops_total + 1
+            if not record_invariant(#moves > 0, scenario.name .. ":no-legal-moves:" .. tostring(ply)) then
+                break
+            end
+
+            local salt = seed + run_index * 37 + scenario_index * 11 + ply * 5
+            local move, notation = choose_workload_move(moves, scenario.mode, salt)
+            if not record_invariant(move ~= nil, scenario.name .. ":no-selected-move:" .. tostring(ply)) then
+                break
+            end
+
+            local moving_side = white_to_move
+            local moving_piece = board[move[1]][move[2]]
+            checksum = benchmark_mix_string(checksum, notation)
+
+            make_move_internal(move[1], move[2], move[3], move[4], move[5])
+            ops_total = ops_total + 1
+
+            local post_fen = export_fen()
+            local post_hash = zobrist_hash
+            local recomputed_hash = compute_hash()
+            ops_total = ops_total + 3 -- export + hash read + recompute
+
+            checksum = benchmark_mix_string(checksum, post_fen)
+            checksum = benchmark_mix_int(checksum, post_hash)
+
+            record_invariant(white_to_move ~= pre_white_to_move, scenario.name .. ":turn-toggle:" .. tostring(ply))
+            record_invariant(recomputed_hash == zobrist_hash, scenario.name .. ":post-hash:" .. tostring(ply))
+            record_invariant(post_fen ~= pre_fen, scenario.name .. ":post-fen-unchanged:" .. tostring(ply))
+            record_invariant(#move_history == pre_move_history_len + 1, scenario.name .. ":move-history:" .. tostring(ply))
+            record_invariant(#position_history == pre_position_history_len + 1, scenario.name .. ":position-history:" .. tostring(ply))
+            record_invariant(not is_in_check(moving_side), scenario.name .. ":self-check:" .. tostring(ply))
+            record_invariant(moving_piece ~= ".", scenario.name .. ":moved-empty-piece:" .. tostring(ply))
+
+            local post_white_kings, post_black_kings = count_kings_on_board()
+            record_invariant(post_white_kings == 1 and post_black_kings == 1, scenario.name .. ":post-king-count:" .. tostring(ply))
+
+            local undone = undo_move()
+            ops_total = ops_total + 1
+            if not record_invariant(undone, scenario.name .. ":undo-failed:" .. tostring(ply)) then
+                break
+            end
+
+            local undo_fen = export_fen()
+            local undo_hash = zobrist_hash
+            local undo_recomputed_hash = compute_hash()
+            ops_total = ops_total + 3 -- export + hash read + recompute
+
+            record_invariant(undo_fen == pre_fen, scenario.name .. ":undo-fen:" .. tostring(ply))
+            record_invariant(undo_hash == pre_hash, scenario.name .. ":undo-hash:" .. tostring(ply))
+            record_invariant(undo_recomputed_hash == zobrist_hash, scenario.name .. ":undo-recompute:" .. tostring(ply))
+            record_invariant(white_to_move == pre_white_to_move, scenario.name .. ":undo-turn:" .. tostring(ply))
+            record_invariant(#move_history == pre_move_history_len, scenario.name .. ":undo-move-history:" .. tostring(ply))
+            record_invariant(#position_history == pre_position_history_len, scenario.name .. ":undo-position-history:" .. tostring(ply))
+
+            local reload_ok, reload_msg = load_benchmark_position(pre_fen)
+            ops_total = ops_total + 2 -- reload + recompute hash
+            if not record_invariant(reload_ok, scenario.name .. ":reload:" .. tostring(reload_msg)) then
+                break
+            end
+
+            local reload_fen = export_fen()
+            ops_total = ops_total + 1
+            record_invariant(reload_fen == pre_fen, scenario.name .. ":reload-fen:" .. tostring(ply))
+            record_invariant(zobrist_hash == pre_hash, scenario.name .. ":reload-hash:" .. tostring(ply))
+
+            local reload_white_kings, reload_black_kings = count_kings_on_board()
+            record_invariant(reload_white_kings == 1 and reload_black_kings == 1, scenario.name .. ":reload-king-count:" .. tostring(ply))
+
+            checksum = benchmark_mix_int(checksum, pre_hash)
+            checksum = benchmark_mix_int(checksum, #moves)
+        end
+
+        checksum = benchmark_mix_int(checksum, get_repetition_count())
+        checksum = benchmark_mix_int(checksum, halfmove_clock)
+    end
+
+    return checksum & 0xFFFFFFFFFFFFFFFF, invariant_errors, ops_total
+end
+
 local function build_concurrency_payload(profile)
     local start_clock = os.clock()
     local seed = 12345
     local workers = 1
     local runs = profile == "quick" and 10 or 50
-    local ops_per_run = profile == "quick" and 10000 or 40000
     local checksums = {}
-    local checksum = seed
-    local mod = 2147483648 -- 2^31
+    local deterministic = true
+    local invariant_errors = 0
+    local ops_total = 0
+    local snapshot = snapshot_engine_state()
 
-    for i = 1, runs do
-        checksum = (checksum * 1103515245 + 12345 + (i - 1)) % mod
-        checksums[i] = string.format("%016x", checksum)
+    local ok, err = pcall(function()
+        for i = 1, runs do
+            local checksum_a, errors_a, ops_a = run_concurrency_workload(profile, seed, i)
+            local checksum_b, errors_b, ops_b = run_concurrency_workload(profile, seed, i)
+
+            checksums[i] = string.format("%016x", checksum_a)
+            if checksum_a ~= checksum_b or errors_a ~= errors_b then
+                deterministic = false
+            end
+
+            invariant_errors = invariant_errors + math.max(errors_a, errors_b)
+            ops_total = ops_total + ops_a + ops_b
+        end
+    end)
+
+    restore_engine_state(snapshot)
+
+    if not ok then
+        deterministic = false
+        invariant_errors = invariant_errors + 1
+        checksums = {string.format("%016x", benchmark_mix_string(seed, tostring(err)))}
     end
 
     local elapsed_ms = math.floor((os.clock() - start_clock) * 1000)
     local checksums_json = "\"" .. table.concat(checksums, "\",\"") .. "\""
 
     return string.format(
-        "{\"profile\":\"%s\",\"seed\":%d,\"workers\":%d,\"runs\":%d,\"checksums\":[%s],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":%d,\"ops_total\":%d}",
+        "{\"profile\":\"%s\",\"seed\":%d,\"workers\":%d,\"runs\":%d,\"checksums\":[%s],\"deterministic\":%s,\"invariant_errors\":%d,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":%d,\"ops_total\":%d}",
         profile,
         seed,
         workers,
         runs,
         checksums_json,
+        deterministic and "true" or "false",
+        invariant_errors,
         elapsed_ms,
-        runs * ops_per_run * workers
+        ops_total
     )
 end
 

@@ -69,11 +69,14 @@ make image DIR=<language>
 make build DIR=<language>
 make analyze DIR=<language>
 make test DIR=<language>
+make test-unit-contract DIR=<language>
 make test-chess-engine DIR=<language>
 make bugit DIR=<language>
 make fix DIR=<language>
 make benchmark-analysis-error DIR=<language>
 ```
+
+`make test-unit-contract` is the shared unit-parity lane. It is currently opt-in per implementation via `org.chess.test_contract`; use `STRICT=1` to make missing adapters fail.
 
 Optional broad checks:
 

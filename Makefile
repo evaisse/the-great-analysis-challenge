@@ -2,13 +2,14 @@
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 # Convention over Configuration: This Makefile is 100% implementation-agnostic
 
-.PHONY: all image test-chess-engine test build analyze bugit fix benchmark-analysis-error clean help website analyze-tools list-implementations verify workflow validate-website-metadata install-hooks benchmark-stress benchmark-concurrency
+.PHONY: all image test-chess-engine test-unit-contract test build analyze bugit fix benchmark-analysis-error clean help website analyze-tools list-implementations verify workflow validate-website-metadata install-hooks benchmark-stress benchmark-concurrency
 
 # Auto-discover all implementations with Dockerfiles
 IMPLEMENTATIONS := $(shell find implementations -mindepth 1 -maxdepth 1 -type d -exec test -f {}/Dockerfile \; -exec basename {} \; 2>/dev/null | sort)
 TRACK ?= v1
 PROFILE ?= quick
 TIMEOUT ?= 1800
+STRICT ?= 0
 
 # Default target
 all: image build test test-chess-engine
@@ -26,6 +27,8 @@ help:
 	@echo "  make bugit DIR=<impl>               - Inject a reproducible static-analysis bug in a benchmark workspace"
 	@echo "  make fix DIR=<impl>                 - Restore the injected benchmark bug in that workspace"
 	@echo "  make test [DIR=<impl>]              - Run internal implementation test command(s) only"
+	@echo "  make test-unit-contract [DIR=<impl>] [STRICT=1]"
+	@echo "                                     - Run shared unit-contract parity suite (STRICT=1 fails on missing adapters)"
 	@echo "  make test-chess-engine [DIR=<impl>] [TRACK=v1|v2-foundation|v2-functional|v2-system|v2-full|v3-book]"
 	@echo "                                     - Run shared chess engine suite only"
 	@echo "  make benchmark-stress [DIR=<impl>] [TRACK=...] [PROFILE=quick|full] [TIMEOUT=<s>]"
@@ -195,6 +198,38 @@ else
 	done
 	@echo ""
 	@echo "Internal tests complete for all implementations"
+endif
+
+# Shared unit-level contract tests target
+test-unit-contract:
+ifdef DIR
+	@if [ ! -d "implementations/$(DIR)" ]; then \
+		echo "ERROR: Implementation '$(DIR)' not found"; \
+		exit 1; \
+	fi
+	@if [ ! -f "implementations/$(DIR)/Dockerfile" ]; then \
+		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
+		exit 1; \
+	fi
+	@echo "Running unit contract suite for $(DIR)..."
+	@STRICT_FLAG=""; \
+	if [ "$(STRICT)" = "1" ]; then STRICT_FLAG="--require-contract"; fi; \
+	python3 test/unit_contract_harness.py \
+		--impl implementations/$(DIR) \
+		--docker-image chess-$(DIR) \
+		$$STRICT_FLAG
+else
+	@echo "Running shared unit contract suite for all implementations..."
+	@for impl in $(IMPLEMENTATIONS); do \
+		echo ""; \
+		echo "==================== Unit Contract Suite $$impl ===================="; \
+		if ! $(MAKE) test-unit-contract DIR=$$impl STRICT=$(STRICT); then \
+			echo "Unit contract suite failed for $$impl. Stopping."; \
+			exit 1; \
+		fi; \
+	done
+	@echo ""
+	@echo "Shared unit contract suite complete for all implementations"
 endif
 
 # Shared chess engine protocol + behavior tests target

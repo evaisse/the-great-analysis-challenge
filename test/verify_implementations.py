@@ -49,6 +49,7 @@ RECOMMENDED_META_FIELDS = {
     'estimated_perft4_ms',
     'bugit',
     'fix',
+    'test_contract',
 }
 
 # Expected features in metadata
@@ -157,7 +158,11 @@ def check_makefile_targets(makefile_path: Path) -> Tuple[Set[str], Set[str]]:
     missing_targets = REQUIRED_MAKEFILE_TARGETS - found_targets
     return found_targets, missing_targets
 
-def validate_metadata(data: Dict, impl_name: str) -> Dict[str, List[str]]:
+def validate_metadata(
+    data: Dict,
+    impl_name: str,
+    require_test_contract: bool = False,
+) -> Dict[str, List[str]]:
     """Validate combined metadata."""
     result = {
         'errors': [],
@@ -171,7 +176,10 @@ def validate_metadata(data: Dict, impl_name: str) -> Dict[str, List[str]]:
         result['errors'].extend([f"Missing required field: {field}" for field in missing_required])
     
     # Check recommended fields
-    missing_recommended = RECOMMENDED_META_FIELDS - set(data.keys())
+    missing_recommended = set(RECOMMENDED_META_FIELDS - set(data.keys()))
+    if require_test_contract and 'test_contract' in missing_recommended:
+        result['errors'].append("Missing required field: test_contract")
+        missing_recommended.remove('test_contract')
     if missing_recommended:
         result['warnings'].extend([f"Missing recommended field: {field}" for field in missing_recommended])
     
@@ -223,6 +231,8 @@ def validate_metadata(data: Dict, impl_name: str) -> Dict[str, List[str]]:
     # Info
     result['info'].append(f"Language: {data.get('language', 'unknown')}")
     result['info'].append(f"Version: {data.get('version', 'unknown')}")
+    if 'test_contract' in data:
+        result['info'].append("Unit contract adapter declared")
     
     return result
 
@@ -230,7 +240,7 @@ def check_meta_path_standards(data: dict, impl_name: str) -> Dict[str, List[str]
     """Check path standards (Prevention Guideline 1)."""
     result = {'errors': [], 'warnings': []}
     
-    path_fields = ['build', 'run', 'analyze', 'test']
+    path_fields = ['build', 'run', 'analyze', 'test', 'test_contract']
     
     for field in path_fields:
         if field in data:
@@ -590,7 +600,10 @@ def check_python_dependencies(impl_dir: Path) -> Dict[str, List[str]]:
         result['warnings'].append("No requirements file found")
     return result
 
-def verify_implementation(impl_dir: Path) -> Dict:
+def verify_implementation(
+    impl_dir: Path,
+    require_test_contract: bool = False,
+) -> Dict:
     """Verify a single implementation."""
     impl_name = impl_dir.name
     result = {
@@ -646,7 +659,11 @@ def verify_implementation(impl_dir: Path) -> Dict:
         result['summary']['errors'] += len(missing_targets)
     
     if metadata:
-        meta_result = validate_metadata(metadata, impl_name)
+        meta_result = validate_metadata(
+            metadata,
+            impl_name,
+            require_test_contract=require_test_contract,
+        )
         result['chess_meta'] = meta_result
         result['summary']['errors'] += len(meta_result['errors'])
         result['summary']['warnings'] += len(meta_result['warnings'])
@@ -781,6 +798,11 @@ def main():
     parser = argparse.ArgumentParser(description="Verify Chess Engine Implementation")
     parser.add_argument("base_dir", nargs="?", help="Base directory")
     parser.add_argument("--implementation", "-i", help="Verify only one")
+    parser.add_argument(
+        "--require-test-contract",
+        action="store_true",
+        help="Treat missing org.chess.test_contract metadata as an error",
+    )
     args = parser.parse_args()
     
     base_dir = Path(args.base_dir) if args.base_dir else Path(os.getcwd())
@@ -791,7 +813,10 @@ def main():
     
     results = []
     for impl_dir in sorted(implementations):
-        result = verify_implementation(impl_dir)
+        result = verify_implementation(
+            impl_dir,
+            require_test_contract=args.require_test_contract,
+        )
         results.append(result)
         print_implementation_report(result)
     

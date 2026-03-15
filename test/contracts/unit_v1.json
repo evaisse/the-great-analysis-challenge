@@ -1,0 +1,179 @@
+{
+  "schema_version": "1.0",
+  "suite": "unit_v1",
+  "description": "Shared unit-scope contract scenarios for v1 chess engine semantics.",
+  "required_features": [
+    "fen",
+    "move_generation",
+    "move_execution",
+    "special_moves",
+    "game_end",
+    "ai"
+  ],
+  "cases": [
+    {
+      "id": "starting_position_fen",
+      "feature": "fen",
+      "required": true,
+      "setup": {
+        "type": "new_game"
+      },
+      "operation": {
+        "type": "export_fen"
+      },
+      "expect": {
+        "value": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "compare": "fen_exact"
+    },
+    {
+      "id": "fen_round_trip",
+      "feature": "fen",
+      "required": true,
+      "setup": {
+        "type": "fen",
+        "value": "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"
+      },
+      "operation": {
+        "type": "export_fen"
+      },
+      "expect": {
+        "value": "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"
+      },
+      "compare": "fen_exact"
+    },
+    {
+      "id": "starting_position_legal_move_count",
+      "feature": "move_generation",
+      "required": true,
+      "setup": {
+        "type": "new_game"
+      },
+      "operation": {
+        "type": "legal_move_count"
+      },
+      "expect": {
+        "value": 20
+      },
+      "compare": "integer_exact"
+    },
+    {
+      "id": "move_apply_and_undo_restores_fen",
+      "feature": "move_execution",
+      "required": true,
+      "setup": {
+        "type": "new_game"
+      },
+      "operation": {
+        "type": "apply_move_undo_export_fen",
+        "move": "e2e4"
+      },
+      "expect": {
+        "value": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "compare": "fen_exact"
+    },
+    {
+      "id": "kingside_castling_result",
+      "feature": "special_moves",
+      "required": true,
+      "setup": {
+        "type": "fen",
+        "value": "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"
+      },
+      "operation": {
+        "type": "apply_move_export_fen",
+        "move": "e1g1"
+      },
+      "expect": {
+        "value": "r3k2r/8/8/8/8/8/8/R4RK1 b kq - 1 1"
+      },
+      "compare": "fen_exact"
+    },
+    {
+      "id": "en_passant_capture_result",
+      "feature": "special_moves",
+      "required": true,
+      "setup": {
+        "type": "fen",
+        "value": "rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3"
+      },
+      "operation": {
+        "type": "apply_move_export_fen",
+        "move": "e5f6"
+      },
+      "expect": {
+        "value": "rnbqkbnr/ppp1p1pp/5P2/3p4/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 3"
+      },
+      "compare": "fen_exact"
+    },
+    {
+      "id": "promotion_to_queen_result",
+      "feature": "special_moves",
+      "required": true,
+      "setup": {
+        "type": "fen",
+        "value": "4k3/P7/8/8/8/8/8/4K3 w - - 0 1"
+      },
+      "operation": {
+        "type": "apply_move_export_fen",
+        "move": "a7a8q"
+      },
+      "expect": {
+        "value": "Q3k3/8/8/8/8/8/8/4K3 b - - 0 1"
+      },
+      "compare": "fen_exact"
+    },
+    {
+      "id": "checkmate_after_move",
+      "feature": "game_end",
+      "required": true,
+      "setup": {
+        "type": "fen",
+        "value": "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"
+      },
+      "operation": {
+        "type": "apply_move_status",
+        "move": "a1a8"
+      },
+      "expect": {
+        "value": "checkmate"
+      },
+      "compare": "status_exact"
+    },
+    {
+      "id": "stalemate_after_move",
+      "feature": "game_end",
+      "required": true,
+      "setup": {
+        "type": "fen",
+        "value": "7k/5Q2/8/8/8/8/8/7K w - - 0 1"
+      },
+      "operation": {
+        "type": "apply_move_status",
+        "move": "f7g6"
+      },
+      "expect": {
+        "value": "stalemate"
+      },
+      "compare": "status_exact"
+    },
+    {
+      "id": "ai_deterministic_capture",
+      "feature": "ai",
+      "required": true,
+      "setup": {
+        "type": "fen",
+        "value": "rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2"
+      },
+      "operation": {
+        "type": "ai_best_move",
+        "depth": 2
+      },
+      "expect": {
+        "value": "d4e5"
+      },
+      "compare": "move_exact"
+    }
+  ]
+}
