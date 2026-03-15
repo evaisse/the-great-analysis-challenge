@@ -11,16 +11,16 @@ from lib.perft import PerftCalculator
 from lib.types import Move, Color
 
 
-fn parse_command(command: String) -> (String, List[String]):
+fn parse_command(command: StringSlice) -> (String, List[String]):
     """Parse a command line into command and arguments."""
     var parts = command.split()
     if len(parts) == 0:
         return ("", List[String]())
     
-    var cmd = parts[0]
+    var cmd = String(parts[0])
     var args = List[String]()
     for i in range(1, len(parts)):
-        args.append(parts[i])
+        args.append(String(parts[i]))
     
     return (cmd, args)
 
