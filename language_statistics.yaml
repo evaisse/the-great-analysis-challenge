@@ -105,15 +105,6 @@ languages:
     github_repos_approx: 1000000
     description: "Lightweight scripting language"
 
-  mojo:
-    emoji: "🔥"
-    website: "https://www.modular.com/mojo"
-    tiobe_rank: null  # Not in TIOBE top 50
-    tiobe_rating: null
-    github_stars: "20K+"
-    github_repos_approx: 20000
-    description: "Programming language for AI developers"
-
   nim:
     emoji: "👑"
     website: "https://nim-lang.org/"

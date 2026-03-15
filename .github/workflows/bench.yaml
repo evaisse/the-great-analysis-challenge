@@ -116,9 +116,6 @@ jobs:
         id: benchmark-timeout
         run: |
           timeout_seconds=300
-          if [ "${{ matrix.engine }}" = "mojo" ]; then
-            timeout_seconds=600
-          fi
           echo "seconds=${timeout_seconds}" >> "$GITHUB_OUTPUT"
           echo "Using timeout ${timeout_seconds}s for ${{ matrix.engine }}"
 
