@@ -116,6 +116,18 @@ def phase_signature(phase: dict[str, object]) -> tuple[object, object, object]:
     )
 
 
+def bug_detected(baseline: dict[str, object], candidate: dict[str, object]) -> bool:
+    if bool(baseline.get("success")):
+        return not bool(candidate.get("success"))
+    return phase_signature(candidate) != phase_signature(baseline)
+
+
+def recovered_to_baseline(baseline: dict[str, object], candidate: dict[str, object]) -> bool:
+    if bool(baseline.get("success")):
+        return bool(candidate.get("success"))
+    return phase_signature(candidate) == phase_signature(baseline)
+
+
 def build_text_report(report: dict[str, object]) -> str:
     summary = report["summary"]
     phases = report["phases"]
@@ -247,9 +259,9 @@ def run_benchmark(
         "summary": {
             "baseline_green": bool(baseline_analyze["success"]),
             "bugit_success": bool(bugit_phase["success"]),
-            "bug_detected": phase_signature(analyze_with_bug) != phase_signature(baseline_analyze),
+            "bug_detected": bug_detected(baseline_analyze, analyze_with_bug),
             "fix_success": bool(fix_phase["success"]),
-            "recovered": phase_signature(analyze_after_fix) == phase_signature(baseline_analyze),
+            "recovered": recovered_to_baseline(baseline_analyze, analyze_after_fix),
         },
     }
     write_report(report, json_path, text_path)
