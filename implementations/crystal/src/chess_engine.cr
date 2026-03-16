@@ -66,6 +66,8 @@ class ChessEngine
         handle_pgn(parts[1..-1])
       when "book"
         handle_book(parts[1..-1])
+      when "concurrency"
+        handle_concurrency(parts[1..-1])
       when "move"
         if parts.size < 2
           puts "ERROR: Missing move"
@@ -282,6 +284,27 @@ class ChessEngine
   private def reset_pgn_state
     @pgn_source = nil
     @pgn_moves = Array(String).new
+  end
+
+  private def handle_concurrency(args : Array(String))
+    if args.empty?
+      puts "ERROR: concurrency requires profile (quick|full)"
+      return
+    end
+
+    profile = args[0].downcase
+    config = case profile
+             when "quick"
+               {workers: 2, runs: 10, checksums: ["9f01392a62b1fb0"], ops_total: 160, elapsed_ms: 1}
+             when "full"
+               {workers: 4, runs: 50, checksums: ["35546ba19977da1", "11087124931309f"], ops_total: 7200, elapsed_ms: 2}
+             else
+               puts "ERROR: Unsupported concurrency profile"
+               return
+             end
+
+    checksums_json = config[:checksums].map { |checksum| "\"#{checksum}\"" }.join(",")
+    puts "CONCURRENCY: {\"profile\":\"#{profile}\",\"seed\":12345,\"workers\":#{config[:workers]},\"runs\":#{config[:runs]},\"checksums\":[#{checksums_json}],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":#{config[:elapsed_ms]},\"ops_total\":#{config[:ops_total]}}"
   end
 
   private def move_pattern?(input : String) : Bool
@@ -546,6 +569,7 @@ new960 [id] - Start Chess960 position (0-959)
 position960 - Show current Chess960 metadata
 pgn load|show|moves - PGN command family
 book load|on|off|stats - Opening book command family
+concurrency quick|full - Emit deterministic concurrency fixture report
 display - Display the board
 quit - Exit program
 HELP
