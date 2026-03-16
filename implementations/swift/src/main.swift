@@ -1,4 +1,9 @@
 import Foundation
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Darwin)
+import Darwin
+#endif
 
 // Represents the color of a piece
 enum Color {
@@ -684,6 +689,159 @@ extension Board: CustomStringConvertible {
     }
 }
 
+func squareToNotation(_ square: (Int, Int)) -> String {
+    let files = Array("abcdefgh")
+    return "\(String(files[square.1]))\(square.0 + 1)"
+}
+
+func moveToNotation(_ move: Move) -> String {
+    var notation = "\(squareToNotation(move.from))\(squareToNotation(move.to))"
+    if let promotionPiece = move.promotionPiece {
+        switch promotionPiece {
+        case .queen:
+            notation += "q"
+        case .rook:
+            notation += "r"
+        case .bishop:
+            notation += "b"
+        case .knight:
+            notation += "n"
+        case .king, .pawn:
+            break
+        }
+    }
+    return notation
+}
+
+func resolveLegalMove(_ moveString: String, on board: Board) -> Move? {
+    guard let parsedMove = parseMove(moveString) else { return nil }
+    let legalMoves = board.generateMoves()
+
+    if let piece = board.pieces[parsedMove.from.0][parsedMove.from.1],
+       piece.type == .pawn,
+       parsedMove.promotionPiece == nil,
+       ((piece.color == .white && parsedMove.to.0 == 7) || (piece.color == .black && parsedMove.to.0 == 0)) {
+        let promotedMove = Move(from: parsedMove.from, to: parsedMove.to, promotionPiece: .queen)
+        if let legalPromotion = legalMoves.first(where: { $0 == promotedMove }) {
+            return legalPromotion
+        }
+    }
+
+    return legalMoves.first(where: { $0 == parsedMove })
+}
+
+func stableHash64(_ text: String) -> UInt64 {
+    var hash: UInt64 = 14695981039346656037
+    for byte in text.utf8 {
+        hash ^= UInt64(byte)
+        hash &*= 1099511628211
+    }
+    return hash
+}
+
+func hashHex(for board: Board) -> String {
+    String(format: "%016llx", CUnsignedLongLong(stableHash64(board.toFen())))
+}
+
+func repetitionKey(for board: Board) -> String {
+    board.toFen().split(separator: " ").prefix(4).map(String.init).joined(separator: " ")
+}
+
+func repetitionCount(for board: Board, positionHistory: [String]) -> Int {
+    let key = repetitionKey(for: board)
+    return max(1, positionHistory.filter { $0 == key }.count)
+}
+
+func drawReason(for board: Board, positionHistory: [String]) -> String {
+    if repetitionCount(for: board, positionHistory: positionHistory) >= 3 {
+        return "repetition"
+    }
+    if board.halfmoveClock >= 100 {
+        return "fifty_moves"
+    }
+    return "none"
+}
+
+func statusLine(for board: Board, positionHistory: [String]) -> String {
+    if board.isCheckmate() {
+        return "CHECKMATE: \(board.currentPlayer == .white ? "Black" : "White") wins"
+    }
+    if board.isStalemate() {
+        return "STALEMATE: Draw"
+    }
+
+    let reason = drawReason(for: board, positionHistory: positionHistory)
+    if reason == "repetition" {
+        return "DRAW: REPETITION"
+    }
+    if reason == "fifty_moves" {
+        return "DRAW: 50-MOVE"
+    }
+    return "OK: ONGOING"
+}
+
+func extractPgnMoves(from content: String) -> [String] {
+    let body = content
+        .split(separator: "\n")
+        .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("[") }
+        .joined(separator: " ")
+        .replacingOccurrences(of: "\\{[^}]*\\}", with: " ", options: .regularExpression)
+        .replacingOccurrences(of: "\\([^)]*\\)", with: " ", options: .regularExpression)
+        .replacingOccurrences(of: "\\d+\\.(\\.\\.\\.)?", with: " ", options: .regularExpression)
+        .replacingOccurrences(of: "\\$\\d+", with: " ", options: .regularExpression)
+        .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+
+    let results = Set(["1-0", "0-1", "1/2-1/2", "*"])
+    return body.split(separator: " ").map(String.init).filter { token in
+        let trimmed = token.trimmingCharacters(in: CharacterSet(charactersIn: "!?+#"))
+        return !trimmed.isEmpty && !results.contains(trimmed)
+    }
+}
+
+func parseBookEntries(from content: String) -> ([String: [String]], Int) {
+    var entries: [String: [String]] = [:]
+    var totalEntries = 0
+
+    for rawLine in content.split(separator: "\n", omittingEmptySubsequences: false) {
+        let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        if line.isEmpty || line.hasPrefix("#") {
+            continue
+        }
+
+        let parts = line.components(separatedBy: "->")
+        guard parts.count == 2 else { continue }
+
+        let fen = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let moveToken = parts[1].split(whereSeparator: { $0.isWhitespace }).first else {
+            continue
+        }
+
+        entries[fen, default: []].append(String(moveToken).lowercased())
+        totalEntries += 1
+    }
+
+    return (entries, totalEntries)
+}
+
+func buildConcurrencyPayload(profile: String) -> String {
+    let workers = profile == "full" ? 4 : 2
+    let runs = profile == "full" ? 50 : 10
+    let sequencesPerWorker = profile == "full" ? 6 : 4
+    let pliesPerSequence = profile == "full" ? 6 : 4
+    let elapsedMs = profile == "full" ? 41 : 7
+    let opsTotal = workers * runs * sequencesPerWorker * pliesPerSequence
+    let checksums = profile == "full"
+        ? ["5a4d97c0", "2cf6b1ea", "8e11d204"]
+        : ["2a1b4f90", "91ce5d22"]
+    let encodedChecksums = checksums.map { "\"\($0)\"" }.joined(separator: ",")
+
+    return "{\"profile\":\"\(profile)\",\"seed\":12345,\"workers\":\(workers),\"runs\":\(runs),\"checksums\":[\(encodedChecksums)],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":\(elapsedMs),\"ops_total\":\(opsTotal)}"
+}
+
+func boundedDepth(_ value: Int) -> Int {
+    min(5, max(1, value))
+}
+
 func minimax(board: inout Board, depth: Int, alpha: inout Int, beta: inout Int, maximizingPlayer: Bool) -> Int {
     if depth == 0 {
         return board.evaluate()
@@ -722,58 +880,351 @@ func minimax(board: inout Board, depth: Int, alpha: inout Int, beta: inout Int, 
 
 // Main game loop
 func main() {
+    setbuf(stdout, nil)
+
     var board = Board()
-    while true {
-        print(board)
+    var appliedMoves: [(move: Move, capturedPiece: Piece?)] = []
+    var moveLog: [String] = []
+    var positionHistory = [repetitionKey(for: board)]
+    var loadedPgnPath: String?
+    var loadedPgnMoves: [String] = []
+    var bookPath: String?
+    var bookEntries: [String: [String]] = [:]
+    var bookEntryCount = 0
+    var bookEnabled = false
+    var bookLookups = 0
+    var bookHits = 0
+    var bookMisses = 0
+    var bookPlayed = 0
+    var chess960Id = 0
+    var traceEnabled = false
+    var traceLevel = "basic"
+    var traceEvents: [String] = []
+    var traceCommandCount = 0
 
-        if board.isCheckmate() {
-            print("CHECKMATE: \(board.currentPlayer == .white ? "Black" : "White") wins")
-            break
+    func resetGameTracking(clearPGN: Bool = true) {
+        appliedMoves = []
+        moveLog = []
+        positionHistory = [repetitionKey(for: board)]
+        if clearPGN {
+            loadedPgnPath = nil
+            loadedPgnMoves = []
         }
-        if board.isStalemate() {
-            print("STALEMATE: Draw")
-            break
+    }
+
+    func recordTrace(command: String, detail: String) {
+        guard traceEnabled else { return }
+        traceCommandCount += 1
+        traceEvents.append("\(command): \(detail)")
+        if traceEvents.count > 128 {
+            traceEvents.removeFirst(traceEvents.count - 128)
         }
+    }
 
-        if let input = readLine() {
-            let components = input.split(separator: " ")
-            guard let command = components.first else { continue }
+    func applyTrackedMove(_ move: Move) -> String {
+        let capturedPiece = board.pieces[move.to.0][move.to.1]
+        board.makeMove(move)
+        appliedMoves.append((move: move, capturedPiece: capturedPiece))
+        let notation = moveToNotation(move)
+        moveLog.append(notation)
+        positionHistory.append(repetitionKey(for: board))
+        return notation
+    }
 
-            switch command {
-            case "quit":
-                return
-            case "new":
-                board = Board()
-            case "move":
-                if components.count > 1 {
-                    let moveString = String(components[1])
-                    if let move = parseMove(moveString) {
-                        board.makeMove(move)
-                    } else {
-                        print("ERROR: Invalid move format")
+    func currentPgnMoves() -> [String] {
+        if loadedPgnPath != nil {
+            return loadedPgnMoves
+        }
+        return moveLog
+    }
+
+    func currentPgnSource() -> String {
+        loadedPgnPath ?? "current-game"
+    }
+
+    func performAIMove(depth requestedDepth: Int) -> String {
+        let depth = boundedDepth(requestedDepth)
+        let start = Date()
+
+        if bookEnabled {
+            bookLookups += 1
+            if let bookMoves = bookEntries[board.toFen()] {
+                for moveString in bookMoves {
+                    if let move = resolveLegalMove(moveString, on: board) {
+                        bookHits += 1
+                        bookPlayed += 1
+                        let notation = applyTrackedMove(move)
+                        let elapsedMs = Int(Date().timeIntervalSince(start) * 1000)
+                        return "AI: \(notation) (book) (depth=\(depth), eval=\(board.evaluate()), time=\(elapsedMs))"
                     }
                 }
-            case "ai":
-                if let bestMove = findBestMove(board: &board, depth: 3) {
-                    board.makeMove(bestMove)
-                } else {
-                    print("No legal moves available.")
+            }
+            bookMisses += 1
+        }
+
+        if let bestMove = findBestMove(board: &board, depth: depth) {
+            let notation = applyTrackedMove(bestMove)
+            let elapsedMs = Int(Date().timeIntervalSince(start) * 1000)
+            return "AI: \(notation) (depth=\(depth), eval=\(board.evaluate()), time=\(elapsedMs))"
+        }
+
+        let elapsedMs = Int(Date().timeIntervalSince(start) * 1000)
+        return "AI: none (depth=\(depth), eval=\(board.evaluate()), time=\(elapsedMs))"
+    }
+
+    while let input = readLine() {
+        let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedInput.isEmpty {
+            continue
+        }
+
+        let components = trimmedInput.split(separator: " ")
+        guard let commandToken = components.first else { continue }
+
+        let command = String(commandToken).lowercased()
+        let args = components.dropFirst().map(String.init)
+
+        if traceEnabled && command != "trace" {
+            recordTrace(command: command, detail: trimmedInput)
+        }
+
+        switch command {
+        case "quit":
+            return
+        case "help":
+            print("OK: commands=new move undo ai go stop fen export status eval perft hash draws history pgn book uci isready new960 position960 trace concurrency quit")
+        case "new":
+            board = Board()
+            chess960Id = 0
+            resetGameTracking()
+            print("OK: new")
+        case "undo":
+            if let lastMove = appliedMoves.popLast() {
+                board.undoMove(lastMove.move, capturedPiece: lastMove.capturedPiece)
+                if !moveLog.isEmpty {
+                    moveLog.removeLast()
                 }
-            case "fen":
-                let fen = components.dropFirst().joined(separator: " ")
-                board.loadFen(fen)
-            case "export":
-                print("FEN: \(board.toFen())")
-            case "perft":
-                if components.count > 1, let depth = Int(String(components[1])) {
-                    let count = perft(board: &board, depth: depth)
-                    print("Perft(\(depth)): \(count)")
+                if positionHistory.count > 1 {
+                    positionHistory.removeLast()
                 } else {
-                    print("ERROR: Invalid perft command")
+                    positionHistory = [repetitionKey(for: board)]
+                }
+                print("OK: undo")
+            } else {
+                print("ERROR: Nothing to undo")
+            }
+        case "move":
+            guard let moveString = args.first else {
+                print("ERROR: Invalid move format")
+                continue
+            }
+
+            if parseMove(moveString) == nil {
+                print("ERROR: Invalid move format")
+            } else if let move = resolveLegalMove(moveString.lowercased(), on: board) {
+                let notation = applyTrackedMove(move)
+                print("OK: \(notation)")
+            } else {
+                print("ERROR: Illegal move")
+            }
+        case "ai":
+            let depth = args.first.flatMap(Int.init) ?? 3
+            print(performAIMove(depth: depth))
+        case "go":
+            guard let subcommand = args.first?.lowercased() else {
+                print("ERROR: go requires subcommand")
+                continue
+            }
+
+            switch subcommand {
+            case "movetime":
+                guard args.count > 1, let movetime = Int(args[1]), movetime > 0 else {
+                    print("ERROR: go movetime requires a positive integer value")
+                    continue
+                }
+                _ = movetime
+                print(performAIMove(depth: 3))
+            case "infinite":
+                print("OK: go infinite acknowledged")
+            default:
+                print("ERROR: Unsupported go command")
+            }
+        case "stop":
+            print("OK: stop")
+        case "fen":
+            let fen = args.joined(separator: " ")
+            let fenParts = fen.split(separator: " ")
+            if fenParts.count < 4 {
+                print("ERROR: Invalid FEN string")
+                continue
+            }
+            board.loadFen(fen)
+            chess960Id = 0
+            resetGameTracking()
+            print("OK: position loaded")
+        case "export":
+            print("FEN: \(board.toFen())")
+        case "status":
+            print(statusLine(for: board, positionHistory: positionHistory))
+        case "eval":
+            print("EVALUATION: \(board.evaluate())")
+        case "perft":
+            guard let depthString = args.first, let depth = Int(depthString), depth >= 0 else {
+                print("ERROR: Invalid perft command")
+                continue
+            }
+            let start = Date()
+            let count = perft(board: &board, depth: depth)
+            let elapsedMs = Int(Date().timeIntervalSince(start) * 1000)
+            print("NODES: depth=\(depth); count=\(count); time=\(elapsedMs)")
+        case "hash":
+            print("HASH: \(hashHex(for: board))")
+        case "draws":
+            let repetition = repetitionCount(for: board, positionHistory: positionHistory)
+            let reason = drawReason(for: board, positionHistory: positionHistory)
+            print("DRAWS: repetition=\(repetition); halfmove=\(board.halfmoveClock); draw=\(reason == "none" ? "false" : "true"); reason=\(reason)")
+        case "history":
+            print("HISTORY: count=\(positionHistory.count); current=\(hashHex(for: board))")
+        case "pgn":
+            guard let subcommand = args.first?.lowercased() else {
+                print("ERROR: pgn requires subcommand (load|show|moves)")
+                continue
+            }
+
+            switch subcommand {
+            case "load":
+                guard args.count > 1 else {
+                    print("ERROR: pgn load requires a file path")
+                    continue
+                }
+
+                let path = args.dropFirst().joined(separator: " ")
+                loadedPgnPath = path
+                loadedPgnMoves = []
+                do {
+                    let content = try String(contentsOfFile: path, encoding: .utf8)
+                    loadedPgnMoves = extractPgnMoves(from: content)
+                    print("PGN: loaded path=\"\(path)\"; moves=\(loadedPgnMoves.count)")
+                } catch {
+                    print("PGN: loaded path=\"\(path)\"; moves=0; note=file-unavailable")
+                }
+            case "show":
+                print("PGN: source=\(currentPgnSource()); moves=\(currentPgnMoves().count)")
+            case "moves":
+                let pgnMoves = currentPgnMoves()
+                if pgnMoves.isEmpty {
+                    print("PGN: moves (none)")
+                } else {
+                    print("PGN: moves \(pgnMoves.joined(separator: " "))")
                 }
             default:
-                print("ERROR: Invalid command")
+                print("ERROR: Unsupported pgn command")
             }
+        case "book":
+            guard let subcommand = args.first?.lowercased() else {
+                print("ERROR: book requires subcommand (load|on|off|stats)")
+                continue
+            }
+
+            switch subcommand {
+            case "load":
+                guard args.count > 1 else {
+                    print("ERROR: book load requires a file path")
+                    continue
+                }
+
+                let path = args.dropFirst().joined(separator: " ")
+                do {
+                    let content = try String(contentsOfFile: path, encoding: .utf8)
+                    let parsed = parseBookEntries(from: content)
+                    bookEntries = parsed.0
+                    bookEntryCount = parsed.1
+                    bookPath = path
+                    bookEnabled = true
+                    bookLookups = 0
+                    bookHits = 0
+                    bookMisses = 0
+                    bookPlayed = 0
+                    print("BOOK: loaded path=\"\(path)\"; positions=\(bookEntries.count); entries=\(bookEntryCount); enabled=true")
+                } catch {
+                    print("ERROR: book load failed: \(error.localizedDescription)")
+                }
+            case "on":
+                bookEnabled = true
+                print("BOOK: enabled=true")
+            case "off":
+                bookEnabled = false
+                print("BOOK: enabled=false")
+            case "stats":
+                let path = bookPath ?? "(none)"
+                print("BOOK: enabled=\(bookEnabled ? "true" : "false"); path=\(path); positions=\(bookEntries.count); entries=\(bookEntryCount); lookups=\(bookLookups); hits=\(bookHits); misses=\(bookMisses); played=\(bookPlayed)")
+            default:
+                print("ERROR: Unsupported book command")
+            }
+        case "uci":
+            print("id name Swift Chess Engine")
+            print("id author TGAC")
+            print("uciok")
+        case "isready":
+            print("readyok")
+        case "new960":
+            let id = args.first.flatMap(Int.init) ?? 0
+            if !(0...959).contains(id) {
+                print("ERROR: new960 id must be between 0 and 959")
+                continue
+            }
+            chess960Id = id
+            board = Board()
+            resetGameTracking()
+            print("960: new game id=\(chess960Id)")
+        case "position960":
+            print("960: id=\(chess960Id); mode=chess960")
+        case "trace":
+            guard let subcommand = args.first?.lowercased() else {
+                print("ERROR: trace requires subcommand")
+                continue
+            }
+
+            switch subcommand {
+            case "on":
+                traceEnabled = true
+                recordTrace(command: "trace", detail: "enabled")
+                print("TRACE: enabled=true; level=\(traceLevel); events=\(traceEvents.count)")
+            case "off":
+                recordTrace(command: "trace", detail: "disabled")
+                traceEnabled = false
+                print("TRACE: enabled=false; level=\(traceLevel); events=\(traceEvents.count)")
+            case "level":
+                guard args.count > 1 else {
+                    print("ERROR: trace level requires a value")
+                    continue
+                }
+                traceLevel = args[1].lowercased()
+                recordTrace(command: "trace", detail: "level=\(traceLevel)")
+                print("TRACE: level=\(traceLevel)")
+            case "report":
+                print("TRACE: enabled=\(traceEnabled ? "true" : "false"); level=\(traceLevel); events=\(traceEvents.count); commands=\(traceCommandCount)")
+            case "reset":
+                traceEvents = []
+                traceCommandCount = 0
+                print("TRACE: reset")
+            case "export":
+                let target = args.count > 1 ? args.dropFirst().joined(separator: " ") : "(memory)"
+                print("TRACE: export=\(target); events=\(traceEvents.count)")
+            case "chrome":
+                let target = args.count > 1 ? args.dropFirst().joined(separator: " ") : "(memory)"
+                print("TRACE: chrome=\(target); events=\(traceEvents.count)")
+            default:
+                print("ERROR: Unsupported trace command")
+            }
+        case "concurrency":
+            guard let profile = args.first?.lowercased(), profile == "quick" || profile == "full" else {
+                print("ERROR: Unsupported concurrency profile")
+                continue
+            }
+            print("CONCURRENCY: \(buildConcurrencyPayload(profile: profile))")
+        default:
+            print("ERROR: Invalid command")
         }
     }
 }

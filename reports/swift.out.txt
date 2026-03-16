@@ -1,3 +1,4 @@
+⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -6,7 +7,7 @@ Found 1 implementation(s) to test
 Testing swift implementation
 Path: implementations/swift
 ============================================================
-📏 Source size: 929 LOC across 3 files, 7650 TOKENS
+📏 Source size: 1380 LOC across 3 files, 11407 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,7 +16,7 @@ Path: implementations/swift
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-swift .
-  ✅ Docker build completed in 0.27s
+  ✅ Docker build completed in 24.64s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -23,62 +24,58 @@ Path: implementations/swift
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
+  ✅ All Docker tests passed (image: 24.6s, make build: 0.3s, make analyze: 0.3s, make test: 0.3s, make test-chess-engine: 10.3s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-13 15:58:17
+Generated: 2026-03-15 22:09:37
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-swift        completed  7650       929      0.2s/6MB           0.2s/7MB           0.2s/7MB           180.1s/-MB                1/1              0/1               
+swift        completed  11407      1380     0.3s/4MB           0.3s/4MB           0.3s/4MB           10.3s/-MB                 1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: SWIFT
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.27s
-  make build: 0.20s
-  make analyze: 0.19s
-  make test: 0.19s
-  make test-chess-engine: 180.08s
-  make test (internal mirror): 0.19s
-  test v2 full seconds: 180.08s
+  docker build image: 24.64s
+  make build: 0.32s
+  make analyze: 0.30s
+  make test: 0.30s
+  make test-chess-engine: 10.33s
+  make test (internal mirror): 0.30s
+  test v2 full seconds: 10.33s
 
 SOURCE SIZE:
-  Source LOC: 929 (files: 3)
-  TOKENS (tokens-v2): 7650
+  Source LOC: 1380 (files: 3)
+  TOKENS (tokens-v2): 11407
 
 NORMALIZED METRICS:
-  Build: 212.42 ms/KLOC
-  Analyze: 201.81 ms/KLOC
-  Runtime: 209.47 ms/KLOC
+  Build: 228.58 ms/KLOC
+  Analyze: 216.52 ms/KLOC
+  Runtime: 217.87 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 116.2MB, Avg 85.9MB
-  Build: Peak 6.3MB, Avg 0.0MB
-  Analyze: Peak 6.6MB, Avg 0.0MB
-  Test: Peak 6.9MB, Avg 0.0MB
+  Image: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 3.6MB, Avg 0.0MB
+  Analyze: Peak 3.8MB, Avg 0.0MB
+  Test: Peak 4.2MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 0.0MB, Avg 0.0MB
 
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
+CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.27s)
-  make build: ✅ (0.20s)
-  make analyze: ✅ (0.19s)
-  make test: ✅ (0.19s)
-  make test-chess-engine (track=v2-full): ❌ (180.08s)
+  Image build: ✅ (24.64s)
+  make build: ✅ (0.32s)
+  make analyze: ✅ (0.30s)
+  make test: ✅ (0.30s)
+  make test-chess-engine (track=v2-full): ✅ (10.33s)
   make test score: 1/1
-  make test-chess-engine score: 0/1
-
-ERRORS:
-  ❌ track v2-full suite timeout after 180.1s
+  make test-chess-engine score: 16/16
 
 ================================================================================
 📄 JSON results saved to reports/swift.json (1 valid benchmark(s))

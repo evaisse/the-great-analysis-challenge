@@ -1,5 +1,7 @@
 FROM ghcr.io/evaisse/tgac-swift-toolchain:latest
 
+WORKDIR /app
+
 COPY . .
 
 RUN swift build -c release
