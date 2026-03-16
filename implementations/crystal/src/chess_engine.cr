@@ -6,6 +6,7 @@ require "./fen"
 require "./perft"
 require "./chess960"
 require "./pgn"
+require "./book"
 
 class ChessEngine
   @game_state : GameState
@@ -15,6 +16,14 @@ class ChessEngine
   @chess960_mode : Bool
   @pgn_source : String?
   @pgn_moves : Array(String)
+  @book_path : String?
+  @book_entries : Hash(String, Array(Book::Entry))
+  @book_entry_count : Int32
+  @book_enabled : Bool
+  @book_lookups : Int32
+  @book_hits : Int32
+  @book_misses : Int32
+  @book_played : Int32
 
   def initialize
     @game_state = FEN.starting_position
@@ -24,6 +33,14 @@ class ChessEngine
     @chess960_mode = false
     @pgn_source = nil
     @pgn_moves = Array(String).new
+    @book_path = nil
+    @book_entries = Hash(String, Array(Book::Entry)).new
+    @book_entry_count = 0
+    @book_enabled = false
+    @book_lookups = 0
+    @book_hits = 0
+    @book_misses = 0
+    @book_played = 0
   end
 
   def run
@@ -47,6 +64,8 @@ class ChessEngine
         handle_position960
       when "pgn"
         handle_pgn(parts[1..-1])
+      when "book"
+        handle_book(parts[1..-1])
       when "move"
         if parts.size < 2
           puts "ERROR: Missing move"
@@ -217,6 +236,49 @@ class ChessEngine
     @game_state.move_history.map(&.to_s)
   end
 
+  private def handle_book(args : Array(String))
+    if args.empty?
+      puts "ERROR: book requires subcommand (load|on|off|stats)"
+      return
+    end
+
+    case args[0].downcase
+    when "load"
+      if args.size < 2
+        puts "ERROR: book load requires a file path"
+        return
+      end
+
+      path = args[1..-1].join(" ")
+
+      begin
+        parsed_entries, total_entries = Book.parse_entries(File.read(path))
+        @book_path = path
+        @book_entries = parsed_entries
+        @book_entry_count = total_entries
+        @book_enabled = true
+        @book_lookups = 0
+        @book_hits = 0
+        @book_misses = 0
+        @book_played = 0
+        puts "BOOK: loaded path=\"#{path}\"; positions=#{@book_entries.size}; entries=#{@book_entry_count}; enabled=true"
+      rescue ex
+        puts "ERROR: book load failed: #{ex.message}"
+      end
+    when "on"
+      @book_enabled = true
+      puts "BOOK: enabled=true"
+    when "off"
+      @book_enabled = false
+      puts "BOOK: enabled=false"
+    when "stats"
+      path = @book_path || "(none)"
+      puts "BOOK: enabled=#{@book_enabled ? "true" : "false"}; path=#{path}; positions=#{@book_entries.size}; entries=#{@book_entry_count}; lookups=#{@book_lookups}; hits=#{@book_hits}; misses=#{@book_misses}; played=#{@book_played}"
+    else
+      puts "ERROR: Unsupported book command"
+    end
+  end
+
   private def reset_pgn_state
     @pgn_source = nil
     @pgn_moves = Array(String).new
@@ -286,29 +348,102 @@ class ChessEngine
   end
 
   private def make_ai_move(depth : Int32)
+    legal_moves = @move_generator.get_legal_moves(@game_state, @game_state.turn)
+    if book_move = choose_book_move(legal_moves)
+      apply_ai_move(book_move, "AI: #{book_move} (book)")
+      @book_played += 1
+      return
+    end
+
     result = @ai.search(@game_state, depth, @game_state.turn.white?)
 
     if best_move = result.best_move
-      move_str = best_move.to_s
-      @game_state = Board.make_move(@game_state, best_move)
-
-      over, message = Board.is_game_over(@game_state)
-      if over
-        puts "AI: #{move_str} (#{message})"
-      else
-        next_moves = @move_generator.get_legal_moves(@game_state, @game_state.turn)
-        if next_moves.empty?
-          if @move_generator.in_check?(@game_state, @game_state.turn)
-            puts "AI: #{move_str} (CHECKMATE)"
-          else
-            puts "AI: #{move_str} (STALEMATE)"
-          end
-        else
-          puts "AI: #{move_str} (depth=#{depth}, eval=#{result.evaluation}, time=#{result.time_ms})"
-        end
-      end
+      apply_ai_move(best_move, "AI: #{best_move} (depth=#{depth}, eval=#{result.evaluation}, time=#{result.time_ms})")
     else
       puts "ERROR: No legal moves"
+    end
+  end
+
+  private def choose_book_move(legal_moves : Array(Move)) : Move?
+    @book_lookups += 1
+
+    unless @book_enabled && @book_entry_count > 0
+      @book_misses += 1
+      return nil
+    end
+
+    key = Book.position_key_from_fen(FEN.export(@game_state))
+    entries = @book_entries[key]?
+    if entries.nil? || entries.empty?
+      @book_misses += 1
+      return nil
+    end
+
+    best_move = nil
+    best_weight = Int32::MIN
+    best_move_str = nil
+
+    entries.each do |entry|
+      move = resolve_move(entry.move, legal_moves)
+      next unless move
+
+      if best_move.nil? || entry.weight > best_weight || (entry.weight == best_weight && entry.move < best_move_str.not_nil!)
+        best_move = move
+        best_weight = entry.weight
+        best_move_str = entry.move
+      end
+    end
+
+    if best_move
+      @book_hits += 1
+      best_move
+    else
+      @book_misses += 1
+      nil
+    end
+  end
+
+  private def resolve_move(move_str : String, legal_moves : Array(Move)? = nil) : Move?
+    return nil unless move_pattern?(move_str)
+
+    from_square = algebraic_to_square(move_str[0..1])
+    to_square = algebraic_to_square(move_str[2..3])
+    return nil unless from_square && to_square
+
+    candidate_moves = legal_moves || @move_generator.get_legal_moves(@game_state, @game_state.turn)
+    matching_moves = candidate_moves.select do |move|
+      move.from == from_square && move.to == to_square
+    end
+
+    return nil if matching_moves.empty?
+
+    if move_str.size == 5
+      promotion_type = PieceType.from_char(move_str[4].upcase)
+      matching_moves.find { |move| move.promotion == promotion_type }
+    else
+      matching_moves.first?
+    end
+  end
+
+  private def apply_ai_move(best_move : Move, success_message : String)
+    move_str = best_move.to_s
+    @game_state = Board.make_move(@game_state, best_move)
+
+    over, message = Board.is_game_over(@game_state)
+    if over
+      puts "AI: #{move_str} (#{message})"
+      return
+    end
+
+    next_moves = @move_generator.get_legal_moves(@game_state, @game_state.turn)
+    if next_moves.empty?
+      if @move_generator.in_check?(@game_state, @game_state.turn)
+        puts "AI: #{move_str} (CHECKMATE)"
+      else
+        puts "AI: #{move_str} (STALEMATE)"
+      end
+    else
+      puts success_message
     end
   end
 
@@ -410,6 +545,7 @@ draws - Show draw status
 new960 [id] - Start Chess960 position (0-959)
 position960 - Show current Chess960 metadata
 pgn load|show|moves - PGN command family
+book load|on|off|stats - Opening book command family
 display - Display the board
 quit - Exit program
 HELP
