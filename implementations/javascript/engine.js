@@ -84,6 +84,39 @@ export class ChessEngine {
     }
 
     /**
+     * @param {GameState} [state]
+     * @returns {string}
+     */
+    getPositionKey(state = this.state) {
+        let fen = '';
+        for (let r = 0; r < 8; r++) {
+            let empty = 0;
+            for (let c = 0; c < 8; c++) {
+                const piece = state.board[r * 8 + c];
+                if (piece) {
+                    if (empty > 0) {
+                        fen += empty;
+                        empty = 0;
+                    }
+                    fen += piece.color === 'w' ? piece.type.toUpperCase() : piece.type;
+                } else {
+                    empty++;
+                }
+            }
+            if (empty > 0) fen += empty;
+            if (r < 7) fen += '/';
+        }
+
+        const castling = (state.castling.wK ? 'K' : '') +
+                         (state.castling.wQ ? 'Q' : '') +
+                         (state.castling.bK ? 'k' : '') +
+                         (state.castling.bQ ? 'q' : '') || '-';
+
+        const ep = state.enPassant === null ? '-' : this.indexToAlgebraic(state.enPassant);
+        return `${fen} ${state.turn} ${castling} ${ep}`;
+    }
+
+    /**
      * @param {string} square
      * @returns {number}
      */
@@ -330,8 +363,9 @@ export class ChessEngine {
 
         const target = this.state.board[move.to];
         let nextEp = null;
+        const isPawnMove = piece.type === 'p';
 
-        if (piece.type === 'p') {
+        if (isPawnMove) {
             if (move.to === this.state.enPassant) {
                 const dir = piece.color === 'w' ? 1 : -1;
                 this.state.board[move.to + dir * 8] = null;
@@ -365,7 +399,7 @@ export class ChessEngine {
         this.state.board[move.to] = piece;
         this.state.board[move.from] = null;
         this.state.enPassant = nextEp;
-        if (piece.type === 'p' || target) this.state.halfmoveClock = 0;
+        if (isPawnMove || target) this.state.halfmoveClock = 0;
         else this.state.halfmoveClock++;
         if (this.state.turn === 'b') this.state.fullmoveNumber++;
         this.state.turn = this.state.turn === 'w' ? 'b' : 'w';
@@ -378,6 +412,40 @@ export class ChessEngine {
                 this.state = previousState;
             }
         }
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    isDrawByFiftyMoves() {
+        return this.state.halfmoveClock >= 100;
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    isDrawByRepetition() {
+        const currentKey = this.getPositionKey();
+        let count = 1;
+        const startIdx = Math.max(0, this.history.length - this.state.halfmoveClock);
+
+        for (let i = this.history.length - 1; i >= startIdx; i--) {
+            if (this.getPositionKey(this.history[i]) === currentKey) {
+                count++;
+                if (count >= 3) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @returns {string | null}
+     */
+    getDrawInfo() {
+        if (this.isDrawByFiftyMoves()) return '50-MOVE RULE';
+        if (this.isDrawByRepetition()) return 'REPETITION';
+        return null;
     }
 
     /**

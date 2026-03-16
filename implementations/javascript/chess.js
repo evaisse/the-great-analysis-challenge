@@ -171,7 +171,12 @@ rl.on('line', (line) => {
                 if (legalMove) {
                     engine.makeMove(legalMove);
                     printBoard();
-                    process.stdout.write(`OK: ${parts[1]}\n`);
+                    const drawInfo = engine.getDrawInfo();
+                    if (drawInfo) {
+                        process.stdout.write(`DRAW: ${drawInfo}\n`);
+                    } else {
+                        process.stdout.write(`OK: ${parts[1]}\n`);
+                    }
                 } else {
                     process.stdout.write('ERROR: Illegal move\n');
                 }
@@ -200,7 +205,12 @@ rl.on('line', (line) => {
                 if (result.move.promotion) moveStr += result.move.promotion.toUpperCase();
                 engine.makeMove(result.move);
                 printBoard();
-                process.stdout.write(`AI: ${moveStr} (depth=${depth}, eval=${result.score}, time=${Date.now() - start})\n`);
+                const drawInfo = engine.getDrawInfo();
+                if (drawInfo) {
+                    process.stdout.write(`AI: ${moveStr} (DRAW: ${drawInfo})\n`);
+                } else {
+                    process.stdout.write(`AI: ${moveStr} (depth=${depth}, eval=${result.score}, time=${Date.now() - start})\n`);
+                }
             }
             break;
         case 'status':
@@ -211,6 +221,8 @@ rl.on('line', (line) => {
                 } else {
                     process.stdout.write('STALEMATE: Draw\n');
                 }
+            } else if (engine.getDrawInfo()) {
+                process.stdout.write(`DRAW: ${engine.getDrawInfo()}\n`);
             } else {
                 process.stdout.write('OK: ONGOING\n');
             }
