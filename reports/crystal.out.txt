@@ -15,7 +15,7 @@ Path: implementations/crystal
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-crystal .
-  ✅ Docker build completed in 0.55s
+  ✅ Docker build completed in 0.67s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,26 +27,26 @@ Path: implementations/crystal
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 13:04:40
+Generated: 2026-03-16 14:23:30
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-crystal      completed  9441       1692     1.4s/247MB         1.0s/194MB         2.5s/526MB         9.8s/62MB                 1/1              5/16              
+crystal      completed  9441       1692     1.3s/249MB         1.0s/195MB         2.4s/527MB         9.8s/62MB                 1/1              5/16              
 
 ============================================================
 DETAILED RESULTS: CRYSTAL
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.55s
-  make build: 1.37s
-  make analyze: 1.02s
-  make test: 2.48s
+  docker build image: 0.67s
+  make build: 1.30s
+  make analyze: 0.95s
+  make test: 2.41s
   make test-chess-engine: 9.84s
-  make test (internal mirror): 2.48s
+  make test (internal mirror): 2.41s
   test v2 full seconds: 9.84s
 
 SOURCE SIZE:
@@ -54,26 +54,26 @@ SOURCE SIZE:
   TOKENS (tokens-v2): 9441
 
 NORMALIZED METRICS:
-  Build: 808.44 ms/KLOC
-  Analyze: 600.02 ms/KLOC
-  Runtime: 1468.39 ms/KLOC
+  Build: 768.59 ms/KLOC
+  Analyze: 563.06 ms/KLOC
+  Runtime: 1424.54 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 117.2MB, Avg 99.3MB
-  Build: Peak 247.5MB, Avg 0.0MB
-  Analyze: Peak 193.7MB, Avg 0.0MB
-  Test: Peak 526.2MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.7MB, Avg 59.7MB
+  Image: Peak 113.8MB, Avg 100.9MB
+  Build: Peak 248.9MB, Avg 0.0MB
+  Analyze: Peak 194.7MB, Avg 0.0MB
+  Test: Peak 527.5MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.9MB, Avg 59.9MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.55s)
-  make build: ✅ (1.37s)
-  make analyze: ✅ (1.02s)
-  make test: ✅ (2.48s)
+  Image build: ✅ (0.67s)
+  make build: ✅ (1.30s)
+  make analyze: ✅ (0.95s)
+  make test: ✅ (2.41s)
   make test-chess-engine (track=v2-full): ❌ (9.84s)
   make test score: 1/1
   make test-chess-engine score: 5/16

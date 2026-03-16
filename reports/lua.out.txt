@@ -15,18 +15,18 @@ Path: implementations/lua
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-lua .
-  ✅ Docker build completed in 0.36s
+  ✅ Docker build completed in 0.32s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ✅ All Docker tests passed (image: 0.4s, make build: skipped, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 10.9s)
+  ✅ All Docker tests passed (image: 0.3s, make build: skipped, make analyze: 0.2s, make test: 0.2s, make test-chess-engine: 10.9s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 13:04:08
+Generated: 2026-03-16 14:23:02
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -40,12 +40,12 @@ DETAILED RESULTS: LUA
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.36s
+  docker build image: 0.32s
   make analyze: 0.19s
-  make test: 0.19s
-  make test-chess-engine: 10.86s
-  make test (internal mirror): 0.19s
-  test v2 full seconds: 10.86s
+  make test: 0.18s
+  make test-chess-engine: 10.85s
+  make test (internal mirror): 0.18s
+  test v2 full seconds: 10.85s
 
 SOURCE SIZE:
   Source LOC: 2884 (files: 1)
@@ -53,24 +53,24 @@ SOURCE SIZE:
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 65.11 ms/KLOC
-  Runtime: 65.71 ms/KLOC
+  Analyze: 66.03 ms/KLOC
+  Runtime: 61.32 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 111.5MB, Avg 91.2MB
+  Image: Peak 112.8MB, Avg 67.7MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 7.0MB, Avg 0.0MB
-  Test: Peak 7.4MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.5MB, Avg 60.7MB
+  Analyze: Peak 6.6MB, Avg 0.0MB
+  Test: Peak 7.1MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.4MB, Avg 60.6MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.36s)
+  Image build: ✅ (0.32s)
   make build: ⏭️ skipped
   make analyze: ✅ (0.19s)
-  make test: ✅ (0.19s)
-  make test-chess-engine (track=v2-full): ✅ (10.86s)
+  make test: ✅ (0.18s)
+  make test-chess-engine (track=v2-full): ✅ (10.85s)
   make test score: 1/1
   make test-chess-engine score: 16/16
 
