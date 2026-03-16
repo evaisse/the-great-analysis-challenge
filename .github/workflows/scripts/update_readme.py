@@ -85,13 +85,6 @@ FEATURE_CATALOG: List[str] = [
     "chess960",
 ]
 
-BENCHMARK_STEPS = [
-    ("make build", "build_seconds"),
-    ("make analyze", "analyze_seconds"),
-    ("make test", "test_seconds"),
-    ("make test-chess-engine", "test_chess_engine_seconds"),
-]
-
 def find_project_root():
     """Find the project root directory."""
     current_dir = os.getcwd()
@@ -249,7 +242,7 @@ def _normalize_feature_name(feature: str) -> str:
     return feature.strip().lower().replace('-', '_').replace(' ', '_')
 
 def format_feature_summary(meta: Dict[str, Any]) -> str:
-    """Render features as labels with completion ratio against the catalog."""
+    """Render feature completion as a compact implemented/total ratio."""
     raw_features = meta.get('features', [])
     if not isinstance(raw_features, list):
         raw_features = []
@@ -268,22 +261,7 @@ def format_feature_summary(meta: Dict[str, Any]) -> str:
 
     matched_count = sum(1 for feature in normalized_features if feature in catalog_set)
     total_count = len(normalized_catalog)
-    completion_pct = int(round((matched_count / total_count) * 100)) if total_count > 0 else 0
-
-    # Show catalog features in canonical order first, then unknown extras.
-    feature_labels: List[str] = []
-    for catalog_feature in normalized_catalog:
-        if catalog_feature in normalized_seen:
-            feature_labels.append(catalog_feature)
-    for feature in normalized_features:
-        if feature not in catalog_set:
-            feature_labels.append(feature)
-
-    if feature_labels:
-        labels = " ".join(f"`{feature}`" for feature in feature_labels)
-        return f"{matched_count}/{total_count} ({completion_pct}%) {labels}"
-
-    return f"0/{total_count} (0%) -"
+    return f"{matched_count}/{total_count}"
 
 def load_performance_data():
     """Load performance benchmark data from individual files"""
@@ -440,76 +418,6 @@ def resolve_test_chess_engine_seconds(impl_data: Dict[str, Any]) -> Optional[flo
 
     return test_chess_engine_step
 
-def _build_relative_bar(seconds: float, best_seconds: float, width: int = 20) -> str:
-    """Build a normalized ASCII bar where fastest score uses full width."""
-    if seconds is None or seconds <= 0 or best_seconds is None or best_seconds <= 0:
-        return ""
-    ratio = best_seconds / seconds
-    ratio = max(0.0, min(1.0, ratio))
-    bar_len = max(1, int(round(ratio * width)))
-    return "#" * bar_len
-
-def build_speed_chart(combined_data: Dict[str, Dict[str, Any]], languages: List[str]) -> str:
-    """Render markdown speed charts for benchmark steps."""
-    lines: List[str] = []
-    lines.append("Lower is better. Bars are normalized per step (`####################` = fastest).")
-    lines.append("")
-
-    for step_label, timing_key in BENCHMARK_STEPS:
-        entries: List[tuple] = []
-        for language in languages:
-            impl_data = combined_data.get(language, {})
-            timings = impl_data.get('timings', {})
-            if not isinstance(timings, dict):
-                continue
-            if timing_key == "test_chess_engine_seconds":
-                seconds = resolve_test_chess_engine_seconds(impl_data)
-            else:
-                seconds = timings.get(timing_key)
-
-            if seconds is None:
-                continue
-            try:
-                value = float(seconds)
-            except (TypeError, ValueError):
-                continue
-            if value < 0:
-                continue
-            entries.append((language, value))
-
-        lines.append(f"#### `{step_label}`")
-        if not entries:
-            lines.append("No benchmark data available.")
-            lines.append("")
-            continue
-
-        entries.sort(key=lambda item: (item[1], item[0]))
-        top_entries = entries[:5]
-        best = top_entries[0][1]
-
-        lines.append("| Rank | Implementation | Time | Chart |")
-        lines.append("|------|----------------|------|-------|")
-        for idx, (language, seconds) in enumerate(top_entries, 1):
-            lang_emoji = CUSTOM_EMOJIS.get(language, '📦')
-            lang_label = f"{lang_emoji} {language.title()}"
-            lines.append(
-                f"| {idx} | {lang_label} | {format_time(seconds)} | `{_build_relative_bar(seconds, best)}` |"
-            )
-        lines.append("")
-
-    return "\n".join(lines).rstrip()
-
-def format_score(score: Dict[str, Any], success_fallback: Optional[bool] = None) -> str:
-    """Format score dictionaries as passed/total."""
-    if isinstance(score, dict):
-        total = int(score.get("total", 0) or 0)
-        if total > 0:
-            passed = int(score.get("passed", 0) or 0)
-            return f"{passed}/{total}"
-    if success_fallback is None:
-        return "-"
-    return "1/1" if success_fallback else "0/1"
-
 def get_verification_status():
     """Get current verification status by running verify_implementations.py"""
     try:
@@ -630,26 +538,8 @@ def update_readme() -> bool:
             make_test_disp = format_step_metric(test_step, test_memory)
             make_test_chess_engine_disp = format_step_metric(test_chess_engine_step, test_chess_engine_memory)
 
-            # Scores
-            scores = impl_data.get('scores', {})
-            task_results = impl_data.get('task_results', {})
-            make_test_score = format_score(
-                scores.get('make_test', {}) if isinstance(scores, dict) else {},
-                success_fallback=(
-                    (bool(task_results.get('make_test', False)) if isinstance(task_results, dict) else False)
-                    or bool(impl_data.get('status') == 'completed' and test_step is not None)
-                ),
-            )
-            make_test_chess_engine_score = format_score(
-                scores.get('make_test_chess_engine', {}) if isinstance(scores, dict) else {},
-                success_fallback=(
-                    (bool(task_results.get('make_test_chess_engine', False)) if isinstance(task_results, dict) else False)
-                    or bool(impl_data.get('status') == 'completed' and test_chess_engine_step is not None)
-                ) if test_chess_engine_step is not None else None,
-            )
-
-            # Features
-            feature_summary = format_feature_summary(meta)
+            # Status + features
+            feature_summary = f"{emoji} {format_feature_summary(meta)}"
             
             lang_name = f"{lang_emoji} {language.title()}"
             tokens_display = "-"
@@ -660,19 +550,17 @@ def update_readme() -> bool:
                 tokens_display = f"[{format_grouped_int(tokens_count)}]({entrypoint_repo_path.as_posix()})"
 
             table_rows.append(
-                f"| {lang_name} | {emoji} | {tokens_display} | "
+                f"| {lang_name} | {tokens_display} | "
                 f"{make_build_disp} | {make_analyze_disp} | {make_test_disp} | {make_test_chess_engine_disp} | "
-                f"{make_test_score} | {make_test_chess_engine_score} | {feature_summary} |"
+                f"{feature_summary} |"
             )
         
         # Create table content
         table_header = """
-| Language | Status | TOKENS | make build | make analyze | make test | make test-chess-engine | make test score | make test-chess-engine score | Features |
-|----------|--------|--------|------------|--------------|-----------|------------------------|-----------------|------------------------------|----------|"""
+| Language | TOKENS | make build | make analyze | make test | make test-chess-engine | Features |
+|----------|--------|------------|--------------|-----------|------------------------|----------|"""
         
         new_table = table_header + "\n" + "\n".join(table_rows)
-        speed_chart = build_speed_chart(combined_data, sorted(all_languages))
-        
         readme_path = os.path.join(project_root, "README.md")
         
         if os.path.exists(readme_path):
@@ -686,16 +574,10 @@ def update_readme() -> bool:
             if "<!-- status-table-start -->" not in content:
                 print("⚠️ Warning: README doesn't contain status table markers")
                 return False
-            if "<!-- speed-chart-start -->" not in content or "<!-- speed-chart-end -->" not in content:
-                print("⚠️ Warning: README doesn't contain speed chart markers")
-                return False
 
             pattern = r'(<!-- status-table-start -->).*?(<!-- status-table-end -->)'
             replacement = f'\\1\n{new_table}\n\\2'
             new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
-            chart_pattern = r'(<!-- speed-chart-start -->).*?(<!-- speed-chart-end -->)'
-            chart_replacement = f'\\1\n{speed_chart}\n\\2'
-            new_content = re.sub(chart_pattern, chart_replacement, new_content, flags=re.DOTALL)
             
             if new_content == content:
                 print("⚠️ No changes detected in README content")
