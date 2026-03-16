@@ -15,37 +15,37 @@ Path: implementations/php
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-php .
-  ✅ Docker build completed in 0.49s
+  ✅ Docker build completed in 0.43s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ✅ All Docker tests passed (image: 0.5s, make build: skipped, make analyze: 0.4s, make test: 0.2s, make test-chess-engine: 13.7s)
+  ✅ All Docker tests passed (image: 0.4s, make build: skipped, make analyze: 0.3s, make test: 0.2s, make test-chess-engine: 13.6s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-15 18:42:42
+Generated: 2026-03-16 11:40:44
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-php          completed  26871      3435     -/-MB              0.4s/9MB           0.2s/9MB           13.7s/62MB                1/1              16/16             
+php          completed  26871      3435     -/-MB              0.3s/9MB           0.2s/9MB           13.6s/63MB                1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: PHP
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.49s
-  make analyze: 0.36s
+  docker build image: 0.43s
+  make analyze: 0.34s
   make test: 0.21s
-  make test-chess-engine: 13.68s
+  make test-chess-engine: 13.62s
   make test (internal mirror): 0.21s
-  test v2 full seconds: 13.68s
+  test v2 full seconds: 13.62s
 
 SOURCE SIZE:
   Source LOC: 3435 (files: 10)
@@ -53,24 +53,24 @@ SOURCE SIZE:
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 103.86 ms/KLOC
-  Runtime: 62.53 ms/KLOC
+  Analyze: 100.41 ms/KLOC
+  Runtime: 60.97 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 116.5MB, Avg 98.0MB
+  Image: Peak 114.6MB, Avg 78.0MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 8.7MB, Avg 0.0MB
-  Test: Peak 9.1MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.3MB, Avg 60.9MB
+  Analyze: Peak 9.1MB, Avg 0.0MB
+  Test: Peak 8.9MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.6MB, Avg 61.2MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.49s)
+  Image build: ✅ (0.43s)
   make build: ⏭️ skipped
-  make analyze: ✅ (0.36s)
+  make analyze: ✅ (0.34s)
   make test: ✅ (0.21s)
-  make test-chess-engine (track=v2-full): ✅ (13.68s)
+  make test-chess-engine (track=v2-full): ✅ (13.62s)
   make test score: 1/1
   make test-chess-engine score: 16/16
 
