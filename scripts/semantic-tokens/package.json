@@ -1,0 +1,13 @@
+{
+  "name": "semantic-tokens",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Semantic token counting for chess engine implementations using Shiki",
+  "scripts": {
+    "analyze": "node semantic_tokens.mjs"
+  },
+  "dependencies": {
+    "shiki": "^3.0.0"
+  }
+}
