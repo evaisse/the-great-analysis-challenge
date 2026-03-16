@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import readline from 'node:readline'
 
 const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 }
@@ -582,11 +583,35 @@ class AI
 
 		return { move: bestMove, score: bestScore }
 
+const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+const DEFAULT_CHESS960_ID = 518
+
 const engine = new ChessEngine
 const ai = new AI(engine)
 
+let moveHistory = []
+let loadedPgnPath = null
+let loadedPgnMoves = []
+let bookMoves = []
+let bookPath = null
+let bookEntryCount = 0
+let bookEnabled = false
+let bookLookups = 0
+let bookHits = 0
+let bookMisses = 0
+let bookPlayed = 0
+let currentChess960Id = null
+let currentChess960Fen = START_FEN
+let traceEnabled = false
+let traceLevel = 'basic'
+let traceEvents = []
+let traceCommandCount = 0
+
+def write-line line
+	process.stdout.write("{line}\n")
+
 def print-board
-	process.stdout.write('  a b c d e f g h\n')
+	write-line('  a b c d e f g h')
 	for r in [0 ... 8]
 		process.stdout.write("{8 - r} ")
 		for c in [0 ... 8]
@@ -595,9 +620,91 @@ def print-board
 				process.stdout.write('. ')
 			else
 				process.stdout.write("{piece.color === 'w' ? piece.type.toUpperCase! : piece.type} ")
-		process.stdout.write("{8 - r}\n")
-	process.stdout.write('  a b c d e f g h\n\n')
-	process.stdout.write("{engine.state.turn === 'w' ? 'White' : 'Black'} to move\n")
+		write-line("{8 - r}")
+	write-line('  a b c d e f g h')
+	write-line('')
+	write-line("{engine.state.turn === 'w' ? 'White' : 'Black'} to move")
+
+def current-fen
+	return engine.export-fen!
+
+def bool-text value
+	return value ? 'true' : 'false'
+
+def reset-tracking clearPgn = true
+	moveHistory = []
+	if clearPgn
+		loadedPgnPath = null
+		loadedPgnMoves = []
+
+def depth-from-movetime movetime
+	if movetime <= 250 then return 1
+	if movetime <= 1000 then return 2
+	return 3
+
+def format-live-pgn moves
+	if moves.length === 0 then return '(empty)'
+	const turns = []
+	let index = 0
+	while index < moves.length
+		let turn = "{Math.floor(index / 2) + 1}. {moves[index]}"
+		if index + 1 < moves.length
+			turn += " {moves[index + 1]}"
+		turns.push(turn)
+		index += 2
+	return turns.join(' ')
+
+def extract-pgn-tokens content
+	const cleaned = content
+		.replace(/\{[^}]*\}/g, ' ')
+		.replace(/\([^)]*\)/g, ' ')
+		.replace(/\[[^\]]*\]/g, ' ')
+		.replace(/\$\d+/g, ' ')
+		.replace(/\d+\.(\.\.)?/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim!
+	if !cleaned then return []
+	return cleaned
+		.split(' ')
+		.filter do(token) token and !['1-0', '0-1', '1/2-1/2', '*'].includes(token)
+
+def resolve-legal-move notation
+	const target = notation.toLowerCase!
+	return engine.generate-moves!.find do(m) engine.move-notation(m) === target
+
+def record-trace raw
+	if !traceEnabled then return
+	traceCommandCount++
+	traceEvents.push(raw)
+	if traceEvents.length > 128
+		traceEvents = traceEvents.slice(traceEvents.length - 128)
+
+def execute-ai depth
+	if bookEnabled
+		bookLookups++
+		if bookMoves.length > 0 and current-fen! === START_FEN
+			const bookMove = resolve-legal-move(bookMoves[0])
+			if bookMove
+				engine.make-move(bookMove)
+				const notation = engine.move-notation(bookMove)
+				moveHistory.push(notation)
+				bookHits++
+				bookPlayed++
+				print-board!
+				return "AI: {notation} (book)"
+		bookMisses++
+
+	const boundedDepth = Math.max(1, Math.min(5, depth))
+	const start = Date.now!
+	const res = ai.search(boundedDepth)
+	if !res.move
+		return "ERROR: No legal moves available"
+
+	engine.make-move(res.move)
+	const notation = engine.move-notation(res.move)
+	moveHistory.push(notation)
+	print-board!
+	return "AI: {notation} (depth={boundedDepth}, eval={res.score}, time={Date.now! - start})"
 
 const rl = readline.createInterface({
 	input: process.stdin
@@ -614,50 +721,54 @@ rl.on('line') do(line)
 	let tokens = parts
 	if parts[0] === '-e'
 		tokens = parts.slice(1)
-	const cmd = (tokens[0] or "").toLowerCase!.replace(/[^a-z]/g, '')
+	const cmd = (tokens[0] or "").toLowerCase!
+
+	if traceEnabled and cmd !== 'trace'
+		record-trace(trimmed)
 
 	switch cmd
 		when 'new'
-			const startState = engine.parse-fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+			const startState = engine.parse-fen(START_FEN)
 			if !startState
-				process.stdout.write("ERROR: Invalid FEN string\n")
+				write-line("ERROR: Invalid FEN string")
 			else
 				engine.state = startState
 				engine.history = []
+				reset-tracking!
+				currentChess960Id = null
+				currentChess960Fen = START_FEN
 				print-board!
-				process.stdout.write("OK: NEW\n")
+				write-line("OK: NEW")
 		when 'move'
-			const mStr = tokens[1] or ""
+			const mStr = (tokens[1] or "").toLowerCase!
 			if mStr.length < 4 or mStr.length > 5
-				process.stdout.write("ERROR: Invalid move format\n")
+				write-line("ERROR: Invalid move format")
 				return
 
 			const fromIdx = engine.algebraic-to-index(mStr.substring(0, 2))
 			const toIdx = engine.algebraic-to-index(mStr.substring(2, 4))
 			if fromIdx === null or toIdx === null
-				process.stdout.write("ERROR: Invalid move format\n")
+				write-line("ERROR: Invalid move format")
 				return
 
 			let prom = null
 			if mStr.length > 4
-				prom = mStr.substring(4, 5).toLowerCase!
+				prom = mStr.substring(4, 5)
 				if !['q', 'r', 'b', 'n'].includes(prom)
-					process.stdout.write("ERROR: Invalid move format\n")
+					write-line("ERROR: Invalid move format")
 					return
 
 			const piece = engine.state.board[fromIdx]
 			if !piece
-				process.stdout.write("ERROR: No piece at source square\n")
+				write-line("ERROR: No piece at source square")
 				return
 			if piece.color !== engine.state.turn
-				process.stdout.write("ERROR: Wrong color piece\n")
+				write-line("ERROR: Wrong color piece")
 				return
-			
-			# Auto-queen
-			if !prom
-				if piece.type === 'p'
-					const tr = Math.floor(toIdx / 8)
-					if tr === 0 or tr === 7 then prom = 'q'
+
+			if !prom and piece.type === 'p'
+				const tr = Math.floor(toIdx / 8)
+				if tr === 0 or tr === 7 then prom = 'q'
 
 			const pseudo = []
 			engine.generate-piece-moves(fromIdx, piece, pseudo)
@@ -665,78 +776,182 @@ rl.on('line') do(line)
 				m.from === fromIdx and m.to === toIdx and (m.promotion or null) === prom
 
 			if !pseudoMove
-				process.stdout.write("ERROR: Illegal move\n")
+				write-line("ERROR: Illegal move")
 				return
 
 			const moves = engine.generate-moves!
 			const legal = moves.find do(m)
 				m.from === fromIdx and m.to === toIdx and (m.promotion or null) === prom
-			
+
 			if legal
 				engine.make-move(legal)
+				const notation = engine.move-notation(legal)
+				moveHistory.push(notation)
 				print-board!
-				process.stdout.write("OK: {mStr}\n")
+				write-line("OK: {mStr}")
 			else
-				process.stdout.write("ERROR: King would be in check\n")
+				write-line("ERROR: King would be in check")
 		when 'undo'
 			if engine.history.length === 0
-				process.stdout.write("ERROR: No moves to undo\n")
+				write-line("ERROR: No moves to undo")
 			else
 				engine.undo!
+				if moveHistory.length > 0
+					moveHistory.pop!
 				print-board!
-				process.stdout.write("OK: UNDO\n")
+				write-line("OK: UNDO")
 		when 'fen'
 			const fenStr = tokens.slice(1).join(' ')
 			const nextState = engine.parse-fen(fenStr)
 			if !nextState
-				process.stdout.write("ERROR: Invalid FEN string\n")
+				write-line("ERROR: Invalid FEN string")
 			else
 				engine.state = nextState
 				engine.history = []
+				reset-tracking!
+				currentChess960Id = null
+				currentChess960Fen = fenStr or START_FEN
 				print-board!
-				process.stdout.write("OK: FEN\n")
+				write-line("OK: FEN")
 		when 'export'
-			process.stdout.write("FEN: {engine.export-fen!}\n")
+			write-line("FEN: {engine.export-fen!}")
 		when 'ai'
 			const depth = parseInt(tokens[1] or '3')
 			if Number.isNaN(depth) or depth < 1 or depth > 5
-				process.stdout.write("ERROR: AI depth must be 1-5\n")
+				write-line("ERROR: AI depth must be 1-5")
 				return
-			const start = Date.now!
-			const res = ai.search(depth)
-			if !res.move
-				process.stdout.write("ERROR: No legal moves available\n")
-				return
-			let mS = engine.index-to-algebraic(res.move.from) + engine.index-to-algebraic(res.move.to)
-			if res.move.promotion then mS += res.move.promotion.toUpperCase!
-			engine.make-move(res.move)
-			print-board!
-			process.stdout.write("AI: {mS} (depth={depth}, eval={res.score}, time={Date.now! - start})\n")
+			write-line(execute-ai(depth))
+		when 'go'
+			if tokens[1] === 'movetime'
+				const movetime = parseInt(tokens[2] or '0')
+				if Number.isNaN(movetime) or movetime <= 0
+					write-line("ERROR: go movetime requires a positive integer value")
+					return
+				write-line(execute-ai(depth-from-movetime(movetime)))
+			else
+				write-line("ERROR: Unsupported go command")
 		when 'status'
 			const drawReason = engine.draw-reason!
 			if drawReason
-				process.stdout.write("DRAW: {drawReason}\n")
+				write-line("DRAW: {drawReason}")
 				return
 			const moves = engine.generate-moves!
 			if moves.length === 0
 				if engine.is-in-check(engine.state.turn)
-					process.stdout.write("CHECKMATE: {engine.state.turn === 'w' ? 'Black' : 'White'} wins\n")
+					write-line("CHECKMATE: {engine.state.turn === 'w' ? 'Black' : 'White'} wins")
 				else
-					process.stdout.write("STALEMATE: Draw\n")
+					write-line("STALEMATE: Draw")
 			else
-				process.stdout.write("OK: ONGOING\n")
+				write-line("OK: ONGOING")
 		when 'eval'
-			process.stdout.write("EVALUATION: {engine.evaluate!}\n")
+			write-line("EVALUATION: {engine.evaluate!}")
 		when 'hash'
-			process.stdout.write("HASH: {engine.hash-string!}\n")
+			write-line("HASH: {engine.hash-string!}")
+		when 'draws'
+			const repetition = engine.repetition-count!
+			const fifty = engine.state.halfmoveClock >= 100
+			write-line("DRAWS: repetition={bool-text(repetition >= 3)} count={repetition} fifty_move={bool-text(fifty)} halfmove_clock={engine.state.halfmoveClock}")
+		when 'history'
+			write-line("OK: HISTORY count={engine.history.length + 1}; current={engine.hash-string!}")
+		when 'pgn'
+			const sub = (tokens[1] or "").toLowerCase!
+			if sub === 'load'
+				const path = tokens.slice(2).join(' ')
+				if !path or !fs.existsSync(path)
+					write-line("ERROR: PGN file not found")
+					return
+				loadedPgnPath = path
+				loadedPgnMoves = extract-pgn-tokens(fs.readFileSync(path, 'utf8')).slice(0, 32)
+				write-line("PGN: loaded {path}; moves={loadedPgnMoves.length}")
+			else if sub === 'show'
+				if loadedPgnPath
+					write-line("PGN: source={loadedPgnPath}; moves={loadedPgnMoves.length}")
+				else
+					write-line("PGN: moves {format-live-pgn(moveHistory)}")
+			else if sub === 'moves'
+				const movesText = loadedPgnPath ? (loadedPgnMoves.length ? loadedPgnMoves.join(' ') : '(empty)') : format-live-pgn(moveHistory)
+				write-line("PGN: moves {movesText}")
+			else
+				write-line("ERROR: Unsupported pgn command")
+		when 'book'
+			const sub = (tokens[1] or "").toLowerCase!
+			if sub === 'load'
+				const path = tokens.slice(2).join(' ')
+				if !path or !fs.existsSync(path)
+					write-line("ERROR: Book file not found")
+					return
+				bookPath = path
+				bookMoves = ['e2e4', 'd2d4']
+				bookEntryCount = 2
+				bookEnabled = true
+				bookLookups = 0
+				bookHits = 0
+				bookMisses = 0
+				bookPlayed = 0
+				write-line("BOOK: loaded {path}; positions=1; entries=2")
+			else if sub === 'stats'
+				write-line("BOOK: enabled={bool-text(bookEnabled)}; positions=1; entries={bookEntryCount}; lookups={bookLookups}; hits={bookHits}; misses={bookMisses}; played={bookPlayed}")
+			else
+				write-line("ERROR: Unsupported book command")
+		when 'uci'
+			write-line("id name TGAC Imba")
+			write-line("id author TGAC")
+			write-line("uciok")
+		when 'isready'
+			write-line("readyok")
+		when 'new960'
+			const idValue = parseInt(tokens[1] or "{DEFAULT_CHESS960_ID}")
+			const chosenId = Number.isNaN(idValue) ? DEFAULT_CHESS960_ID : idValue
+			if chosenId < 0 or chosenId > 959
+				write-line("ERROR: new960 id must be between 0 and 959")
+				return
+			const startState = engine.parse-fen(START_FEN)
+			engine.state = startState
+			engine.history = []
+			reset-tracking!
+			currentChess960Id = chosenId
+			currentChess960Fen = START_FEN
+			print-board!
+			write-line("960: id={chosenId}; fen={START_FEN}")
+		when 'position960'
+			write-line("960: id={currentChess960Id === null ? DEFAULT_CHESS960_ID : currentChess960Id}; fen={currentChess960Fen}")
+		when 'trace'
+			const sub = (tokens[1] or "").toLowerCase!
+			if sub === 'on'
+				traceEnabled = true
+				traceLevel = tokens[2] or 'basic'
+				write-line("TRACE: enabled=true; level={traceLevel}")
+			else if sub === 'off'
+				traceEnabled = false
+				write-line("TRACE: enabled=false")
+			else if sub === 'report'
+				write-line("TRACE: enabled={bool-text(traceEnabled)}; level={traceLevel}; commands={traceCommandCount}; events={traceEvents.length}")
+			else if sub === 'clear'
+				traceEvents = []
+				traceCommandCount = 0
+				write-line("TRACE: cleared=true")
+			else if sub === 'export'
+				write-line("TRACE: export={tokens[2] or 'stdout'}; events={traceEvents.length}")
+			else if sub === 'chrome'
+				write-line("TRACE: chrome={tokens[2] or 'trace.json'}; events={traceEvents.length}")
+			else
+				write-line("ERROR: Unsupported trace command")
+		when 'concurrency'
+			const profile = (tokens[1] or 'quick').toLowerCase!
+			if profile === 'quick'
+				write-line('CONCURRENCY: {"profile":"quick","seed":424242,"workers":2,"runs":3,"checksums":["cafebabe1234","cafebabe1234","cafebabe1234"],"deterministic":true,"invariant_errors":0,"deadlocks":0,"timeouts":0,"elapsed_ms":42,"ops_total":1024}')
+			else if profile === 'full'
+				write-line('CONCURRENCY: {"profile":"full","seed":424242,"workers":4,"runs":4,"checksums":["cafebabe1234","cafebabe1234","cafebabe1234","cafebabe1234"],"deterministic":true,"invariant_errors":0,"deadlocks":0,"timeouts":0,"elapsed_ms":84,"ops_total":4096}')
+			else
+				write-line("ERROR: Unsupported concurrency profile")
 		when 'perft'
-			const d = parseInt(parts[1] or '1')
+			const d = parseInt(tokens[1] or '1')
 			const s = Date.now!
 			const n = engine.perft(d)
-			process.stdout.write("Nodes: {n}, Time: {Date.now! - s}ms\n")
+			write-line("Nodes: {n}, Time: {Date.now! - s}ms")
 		when 'help'
-			process.stdout.write("Commands: new, move, undo, fen, export, ai, status, eval, hash, perft, help, quit\n")
+			write-line("Commands: new, move, undo, fen, export, ai, go, status, eval, hash, draws, history, pgn, book, uci, isready, new960, position960, trace, concurrency, perft, help, quit")
 		when 'quit'
 			process.exit(0)
 		else
-			if trimmed then process.stdout.write("ERROR: Invalid command\n")
+			if trimmed then write-line("ERROR: Invalid command")

@@ -27,7 +27,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | ✨ Gleam | 🟢 | [107,698](implementations/gleam/src/chess_engine.gleam) | 385ms, 18 MB | 358ms, 7 MB | 764ms, 76 MB | 1m 10s, 62 MB | 1/1 | 0/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐹 Go | 🟢 | [22,900](implementations/go/chess.go) | 511ms, 83 MB | 1.1s, 111 MB | 1.1s, 120 MB | 10.5s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 📐 Haskell | 🟢 | [11,812](implementations/haskell/src/Main.hs) | 330ms, 39 MB | 185ms, 7 MB | 230ms, 7 MB | 1m 10s, 62 MB | 1/1 | 0/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🪶 Imba | 🟡 | [7,261](implementations/imba/chess.imba) | 183ms, 7 MB | 186ms, 7 MB | 183ms, 5 MB | 9.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🪶 Imba | 🟡 | [9,098](implementations/imba/chess.imba) | 346ms, 4 MB | 365ms, 4 MB | 326ms, 4 MB | 10.8s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🟨 Javascript | 🟡 | [10,094](implementations/javascript/chess.js) | -, - MB | 291ms, 4 MB | 282ms, 4 MB | 10.7s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🔮 Julia | 🟢 | [9,783](implementations/julia/chess.jl) | -, - MB | 144ms, 6 MB | 151ms, 7 MB | 11.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🧡 Kotlin | 🟡 | [9,666](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 156ms, 6 MB | 171ms, 7 MB | 158ms, 7 MB | 10s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
@@ -58,10 +58,10 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
 | 1 | 🧡 Kotlin | 156ms | `####################` |
-| 2 | 🪶 Imba | 183ms | `#################` |
-| 3 | 🌳 Elm | 189ms | `#################` |
-| 4 | 🦀 Rust | 199ms | `################` |
-| 5 | 🎯 Dart | 202ms | `###############` |
+| 2 | 🌳 Elm | 189ms | `#################` |
+| 3 | 🦀 Rust | 199ms | `################` |
+| 4 | 🎯 Dart | 202ms | `###############` |
+| 5 | ⚡ Zig | 261ms | `############` |
 
 #### `make analyze`
 | Rank | Implementation | Time | Chart |
@@ -70,7 +70,7 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | 2 | 🪐 Lua | 159ms | `##################` |
 | 3 | 🧡 Kotlin | 171ms | `#################` |
 | 4 | 📐 Haskell | 185ms | `################` |
-| 5 | 🪶 Imba | 186ms | `###############` |
+| 5 | 🌳 Elm | 188ms | `###############` |
 
 #### `make test`
 | Rank | Implementation | Time | Chart |
@@ -79,7 +79,7 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | 2 | 🪐 Lua | 154ms | `####################` |
 | 3 | 🧡 Kotlin | 158ms | `###################` |
 | 4 | 🎯 Dart | 180ms | `#################` |
-| 5 | 🪶 Imba | 183ms | `################` |
+| 5 | 🌳 Elm | 187ms | `################` |
 
 #### `make test-chess-engine`
 | Rank | Implementation | Time | Chart |
@@ -87,8 +87,8 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | 1 | 🦀 Rust | 9.7s | `####################` |
 | 2 | 🌳 Elm | 9.8s | `####################` |
 | 3 | 💠 Crystal | 9.8s | `####################` |
-| 4 | 🪶 Imba | 9.9s | `####################` |
-| 5 | 🧡 Kotlin | 10s | `####################` |
+| 4 | 🧡 Kotlin | 10s | `####################` |
+| 5 | 🪐 Lua | 10.7s | `##################` |
 <!-- speed-chart-end -->
 
 ## Quick Commands

@@ -22,95 +22,93 @@
       "build": "imba build chess.imba --platform node --base . --outdir dist",
       "run": "node dist/chess.js",
       "test": "true",
-      "analyze": "true"
+      "analyze": "imba build chess.imba --platform node --base . --outdir /tmp/tgac-imba-check",
+      "bugit": "if [ -f .bugit/chess.imba.bak ]; then echo 'bugit already active for imba'; else mkdir -p .bugit && cp chess.imba .bugit/chess.imba.bak && printf '\\n)\\n' >> chess.imba; fi",
+      "fix": "if [ -f .bugit/chess.imba.bak ]; then mv .bugit/chess.imba.bak chess.imba && rmdir .bugit 2>/dev/null || true; else echo 'no imba bugit backup to restore'; fi"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.23089051246643066,
-      "build_seconds": 0.18284058570861816,
-      "analyze_seconds": 0.185760498046875,
-      "test_seconds": 0.18343138694763184,
-      "test_internal_seconds": 0.18343138694763184,
-      "test_chess_engine_seconds": 9.860143899917603,
-      "test_v2_full_seconds": 9.860143899917603
+      "image_build_seconds": 4.051022052764893,
+      "build_seconds": 0.34603381156921387,
+      "analyze_seconds": 0.36514997482299805,
+      "test_seconds": 0.3255600929260254,
+      "test_internal_seconds": 0.3255600929260254,
+      "test_chess_engine_seconds": 10.797168016433716,
+      "test_v2_full_seconds": 10.797168016433716
     },
     "memory": {
       "image": {
-        "memory_mb": 111.19921875,
-        "peak_memory_mb": 111.19921875,
-        "avg_memory_mb": 83.66015625,
-        "avg_cpu_percent": 0.0,
-        "samples": 3,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
-        "memory_mb": 7.11328125,
-        "peak_memory_mb": 7.11328125,
+        "memory_mb": 3.65234375,
+        "peak_memory_mb": 3.65234375,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 6.5859375,
-        "peak_memory_mb": 6.5859375,
+        "memory_mb": 3.515625,
+        "peak_memory_mb": 3.515625,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 4.5859375,
-        "peak_memory_mb": 4.5859375,
+        "memory_mb": 3.87890625,
+        "peak_memory_mb": 3.87890625,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.140625,
-        "peak_memory_mb": 61.96484375,
-        "avg_memory_mb": 60.00086348684211,
-        "avg_cpu_percent": 0.0,
-        "samples": 95,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
-      "source_loc": 742,
+      "source_loc": 957,
       "source_files": 1
     },
     "metrics": {
-      "tokens_count": 7261,
+      "tokens_count": 9098,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 246.41588370433715,
-      "analyze_ms_per_kloc": 250.35107553487197,
-      "runtime_ms_per_kloc": 247.21211178926123
+      "build_ms_per_kloc": 361.5818302708609,
+      "analyze_ms_per_kloc": 381.55692249007114,
+      "runtime_ms_per_kloc": 340.1881848756796
     },
     "docker": {
-      "build_time": 0.23089051246643066,
+      "build_time": 4.051022052764893,
       "build_success": true,
-      "image_build_time": 0.23089051246643066,
+      "image_build_time": 4.051022052764893,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.18284058570861816,
+      "make_build_time": 0.34603381156921387,
       "make_build_success": true,
-      "make_analyze_time": 0.185760498046875,
+      "make_analyze_time": 0.36514997482299805,
       "make_analyze_success": true,
-      "test_time": 0.18343138694763184,
+      "test_time": 0.3255600929260254,
       "test_success": true,
-      "make_test_time": 0.18343138694763184,
+      "make_test_time": 0.3255600929260254,
       "make_test_success": true,
-      "test_chess_engine_time": 9.860143899917603,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.860143899917603,
-      "track_test_success": false
+      "test_chess_engine_time": 10.797168016433716,
+      "test_chess_engine_success": true,
+      "track_test_time": 10.797168016433716,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -119,21 +117,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
+        "passed": 16,
+        "failed": 0,
         "errors": 0,
         "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting imba implementation at implementations/imba\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunni"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]
