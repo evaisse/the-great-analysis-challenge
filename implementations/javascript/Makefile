@@ -26,7 +26,7 @@ docker-test: docker-build
 .PHONY: bugit fix
 
 bugit:
-	python3 ../../scripts/error_analysis_benchmark.py bugit --impl .
+	../../workflow error-analysis bugit --impl .
 
 fix:
-	python3 ../../scripts/error_analysis_benchmark.py fix --impl .
+	../../workflow error-analysis fix --impl .

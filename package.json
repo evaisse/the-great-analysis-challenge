@@ -1,0 +1,15 @@
+{
+  "name": "the-great-analysis-challenge-tooling",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "shiki": "^3.14.0"
+  },
+  "scripts": {
+    "test": "bun test ./test/*.test.ts",
+    "workflow": "bun run ./workflow",
+    "analyze:tooling": "bun run ./workflow analyze-tools",
+    "code-size-metrics": "bun run ./workflow code-size-metrics",
+    "semantic-tokens": "bun run ./workflow semantic-tokens"
+  }
+}

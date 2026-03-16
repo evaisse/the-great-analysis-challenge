@@ -86,7 +86,7 @@ make build
 make analyze
 make test
 make test-chess-engine
-python3 test/verify_implementations.py
+make verify
 ```
 
 ## Pull Request Expectations

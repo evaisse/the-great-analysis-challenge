@@ -64,9 +64,9 @@ System (`v2-system` / stress tooling):
 Roadmap commands such as UCI extended state-machine commands and richer PGN editing commands may be added progressively, but are not part of the current blocking core contract.
 
 Track orchestration is handled by shared tooling:
-- `python3 test/test_harness.py --track <track>`
-- `python3 test/performance_test.py --track <track> --profile <quick|full>`
-- `python3 test/concurrency_harness.py --profile <quick|full>`
+- `./workflow test-harness --track <track>`
+- `./workflow benchmark-stress --track <track> --profile <quick|full>`
+- `./workflow benchmark-concurrency --profile <quick|full>`
 
 ### 1.2 Output Format
 
@@ -368,7 +368,7 @@ The progressive v2 suites are defined under `test/suites/`:
 
 They are executed through:
 ```bash
-python3 test/test_harness.py --track <v1|v2-foundation|v2-functional|v2-system|v2-full>
+./workflow test-harness --track <v1|v2-foundation|v2-functional|v2-system|v2-full>
 ```
 
 Fixture-heavy validation assets are under `test/fixtures/` and currently cover:

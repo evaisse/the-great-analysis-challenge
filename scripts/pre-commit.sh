@@ -28,7 +28,7 @@ echo -e "${GREEN}✓ Structure OK${NC}"
 echo -e "${YELLOW}Step 2/2: Analyzing repository tools...${NC}"
 if ! make analyze-tools; then
     echo -e "${RED}❌ Tool analysis failed!${NC}"
-    echo -e "${YELLOW}Check scripts/analyze_python_tools.py for issues.${NC}"
+    echo -e "${YELLOW}Check the Bun shared tooling under tooling/ for issues.${NC}"
     exit 1
 fi
 echo -e "${GREEN}✓ Tools OK${NC}"

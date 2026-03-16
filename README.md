@@ -48,6 +48,38 @@ Legend:
 - `make ...` columns: `<duration>, <peak memory>`.
 - `-`: metric missing or intentionally skipped.
 
+## Semantic Token Metrics (tokens-v3)
+
+In addition to raw `tokens-v2`, the shared Bun tooling exposes `tokens-v3` semantic metrics powered by Shiki. These metrics classify tokens into semantic categories and compute a weighted `complexity_score` that down-weights punctuation and excludes comments from scoring.
+
+### Running semantic analysis
+
+```bash
+# Single implementation
+bun run scripts/semantic-tokens/semantic_tokens.mjs implementations/rust --pretty
+
+# All implementations
+bun run scripts/semantic-tokens/semantic_tokens.mjs --all implementations/ --pretty
+
+# Shared metrics pipeline (tokens-v2 + optional tokens-v3)
+./workflow code-size-metrics --impl implementations/rust
+```
+
+### Complexity score
+
+| Category | Weight | Examples |
+| --- | --- | --- |
+| `keyword` | 1.0 | `if`, `fn`, `return`, `class` |
+| `identifier` | 1.0 | variables, functions, methods |
+| `type` | 1.0 | type annotations, generics |
+| `operator` | 0.5 | `+`, `==`, `&&`, `->` |
+| `literal` | 0.5 | numbers, strings |
+| `punctuation` | 0.25 | `{}`, `()`, `;`, `,` |
+| `comment` | 0.0 | excluded from scoring |
+| `unknown` | 0.5 | fallback classification |
+
+`complexity_score = Σ(weight × count)`.
+
 ## Quick Commands
 
 ```bash
@@ -58,6 +90,7 @@ make analyze DIR=<language>
 make test DIR=<language>
 make test-unit-contract DIR=<language>
 make test-chess-engine DIR=<language>
+./workflow semantic-tokens implementations/<language> --pretty
 ```
 
 All implementation build/test/analyze operations are Docker-only.

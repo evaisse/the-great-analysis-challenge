@@ -21,7 +21,7 @@ Update at least monthly.
 Freshness check:
 
 ```bash
-python3 check_statistics_freshness.py
+./workflow check-statistics-freshness
 ```
 
 ## Update Procedure

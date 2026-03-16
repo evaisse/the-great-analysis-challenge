@@ -14,6 +14,7 @@ on:
 env:
   DOCKER_BUILDKIT: 1
   V2_CORE_ENGINES: "dart lua php python go"
+  BUN_VERSION: "1.3.9"
 
 jobs:
   detect-changes:
@@ -29,10 +30,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          python-version: '3.11'
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install Bun dependencies
+        run: bun install --frozen-lockfile
 
       - name: Detect changed implementations
         id: changes
@@ -61,15 +65,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          python-version: '3.11'
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install Bun dependencies
+        run: bun install --frozen-lockfile
 
       - name: Run structure validation
         run: |
           echo "🔍 Running implementation structure validation..."
-          python3 test/verify_implementations.py
+          ./workflow verify-implementations
 
   build-test:
     name: Build and Test Chess Engines
@@ -89,10 +96,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          python-version: '3.11'
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install Bun dependencies
+        run: bun install --frozen-lockfile
 
       - name: Build Docker image target
         run: ./workflow verify-make-target ${{ matrix.engine }} image --timeout 900
@@ -170,7 +180,7 @@ jobs:
           echo ""
           echo "🔧 Convention-based testing features:"
           echo "- 📋 chess.meta file configuration"
-          echo "- 🔍 Structure validation via Python script"
+          echo "- 🔍 Structure validation via Bun workflow"
           echo "- 🏗️ Docker build verification"
           echo "- 🧪 Adaptive functionality testing"
           echo "- 📊 Dynamic discovery from directory structure"

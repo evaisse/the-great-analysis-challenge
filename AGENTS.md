@@ -377,7 +377,7 @@ the-great-analysis-challenge/
 │
 ├── test/                              # Test infrastructure
 │   ├── test_suite.json                # Automated test definitions
-│   ├── test_harness.py                # Test runner
+│   ├── *.test.ts                      # Bun tooling tests
 │   └── test_summary.md                # Test results
 │
 └── .github/workflows/                 # CI/CD automation
