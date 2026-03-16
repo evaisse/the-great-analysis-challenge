@@ -1,3 +1,4 @@
+⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -6,7 +7,7 @@ Found 1 implementation(s) to test
 Testing rescript implementation
 Path: implementations/rescript
 ============================================================
-📏 Source size: 1678 LOC across 11 files, 11181 TOKENS
+📏 Source size: 2078 LOC across 11 files, 14724 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,7 +16,7 @@ Path: implementations/rescript
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-rescript .
-  ✅ Docker build completed in 0.41s
+  ✅ Docker build completed in 7.08s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -23,77 +24,58 @@ Path: implementations/rescript
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
+  ✅ All Docker tests passed (image: 7.1s, make build: 0.3s, make analyze: 0.3s, make test: 0.3s, make test-chess-engine: 10.7s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-13 15:54:49
+Generated: 2026-03-16 01:20:09
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-rescript     completed  11181      1678     0.2s/7MB           0.2s/7MB           0.2s/7MB           9.9s/62MB                 1/1              2/16              
+rescript     completed  14724      2078     0.3s/3MB           0.3s/4MB           0.3s/4MB           10.7s/-MB                 1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: RESCRIPT
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.41s
-  make build: 0.20s
-  make analyze: 0.19s
-  make test: 0.18s
-  make test-chess-engine: 9.94s
-  make test (internal mirror): 0.18s
-  test v2 full seconds: 9.94s
+  docker build image: 7.08s
+  make build: 0.29s
+  make analyze: 0.26s
+  make test: 0.26s
+  make test-chess-engine: 10.70s
+  make test (internal mirror): 0.26s
+  test v2 full seconds: 10.70s
 
 SOURCE SIZE:
-  Source LOC: 1678 (files: 11)
-  TOKENS (tokens-v2): 11181
+  Source LOC: 2078 (files: 11)
+  TOKENS (tokens-v2): 14724
 
 NORMALIZED METRICS:
-  Build: 120.10 ms/KLOC
-  Analyze: 113.24 ms/KLOC
-  Runtime: 104.80 ms/KLOC
+  Build: 141.16 ms/KLOC
+  Analyze: 126.44 ms/KLOC
+  Runtime: 124.85 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 112.8MB, Avg 91.5MB
-  Build: Peak 6.6MB, Avg 0.0MB
-  Analyze: Peak 7.0MB, Avg 0.0MB
-  Test: Peak 7.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 60.0MB
+  Image: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 3.3MB, Avg 0.0MB
+  Analyze: Peak 4.4MB, Avg 0.0MB
+  Test: Peak 3.9MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 0.0MB, Avg 0.0MB
 
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
+CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.41s)
-  make build: ✅ (0.20s)
-  make analyze: ✅ (0.19s)
-  make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ❌ (9.94s)
+  Image build: ✅ (7.08s)
+  make build: ✅ (0.29s)
+  make analyze: ✅ (0.26s)
+  make test: ✅ (0.26s)
+  make test-chess-engine (track=v2-full): ✅ (10.70s)
   make test score: 1/1
-  make test-chess-engine score: 2/16
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing rescript implementation at implementations/rescript
-----------------------------------------
-Running test: Hash Command Baseline ✓
-Running test: Hash Command After Move ✓
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✗
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Handshake
+  make test-chess-engine score: 16/16
 
 ================================================================================
 📄 JSON results saved to reports/rescript.json (1 valid benchmark(s))

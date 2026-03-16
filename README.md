@@ -35,7 +35,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 🦊 Nim | 🟢 | [8,410](implementations/nim/chess.nim) | 201ms, 7 MB | 186ms, 6 MB | 182ms, 7 MB | 9.7s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐘 Php | 🟢 | [24,435](implementations/php/chess.php) | -, - MB | 328ms, 9 MB | 201ms, 9 MB | 13.6s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐍 Python | 🟡 | [24,228](implementations/python/chess.py) | -, - MB | 192ms, 7 MB | 195ms, 7 MB | 16.7s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🧠 Rescript | 🟡 | [11,181](implementations/rescript/src/Chess.res) | 202ms, 7 MB | 190ms, 7 MB | 176ms, 7 MB | 9.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🧠 Rescript | 🟡 | [14,724](implementations/rescript/src/Chess.res) | 293ms, 3 MB | 263ms, 4 MB | 259ms, 4 MB | 10.7s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | ❤️ Ruby | 🟡 | [9,600](implementations/ruby/chess.rb) | -, - MB | 2s, 230 MB | 230ms, 9 MB | 11.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🦀 Rust | 🟢 | [12,770](implementations/rust/src/main.rs) | 199ms, 7 MB | 192ms, 7 MB | 191ms, 7 MB | 9.7s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐦 Swift | 🟢 | [7,650](implementations/swift/src/main.swift) | 197ms, 6 MB | 187ms, 7 MB | 195ms, 7 MB | 3m 00s, - MB | 1/1 | 0/1 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
@@ -78,8 +78,8 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | 1 | 🔮 Julia | 151ms | `####################` |
 | 2 | 🪐 Lua | 154ms | `####################` |
 | 3 | 🧡 Kotlin | 158ms | `###################` |
-| 4 | 🧠 Rescript | 176ms | `#################` |
-| 5 | 🎯 Dart | 180ms | `#################` |
+| 4 | 🎯 Dart | 180ms | `#################` |
+| 5 | 🦊 Nim | 182ms | `#################` |
 
 #### `make test-chess-engine`
 | Rank | Implementation | Time | Chart |

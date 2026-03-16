@@ -148,7 +148,7 @@ let parseFen = (fen: string): result<gameState, string> => {
 
     let turn = if turnPart == "w" { White } else { Black }
 
-    let hasCastling = (char: string) => Js.String.indexOf(castlingPart, char) != -1
+    let hasCastling = (char: string) => Js.String.indexOf(char, castlingPart) != -1
 
     let castlingRights = {
       whiteKingside: hasCastling("K"),

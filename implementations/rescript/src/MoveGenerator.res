@@ -179,12 +179,19 @@ let generateKnightMoves = (state: gameState, from: square, piece: piece): array<
   moves
 }
 
+let isValidSlidingStep = (prevFile: int, nextFile: int, direction: int): bool =>
+  switch direction {
+  | -9 | -1 | 7 => nextFile == prevFile - 1
+  | -7 | 1 | 9 => nextFile == prevFile + 1
+  | -8 | 8 => nextFile == prevFile
+  | _ => false
+  }
+
 let generateSlidingMoves = (
   state: gameState,
   from: square,
   piece: piece,
   directions: array<int>,
-  isDiagonal: option<bool>,
 ): array<move> => {
   let moves: array<move> = []
   let file = modInt(from, 8)
@@ -196,16 +203,8 @@ let generateSlidingMoves = (
 
     while running.contents && isValidSquare(to.contents) {
       let toFile = modInt(to.contents, 8)
-
-      switch isDiagonal {
-      | Some(true) =>
-        if absInt(toFile - prevFile.contents) != 1 {
-          running := false
-        }
-      | _ =>
-        if (direction == -1 || direction == 1) && absInt(toFile - prevFile.contents) != 1 {
-          running := false
-        }
+      if !isValidSlidingStep(prevFile.contents, toFile, direction) {
+        running := false
       }
 
       if running.contents {
@@ -386,9 +385,9 @@ and isSquareAttacked = (state: gameState, targetSquare: square, byColor: color):
           | King => generateKingMoves(state, square, piece, false)
           | Pawn => generatePawnMoves(state, square, piece)
           | Knight => generateKnightMoves(state, square, piece)
-          | Bishop => generateSlidingMoves(state, square, piece, [-9, -7, 7, 9], Some(true))
-          | Rook => generateSlidingMoves(state, square, piece, [-8, -1, 1, 8], Some(false))
-          | Queen => generateSlidingMoves(state, square, piece, [-9, -8, -7, -1, 1, 7, 8, 9], None)
+          | Bishop => generateSlidingMoves(state, square, piece, [-9, -7, 7, 9])
+          | Rook => generateSlidingMoves(state, square, piece, [-8, -1, 1, 8])
+          | Queen => generateSlidingMoves(state, square, piece, [-9, -8, -7, -1, 1, 7, 8, 9])
           }
         if Belt.Array.some(moves, move => move.to == targetSquare) {
           attacked := true
@@ -405,9 +404,9 @@ let generatePieceMoves = (state: gameState, from: square, piece: piece): array<m
   switch piece.pieceType {
   | Pawn => generatePawnMoves(state, from, piece)
   | Knight => generateKnightMoves(state, from, piece)
-  | Bishop => generateSlidingMoves(state, from, piece, [-9, -7, 7, 9], Some(true))
-  | Rook => generateSlidingMoves(state, from, piece, [-8, -1, 1, 8], Some(false))
-  | Queen => generateSlidingMoves(state, from, piece, [-9, -8, -7, -1, 1, 7, 8, 9], None)
+  | Bishop => generateSlidingMoves(state, from, piece, [-9, -7, 7, 9])
+  | Rook => generateSlidingMoves(state, from, piece, [-8, -1, 1, 8])
+  | Queen => generateSlidingMoves(state, from, piece, [-9, -8, -7, -1, 1, 7, 8, 9])
   | King => generateKingMoves(state, from, piece, true)
   }
 
