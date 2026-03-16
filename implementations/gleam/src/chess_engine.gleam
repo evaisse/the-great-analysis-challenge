@@ -10,9 +10,9 @@ import gleam/string
 fn get_line(prompt: String) -> String
 
 import ai.{find_best_move}
-import board.{display_board, get_piece, make_move, new_game, undo_move}
+import board.{display_board, get_piece, make_move, new_game}
 import fen.{export_fen, parse_fen}
-import move_generator.{get_legal_moves, is_in_check}
+import move_generator.{get_legal_moves, is_checkmate, is_in_check, is_stalemate}
 import perft.{perft}
 import types.{
   type GameState, type Move, Black, White, algebraic_to_square,
@@ -36,6 +36,7 @@ pub type RuntimeState {
     book_misses: Int,
     book_played: Int,
     chess960_id: Option(Int),
+    base_fen: String,
     trace_enabled: Bool,
     trace_events_rev: List(String),
   )
@@ -50,7 +51,25 @@ pub fn new() -> ChessEngine {
 }
 
 fn new_runtime() -> RuntimeState {
-  RuntimeState([], None, [], None, [], 0, 0, False, 0, 0, 0, 0, None, False, [])
+  let game_state = new_game()
+  RuntimeState(
+    [],
+    None,
+    [],
+    None,
+    [],
+    0,
+    0,
+    False,
+    0,
+    0,
+    0,
+    0,
+    None,
+    export_fen(game_state),
+    False,
+    [],
+  )
 }
 
 pub fn main() {
@@ -86,6 +105,7 @@ fn process_command(engine: ChessEngine, command: String) -> ChessEngine {
         ["go", "movetime", movetime_str] -> handle_go_movetime(engine, movetime_str)
         ["fen", ..fen_parts] -> handle_fen(engine, string.join(fen_parts, " "))
         ["export"] -> handle_export(engine)
+        ["status"] -> handle_status(engine)
         ["eval"] -> handle_eval(engine)
         ["perft", depth_str] -> handle_perft(engine, depth_str)
         ["hash"] -> handle_hash(engine)
@@ -228,25 +248,32 @@ fn is_promotion_match(
 }
 
 fn handle_undo(engine: ChessEngine) -> ChessEngine {
-  case engine.game_state.move_history {
+  case engine.runtime.protocol_moves_rev {
     [] -> {
       io.println("ERROR: No moves to undo")
       engine
     }
     _ -> {
-      let new_state = undo_move(engine.game_state)
       let new_runtime = pop_protocol_move(engine.runtime)
-      io.println("Move undone")
-      io.println(display_board(new_state))
-      ChessEngine(..engine, game_state: new_state, runtime: new_runtime)
+      case rebuild_game_state(new_runtime) {
+        Error(Nil) -> {
+          io.println("ERROR: Unable to reconstruct game state")
+          engine
+        }
+        Ok(new_state) -> {
+          io.println("OK: undo")
+          io.println(display_board(new_state))
+          ChessEngine(..engine, game_state: new_state, runtime: new_runtime)
+        }
+      }
     }
   }
 }
 
 fn handle_new(engine: ChessEngine) -> ChessEngine {
   let new_state = new_game()
-  let new_runtime = reset_runtime_for_position(engine.runtime)
-  io.println("New game started")
+  let new_runtime = reset_runtime_for_position(engine.runtime, new_state)
+  io.println("OK: New game started")
   io.println(display_board(new_state))
   ChessEngine(..engine, game_state: new_state, runtime: new_runtime)
 }
@@ -344,7 +371,7 @@ fn maybe_play_book_move(engine: ChessEngine) -> Option(ChessEngine) {
   let runtime = engine.runtime
   case runtime.book_enabled, runtime.book_moves, runtime.protocol_moves_rev {
     True, [book_move, .._], [] -> {
-      case parse_protocol_move(book_move) {
+      case parse_protocol_move(engine.game_state, book_move) {
         Error(Nil) -> None
         Ok(chess_move) -> {
           let new_state = make_move(engine.game_state, chess_move)
@@ -377,8 +404,8 @@ fn handle_fen(engine: ChessEngine, fen_string: String) -> ChessEngine {
       engine
     }
     Ok(new_state) -> {
-      let new_runtime = reset_runtime_for_position(engine.runtime)
-      io.println("Position loaded from FEN")
+      let new_runtime = reset_runtime_for_position(engine.runtime, new_state)
+      io.println("OK: FEN loaded")
       io.println(display_board(new_state))
       ChessEngine(..engine, game_state: new_state, runtime: new_runtime)
     }
@@ -391,9 +418,14 @@ fn handle_export(engine: ChessEngine) -> ChessEngine {
   engine
 }
 
+fn handle_status(engine: ChessEngine) -> ChessEngine {
+  io.println(status_text(engine))
+  engine
+}
+
 fn handle_eval(engine: ChessEngine) -> ChessEngine {
   let result = find_best_move(engine.game_state, 1)
-  io.println("Position evaluation: " <> int.to_string(result.evaluation))
+  io.println("EVALUATION: " <> int.to_string(result.evaluation))
   engine
 }
 
@@ -437,14 +469,18 @@ fn handle_hash(engine: ChessEngine) -> ChessEngine {
 }
 
 fn handle_draws(engine: ChessEngine) -> ChessEngine {
-  let fifty_move = case engine.game_state.halfmove_clock >= 100 {
-    True -> "true"
-    False -> "false"
-  }
+  let repetition_count = repetition_count(engine)
+  let repetition = repetition_count >= 3
+  let fifty_move = engine.game_state.halfmove_clock >= 100
   io.println(
-    "DRAWS: {\"fifty_move\":"
-    <> fifty_move
-    <> ",\"threefold\":false,\"insufficient_material\":false,\"stalemate\":false,\"status\":\"none\"}",
+    "DRAWS: repetition="
+    <> bool_text(repetition)
+    <> " count="
+    <> int.to_string(repetition_count)
+    <> " fifty_move="
+    <> bool_text(fifty_move)
+    <> " halfmove_clock="
+    <> int.to_string(engine.game_state.halfmove_clock),
   )
   engine
 }
@@ -554,7 +590,10 @@ fn handle_new960_with_id(engine: ChessEngine, id_str: String) -> ChessEngine {
 
 fn handle_new960(engine: ChessEngine, id: Int) -> ChessEngine {
   let runtime =
-    RuntimeState(..reset_runtime_for_position(engine.runtime), chess960_id: Some(id))
+    RuntimeState(
+      ..reset_runtime_for_position(engine.runtime, new_game()),
+      chess960_id: Some(id),
+    )
   let new_state = new_game()
   io.println("960: id=" <> int.to_string(id) <> " fen=" <> export_fen(new_state))
   ChessEngine(..engine, game_state: new_state, runtime: runtime)
@@ -619,6 +658,7 @@ fn handle_help(engine: ChessEngine) -> ChessEngine {
   io.println("  go movetime <ms> - Time-managed search")
   io.println("  fen <string> - Load position from FEN")
   io.println("  export - Export current position as FEN")
+  io.println("  status - Show current game status")
   io.println("  eval - Evaluate current position")
   io.println("  hash - Show deterministic position hash")
   io.println("  draws - Show draw-state metadata")
@@ -668,7 +708,7 @@ fn move_to_string(chess_move: Move) -> String {
   }
 }
 
-fn parse_protocol_move(move_str: String) -> Result(Move, Nil) {
+fn parse_protocol_move(game_state: GameState, move_str: String) -> Result(Move, Nil) {
   case string.length(move_str) >= 4 {
     False -> Error(Nil)
     True -> {
@@ -680,7 +720,7 @@ fn parse_protocol_move(move_str: String) -> Result(Move, Nil) {
       }
       case algebraic_to_square(from_str), algebraic_to_square(to_str) {
         Ok(from_square), Ok(to_square) -> {
-          let legal_moves = get_legal_moves(new_game(), White)
+          let legal_moves = get_legal_moves(game_state, game_state.turn)
           case find_matching_move(legal_moves, from_square, to_square, promotion_str) {
             Some(chess_move) -> Ok(chess_move)
             None -> Error(Nil)
@@ -701,9 +741,13 @@ fn normalize_move(move_str: String) -> String {
   }
 }
 
-fn reset_runtime_for_position(runtime: RuntimeState) -> RuntimeState {
+fn reset_runtime_for_position(
+  runtime: RuntimeState,
+  game_state: GameState,
+) -> RuntimeState {
   RuntimeState(
     ..runtime,
+    base_fen: export_fen(game_state),
     protocol_moves_rev: [],
     loaded_pgn_path: None,
     loaded_pgn_moves: [],
@@ -724,6 +768,114 @@ fn pop_protocol_move(runtime: RuntimeState) -> RuntimeState {
     [] -> runtime
     [_head, ..rest] ->
       RuntimeState(..runtime, protocol_moves_rev: rest, chess960_id: None)
+  }
+}
+
+fn rebuild_game_state(runtime: RuntimeState) -> Result(GameState, Nil) {
+  case parse_fen(runtime.base_fen) {
+    Error(_) -> Error(Nil)
+    Ok(base_state) -> replay_protocol_moves(base_state, protocol_moves(runtime))
+  }
+}
+
+fn replay_protocol_moves(
+  game_state: GameState,
+  moves: List(String),
+) -> Result(GameState, Nil) {
+  case moves {
+    [] -> Ok(game_state)
+    [move_str, ..rest] ->
+      case parse_protocol_move(game_state, move_str) {
+        Error(Nil) -> Error(Nil)
+        Ok(chess_move) ->
+          replay_protocol_moves(make_move(game_state, chess_move), rest)
+      }
+  }
+}
+
+fn repetition_count(engine: ChessEngine) -> Int {
+  let target_key = position_key(engine.game_state)
+
+  case parse_fen(engine.runtime.base_fen) {
+    Error(_) -> 1
+    Ok(base_state) -> {
+      let initial_count = case position_key(base_state) == target_key {
+        True -> 1
+        False -> 0
+      }
+
+      case
+        count_position_occurrences(
+          base_state,
+          protocol_moves(engine.runtime),
+          target_key,
+          initial_count,
+        )
+      {
+        Ok(count) -> count
+        Error(Nil) -> initial_count
+      }
+    }
+  }
+}
+
+fn count_position_occurrences(
+  game_state: GameState,
+  moves: List(String),
+  target_key: String,
+  count: Int,
+) -> Result(Int, Nil) {
+  case moves {
+    [] -> Ok(count)
+    [move_str, ..rest] ->
+      case parse_protocol_move(game_state, move_str) {
+        Error(Nil) -> Error(Nil)
+        Ok(chess_move) -> {
+          let new_state = make_move(game_state, chess_move)
+          let new_count = case position_key(new_state) == target_key {
+            True -> count + 1
+            False -> count
+          }
+          count_position_occurrences(new_state, rest, target_key, new_count)
+        }
+      }
+  }
+}
+
+fn position_key(game_state: GameState) -> String {
+  case string.split(export_fen(game_state), " ") {
+    [pieces, turn, castling, en_passant, _halfmove, _fullmove] ->
+      pieces <> " " <> turn <> " " <> castling <> " " <> en_passant
+    _ -> export_fen(game_state)
+  }
+}
+
+fn status_text(engine: ChessEngine) -> String {
+  let game_state = engine.game_state
+  let color = game_state.turn
+  let repetition = repetition_count(engine) >= 3
+
+  case is_checkmate(game_state, color) {
+    True -> {
+      let winner = case color {
+        White -> "Black"
+        Black -> "White"
+      }
+      "CHECKMATE: " <> winner <> " wins"
+    }
+    False ->
+      case is_stalemate(game_state, color) {
+        True -> "STALEMATE: Draw"
+        False ->
+          case repetition {
+            True -> "DRAW: REPETITION"
+            False ->
+              case game_state.halfmove_clock >= 100 {
+                True -> "DRAW: 50-MOVE"
+                False -> "OK: ONGOING"
+              }
+          }
+      }
   }
 }
 
