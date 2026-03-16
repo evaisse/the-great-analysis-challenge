@@ -5,6 +5,7 @@ require "./ai"
 require "./fen"
 require "./perft"
 require "./chess960"
+require "./pgn"
 
 class ChessEngine
   @game_state : GameState
@@ -12,6 +13,8 @@ class ChessEngine
   @ai : ChessAI
   @chess960_id : Int32
   @chess960_mode : Bool
+  @pgn_source : String?
+  @pgn_moves : Array(String)
 
   def initialize
     @game_state = FEN.starting_position
@@ -19,6 +22,8 @@ class ChessEngine
     @ai = ChessAI.new
     @chess960_id = 0
     @chess960_mode = false
+    @pgn_source = nil
+    @pgn_moves = Array(String).new
   end
 
   def run
@@ -40,6 +45,8 @@ class ChessEngine
         handle_new960(parts[1..-1])
       when "position960"
         handle_position960
+      when "pgn"
+        handle_pgn(parts[1..-1])
       when "move"
         if parts.size < 2
           puts "ERROR: Missing move"
@@ -124,6 +131,7 @@ class ChessEngine
       @game_state = new_state
       @chess960_id = 0
       @chess960_mode = false
+      reset_pgn_state
       puts "OK: FEN loaded"
     else
       puts "ERROR: Invalid FEN string"
@@ -134,6 +142,7 @@ class ChessEngine
     @game_state = FEN.starting_position
     @chess960_id = 0
     @chess960_mode = false
+    reset_pgn_state
   end
 
   private def handle_new960(args : Array(String))
@@ -156,12 +165,61 @@ class ChessEngine
     @game_state = Chess960.starting_position(requested_id)
     @chess960_id = requested_id
     @chess960_mode = true
+    reset_pgn_state
     puts "960: new game id=#{@chess960_id}; fen=#{FEN.export(@game_state)}"
   end
 
   private def handle_position960
     mode = @chess960_mode ? "chess960" : "standard"
     puts "960: id=#{@chess960_id}; mode=#{mode}"
+  end
+
+  private def handle_pgn(args : Array(String))
+    if args.empty?
+      puts "ERROR: pgn requires subcommand (load|show|moves)"
+      return
+    end
+
+    case args[0].downcase
+    when "load"
+      if args.size < 2
+        puts "ERROR: pgn load requires a file path"
+        return
+      end
+
+      path = args[1..-1].join(" ")
+      @pgn_source = path
+      @pgn_moves = Array(String).new
+
+      begin
+        @pgn_moves = PGN.extract_moves(File.read(path))
+        puts "PGN: loaded path=\"#{path}\"; moves=#{@pgn_moves.size}"
+      rescue
+        puts "PGN: loaded path=\"#{path}\"; moves=0; note=file-unavailable"
+      end
+    when "show"
+      source = @pgn_source || "current-game"
+      puts "PGN: source=#{source}; moves=#{current_pgn_moves.size}"
+    when "moves"
+      moves = current_pgn_moves
+      if moves.empty?
+        puts "PGN: moves (none)"
+      else
+        puts "PGN: moves #{moves.join(" ")}"
+      end
+    else
+      puts "ERROR: Unsupported pgn command"
+    end
+  end
+
+  private def current_pgn_moves : Array(String)
+    return @pgn_moves unless @pgn_source.nil?
+    @game_state.move_history.map(&.to_s)
+  end
+
+  private def reset_pgn_state
+    @pgn_source = nil
+    @pgn_moves = Array(String).new
   end
 
   private def move_pattern?(input : String) : Bool
@@ -351,6 +409,7 @@ hash - Show position hash
 draws - Show draw status
 new960 [id] - Start Chess960 position (0-959)
 position960 - Show current Chess960 metadata
+pgn load|show|moves - PGN command family
 display - Display the board
 quit - Exit program
 HELP
