@@ -112,6 +112,7 @@ processCommand engine _ ["help"] = do
   putStrLn "  go movetime <ms>           - Time-managed search"
   putStrLn "  fen <string>               - Load position from FEN"
   putStrLn "  export                     - Export current position as FEN"
+  putStrLn "  status                     - Show current game status"
   putStrLn "  eval                       - Display position evaluation"
   putStrLn "  hash                       - Display a deterministic position hash"
   putStrLn "  draws                      - Display draw-state metadata"
@@ -216,6 +217,10 @@ processCommand engine _ ("fen" : fenParts) = do
 
 processCommand engine _ ["export"] = do
   putStrLn $ "FEN: " ++ exportFEN (gameState engine)
+  return (Just engine)
+
+processCommand engine _ ["status"] = do
+  putStrLn $ statusReport engine
   return (Just engine)
 
 processCommand engine _ ["eval"] = do
@@ -612,6 +617,25 @@ traceReport rt =
 lowerBool :: Bool -> String
 lowerBool True = "true"
 lowerBool False = "false"
+
+statusReport :: ChessEngine -> String
+statusReport engine
+  | isCheckmate gs = "CHECKMATE"
+  | isStalemate gs = "DRAW: STALEMATE"
+  | isThreefoldRepetition engine = "DRAW: REPETITION"
+  | halfMoveClock gs >= 100 = "DRAW: 50-MOVE"
+  | otherwise = "OK: ONGOING"
+  where
+    gs = gameState engine
+
+isThreefoldRepetition :: ChessEngine -> Bool
+isThreefoldRepetition engine =
+  let currentKey = positionKey (gameState engine)
+      historyKeys = map positionKey (gameState engine : moveHistory engine)
+  in length (filter (== currentKey) historyKeys) >= 3
+
+positionKey :: GameState -> String
+positionKey = unwords . take 4 . words . exportFEN
 
 padLeft :: Char -> Int -> String -> String
 padLeft fill width text
