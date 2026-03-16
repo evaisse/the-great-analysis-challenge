@@ -54,7 +54,7 @@ make test
 
 # Test specific implementation
 make test-ruby
-make test-typescript
+make test DIR=typescript
 ```
 
 ### Without Docker (Local Testing)
@@ -66,6 +66,5 @@ cd test && ./test_local.sh
 cd ruby && echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | ruby chess.rb
 
 # Test TypeScript directly
-cd typescript && npm install && npm run build
-echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | node dist/chess.js
+cd implementations/typescript && make build && make test
 ```

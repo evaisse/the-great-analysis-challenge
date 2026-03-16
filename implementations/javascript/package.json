@@ -5,14 +5,9 @@
   "type": "module",
   "main": "chess.js",
   "scripts": {
-    "start": "node chess.js",
-    "build": "echo 'No build step needed'",
-    "test": "node --test test/*.test.js",
-    "lint": "tsc",
-    "analyze": "tsc"
-  },
-  "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
+    "start": "bun run chess.js",
+    "build": "bun build chess.js --outdir dist --target bun",
+    "test": "bun test",
+    "analyze": "bun build chess.js --outdir /tmp/tgac-javascript-check --target bun"
   }
 }

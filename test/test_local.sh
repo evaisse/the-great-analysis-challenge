@@ -33,20 +33,16 @@ test_ruby() {
 # Test TypeScript implementation
 test_typescript() {
     echo -e "${YELLOW}Testing TypeScript implementation...${NC}"
-    if command -v node &> /dev/null; then
+    if command -v make &> /dev/null; then
         cd ../implementations/typescript
-        if [ -f "dist/chess.js" ]; then
-            if echo -e "new\nmove e2e4\nmove e7e5\nexport\nquit" | node dist/chess.js | grep -q "FEN:"; then
-                echo -e "${GREEN}✓ TypeScript tests ran (check output for correctness)${NC}"
-            else
-                echo -e "${RED}✗ TypeScript tests failed${NC}"
-            fi
+        if make build >/dev/null 2>&1 && make test >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ TypeScript tests passed${NC}"
         else
-            echo -e "${YELLOW}TypeScript not built. Run: cd typescript && npm install && npm run build${NC}"
+            echo -e "${RED}✗ TypeScript tests failed${NC}"
         fi
         cd ..
     else
-        echo -e "${YELLOW}Node.js not installed${NC}"
+        echo -e "${YELLOW}Make not installed${NC}"
     fi
 }
 

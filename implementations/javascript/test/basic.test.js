@@ -1,8 +1,9 @@
-import { test } from 'node:test';
-import assert from 'node:assert';
-import { ChessEngine } from '../engine.js';
+import { describe, expect, test } from "bun:test";
+import { ChessEngine } from "../engine.js";
 
-test('engine can parse initial FEN', () => {
+describe("ChessEngine", () => {
+  test("parses initial FEN", () => {
     const engine = new ChessEngine();
-    assert.strictEqual(engine.state.turn, 'w');
+    expect(engine.state.turn).toBe("w");
+  });
 });

@@ -1,17 +1,28 @@
 # JavaScript Chess Engine
 
-A Node.js implementation of the polyglot chess engine specification.
+Pure JavaScript implementation of the shared chess engine specification.
 
 ## Features
-- Full move generation (pseudo-legal moves)
+- Full move generation
 - FEN import/export
-- Basic AI (minimax)
-- JSDoc type hinting verified with `tsc`
+- Basic minimax AI
+- Standard CLI, test, and analysis workflow
 
 ## Development
-This implementation uses pure JavaScript but leverages TypeScript's `tsc` for type checking via JSDoc comments.
+Use the repository root Docker workflow for validation:
 
-### Commands
-- `make build`: Install dependencies
-- `make test`: Run test suite
-- `make analyze`: Run `tsc` for type checking
+```bash
+make image DIR=javascript
+make build DIR=javascript
+make analyze DIR=javascript
+make test DIR=javascript
+make test-chess-engine DIR=javascript
+```
+
+For local work inside the implementation directory:
+
+```bash
+make build
+make test
+make analyze
+```

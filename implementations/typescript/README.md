@@ -1,6 +1,6 @@
 # TypeScript Chess Engine
 
-A complete chess engine implementation in TypeScript following the Chess Engine Specification v1.0.
+A complete chess engine implementation in TypeScript following the shared chess specification.
 
 ## Features
 
@@ -11,29 +11,36 @@ A complete chess engine implementation in TypeScript following the Chess Engine 
 - Interactive command-line interface
 - All standard chess piece movements and special rules
 
-## Local Development
+## Development
 
-### Prerequisites
-- Node.js 18+ 
-- npm
+Use the repository root Docker workflow for validation:
 
-### Setup
 ```bash
-npm install
-npm run build
-npm start
+make image DIR=typescript
+make build DIR=typescript
+make analyze DIR=typescript
+make test DIR=typescript
+make test-chess-engine DIR=typescript
+```
+
+For local work inside the implementation directory:
+
+```bash
+make build
+make test
+make analyze
 ```
 
 ## Docker Usage
 
 ### Build the Docker image
 ```bash
-docker build -t chess-engine .
+docker build -t chess-typescript .
 ```
 
 ### Run interactively
 ```bash
-docker run --network none -it chess-engine
+docker run --network none -it chess-typescript
 ```
 
 ### Using Docker Compose
@@ -48,10 +55,10 @@ docker-compose run chess-dev
 ### Example Docker commands
 ```bash
 # Quick game
-echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run --network none -i chess-engine
+echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run --network none -i chess-typescript
 
 # Interactive play
-docker run --network none -it chess-engine
+docker run --network none -it chess-typescript
 
 # Build and run in one command
 docker-compose up --build chess-engine

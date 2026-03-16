@@ -4,11 +4,11 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/chess.js",
-    "dev": "tsc && node dist/chess.js",
-    "chess": "npm run build && npm start",
-    "test": "npm run build && node test/basic.test.js && node test/attackTables.test.js",
-    "lint": "echo \"No linter configured yet\" && exit 0"
+    "start": "bun run dist/chess.js",
+    "dev": "bun run build && bun run start",
+    "chess": "bun run build && bun run start",
+    "test": "bun run build && bun run test/basic.test.js && bun run test/attackTables.test.js",
+    "lint": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",

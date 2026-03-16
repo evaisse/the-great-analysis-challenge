@@ -251,7 +251,7 @@ pip3 install psutil
 
 ### System Dependencies
 - **Docker**: Required for containerized testing
-- **Language Tools**: Each implementation's build tools (rustc, node, python3, etc.)
+- **Language Tools**: Each implementation's build tools (rustc, python3, etc.)
 - **Make**: Required for Makefile-based testing
 
 ## 💡 Testing Best Practices

@@ -5,26 +5,21 @@ all: build
 
 # Build target - compile TypeScript to JavaScript
 build:
-	npm install
-	npm run build
+	bun run build
 
 # Run basic tests
 test:
-	npm test
+	bun run test
 
 # Static analysis and code quality
 analyze:
-	@echo "Running TypeScript static analysis..."
-	npm install
-	npm run lint
-	npx tsc --noEmit
-	npx prettier --check src/*.ts
+	bun run lint
 
 # Clean build artifacts
 clean:
 	rm -rf dist/
 	rm -rf node_modules/
-	npm cache clean --force || true
+	rm -f bun.lock bun.lockb
 
 # Docker targets
 docker-build:
@@ -32,7 +27,7 @@ docker-build:
 
 docker-test: docker-build
 	@echo "Testing TypeScript implementation in Docker..."
-	docker run --network none --rm -i chess-typescript sh -c "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | node dist/chess.js"
+	docker run --network none --rm -i chess-typescript sh -c "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | bun run dist/chess.js"
 
 # Help target
 help:

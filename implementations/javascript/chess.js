@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { ChessEngine, INITIAL_FEN } from './engine.js';
 import readline from 'node:readline';
 

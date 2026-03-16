@@ -1,7 +1,7 @@
 const { spawnSync } = require('child_process');
 
 function runEngine(commands) {
-  return spawnSync('node', ['dist/chess.js'], {
+  return spawnSync('bun', ['run', 'dist/chess.js'], {
     input: commands.join('\n') + '\n',
     encoding: 'utf-8',
   });
