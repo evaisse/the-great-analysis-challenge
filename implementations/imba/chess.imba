@@ -205,6 +205,50 @@ def castle-details snapshot, color, side
 		rookTarget: homeRank * 8 + (side === 'K' ? 5 : 3)
 	}
 
+def clone-piece piece
+	if !piece then return null
+	return {
+		color: piece.color
+		type: piece.type
+	}
+
+def clone-board board
+	return board.map do(piece)
+		clone-piece(piece)
+
+def clone-castling castling
+	return {
+		wK: !!castling.wK
+		wQ: !!castling.wQ
+		bK: !!castling.bK
+		bQ: !!castling.bQ
+	}
+
+def clone-castling-config config
+	const source = config or classic-castling-config!
+	return {
+		whiteKingStart: source.whiteKingStart
+		whiteKingsideRookStart: source.whiteKingsideRookStart
+		whiteQueensideRookStart: source.whiteQueensideRookStart
+		blackKingStart: source.blackKingStart
+		blackKingsideRookStart: source.blackKingsideRookStart
+		blackQueensideRookStart: source.blackQueensideRookStart
+	}
+
+def clone-state snapshot
+	return {
+		board: clone-board(snapshot.board)
+		turn: snapshot.turn
+		castling: clone-castling(snapshot.castling)
+		castlingConfig: clone-castling-config(snapshot.castlingConfig)
+		enPassant: snapshot.enPassant
+		halfmoveClock: snapshot.halfmoveClock
+		fullmoveNumber: snapshot.fullmoveNumber
+		chess960: !!snapshot.chess960
+		chess960Id: snapshot.chess960Id
+		chess960Backrank: snapshot.chess960Backrank
+	}
+
 class ChessEngine
 	prop state
 	prop history
@@ -624,7 +668,7 @@ class ChessEngine
 		return false
 
 	def leaves-king-in-check move
-		const prevState = JSON.parse(JSON.stringify(state))
+		const prevState = clone-state(state)
 		make-move(move, false)
 		const inCheck = is-in-check(prevState.turn)
 		state = prevState
@@ -636,7 +680,7 @@ class ChessEngine
 		return is-square-attacked(kingIdx, color === 'w' ? 'b' : 'w')
 
 	def make-move move, updateHistory = true
-		if updateHistory then history.push(JSON.parse(JSON.stringify(state)))
+		if updateHistory then history.push(clone-state(state))
 		
 		const piece = state.board[move.from]
 		if !piece then return
