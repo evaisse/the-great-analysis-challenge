@@ -1,3 +1,4 @@
+⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -6,7 +7,7 @@ Found 1 implementation(s) to test
 Testing julia implementation
 Path: implementations/julia
 ============================================================
-📏 Source size: 1631 LOC across 9 files, 9783 TOKENS
+📏 Source size: 1941 LOC across 9 files, 12280 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,84 +16,64 @@ Path: implementations/julia
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-julia .
-  ✅ Docker build completed in 0.29s
+  ✅ Docker build completed in 1.92s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
+  ✅ All Docker tests passed (image: 1.9s, make build: skipped, make analyze: 0.3s, make test: 0.3s, make test-chess-engine: 15.7s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 14:23:13
+Generated: 2026-03-16 17:23:26
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-julia        completed  9783       1631     -/-MB              0.2s/7MB           0.2s/7MB           12.2s/62MB                1/1              2/16              
+julia        completed  12280      1941     -/-MB              0.3s/4MB           0.3s/4MB           15.7s/-MB                 1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: JULIA
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.29s
-  make analyze: 0.19s
-  make test: 0.19s
-  make test-chess-engine: 12.23s
-  make test (internal mirror): 0.19s
-  test v2 full seconds: 12.23s
+  docker build image: 1.92s
+  make analyze: 0.31s
+  make test: 0.31s
+  make test-chess-engine: 15.70s
+  make test (internal mirror): 0.31s
+  test v2 full seconds: 15.70s
 
 SOURCE SIZE:
-  Source LOC: 1631 (files: 9)
-  TOKENS (tokens-v2): 9783
+  Source LOC: 1941 (files: 9)
+  TOKENS (tokens-v2): 12280
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 117.30 ms/KLOC
-  Runtime: 118.44 ms/KLOC
+  Analyze: 161.94 ms/KLOC
+  Runtime: 158.75 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 110.7MB, Avg 83.1MB
+  Image: Peak 0.0MB, Avg 0.0MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 6.9MB, Avg 0.0MB
-  Test: Peak 7.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 60.3MB
+  Analyze: Peak 3.5MB, Avg 0.0MB
+  Test: Peak 4.2MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 0.0MB, Avg 0.0MB
 
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
+CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.29s)
+  Image build: ✅ (1.92s)
   make build: ⏭️ skipped
-  make analyze: ✅ (0.19s)
-  make test: ✅ (0.19s)
-  make test-chess-engine (track=v2-full): ❌ (12.23s)
+  make analyze: ✅ (0.31s)
+  make test: ✅ (0.31s)
+  make test-chess-engine (track=v2-full): ✅ (15.70s)
   make test score: 1/1
-  make test-chess-engine score: 2/16
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing julia implementation at implementations/julia
-----------------------------------------
-Running test: Hash Command Baseline ✓
-Running test: Hash Command After Move ✓
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✗
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Handshake ✗
-Run
+  make test-chess-engine score: 16/16
 
 ================================================================================
 📄 JSON results saved to reports/julia.json (1 valid benchmark(s))

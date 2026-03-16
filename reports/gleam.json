@@ -29,90 +29,86 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 8.18376350402832,
-      "build_seconds": 0.28377747535705566,
-      "analyze_seconds": 0.3495509624481201,
-      "test_seconds": 0.7477517127990723,
-      "test_internal_seconds": 0.7477517127990723,
-      "test_chess_engine_seconds": 70.21523904800415,
-      "test_v2_full_seconds": 70.21523904800415
+      "image_build_seconds": 6.655609846115112,
+      "build_seconds": 0.5451216697692871,
+      "analyze_seconds": 0.6917219161987305,
+      "test_seconds": 2.2471439838409424,
+      "test_internal_seconds": 2.2471439838409424,
+      "test_chess_engine_seconds": 11.165673971176147,
+      "test_v2_full_seconds": 11.165673971176147
     },
     "memory": {
       "image": {
-        "memory_mb": 116.1015625,
-        "peak_memory_mb": 116.1015625,
-        "avg_memory_mb": 112.98492588141026,
-        "avg_cpu_percent": 0.0,
-        "samples": 78,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
-        "memory_mb": 6.75,
-        "peak_memory_mb": 6.75,
+        "memory_mb": 13.11328125,
+        "peak_memory_mb": 13.11328125,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 7.125,
-        "peak_memory_mb": 7.125,
+        "memory_mb": 14.1171875,
+        "peak_memory_mb": 14.1171875,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 56.484375,
-        "peak_memory_mb": 56.484375,
+        "memory_mb": 85.19921875,
+        "peak_memory_mb": 85.19921875,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.6484375,
-        "peak_memory_mb": 62.4296875,
-        "avg_memory_mb": 62.13130431767752,
-        "avg_cpu_percent": 0.0,
-        "samples": 676,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
-      "source_loc": 14162,
+      "source_loc": 14933,
       "source_files": 31
     },
     "metrics": {
-      "tokens_count": 107699,
+      "tokens_count": 112398,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 20.037951938783763,
-      "analyze_ms_per_kloc": 24.68231622991951,
-      "runtime_ms_per_kloc": 52.799866741920084
+      "build_ms_per_kloc": 36.504498076025385,
+      "analyze_ms_per_kloc": 46.32169799763815,
+      "runtime_ms_per_kloc": 150.48175074271361
     },
     "docker": {
-      "build_time": 8.18376350402832,
+      "build_time": 6.655609846115112,
       "build_success": true,
-      "image_build_time": 8.18376350402832,
+      "image_build_time": 6.655609846115112,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.28377747535705566,
+      "make_build_time": 0.5451216697692871,
       "make_build_success": true,
-      "make_analyze_time": 0.3495509624481201,
+      "make_analyze_time": 0.6917219161987305,
       "make_analyze_success": true,
-      "test_time": 0.7477517127990723,
+      "test_time": 2.2471439838409424,
       "test_success": true,
-      "make_test_time": 0.7477517127990723,
+      "make_test_time": 2.2471439838409424,
       "make_test_success": true,
-      "test_chess_engine_time": 70.21523904800415,
-      "test_chess_engine_success": false,
-      "track_test_time": 70.21523904800415,
-      "track_test_success": false
+      "test_chess_engine_time": 11.165673971176147,
+      "test_chess_engine_success": true,
+      "track_test_time": 11.165673971176147,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -121,21 +117,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 0,
-        "failed": 16,
+        "passed": 16,
+        "failed": 0,
         "errors": 0,
         "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting gleam implementation at implementations/gleam\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRun"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]
