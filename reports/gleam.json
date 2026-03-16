@@ -22,95 +22,93 @@
       "build": "gleam build",
       "test": "gleam test",
       "analyze": "gleam format --check && gleam check",
+      "bugit": "if [ -f .bugit/chess_engine.gleam.bak ]; then echo 'bugit already active for gleam'; else mkdir -p .bugit && cp src/chess_engine.gleam .bugit/chess_engine.gleam.bak && printf '\\n)\\n' >> src/chess_engine.gleam; fi",
+      "fix": "if [ -f .bugit/chess_engine.gleam.bak ]; then mv .bugit/chess_engine.gleam.bak src/chess_engine.gleam && rmdir .bugit 2>/dev/null || true; else echo 'no gleam bugit backup to restore'; fi",
       "run": "gleam run"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 1.0545260906219482,
-      "build_seconds": 0.38475465774536133,
-      "analyze_seconds": 0.35843753814697266,
-      "test_seconds": 0.7643043994903564,
-      "test_internal_seconds": 0.7643043994903564,
-      "test_chess_engine_seconds": 70.20213913917542,
-      "test_v2_full_seconds": 70.20213913917542
+      "image_build_seconds": 7.607622146606445,
+      "build_seconds": 0.823498010635376,
+      "analyze_seconds": 0.897589921951294,
+      "test_seconds": 3.3237717151641846,
+      "test_internal_seconds": 3.3237717151641846,
+      "test_chess_engine_seconds": 71.11004185676575,
+      "test_v2_full_seconds": 71.11004185676575
     },
     "memory": {
       "image": {
-        "memory_mb": 116.3203125,
-        "peak_memory_mb": 116.3203125,
-        "avg_memory_mb": 95.74538352272727,
-        "avg_cpu_percent": 0.0,
-        "samples": 11,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
-        "memory_mb": 18.35546875,
-        "peak_memory_mb": 18.35546875,
+        "memory_mb": 12.6328125,
+        "peak_memory_mb": 12.6328125,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 7.09765625,
-        "peak_memory_mb": 7.09765625,
+        "memory_mb": 13.87109375,
+        "peak_memory_mb": 13.87109375,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 75.71875,
-        "peak_memory_mb": 75.71875,
+        "memory_mb": 88.28515625,
+        "peak_memory_mb": 88.28515625,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.56640625,
-        "peak_memory_mb": 62.4140625,
-        "avg_memory_mb": 62.09956928152493,
-        "avg_cpu_percent": 0.0,
-        "samples": 682,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
-      "source_loc": 14167,
+      "source_loc": 14681,
       "source_files": 31
     },
     "metrics": {
-      "tokens_count": 107698,
+      "tokens_count": 111242,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 27.15851328759521,
-      "analyze_ms_per_kloc": 25.3008779661871,
-      "runtime_ms_per_kloc": 53.94962938451023
+      "build_ms_per_kloc": 56.09277369629971,
+      "analyze_ms_per_kloc": 61.13956283300143,
+      "runtime_ms_per_kloc": 226.39954466073053
     },
     "docker": {
-      "build_time": 1.0545260906219482,
+      "build_time": 7.607622146606445,
       "build_success": true,
-      "image_build_time": 1.0545260906219482,
+      "image_build_time": 7.607622146606445,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.38475465774536133,
+      "make_build_time": 0.823498010635376,
       "make_build_success": true,
-      "make_analyze_time": 0.35843753814697266,
+      "make_analyze_time": 0.897589921951294,
       "make_analyze_success": true,
-      "test_time": 0.7643043994903564,
+      "test_time": 3.3237717151641846,
       "test_success": true,
-      "make_test_time": 0.7643043994903564,
+      "make_test_time": 3.3237717151641846,
       "make_test_success": true,
-      "test_chess_engine_time": 70.20213913917542,
-      "test_chess_engine_success": false,
-      "track_test_time": 70.20213913917542,
-      "track_test_success": false
+      "test_chess_engine_time": 71.11004185676575,
+      "test_chess_engine_success": true,
+      "track_test_time": 71.11004185676575,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -119,21 +117,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 0,
-        "failed": 16,
+        "passed": 16,
+        "failed": 0,
         "errors": 0,
         "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting gleam implementation at implementations/gleam\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRun"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]
