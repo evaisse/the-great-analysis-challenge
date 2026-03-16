@@ -40,7 +40,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 🦀 Rust | 🟢 | [12,770](implementations/rust/src/main.rs) | 199ms, 7 MB | 192ms, 7 MB | 191ms, 7 MB | 9.7s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐦 Swift | 🟡 | [11,407](implementations/swift/src/main.swift) | 315ms, 4 MB | 299ms, 4 MB | 301ms, 4 MB | 10.3s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 📘 Typescript | 🟡 | [17,636](implementations/typescript/src/chess.ts) | 263ms, 4 MB | 265ms, 4 MB | 269ms, 4 MB | 10.7s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| ⚡ Zig | 🟢 | [13,302](implementations/zig/src/main.zig) | 197ms, 7 MB | 197ms, 7 MB | 198ms, 7 MB | 58s, 62 MB | 1/1 | 0/36 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| ⚡ Zig | 🟡 | [18,026](implementations/zig/src/main.zig) | 261ms, 4 MB | 269ms, 4 MB | 235ms, 4 MB | 10.3s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 <!-- status-table-end -->
 
 Legend:
@@ -60,8 +60,8 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | 1 | 🧡 Kotlin | 156ms | `####################` |
 | 2 | 🪶 Imba | 183ms | `#################` |
 | 3 | 🌳 Elm | 189ms | `#################` |
-| 4 | 📘 Typescript | 189ms | `#################` |
-| 5 | ⚡ Zig | 197ms | `################` |
+| 4 | 🦀 Rust | 199ms | `################` |
+| 5 | 🎯 Dart | 202ms | `###############` |
 
 #### `make analyze`
 | Rank | Implementation | Time | Chart |

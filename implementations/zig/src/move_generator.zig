@@ -11,20 +11,32 @@ pub const MoveGenerator = struct {
     }
 
     pub fn generateLegalMoves(self: *MoveGenerator, allocator: std.mem.Allocator) !std.ArrayList(board.Move) {
-        var moves = std.ArrayList(board.Move).empty;
-        errdefer moves.deinit(allocator);
-
         const current_color = if (self.board_ref.white_to_move) board.PieceColor.White else board.PieceColor.Black;
+        var pseudo_moves = std.ArrayList(board.Move).empty;
+        errdefer pseudo_moves.deinit(allocator);
 
         for (self.board_ref.squares, 0..) |piece, i| {
             if (piece) |p| {
                 if (p.color == current_color) {
-                    try self.generatePieceMoves(@intCast(i), p, allocator, &moves);
+                    try self.generatePieceMoves(@intCast(i), p, allocator, &pseudo_moves);
                 }
             }
         }
 
-        return moves;
+        var legal_moves = std.ArrayList(board.Move).empty;
+        errdefer legal_moves.deinit(allocator);
+
+        for (pseudo_moves.items) |move| {
+            const original_state = self.board_ref.*;
+            self.board_ref.makeMove(move) catch continue;
+            if (!self.board_ref.isInCheck(current_color)) {
+                try legal_moves.append(allocator, move);
+            }
+            self.board_ref.* = original_state;
+        }
+
+        pseudo_moves.deinit(allocator);
+        return legal_moves;
     }
 
     fn generatePieceMoves(self: *MoveGenerator, from: u8, piece: board.Piece, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {

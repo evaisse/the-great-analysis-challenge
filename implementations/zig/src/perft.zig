@@ -35,7 +35,6 @@ pub const Perft = struct {
 
             // Restore game state
             self.restoreGameState(original_state);
-            self.board_ref.undoMove(move);
         }
 
         return nodes;
@@ -68,7 +67,6 @@ pub const Perft = struct {
 
             // Restore game state
             self.restoreGameState(original_state);
-            self.board_ref.undoMove(move);
         }
 
         try stdout.print("\nTotal: {}\n", .{total_nodes});

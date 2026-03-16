@@ -35,11 +35,10 @@ pub const AI = struct {
             self.board_ref.makeMove(move) catch continue;
 
             // Evaluate the position after the move
-            const score = self.minimax(depth - 1, -999999, 999999, !self.board_ref.white_to_move);
+            const score = self.minimax(depth - 1, -999999, 999999, self.board_ref.white_to_move);
 
             // Restore the original position
             self.restoreGameState(original_state);
-            self.board_ref.undoMove(move);
 
             // Update best move
             if (self.board_ref.white_to_move) {
@@ -66,15 +65,6 @@ pub const AI = struct {
             return self.evaluatePosition();
         }
 
-        // Check for game end
-        if (self.board_ref.isCheckmate()) {
-            return if (maximizing) -100000 else 100000;
-        }
-
-        if (self.board_ref.isStalemate()) {
-            return 0;
-        }
-
         const allocator = std.heap.page_allocator;
         var move_generator = move_gen.MoveGenerator.init(self.board_ref);
 
@@ -82,7 +72,11 @@ pub const AI = struct {
         defer legal_moves.deinit(allocator);
 
         if (legal_moves.items.len == 0) {
-            return 0; // Stalemate
+            const current_color = if (self.board_ref.white_to_move) board.PieceColor.White else board.PieceColor.Black;
+            if (self.board_ref.isInCheck(current_color)) {
+                return if (maximizing) -100000 else 100000;
+            }
+            return 0;
         }
 
         var current_alpha = alpha;
@@ -98,7 +92,6 @@ pub const AI = struct {
                 const eval = self.minimax(depth - 1, current_alpha, current_beta, false);
 
                 self.restoreGameState(original_state);
-                self.board_ref.undoMove(move);
 
                 max_eval = @max(max_eval, eval);
                 current_alpha = @max(current_alpha, eval);
@@ -119,7 +112,6 @@ pub const AI = struct {
                 const eval = self.minimax(depth - 1, current_alpha, current_beta, true);
 
                 self.restoreGameState(original_state);
-                self.board_ref.undoMove(move);
 
                 min_eval = @min(min_eval, eval);
                 current_beta = @min(current_beta, eval);
@@ -208,6 +200,7 @@ pub const AI = struct {
 
     // Helper functions for game state management
     const GameState = struct {
+        squares: [64]?board.Piece,
         white_to_move: bool,
         castling_rights: board.CastlingRights,
         en_passant_target: ?u8,
@@ -217,6 +210,7 @@ pub const AI = struct {
 
     fn saveGameState(self: *AI) GameState {
         return GameState{
+            .squares = self.board_ref.squares,
             .white_to_move = self.board_ref.white_to_move,
             .castling_rights = self.board_ref.castling_rights,
             .en_passant_target = self.board_ref.en_passant_target,
@@ -226,6 +220,7 @@ pub const AI = struct {
     }
 
     fn restoreGameState(self: *AI, state: GameState) void {
+        self.board_ref.squares = state.squares;
         self.board_ref.white_to_move = state.white_to_move;
         self.board_ref.castling_rights = state.castling_rights;
         self.board_ref.en_passant_target = state.en_passant_target;

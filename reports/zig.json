@@ -22,95 +22,93 @@
       "build": "zig build -Doptimize=ReleaseFast",
       "run": "./zig-out/bin/chess",
       "test": "./zig-out/bin/chess --test",
-      "analyze": "zig fmt --check src/"
+      "analyze": "zig fmt --check src/",
+      "bugit": "if [ -f .bugit/main.zig.bak ]; then echo 'bugit already active for zig'; else mkdir -p .bugit && cp src/main.zig .bugit/main.zig.bak && printf '\\n)\\n' >> src/main.zig; fi",
+      "fix": "if [ -f .bugit/main.zig.bak ]; then mv .bugit/main.zig.bak src/main.zig && rmdir .bugit 2>/dev/null || true; else echo 'no zig bugit backup to restore'; fi"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.28586649894714355,
-      "build_seconds": 0.19678759574890137,
-      "analyze_seconds": 0.19692111015319824,
-      "test_seconds": 0.19757914543151855,
-      "test_internal_seconds": 0.19757914543151855,
-      "test_chess_engine_seconds": 58.0085072517395,
-      "test_v2_full_seconds": 58.0085072517395
+      "image_build_seconds": 26.144524097442627,
+      "build_seconds": 0.26143622398376465,
+      "analyze_seconds": 0.2690761089324951,
+      "test_seconds": 0.23476099967956543,
+      "test_internal_seconds": 0.23476099967956543,
+      "test_chess_engine_seconds": 10.307709217071533,
+      "test_v2_full_seconds": 10.307709217071533
     },
     "memory": {
       "image": {
-        "memory_mb": 110.3515625,
-        "peak_memory_mb": 110.3515625,
-        "avg_memory_mb": 82.84765625,
-        "avg_cpu_percent": 0.0,
-        "samples": 3,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
-        "memory_mb": 6.83203125,
-        "peak_memory_mb": 6.83203125,
+        "memory_mb": 3.71875,
+        "peak_memory_mb": 3.71875,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 6.58984375,
-        "peak_memory_mb": 6.58984375,
+        "memory_mb": 3.9921875,
+        "peak_memory_mb": 3.9921875,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 7.1484375,
-        "peak_memory_mb": 7.1484375,
+        "memory_mb": 3.69921875,
+        "peak_memory_mb": 3.69921875,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 17.7734375,
-        "peak_memory_mb": 61.65625,
-        "avg_memory_mb": 61.29084761424731,
-        "avg_cpu_percent": 0.0,
-        "samples": 558,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
-      "source_loc": 1627,
+      "source_loc": 2062,
       "source_files": 8
     },
     "metrics": {
-      "tokens_count": 13302,
+      "tokens_count": 18026,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 120.95119591204755,
-      "analyze_ms_per_kloc": 121.03325762335479,
-      "runtime_ms_per_kloc": 121.43770462908331
+      "build_ms_per_kloc": 126.78769349358132,
+      "analyze_ms_per_kloc": 130.49277833777649,
+      "runtime_ms_per_kloc": 113.85111526652058
     },
     "docker": {
-      "build_time": 0.28586649894714355,
+      "build_time": 26.144524097442627,
       "build_success": true,
-      "image_build_time": 0.28586649894714355,
+      "image_build_time": 26.144524097442627,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.19678759574890137,
+      "make_build_time": 0.26143622398376465,
       "make_build_success": true,
-      "make_analyze_time": 0.19692111015319824,
+      "make_analyze_time": 0.2690761089324951,
       "make_analyze_success": true,
-      "test_time": 0.19757914543151855,
+      "test_time": 0.23476099967956543,
       "test_success": true,
-      "make_test_time": 0.19757914543151855,
+      "make_test_time": 0.23476099967956543,
       "make_test_success": true,
-      "test_chess_engine_time": 58.0085072517395,
-      "test_chess_engine_success": false,
-      "track_test_time": 58.0085072517395,
-      "track_test_success": false
+      "test_chess_engine_time": 10.307709217071533,
+      "test_chess_engine_success": true,
+      "track_test_time": 10.307709217071533,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -119,21 +117,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 0,
-        "failed": 36,
-        "errors": 20,
-        "total": 36
+        "passed": 16,
+        "failed": 0,
+        "errors": 0,
+        "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting zig implementation at implementations/zig\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunning"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]

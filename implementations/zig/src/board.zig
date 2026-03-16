@@ -351,7 +351,6 @@ pub const Board = struct {
     }
 
     fn canPieceAttackSquare(self: *Board, piece: Piece, from: u8, to: u8) bool {
-        _ = self;
         const from_file = from % 8;
         const from_rank = from / 8;
         const to_file = to % 8;
@@ -386,8 +385,40 @@ pub const Board = struct {
                     (file_diff != 0 or rank_diff != 0);
             },
             else => {
-                // For bishop, rook, queen - simplified implementation
-                return true; // Would need proper ray casting
+                const file_diff = @as(i8, @intCast(to_file)) - @as(i8, @intCast(from_file));
+                const rank_diff = @as(i8, @intCast(to_rank)) - @as(i8, @intCast(from_rank));
+
+                const abs_file_diff = @abs(file_diff);
+                const abs_rank_diff = @abs(rank_diff);
+
+                switch (piece.piece_type) {
+                    .Bishop => {
+                        if (abs_file_diff != abs_rank_diff or abs_file_diff == 0) return false;
+                    },
+                    .Rook => {
+                        if (!((file_diff == 0 and rank_diff != 0) or (rank_diff == 0 and file_diff != 0))) return false;
+                    },
+                    .Queen => {
+                        const diagonal = abs_file_diff == abs_rank_diff and abs_file_diff != 0;
+                        const straight = (file_diff == 0 and rank_diff != 0) or (rank_diff == 0 and file_diff != 0);
+                        if (!diagonal and !straight) return false;
+                    },
+                    else => return false,
+                }
+
+                const file_step: i8 = if (file_diff == 0) 0 else if (file_diff > 0) 1 else -1;
+                const rank_step: i8 = if (rank_diff == 0) 0 else if (rank_diff > 0) 1 else -1;
+
+                var file = @as(i8, @intCast(from_file)) + file_step;
+                var rank = @as(i8, @intCast(from_rank)) + rank_step;
+                while (file != @as(i8, @intCast(to_file)) or rank != @as(i8, @intCast(to_rank))) {
+                    const square = @as(u8, @intCast(rank)) * 8 + @as(u8, @intCast(file));
+                    if (self.squares[square] != null) return false;
+                    file += file_step;
+                    rank += rank_step;
+                }
+
+                return true;
             },
         }
     }
