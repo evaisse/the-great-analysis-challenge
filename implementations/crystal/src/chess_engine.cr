@@ -55,9 +55,17 @@ class ChessEngine
       when "hash"
         puts "HASH: #{@game_state.hash.to_s(16).rjust(16, '0')}"
       when "draws"
-        puts "REPETITION: #{Board.is_draw_by_repetition(@game_state)}"
-        puts "50-MOVE RULE: #{Board.is_draw_by_fifty_moves(@game_state)}"
-        puts "OK: clock=#{@game_state.halfmove_clock}"
+        repetition = Board.repetition_count(@game_state)
+        halfmove = @game_state.halfmove_clock
+        draw = Board.is_draw_by_fifty_moves(@game_state) || repetition >= 3
+        reason = if Board.is_draw_by_fifty_moves(@game_state)
+                   "fifty_moves"
+                 elsif repetition >= 3
+                   "repetition"
+                 else
+                   "none"
+                 end
+        puts "DRAWS: repetition=#{repetition}; halfmove=#{halfmove}; draw=#{draw ? "true" : "false"}; reason=#{reason}"
       when "eval"
         puts "EVALUATION: #{@ai.search(@game_state, 0).evaluation}"
       when "perft"

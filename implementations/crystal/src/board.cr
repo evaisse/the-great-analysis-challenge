@@ -176,16 +176,19 @@ class Board
   end
 
   def self.is_draw_by_repetition(game_state : GameState) : Bool
-    count = 1
-    game_state.position_history.reverse_each do |h|
-      count += 1 if h == game_state.hash
-      return true if count >= 3
-    end
-    false
+    repetition_count(game_state) >= 3
   end
 
   def self.is_draw_by_fifty_moves(game_state : GameState) : Bool
     game_state.halfmove_clock >= 100
+  end
+
+  def self.repetition_count(game_state : GameState) : Int32
+    count = 1
+    game_state.position_history.reverse_each do |h|
+      count += 1 if h == game_state.hash
+    end
+    count
   end
 
   def self.is_game_over(game_state : GameState) : {Bool, String?}
