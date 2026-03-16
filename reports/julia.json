@@ -20,98 +20,96 @@
         ".jl"
       ],
       "benchmark.build": "skip",
-      "run": "julia --project=. chess.jl",
-      "build": "julia --project=. -e 'include(\"chess.jl\")'",
-      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | julia --project=. chess.jl | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2'",
-      "analyze": "julia --project=. -e 'include(\"chess.jl\")'"
+      "run": "./run.sh",
+      "build": "/usr/local/julia/bin/julia --project=. -e 'include(\"chess.jl\")'",
+      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | /usr/local/julia/bin/julia --project=. chess.jl | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2'",
+      "analyze": "/usr/local/julia/bin/julia --project=. -e 'include(\"chess.jl\")'",
+      "bugit": "if [ -f .bugit/chess.jl.bak ]; then echo 'bugit already active for julia'; else mkdir -p .bugit && cp chess.jl .bugit/chess.jl.bak && printf '\\n)\\n' >> chess.jl; fi",
+      "fix": "if [ -f .bugit/chess.jl.bak ]; then mv .bugit/chess.jl.bak chess.jl && rmdir .bugit 2>/dev/null || true; else echo 'no julia bugit backup to restore'; fi"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.2512483596801758,
+      "image_build_seconds": 2.0348100662231445,
       "build_seconds": null,
-      "analyze_seconds": 0.14374780654907227,
-      "test_seconds": 0.1512298583984375,
-      "test_internal_seconds": 0.1512298583984375,
-      "test_chess_engine_seconds": 11.940348625183105,
-      "test_v2_full_seconds": 11.940348625183105
+      "analyze_seconds": 0.39725708961486816,
+      "test_seconds": 0.3400089740753174,
+      "test_internal_seconds": 0.3400089740753174,
+      "test_chess_engine_seconds": 16.794681310653687,
+      "test_v2_full_seconds": 16.794681310653687
     },
     "memory": {
       "image": {
-        "memory_mb": 111.4609375,
-        "peak_memory_mb": 111.4609375,
-        "avg_memory_mb": 82.88411458333333,
-        "avg_cpu_percent": 0.0,
-        "samples": 3,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
         "memory_mb": 0,
         "peak_memory_mb": 0,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "skipped"
       },
       "analyze": {
-        "memory_mb": 6.34375,
-        "peak_memory_mb": 6.34375,
+        "memory_mb": 3.6328125,
+        "peak_memory_mb": 3.6328125,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 7.0546875,
-        "peak_memory_mb": 7.0546875,
+        "memory_mb": 3.84765625,
+        "peak_memory_mb": 3.84765625,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.109375,
-        "peak_memory_mb": 62.0703125,
-        "avg_memory_mb": 60.45552884615385,
-        "avg_cpu_percent": 0.0,
-        "samples": 117,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
-      "source_loc": 1631,
+      "source_loc": 1941,
       "source_files": 9
     },
     "metrics": {
-      "tokens_count": 9783,
+      "tokens_count": 12280,
       "metric_version": "tokens-v2"
     },
     "normalized": {
       "build_ms_per_kloc": 0.0,
-      "analyze_ms_per_kloc": 88.13476796387017,
-      "runtime_ms_per_kloc": 92.72216946562692
+      "analyze_ms_per_kloc": 204.66619763774764,
+      "runtime_ms_per_kloc": 175.17206289300225
     },
     "docker": {
-      "build_time": 0.2512483596801758,
+      "build_time": 2.0348100662231445,
       "build_success": true,
-      "image_build_time": 0.2512483596801758,
+      "image_build_time": 2.0348100662231445,
       "image_build_success": true,
       "make_build_skipped": true,
       "make_build_time": null,
       "make_build_success": true,
-      "make_analyze_time": 0.14374780654907227,
+      "make_analyze_time": 0.39725708961486816,
       "make_analyze_success": true,
-      "test_time": 0.1512298583984375,
+      "test_time": 0.3400089740753174,
       "test_success": true,
-      "make_test_time": 0.1512298583984375,
+      "make_test_time": 0.3400089740753174,
       "make_test_success": true,
-      "test_chess_engine_time": 11.940348625183105,
-      "test_chess_engine_success": false,
-      "track_test_time": 11.940348625183105,
-      "track_test_success": false
+      "test_chess_engine_time": 16.794681310653687,
+      "test_chess_engine_success": true,
+      "track_test_time": 16.794681310653687,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -120,21 +118,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
+        "passed": 16,
+        "failed": 0,
         "errors": 0,
         "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting julia implementation at implementations/julia\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRun"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]

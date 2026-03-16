@@ -7,7 +7,7 @@ Found 1 implementation(s) to test
 Testing gleam implementation
 Path: implementations/gleam
 ============================================================
-📏 Source size: 14681 LOC across 31 files, 111242 TOKENS
+📏 Source size: 14933 LOC across 31 files, 112398 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -16,7 +16,7 @@ Path: implementations/gleam
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-gleam .
-  ✅ Docker build completed in 7.61s
+  ✅ Docker build completed in 6.22s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -24,56 +24,56 @@ Path: implementations/gleam
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ✅ All Docker tests passed (image: 7.6s, make build: 0.8s, make analyze: 0.9s, make test: 3.3s, make test-chess-engine: 71.1s)
+  ✅ All Docker tests passed (image: 6.2s, make build: 0.6s, make analyze: 0.7s, make test: 2.2s, make test-chess-engine: 11.1s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 15:32:57
+Generated: 2026-03-16 16:41:45
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-gleam        completed  111242     14681    0.8s/13MB          0.9s/14MB          3.3s/88MB          71.1s/-MB                 1/1              16/16             
+gleam        completed  112398     14933    0.6s/13MB          0.7s/14MB          2.2s/86MB          11.1s/-MB                 1/1              16/16
 
 ============================================================
 DETAILED RESULTS: GLEAM
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 7.61s
-  make build: 0.82s
-  make analyze: 0.90s
-  make test: 3.32s
-  make test-chess-engine: 71.11s
-  make test (internal mirror): 3.32s
-  test v2 full seconds: 71.11s
+  docker build image: 6.22s
+  make build: 0.60s
+  make analyze: 0.69s
+  make test: 2.20s
+  make test-chess-engine: 11.08s
+  make test (internal mirror): 2.20s
+  test v2 full seconds: 11.08s
 
 SOURCE SIZE:
-  Source LOC: 14681 (files: 31)
-  TOKENS (tokens-v2): 111242
+  Source LOC: 14933 (files: 31)
+  TOKENS (tokens-v2): 112398
 
 NORMALIZED METRICS:
-  Build: 56.09 ms/KLOC
-  Analyze: 61.14 ms/KLOC
-  Runtime: 226.40 ms/KLOC
+  Build: 39.88 ms/KLOC
+  Analyze: 46.12 ms/KLOC
+  Runtime: 147.21 ms/KLOC
 
 MEMORY USAGE:
   Image: Peak 0.0MB, Avg 0.0MB
   Build: Peak 12.6MB, Avg 0.0MB
-  Analyze: Peak 13.9MB, Avg 0.0MB
-  Test: Peak 88.3MB, Avg 0.0MB
+  Analyze: Peak 14.2MB, Avg 0.0MB
+  Test: Peak 86.4MB, Avg 0.0MB
   Test_Chess_Engine: Peak 0.0MB, Avg 0.0MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (7.61s)
-  make build: ✅ (0.82s)
-  make analyze: ✅ (0.90s)
-  make test: ✅ (3.32s)
-  make test-chess-engine (track=v2-full): ✅ (71.11s)
+  Image build: ✅ (6.22s)
+  make build: ✅ (0.60s)
+  make analyze: ✅ (0.69s)
+  make test: ✅ (2.20s)
+  make test-chess-engine (track=v2-full): ✅ (11.08s)
   make test score: 1/1
   make test-chess-engine score: 16/16
 
