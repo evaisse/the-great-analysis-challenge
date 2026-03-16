@@ -1,5 +1,7 @@
 FROM ghcr.io/evaisse/tgac-julia-toolchain:latest
 
+ENV PATH="/usr/local/julia/bin:${PATH}"
+
 COPY . .
 RUN chmod +x run.sh
 
@@ -12,9 +14,9 @@ LABEL org.chess.estimated_perft4_ms=1000
 LABEL org.chess.source_exts=".jl"
 LABEL org.chess.benchmark.build="skip"
 LABEL org.chess.run="./run.sh"
-LABEL org.chess.build="julia --project=. -e 'include(\"chess.jl\")'"
-LABEL org.chess.test="echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | julia --project=. chess.jl | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2'"
-LABEL org.chess.analyze="julia --project=. -e 'include(\"chess.jl\")'"
+LABEL org.chess.build="/usr/local/julia/bin/julia --project=. -e 'include(\"chess.jl\")'"
+LABEL org.chess.test="echo -e 'new\nmove e2e4\nmove e7e5\nexport\nquit' | /usr/local/julia/bin/julia --project=. chess.jl | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2'"
+LABEL org.chess.analyze="/usr/local/julia/bin/julia --project=. -e 'include(\"chess.jl\")'"
 LABEL org.chess.bugit="if [ -f .bugit/chess.jl.bak ]; then echo 'bugit already active for julia'; else mkdir -p .bugit && cp chess.jl .bugit/chess.jl.bak && printf '\n)\n' >> chess.jl; fi"
 LABEL org.chess.fix="if [ -f .bugit/chess.jl.bak ]; then mv .bugit/chess.jl.bak chess.jl && rmdir .bugit 2>/dev/null || true; else echo 'no julia bugit backup to restore'; fi"
 
