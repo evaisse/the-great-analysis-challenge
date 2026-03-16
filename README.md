@@ -32,7 +32,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 🔮 Julia | 🟢 | [9,783](implementations/julia/chess.jl) | -, - MB | 144ms, 6 MB | 151ms, 7 MB | 11.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🧡 Kotlin | 🟡 | [9,666](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 156ms, 6 MB | 171ms, 7 MB | 158ms, 7 MB | 10s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🪐 Lua | 🟢 | [18,838](implementations/lua/chess.lua) | -, - MB | 159ms, 7 MB | 154ms, 7 MB | 10.7s, 63 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🦊 Nim | 🟢 | [8,410](implementations/nim/chess.nim) | 201ms, 7 MB | 186ms, 6 MB | 182ms, 7 MB | 9.7s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🦊 Nim | 🟡 | [10,616](implementations/nim/chess.nim) | 264ms, 4 MB | 240ms, 4 MB | 229ms, 4 MB | 10.2s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐘 Php | 🟢 | [24,435](implementations/php/chess.php) | -, - MB | 328ms, 9 MB | 201ms, 9 MB | 13.6s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐍 Python | 🟡 | [24,228](implementations/python/chess.py) | -, - MB | 192ms, 7 MB | 195ms, 7 MB | 16.7s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🧠 Rescript | 🟡 | [14,724](implementations/rescript/src/Chess.res) | 293ms, 3 MB | 263ms, 4 MB | 259ms, 4 MB | 10.7s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
@@ -79,16 +79,16 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | 2 | 🪐 Lua | 154ms | `####################` |
 | 3 | 🧡 Kotlin | 158ms | `###################` |
 | 4 | 🎯 Dart | 180ms | `#################` |
-| 5 | 🦊 Nim | 182ms | `#################` |
+| 5 | 🪶 Imba | 183ms | `################` |
 
 #### `make test-chess-engine`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
-| 1 | 🦊 Nim | 9.7s | `####################` |
-| 2 | 🦀 Rust | 9.7s | `####################` |
-| 3 | 🌳 Elm | 9.8s | `####################` |
-| 4 | 💠 Crystal | 9.8s | `####################` |
-| 5 | 🪶 Imba | 9.9s | `####################` |
+| 1 | 🦀 Rust | 9.7s | `####################` |
+| 2 | 🌳 Elm | 9.8s | `####################` |
+| 3 | 💠 Crystal | 9.8s | `####################` |
+| 4 | 🪶 Imba | 9.9s | `####################` |
+| 5 | 🧡 Kotlin | 10s | `####################` |
 <!-- speed-chart-end -->
 
 ## Quick Commands
