@@ -21,7 +21,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | Language | Status | TOKENS | make build | make analyze | make test | make test-chess-engine | make test score | make test-chess-engine score | Features |
 |----------|--------|--------|------------|--------------|-----------|------------------------|-----------------|------------------------------|----------|
 | 📦 Bun | 🟡 | [10,101](implementations/bun/chess.js) | -, - MB | 337ms, 4 MB | 271ms, 4 MB | 10.9s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 💠 Crystal | 🟢 | [9,441](implementations/crystal/src/chess_engine.cr) | 1.3s, 250 MB | 954ms, 194 MB | 2.4s, 526 MB | 9.8s, 62 MB | 1/1 | 5/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 💠 Crystal | 🟡 | [11,632](implementations/crystal/src/chess_engine.cr) | 3.8s, 293 MB | 3.1s, 220 MB | 7.5s, 603 MB | 10.4s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🎯 Dart | 🟡 | [19,370](implementations/dart/bin/main.dart) | 202ms, 7 MB | 192ms, 7 MB | 180ms, 6 MB | 10.5s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🌳 Elm | 🟢 | [7,868](implementations/elm/src/ChessEngine.elm) | 189ms, 5 MB | 188ms, 6 MB | 187ms, 6 MB | 9.8s, 62 MB | 1/1 | 3/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | ✨ Gleam | 🟢 | [107,698](implementations/gleam/src/chess_engine.gleam) | 385ms, 18 MB | 358ms, 7 MB | 764ms, 76 MB | 1m 10s, 62 MB | 1/1 | 0/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
@@ -86,9 +86,9 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 |------|----------------|------|-------|
 | 1 | 🦀 Rust | 9.7s | `####################` |
 | 2 | 🌳 Elm | 9.8s | `####################` |
-| 3 | 💠 Crystal | 9.8s | `####################` |
-| 4 | 🧡 Kotlin | 10s | `####################` |
-| 5 | 🪐 Lua | 10.7s | `##################` |
+| 3 | 🧡 Kotlin | 10s | `####################` |
+| 4 | 🦊 Nim | 10.2s | `###################` |
+| 5 | ⚡ Zig | 10.3s | `###################` |
 <!-- speed-chart-end -->
 
 ## Quick Commands

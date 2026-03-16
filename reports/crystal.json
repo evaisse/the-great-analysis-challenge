@@ -22,95 +22,93 @@
       "build": "crystal build src/chess_engine.cr --release -o chess_engine",
       "run": "./chess_engine",
       "test": "crystal spec",
-      "analyze": "crystal tool format --check"
+      "analyze": "crystal tool format --check",
+      "bugit": "if [ -f .bugit/chess_engine.cr.bak ]; then echo 'bugit already active for crystal'; else mkdir -p .bugit && cp src/chess_engine.cr .bugit/chess_engine.cr.bak && printf '\\n)\\n' >> src/chess_engine.cr; fi",
+      "fix": "if [ -f .bugit/chess_engine.cr.bak ]; then mv .bugit/chess_engine.cr.bak src/chess_engine.cr && rmdir .bugit 2>/dev/null || true; else echo 'no crystal bugit backup to restore'; fi"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.30475854873657227,
-      "build_seconds": 1.2952980995178223,
-      "analyze_seconds": 0.9542732238769531,
-      "test_seconds": 2.3903932571411133,
-      "test_internal_seconds": 2.3903932571411133,
-      "test_chess_engine_seconds": 9.827814817428589,
-      "test_v2_full_seconds": 9.827814817428589
+      "image_build_seconds": 30.83455181121826,
+      "build_seconds": 3.826154947280884,
+      "analyze_seconds": 3.062502145767212,
+      "test_seconds": 7.485896110534668,
+      "test_internal_seconds": 7.485896110534668,
+      "test_chess_engine_seconds": 10.447463989257812,
+      "test_v2_full_seconds": 10.447463989257812
     },
     "memory": {
       "image": {
-        "memory_mb": 115.828125,
-        "peak_memory_mb": 115.828125,
-        "avg_memory_mb": 85.44270833333333,
-        "avg_cpu_percent": 0.0,
-        "samples": 3,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
-        "memory_mb": 249.5703125,
-        "peak_memory_mb": 249.5703125,
+        "memory_mb": 292.59375,
+        "peak_memory_mb": 292.59375,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 194.4140625,
-        "peak_memory_mb": 194.4140625,
+        "memory_mb": 219.92578125,
+        "peak_memory_mb": 219.92578125,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 526.25,
-        "peak_memory_mb": 526.25,
+        "memory_mb": 603.08984375,
+        "peak_memory_mb": 603.08984375,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.0390625,
-        "peak_memory_mb": 62.0,
-        "avg_memory_mb": 60.02750822368421,
-        "avg_cpu_percent": 0.0,
-        "samples": 95,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
-      "source_loc": 1692,
+      "source_loc": 1989,
       "source_files": 7
     },
     "metrics": {
-      "tokens_count": 9441,
+      "tokens_count": 11632,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 765.5426120081692,
-      "analyze_ms_per_kloc": 563.9912670667571,
-      "runtime_ms_per_kloc": 1412.7619723056225
+      "build_ms_per_kloc": 1923.6575903875735,
+      "analyze_ms_per_kloc": 1539.7195303002572,
+      "runtime_ms_per_kloc": 3763.648119926932
     },
     "docker": {
-      "build_time": 0.30475854873657227,
+      "build_time": 30.83455181121826,
       "build_success": true,
-      "image_build_time": 0.30475854873657227,
+      "image_build_time": 30.83455181121826,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 1.2952980995178223,
+      "make_build_time": 3.826154947280884,
       "make_build_success": true,
-      "make_analyze_time": 0.9542732238769531,
+      "make_analyze_time": 3.062502145767212,
       "make_analyze_success": true,
-      "test_time": 2.3903932571411133,
+      "test_time": 7.485896110534668,
       "test_success": true,
-      "make_test_time": 2.3903932571411133,
+      "make_test_time": 7.485896110534668,
       "make_test_success": true,
-      "test_chess_engine_time": 9.827814817428589,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.827814817428589,
-      "track_test_success": false
+      "test_chess_engine_time": 10.447463989257812,
+      "test_chess_engine_success": true,
+      "track_test_time": 10.447463989257812,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -119,21 +117,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 5,
-        "failed": 11,
+        "passed": 16,
+        "failed": 0,
         "errors": 0,
         "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting crystal implementation at implementations/crystal\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2713\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]

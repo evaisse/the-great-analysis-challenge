@@ -1,3 +1,4 @@
+⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -6,7 +7,7 @@ Found 1 implementation(s) to test
 Testing crystal implementation
 Path: implementations/crystal
 ============================================================
-📏 Source size: 1692 LOC across 7 files, 9441 TOKENS
+📏 Source size: 1989 LOC across 7 files, 11632 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
 ✅ Local cache cleared with make clean
@@ -15,7 +16,7 @@ Path: implementations/crystal
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-crystal .
-  ✅ Docker build completed in 0.30s
+  ✅ Docker build completed in 30.83s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -23,77 +24,58 @@ Path: implementations/crystal
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
+  ✅ All Docker tests passed (image: 30.8s, make build: 3.8s, make analyze: 3.1s, make test: 7.5s, make test-chess-engine: 10.4s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-13 15:55:01
+Generated: 2026-03-16 12:31:44
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-crystal      completed  9441       1692     1.3s/250MB         1.0s/194MB         2.4s/526MB         9.8s/62MB                 1/1              5/16              
+crystal      completed  11632      1989     3.8s/293MB         3.1s/220MB         7.5s/603MB         10.4s/-MB                 1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: CRYSTAL
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.30s
-  make build: 1.30s
-  make analyze: 0.95s
-  make test: 2.39s
-  make test-chess-engine: 9.83s
-  make test (internal mirror): 2.39s
-  test v2 full seconds: 9.83s
+  docker build image: 30.83s
+  make build: 3.83s
+  make analyze: 3.06s
+  make test: 7.49s
+  make test-chess-engine: 10.45s
+  make test (internal mirror): 7.49s
+  test v2 full seconds: 10.45s
 
 SOURCE SIZE:
-  Source LOC: 1692 (files: 7)
-  TOKENS (tokens-v2): 9441
+  Source LOC: 1989 (files: 7)
+  TOKENS (tokens-v2): 11632
 
 NORMALIZED METRICS:
-  Build: 765.54 ms/KLOC
-  Analyze: 563.99 ms/KLOC
-  Runtime: 1412.76 ms/KLOC
+  Build: 1923.66 ms/KLOC
+  Analyze: 1539.72 ms/KLOC
+  Runtime: 3763.65 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 115.8MB, Avg 85.4MB
-  Build: Peak 249.6MB, Avg 0.0MB
-  Analyze: Peak 194.4MB, Avg 0.0MB
-  Test: Peak 526.2MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.0MB, Avg 60.0MB
+  Image: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 292.6MB, Avg 0.0MB
+  Analyze: Peak 219.9MB, Avg 0.0MB
+  Test: Peak 603.1MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 0.0MB, Avg 0.0MB
 
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
+CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.30s)
-  make build: ✅ (1.30s)
-  make analyze: ✅ (0.95s)
-  make test: ✅ (2.39s)
-  make test-chess-engine (track=v2-full): ❌ (9.83s)
+  Image build: ✅ (30.83s)
+  make build: ✅ (3.83s)
+  make analyze: ✅ (3.06s)
+  make test: ✅ (7.49s)
+  make test-chess-engine (track=v2-full): ✅ (10.45s)
   make test score: 1/1
-  make test-chess-engine score: 5/16
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing crystal implementation at implementations/crystal
-----------------------------------------
-Running test: Hash Command Baseline ✓
-Running test: Hash Command After Move ✓
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✓
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Handshake ✗
+  make test-chess-engine score: 16/16
 
 ================================================================================
 📄 JSON results saved to reports/crystal.json (1 valid benchmark(s))
