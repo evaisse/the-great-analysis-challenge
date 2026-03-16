@@ -23,10 +23,10 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 📦 Bun | 🟡 | [10,101](implementations/bun/chess.js) | -, - MB | 337ms, 4 MB | 271ms, 4 MB | 10.9s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 💠 Crystal | 🟡 | [11,632](implementations/crystal/src/chess_engine.cr) | 3.8s, 293 MB | 3.1s, 220 MB | 7.5s, 603 MB | 10.4s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🎯 Dart | 🟡 | [19,370](implementations/dart/bin/main.dart) | 202ms, 7 MB | 192ms, 7 MB | 180ms, 6 MB | 10.5s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🌳 Elm | 🟡 | [7,868](implementations/elm/src/ChessEngine.elm) | 189ms, 5 MB | 188ms, 6 MB | 187ms, 6 MB | 9.8s, 62 MB | 1/1 | 3/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🌳 Elm | 🟡 | [7,868](implementations/elm/src/ChessEngine.elm) | 332ms, 4 MB | 290ms, 4 MB | 322ms, 4 MB | 10.6s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | ✨ Gleam | 🟡 | [107,698](implementations/gleam/src/chess_engine.gleam) | 385ms, 18 MB | 358ms, 7 MB | 764ms, 76 MB | 1m 10s, 62 MB | 1/1 | 0/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐹 Go | 🟡 | [22,900](implementations/go/chess.go) | 511ms, 83 MB | 1.1s, 111 MB | 1.1s, 120 MB | 10.5s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 📐 Haskell | 🟡 | [11,812](implementations/haskell/src/Main.hs) | 330ms, 39 MB | 185ms, 7 MB | 230ms, 7 MB | 1m 10s, 62 MB | 1/1 | 0/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 📐 Haskell | 🟡 | [14,769](implementations/haskell/src/Main.hs) | 755ms, 56 MB | 367ms, 5 MB | 538ms, 12 MB | 1m 11s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🪶 Imba | 🟡 | [9,098](implementations/imba/chess.imba) | 346ms, 4 MB | 365ms, 4 MB | 326ms, 4 MB | 10.8s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🟨 Javascript | 🟡 | [10,094](implementations/javascript/chess.js) | -, - MB | 291ms, 4 MB | 282ms, 4 MB | 10.7s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🔮 Julia | 🟡 | [9,783](implementations/julia/chess.jl) | -, - MB | 144ms, 6 MB | 151ms, 7 MB | 11.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
@@ -57,20 +57,20 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 #### `make build`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
-| 1 | 🌳 Elm | 189ms | `####################` |
-| 2 | 🎯 Dart | 202ms | `###################` |
-| 3 | ⚡ Zig | 261ms | `##############` |
-| 4 | 📘 Typescript | 263ms | `##############` |
-| 5 | 🦊 Nim | 264ms | `##############` |
+| 1 | 🎯 Dart | 202ms | `####################` |
+| 2 | ⚡ Zig | 261ms | `###############` |
+| 3 | 📘 Typescript | 263ms | `###############` |
+| 4 | 🦊 Nim | 264ms | `###############` |
+| 5 | 🧠 Rescript | 293ms | `##############` |
 
 #### `make analyze`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
 | 1 | 🔮 Julia | 144ms | `####################` |
 | 2 | 🪐 Lua | 159ms | `##################` |
-| 3 | 📐 Haskell | 185ms | `################` |
-| 4 | 🌳 Elm | 188ms | `###############` |
-| 5 | 🎯 Dart | 192ms | `###############` |
+| 3 | 🎯 Dart | 192ms | `###############` |
+| 4 | 🐍 Python | 192ms | `###############` |
+| 5 | 🦊 Nim | 240ms | `############` |
 
 #### `make test`
 | Rank | Implementation | Time | Chart |
@@ -78,17 +78,17 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | 1 | 🔮 Julia | 151ms | `####################` |
 | 2 | 🪐 Lua | 154ms | `####################` |
 | 3 | 🎯 Dart | 180ms | `#################` |
-| 4 | 🌳 Elm | 187ms | `################` |
-| 5 | 🐍 Python | 195ms | `################` |
+| 4 | 🐍 Python | 195ms | `################` |
+| 5 | 🐘 Php | 201ms | `###############` |
 
 #### `make test-chess-engine`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
-| 1 | 🌳 Elm | 9.8s | `####################` |
-| 2 | 🦊 Nim | 10.2s | `###################` |
-| 3 | ⚡ Zig | 10.3s | `###################` |
-| 4 | 🐦 Swift | 10.3s | `###################` |
-| 5 | ❤️ Ruby | 10.4s | `###################` |
+| 1 | 🦊 Nim | 10.2s | `####################` |
+| 2 | ⚡ Zig | 10.3s | `####################` |
+| 3 | 🐦 Swift | 10.3s | `####################` |
+| 4 | ❤️ Ruby | 10.4s | `####################` |
+| 5 | 💠 Crystal | 10.4s | `####################` |
 <!-- speed-chart-end -->
 
 ## Quick Commands
