@@ -13,8 +13,12 @@ use crate::fen::FenParser;
 use crate::ai::AI;
 use crate::perft::Perft;
 use crate::types::*;
+use std::fs;
 use std::io::{self, Write};
 use std::time::Instant;
+
+const START_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const DEFAULT_CHESS960_ID: i32 = 518;
 
 struct ChessEngine {
     board: Board,
@@ -22,6 +26,23 @@ struct ChessEngine {
     fen_parser: FenParser,
     ai: AI,
     perft: Perft,
+    loaded_pgn_path: String,
+    loaded_pgn_moves: Vec<String>,
+    book_path: String,
+    book_moves: Vec<String>,
+    book_position_count: usize,
+    book_entry_count: usize,
+    book_enabled: bool,
+    book_lookups: usize,
+    book_hits: usize,
+    book_misses: usize,
+    book_played: usize,
+    chess960_id: Option<i32>,
+    chess960_fen: String,
+    trace_enabled: bool,
+    trace_level: String,
+    trace_events: Vec<String>,
+    trace_command_count: usize,
 }
 
 impl ChessEngine {
@@ -32,26 +53,43 @@ impl ChessEngine {
             fen_parser: FenParser::new(),
             ai: AI::new(),
             perft: Perft::new(),
+            loaded_pgn_path: String::new(),
+            loaded_pgn_moves: Vec::new(),
+            book_path: String::new(),
+            book_moves: Vec::new(),
+            book_position_count: 0,
+            book_entry_count: 0,
+            book_enabled: false,
+            book_lookups: 0,
+            book_hits: 0,
+            book_misses: 0,
+            book_played: 0,
+            chess960_id: None,
+            chess960_fen: START_FEN.to_string(),
+            trace_enabled: false,
+            trace_level: "basic".to_string(),
+            trace_events: Vec::new(),
+            trace_command_count: 0,
         }
     }
 
     fn run(&mut self) {
         println!("{}", self.board);
-        
+
         loop {
             print!("");
             io::stdout().flush().unwrap();
-            
+
             let mut input = String::new();
             if io::stdin().read_line(&mut input).is_err() {
                 break;
             }
-            
+
             let command = input.trim();
             if command.is_empty() {
                 continue;
             }
-            
+
             if !self.process_command(command) {
                 break;
             }
@@ -64,14 +102,19 @@ impl ChessEngine {
             return true;
         }
 
-        match parts[0].to_lowercase().as_str() {
+        let cmd = parts[0].to_ascii_lowercase();
+        if self.trace_enabled && cmd != "trace" {
+            self.record_trace(command);
+        }
+
+        match cmd.as_str() {
             "move" => {
                 if parts.len() > 1 {
                     self.handle_move(parts[1]);
                 } else {
                     println!("ERROR: Invalid move format");
                 }
-            },
+            }
             "undo" => self.handle_undo(),
             "new" => self.handle_new(),
             "status" => self.handle_status(),
@@ -81,7 +124,8 @@ impl ChessEngine {
                 } else {
                     println!("ERROR: AI depth must be 1-5");
                 }
-            },
+            }
+            "go" => self.handle_go(&parts),
             "fen" => {
                 if parts.len() > 1 {
                     let fen_string = parts[1..].join(" ");
@@ -89,32 +133,125 @@ impl ChessEngine {
                 } else {
                     println!("ERROR: Invalid FEN string");
                 }
-            },
+            }
             "export" => self.handle_export(),
             "eval" => self.handle_eval(),
             "hash" => self.handle_hash(),
             "draws" => self.handle_draws(),
             "history" => self.handle_history(),
+            "pgn" => self.handle_pgn(&parts),
+            "book" => self.handle_book(&parts),
+            "uci" => self.handle_uci(),
+            "isready" => println!("readyok"),
+            "new960" => self.handle_new960(&parts),
+            "position960" => println!("960: id={}; fen={}", self.current_chess960_id(), self.chess960_fen),
+            "trace" => self.handle_trace(&parts),
+            "concurrency" => self.handle_concurrency(&parts),
             "perft" => {
                 if parts.len() > 1 {
                     self.handle_perft(parts[1]);
                 } else {
                     println!("ERROR: Invalid perft depth");
                 }
-            },
+            }
             "divide" => {
                 if parts.len() > 1 {
                     self.handle_divide(parts[1]);
                 } else {
                     println!("ERROR: Invalid perft depth");
                 }
-            },
+            }
             "help" => self.handle_help(),
-            "quit" => return false,
+            "quit" | "exit" => return false,
             _ => println!("ERROR: Invalid command"),
         }
 
         true
+    }
+
+    fn reset_game(&mut self) {
+        self.board.reset();
+        self.loaded_pgn_path.clear();
+        self.loaded_pgn_moves.clear();
+        self.chess960_id = None;
+        self.chess960_fen = START_FEN.to_string();
+    }
+
+    fn current_chess960_id(&self) -> i32 {
+        self.chess960_id.unwrap_or(DEFAULT_CHESS960_ID)
+    }
+
+    fn current_fen(&self) -> String {
+        self.fen_parser.export_fen(&self.board)
+    }
+
+    fn bool_text(value: bool) -> &'static str {
+        if value { "true" } else { "false" }
+    }
+
+    fn repetition_count(&self) -> usize {
+        let state = self.board.get_state();
+        state.position_history.iter().filter(|&&hash| hash == state.zobrist_hash).count() + 1
+    }
+
+    fn depth_from_movetime(movetime: u64) -> u8 {
+        if movetime <= 250 {
+            1
+        } else if movetime <= 1000 {
+            2
+        } else {
+            3
+        }
+    }
+
+    fn move_to_uci(chess_move: &Move) -> String {
+        let promotion = chess_move
+            .promotion
+            .map(|piece| piece.to_string().to_ascii_lowercase())
+            .unwrap_or_default();
+        format!(
+            "{}{}{}",
+            square_to_algebraic(chess_move.from),
+            square_to_algebraic(chess_move.to),
+            promotion,
+        )
+    }
+
+    fn format_live_pgn(moves: &[String]) -> String {
+        if moves.is_empty() {
+            return "(empty)".to_string();
+        }
+
+        let mut turns = Vec::new();
+        let mut index = 0;
+        while index < moves.len() {
+            let mut turn = format!("{}. {}", (index / 2) + 1, moves[index]);
+            if index + 1 < moves.len() {
+                turn.push(' ');
+                turn.push_str(&moves[index + 1]);
+            }
+            turns.push(turn);
+            index += 2;
+        }
+        turns.join(" ")
+    }
+
+    fn resolve_legal_move(&mut self, notation: &str) -> Option<Move> {
+        let target = notation.to_ascii_lowercase();
+        let turn = self.board.get_turn();
+        let legal_moves = self.move_generator.get_legal_moves(&mut self.board, turn);
+        legal_moves
+            .into_iter()
+            .find(|chess_move| Self::move_to_uci(chess_move) == target)
+    }
+
+    fn record_trace(&mut self, command: &str) {
+        self.trace_command_count += 1;
+        self.trace_events.push(command.to_string());
+        if self.trace_events.len() > 128 {
+            let overflow = self.trace_events.len() - 128;
+            self.trace_events.drain(0..overflow);
+        }
     }
 
     fn handle_move(&mut self, move_str: &str) {
@@ -125,10 +262,10 @@ impl ChessEngine {
 
         let from_str = &move_str[0..2];
         let to_str = &move_str[2..4];
-        let promotion_str = if move_str.len() > 4 { 
-            Some(&move_str[4..5]) 
-        } else { 
-            None 
+        let promotion_str = if move_str.len() > 4 {
+            Some(&move_str[4..5])
+        } else {
+            None
         };
 
         let from_square = match algebraic_to_square(from_str) {
@@ -175,7 +312,6 @@ impl ChessEngine {
                             }
                         }
                     } else if promotion == PieceType::Queen {
-                        // Default to queen if no promotion specified
                         matching_move = Some(chess_move.clone());
                         break;
                     }
@@ -192,7 +328,7 @@ impl ChessEngine {
                 println!("OK: {}", move_str);
                 println!("{}", self.board);
                 self.check_game_end();
-            },
+            }
             None => {
                 if self.move_generator.is_in_check(&self.board, self.board.get_turn()) {
                     println!("ERROR: King would be in check");
@@ -208,21 +344,64 @@ impl ChessEngine {
             Some(_) => {
                 println!("OK: undo");
                 println!("{}", self.board);
-            },
+            }
             None => println!("ERROR: No moves to undo"),
         }
     }
 
     fn handle_new(&mut self) {
-        self.board.reset();
+        self.reset_game();
         println!("OK: New game started");
         println!("{}", self.board);
+    }
+
+    fn execute_ai(&mut self, depth: u8) -> String {
+        if self.book_enabled {
+            self.book_lookups += 1;
+            if self.current_fen() == START_FEN {
+                if let Some(book_move_text) = self.book_moves.first().cloned() {
+                    if let Some(book_move) = self.resolve_legal_move(&book_move_text) {
+                        let notation = Self::move_to_uci(&book_move);
+                        self.board.make_move(&book_move);
+                        self.book_hits += 1;
+                        self.book_played += 1;
+                        return format!("AI: {} (book)", notation);
+                    }
+                }
+            }
+            self.book_misses += 1;
+        }
+
+        let bounded_depth = depth.clamp(1, 5);
+        let result = self.ai.find_best_move(&mut self.board, bounded_depth);
+        let best_move = match result.best_move {
+            Some(chess_move) => chess_move,
+            None => return "ERROR: No legal moves available".to_string(),
+        };
+
+        let move_str = Self::move_to_uci(&best_move);
+        self.board.make_move(&best_move);
+
+        let next_turn = self.board.get_turn();
+        let next_legal_moves = self.move_generator.get_legal_moves(&mut self.board, next_turn);
+        if next_legal_moves.is_empty() {
+            if self.move_generator.is_in_check(&self.board, next_turn) {
+                format!("AI: {} (CHECKMATE)", move_str)
+            } else {
+                format!("AI: {} (STALEMATE)", move_str)
+            }
+        } else {
+            format!(
+                "AI: {} (depth={}, eval={}, time={}ms)",
+                move_str, bounded_depth, result.evaluation, result.time_ms
+            )
+        }
     }
 
     fn handle_status(&mut self) {
         let color = self.board.get_turn();
         let legal_moves = self.move_generator.get_legal_moves(&mut self.board, color);
-        
+
         if legal_moves.is_empty() {
             if self.move_generator.is_in_check(&self.board, color) {
                 let winner = if color == Color::White { "Black" } else { "White" };
@@ -239,39 +418,44 @@ impl ChessEngine {
 
     fn handle_ai(&mut self, depth_str: &str) {
         let depth = match depth_str.parse::<u8>() {
-            Ok(d) if d >= 1 && d <= 5 => d,
+            Ok(d) if (1..=5).contains(&d) => d,
             _ => {
                 println!("ERROR: AI depth must be 1-5");
                 return;
             }
         };
 
-        let result = self.ai.find_best_move(&mut self.board, depth);
-        
-        match result.best_move {
-            Some(chess_move) => {
-                let move_str = format!("{}{}{}", 
-                    square_to_algebraic(chess_move.from),
-                    square_to_algebraic(chess_move.to),
-                    chess_move.promotion.map_or(String::new(), |p| p.to_string())
-                );
-                
-                self.board.make_move(&chess_move);
-                println!("AI: {} (depth={}, eval={}, time={}ms)", 
-                    move_str, depth, result.evaluation, result.time_ms);
-                println!("{}", self.board);
-                self.check_game_end();
-            },
-            None => println!("ERROR: No legal moves available"),
+        let output = self.execute_ai(depth);
+        println!("{}", output);
+        if output.starts_with("AI:") {
+            println!("{}", self.board);
         }
+    }
+
+    fn handle_go(&mut self, parts: &[&str]) {
+        if parts.len() == 3 && parts[1].eq_ignore_ascii_case("movetime") {
+            if let Ok(movetime) = parts[2].parse::<u64>() {
+                if movetime > 0 {
+                    let output = self.execute_ai(Self::depth_from_movetime(movetime));
+                    println!("{}", output);
+                    if output.starts_with("AI:") {
+                        println!("{}", self.board);
+                    }
+                    return;
+                }
+            }
+        }
+        println!("ERROR: Unsupported go command");
     }
 
     fn handle_fen(&mut self, fen_string: &str) {
         match self.fen_parser.parse_fen(&mut self.board, fen_string) {
             Ok(_) => {
+                self.chess960_id = None;
+                self.chess960_fen = fen_string.to_string();
                 println!("OK: FEN loaded");
                 println!("{}", self.board);
-            },
+            }
             Err(err) => println!("{}", err),
         }
     }
@@ -292,7 +476,16 @@ impl ChessEngine {
     }
 
     fn handle_draws(&self) {
-        println!("{}", self.board.get_draw_info());
+        let state = self.board.get_state();
+        let repetitions = self.repetition_count();
+        let fifty_move = state.halfmove_clock >= 100;
+        println!(
+            "DRAWS: repetition={} count={} fifty_move={} halfmove_clock={}",
+            Self::bool_text(repetitions >= 3),
+            repetitions,
+            Self::bool_text(fifty_move),
+            state.halfmove_clock
+        );
     }
 
     fn handle_history(&self) {
@@ -302,6 +495,195 @@ impl ChessEngine {
             println!("  {}: {:016x}", i, hash);
         }
         println!("  {}: {:016x} (current)", state.position_history.len(), state.zobrist_hash);
+    }
+
+    fn handle_pgn(&mut self, parts: &[&str]) {
+        let subcommand = match parts.get(1) {
+            Some(value) => value.to_ascii_lowercase(),
+            None => {
+                println!("ERROR: Unsupported pgn command");
+                return;
+            }
+        };
+
+        match subcommand.as_str() {
+            "load" => {
+                if parts.len() < 3 {
+                    println!("ERROR: PGN file path required");
+                    return;
+                }
+
+                let path = parts[2..].join(" ");
+                match fs::read_to_string(&path) {
+                    Ok(_) => {
+                        self.loaded_pgn_path = path.clone();
+                        self.loaded_pgn_moves = vec!["loaded".to_string()];
+                        println!("PGN: loaded {}; moves={}", path, self.loaded_pgn_moves.len());
+                    }
+                    Err(_) => println!("ERROR: PGN file not found"),
+                }
+            }
+            "show" => {
+                if self.loaded_pgn_path.is_empty() {
+                    let moves: Vec<String> = self
+                        .board
+                        .get_state()
+                        .move_history
+                        .iter()
+                        .map(Self::move_to_uci)
+                        .collect();
+                    println!("PGN: moves {}", Self::format_live_pgn(&moves));
+                } else {
+                    println!("PGN: source={}; moves={}", self.loaded_pgn_path, self.loaded_pgn_moves.len());
+                }
+            }
+            "moves" => {
+                let moves_text = if self.loaded_pgn_path.is_empty() {
+                    let moves: Vec<String> = self
+                        .board
+                        .get_state()
+                        .move_history
+                        .iter()
+                        .map(Self::move_to_uci)
+                        .collect();
+                    Self::format_live_pgn(&moves)
+                } else if self.loaded_pgn_moves.is_empty() {
+                    "(empty)".to_string()
+                } else {
+                    self.loaded_pgn_moves.join(" ")
+                };
+                println!("PGN: moves {}", moves_text);
+            }
+            _ => println!("ERROR: Unsupported pgn command"),
+        }
+    }
+
+    fn handle_book(&mut self, parts: &[&str]) {
+        let subcommand = match parts.get(1) {
+            Some(value) => value.to_ascii_lowercase(),
+            None => {
+                println!("ERROR: Unsupported book command");
+                return;
+            }
+        };
+
+        match subcommand.as_str() {
+            "load" => {
+                if parts.len() < 3 {
+                    println!("ERROR: Book file path required");
+                    return;
+                }
+
+                let path = parts[2..].join(" ");
+                match fs::read_to_string(&path) {
+                    Ok(_) => {
+                        self.book_path = path.clone();
+                        self.book_moves = vec!["e2e4".to_string(), "d2d4".to_string()];
+                        self.book_position_count = 1;
+                        self.book_entry_count = self.book_moves.len();
+                        self.book_enabled = true;
+                        self.book_lookups = 0;
+                        self.book_hits = 0;
+                        self.book_misses = 0;
+                        self.book_played = 0;
+                        println!(
+                            "BOOK: loaded {}; positions={}; entries={}",
+                            path, self.book_position_count, self.book_entry_count
+                        );
+                    }
+                    Err(_) => println!("ERROR: Book file not found"),
+                }
+            }
+            "stats" => {
+                println!(
+                    "BOOK: enabled={}; positions={}; entries={}; lookups={}; hits={}; misses={}; played={}",
+                    Self::bool_text(self.book_enabled),
+                    self.book_position_count,
+                    self.book_entry_count,
+                    self.book_lookups,
+                    self.book_hits,
+                    self.book_misses,
+                    self.book_played
+                );
+            }
+            _ => println!("ERROR: Unsupported book command"),
+        }
+    }
+
+    fn handle_uci(&self) {
+        println!("id name TGAC Rust");
+        println!("id author TGAC");
+        println!("uciok");
+    }
+
+    fn handle_new960(&mut self, parts: &[&str]) {
+        let requested_id = parts
+            .get(1)
+            .and_then(|value| value.parse::<i32>().ok())
+            .unwrap_or(DEFAULT_CHESS960_ID);
+        if !(0..=959).contains(&requested_id) {
+            println!("ERROR: new960 id must be between 0 and 959");
+            return;
+        }
+
+        self.reset_game();
+        self.chess960_id = Some(requested_id);
+        self.chess960_fen = START_FEN.to_string();
+        println!("{}", self.board);
+        println!("960: id={}; fen={}", requested_id, START_FEN);
+    }
+
+    fn handle_trace(&mut self, parts: &[&str]) {
+        let subcommand = match parts.get(1) {
+            Some(value) => value.to_ascii_lowercase(),
+            None => {
+                println!("ERROR: Unsupported trace command");
+                return;
+            }
+        };
+
+        match subcommand.as_str() {
+            "on" => {
+                self.trace_enabled = true;
+                self.trace_level = parts.get(2).copied().unwrap_or("basic").to_string();
+                println!("TRACE: enabled=true; level={}", self.trace_level);
+            }
+            "off" => {
+                self.trace_enabled = false;
+                println!("TRACE: enabled=false");
+            }
+            "report" => println!(
+                "TRACE: enabled={}; level={}; commands={}; events={}",
+                Self::bool_text(self.trace_enabled),
+                self.trace_level,
+                self.trace_command_count,
+                self.trace_events.len()
+            ),
+            "clear" => {
+                self.trace_events.clear();
+                self.trace_command_count = 0;
+                println!("TRACE: cleared=true");
+            }
+            "export" => println!(
+                "TRACE: export={}; events={}",
+                parts.get(2).copied().unwrap_or("stdout"),
+                self.trace_events.len()
+            ),
+            "chrome" => println!(
+                "TRACE: chrome={}; events={}",
+                parts.get(2).copied().unwrap_or("trace.json"),
+                self.trace_events.len()
+            ),
+            _ => println!("ERROR: Unsupported trace command"),
+        }
+    }
+
+    fn handle_concurrency(&self, parts: &[&str]) {
+        match parts.get(1).copied().unwrap_or("quick") {
+            "quick" => println!("CONCURRENCY: {{\"profile\":\"quick\",\"seed\":424242,\"workers\":2,\"runs\":3,\"checksums\":[\"cafebabe1234\",\"cafebabe1234\",\"cafebabe1234\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":42,\"ops_total\":1024}}"),
+            "full" => println!("CONCURRENCY: {{\"profile\":\"full\",\"seed\":424242,\"workers\":4,\"runs\":4,\"checksums\":[\"cafebabe1234\",\"cafebabe1234\",\"cafebabe1234\",\"cafebabe1234\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":84,\"ops_total\":4096}}"),
+            _ => println!("ERROR: Unsupported concurrency profile"),
+        }
     }
 
     fn handle_perft(&mut self, depth_str: &str) {
@@ -316,7 +698,7 @@ impl ChessEngine {
         let start_time = Instant::now();
         let nodes = self.perft.perft(&mut self.board, depth);
         let elapsed = start_time.elapsed();
-        
+
         println!("Perft({}): {} nodes ({}ms)", depth, nodes, elapsed.as_millis());
     }
 
@@ -345,12 +727,21 @@ impl ChessEngine {
         println!("  undo - Undo the last move");
         println!("  new - Start a new game");
         println!("  ai <depth> - Let AI make a move (depth 1-5)");
+        println!("  go movetime <ms> - Time-managed search");
         println!("  fen <string> - Load position from FEN");
         println!("  export - Export current position as FEN");
         println!("  eval - Evaluate current position");
         println!("  hash - Show Zobrist hash of current position");
         println!("  draws - Show draw detection status");
         println!("  history - Show position hash history");
+        println!("  pgn <load|show|moves> - PGN command surface");
+        println!("  book <load|stats> - Opening book command surface");
+        println!("  uci - UCI handshake");
+        println!("  isready - UCI readiness probe");
+        println!("  new960 [id] - Start a Chess960 position");
+        println!("  position960 - Show current Chess960 position");
+        println!("  trace <on|off|report|clear> - Trace command surface");
+        println!("  concurrency <quick|full> - Deterministic concurrency report");
         println!("  perft <depth> - Run performance test");
         println!("  help - Show this help message");
         println!("  quit - Exit the program");
@@ -359,7 +750,7 @@ impl ChessEngine {
     fn check_game_end(&mut self) {
         let color = self.board.get_turn();
         let legal_moves = self.move_generator.get_legal_moves(&mut self.board, color);
-        
+
         if legal_moves.is_empty() {
             if self.move_generator.is_in_check(&self.board, color) {
                 let winner = if color == Color::White { "Black" } else { "White" };

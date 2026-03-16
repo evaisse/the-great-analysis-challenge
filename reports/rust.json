@@ -22,95 +22,93 @@
       "build": "cargo build --release",
       "test": "cargo test",
       "analyze": "cargo check --all-targets",
+      "bugit": "if [ -f .bugit/main.rs.bak ]; then echo 'bugit already active for rust'; else mkdir -p .bugit && cp src/main.rs .bugit/main.rs.bak && printf '\\n)\\n' >> src/main.rs; fi",
+      "fix": "if [ -f .bugit/main.rs.bak ]; then mv .bugit/main.rs.bak src/main.rs && rmdir .bugit 2>/dev/null || true; else echo 'no rust bugit backup to restore'; fi",
       "run": "./target/release/chess"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.29706573486328125,
-      "build_seconds": 0.19880986213684082,
-      "analyze_seconds": 0.19222092628479004,
-      "test_seconds": 0.190565824508667,
-      "test_internal_seconds": 0.190565824508667,
-      "test_chess_engine_seconds": 9.745681524276733,
-      "test_v2_full_seconds": 9.745681524276733
+      "image_build_seconds": 11.978580951690674,
+      "build_seconds": 0.42441296577453613,
+      "analyze_seconds": 0.4045279026031494,
+      "test_seconds": 0.40401411056518555,
+      "test_internal_seconds": 0.40401411056518555,
+      "test_chess_engine_seconds": 10.50836992263794,
+      "test_v2_full_seconds": 10.50836992263794
     },
     "memory": {
       "image": {
-        "memory_mb": 111.1015625,
-        "peak_memory_mb": 111.1015625,
-        "avg_memory_mb": 83.6953125,
-        "avg_cpu_percent": 0.0,
-        "samples": 3,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
-        "memory_mb": 6.58203125,
-        "peak_memory_mb": 6.58203125,
+        "memory_mb": 4.1875,
+        "peak_memory_mb": 4.1875,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 6.5859375,
-        "peak_memory_mb": 6.5859375,
+        "memory_mb": 4.07421875,
+        "peak_memory_mb": 4.07421875,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 6.59765625,
-        "peak_memory_mb": 6.59765625,
+        "memory_mb": 3.9609375,
+        "peak_memory_mb": 3.9609375,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.05859375,
-        "peak_memory_mb": 61.62890625,
-        "avg_memory_mb": 59.658577127659576,
-        "avg_cpu_percent": 0.0,
-        "samples": 94,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
-      "source_loc": 1852,
+      "source_loc": 2243,
       "source_files": 9
     },
     "metrics": {
-      "tokens_count": 12770,
+      "tokens_count": 15872,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 107.34873765488165,
-      "analyze_ms_per_kloc": 103.7909969140335,
-      "runtime_ms_per_kloc": 102.8973134496042
+      "build_ms_per_kloc": 189.2166588384022,
+      "analyze_ms_per_kloc": 180.3512717802717,
+      "runtime_ms_per_kloc": 180.12220711778224
     },
     "docker": {
-      "build_time": 0.29706573486328125,
+      "build_time": 11.978580951690674,
       "build_success": true,
-      "image_build_time": 0.29706573486328125,
+      "image_build_time": 11.978580951690674,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.19880986213684082,
+      "make_build_time": 0.42441296577453613,
       "make_build_success": true,
-      "make_analyze_time": 0.19222092628479004,
+      "make_analyze_time": 0.4045279026031494,
       "make_analyze_success": true,
-      "test_time": 0.190565824508667,
+      "test_time": 0.40401411056518555,
       "test_success": true,
-      "make_test_time": 0.190565824508667,
+      "make_test_time": 0.40401411056518555,
       "make_test_success": true,
-      "test_chess_engine_time": 9.745681524276733,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.745681524276733,
-      "track_test_success": false
+      "test_chess_engine_time": 10.50836992263794,
+      "test_chess_engine_success": true,
+      "track_test_time": 10.50836992263794,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -119,21 +117,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
+        "passed": 16,
+        "failed": 0,
         "errors": 0,
         "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting rust implementation at implementations/rust\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunni"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]
