@@ -28,7 +28,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 🐹 Go | 🟢 | [22,900](implementations/go/chess.go) | 511ms, 83 MB | 1.1s, 111 MB | 1.1s, 120 MB | 10.5s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 📐 Haskell | 🟢 | [11,812](implementations/haskell/src/Main.hs) | 330ms, 39 MB | 185ms, 7 MB | 230ms, 7 MB | 1m 10s, 62 MB | 1/1 | 0/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🪶 Imba | 🟡 | [7,261](implementations/imba/chess.imba) | 183ms, 7 MB | 186ms, 7 MB | 183ms, 5 MB | 9.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🟨 Javascript | 🟡 | [6,596](implementations/javascript/chess.js) | -, - MB | 199ms, 7 MB | 189ms, 7 MB | 1m 10s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🟨 Javascript | 🟡 | [10,094](implementations/javascript/chess.js) | -, - MB | 291ms, 4 MB | 282ms, 4 MB | 10.7s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🔮 Julia | 🟢 | [9,783](implementations/julia/chess.jl) | -, - MB | 144ms, 6 MB | 151ms, 7 MB | 11.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🧡 Kotlin | 🟡 | [9,666](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 156ms, 6 MB | 171ms, 7 MB | 158ms, 7 MB | 10s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🪐 Lua | 🟢 | [18,838](implementations/lua/chess.lua) | -, - MB | 159ms, 7 MB | 154ms, 7 MB | 10.7s, 63 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |

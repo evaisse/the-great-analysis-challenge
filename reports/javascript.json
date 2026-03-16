@@ -23,95 +23,93 @@
       "build": "node --check chess.js",
       "test": "npm test",
       "analyze": "npm run lint",
+      "bugit": "if [ -f .bugit/chess.js.bak ]; then echo 'bugit already active for javascript'; else mkdir -p .bugit && cp chess.js .bugit/chess.js.bak && printf '\\nfunction __bugit__( {\\n' >> chess.js; fi",
+      "fix": "if [ -f .bugit/chess.js.bak ]; then mv .bugit/chess.js.bak chess.js && rmdir .bugit 2>/dev/null || true; else echo 'no javascript bugit backup to restore'; fi",
       "run": "node chess.js"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.2783074378967285,
+      "image_build_seconds": 3.9405887126922607,
       "build_seconds": null,
-      "analyze_seconds": 0.19869208335876465,
-      "test_seconds": 0.18919014930725098,
-      "test_internal_seconds": 0.18919014930725098,
-      "test_chess_engine_seconds": 70.16505002975464,
-      "test_v2_full_seconds": 70.16505002975464
+      "analyze_seconds": 0.29110193252563477,
+      "test_seconds": 0.2818179130554199,
+      "test_internal_seconds": 0.2818179130554199,
+      "test_chess_engine_seconds": 10.66209101676941,
+      "test_v2_full_seconds": 10.66209101676941
     },
     "memory": {
       "image": {
-        "memory_mb": 115.73046875,
-        "peak_memory_mb": 115.73046875,
-        "avg_memory_mb": 84.79947916666667,
-        "avg_cpu_percent": 0.0,
-        "samples": 3,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
         "memory_mb": 0,
         "peak_memory_mb": 0,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "skipped"
       },
       "analyze": {
-        "memory_mb": 6.70703125,
-        "peak_memory_mb": 6.70703125,
+        "memory_mb": 3.84375,
+        "peak_memory_mb": 3.84375,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 7.23828125,
-        "peak_memory_mb": 7.23828125,
+        "memory_mb": 3.890625,
+        "peak_memory_mb": 3.890625,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.125,
-        "peak_memory_mb": 62.0078125,
-        "avg_memory_mb": 61.714184027777776,
-        "avg_cpu_percent": 0.0,
-        "samples": 675,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
-      "source_loc": 682,
+      "source_loc": 1260,
       "source_files": 4
     },
     "metrics": {
-      "tokens_count": 6596,
+      "tokens_count": 10094,
       "metric_version": "tokens-v2"
     },
     "normalized": {
       "build_ms_per_kloc": 0.0,
-      "analyze_ms_per_kloc": 291.33736562868717,
-      "runtime_ms_per_kloc": 277.40491100769935
+      "analyze_ms_per_kloc": 231.03327978224982,
+      "runtime_ms_per_kloc": 223.6650103614444
     },
     "docker": {
-      "build_time": 0.2783074378967285,
+      "build_time": 3.9405887126922607,
       "build_success": true,
-      "image_build_time": 0.2783074378967285,
+      "image_build_time": 3.9405887126922607,
       "image_build_success": true,
       "make_build_skipped": true,
       "make_build_time": null,
       "make_build_success": true,
-      "make_analyze_time": 0.19869208335876465,
+      "make_analyze_time": 0.29110193252563477,
       "make_analyze_success": true,
-      "test_time": 0.18919014930725098,
+      "test_time": 0.2818179130554199,
       "test_success": true,
-      "make_test_time": 0.18919014930725098,
+      "make_test_time": 0.2818179130554199,
       "make_test_success": true,
-      "test_chess_engine_time": 70.16505002975464,
-      "test_chess_engine_success": false,
-      "track_test_time": 70.16505002975464,
-      "track_test_success": false
+      "test_chess_engine_time": 10.66209101676941,
+      "test_chess_engine_success": true,
+      "track_test_time": 10.66209101676941,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -120,21 +118,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
+        "passed": 16,
+        "failed": 0,
         "errors": 0,
         "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting javascript implementation at implementations/javascript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Hands"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]
