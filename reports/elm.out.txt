@@ -15,7 +15,7 @@ Path: implementations/elm
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-elm .
-  ✅ Docker build completed in 0.44s
+  ✅ Docker build completed in 0.56s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,7 +27,7 @@ Path: implementations/elm
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 11:40:48
+Generated: 2026-03-16 13:04:41
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -41,40 +41,40 @@ DETAILED RESULTS: ELM
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.44s
-  make build: 0.19s
+  docker build image: 0.56s
+  make build: 0.20s
   make analyze: 0.19s
-  make test: 0.18s
-  make test-chess-engine: 9.78s
-  make test (internal mirror): 0.18s
-  test v2 full seconds: 9.78s
+  make test: 0.19s
+  make test-chess-engine: 9.80s
+  make test (internal mirror): 0.19s
+  test v2 full seconds: 9.80s
 
 SOURCE SIZE:
   Source LOC: 1663 (files: 7)
   TOKENS (tokens-v2): 7868
 
 NORMALIZED METRICS:
-  Build: 116.83 ms/KLOC
-  Analyze: 112.86 ms/KLOC
-  Runtime: 108.23 ms/KLOC
+  Build: 120.01 ms/KLOC
+  Analyze: 115.90 ms/KLOC
+  Runtime: 112.83 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 116.6MB, Avg 97.7MB
-  Build: Peak 6.6MB, Avg 0.0MB
-  Analyze: Peak 7.2MB, Avg 0.0MB
+  Image: Peak 116.1MB, Avg 100.3MB
+  Build: Peak 7.4MB, Avg 0.0MB
+  Analyze: Peak 6.8MB, Avg 0.0MB
   Test: Peak 6.6MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.2MB, Avg 59.9MB
+  Test_Chess_Engine: Peak 62.2MB, Avg 60.2MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.44s)
-  make build: ✅ (0.19s)
+  Image build: ✅ (0.56s)
+  make build: ✅ (0.20s)
   make analyze: ✅ (0.19s)
-  make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ❌ (9.78s)
+  make test: ✅ (0.19s)
+  make test-chess-engine (track=v2-full): ❌ (9.80s)
   make test score: 1/1
   make test-chess-engine score: 3/16
 

@@ -18,7 +18,7 @@ make: *** [Makefile:24: clean] Error 1
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-kotlin .
-  ✅ Docker build completed in 0.25s
+  ✅ Docker build completed in 0.35s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -30,54 +30,54 @@ make: *** [Makefile:24: clean] Error 1
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 11:40:25
+Generated: 2026-03-16 13:04:18
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-kotlin       completed  9666       1524     0.2s/6MB           0.2s/7MB           0.2s/6MB           10.0s/62MB                1/1              2/16              
+kotlin       completed  9666       1524     0.2s/7MB           0.2s/6MB           0.2s/7MB           10.0s/62MB                1/1              2/16              
 
 ============================================================
 DETAILED RESULTS: KOTLIN
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.25s
-  make build: 0.20s
+  docker build image: 0.35s
+  make build: 0.21s
   make analyze: 0.19s
-  make test: 0.19s
-  make test-chess-engine: 10.00s
-  make test (internal mirror): 0.19s
-  test v2 full seconds: 10.00s
+  make test: 0.20s
+  make test-chess-engine: 9.98s
+  make test (internal mirror): 0.20s
+  test v2 full seconds: 9.98s
 
 SOURCE SIZE:
   Source LOC: 1524 (files: 8)
   TOKENS (tokens-v2): 9666
 
 NORMALIZED METRICS:
-  Build: 132.33 ms/KLOC
-  Analyze: 121.89 ms/KLOC
-  Runtime: 121.65 ms/KLOC
+  Build: 140.04 ms/KLOC
+  Analyze: 122.60 ms/KLOC
+  Runtime: 130.43 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 110.1MB, Avg 82.5MB
-  Build: Peak 6.3MB, Avg 0.0MB
-  Analyze: Peak 7.0MB, Avg 0.0MB
-  Test: Peak 6.3MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 59.9MB
+  Image: Peak 111.4MB, Avg 90.7MB
+  Build: Peak 7.2MB, Avg 0.0MB
+  Analyze: Peak 6.3MB, Avg 0.0MB
+  Test: Peak 7.3MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.0MB, Avg 60.1MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.25s)
-  make build: ✅ (0.20s)
+  Image build: ✅ (0.35s)
+  make build: ✅ (0.21s)
   make analyze: ✅ (0.19s)
-  make test: ✅ (0.19s)
-  make test-chess-engine (track=v2-full): ❌ (10.00s)
+  make test: ✅ (0.20s)
+  make test-chess-engine (track=v2-full): ❌ (9.98s)
   make test score: 1/1
   make test-chess-engine score: 2/16
 

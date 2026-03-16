@@ -15,7 +15,7 @@ Path: implementations/rescript
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-rescript .
-  ✅ Docker build completed in 0.26s
+  ✅ Docker build completed in 0.35s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,7 +27,7 @@ Path: implementations/rescript
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 11:40:25
+Generated: 2026-03-16 13:04:16
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -41,40 +41,40 @@ DETAILED RESULTS: RESCRIPT
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.26s
-  make build: 0.20s
-  make analyze: 0.18s
-  make test: 0.19s
-  make test-chess-engine: 9.93s
-  make test (internal mirror): 0.19s
-  test v2 full seconds: 9.93s
+  docker build image: 0.35s
+  make build: 0.19s
+  make analyze: 0.20s
+  make test: 0.21s
+  make test-chess-engine: 9.91s
+  make test (internal mirror): 0.21s
+  test v2 full seconds: 9.91s
 
 SOURCE SIZE:
   Source LOC: 1678 (files: 11)
   TOKENS (tokens-v2): 11181
 
 NORMALIZED METRICS:
-  Build: 120.41 ms/KLOC
-  Analyze: 108.66 ms/KLOC
-  Runtime: 114.66 ms/KLOC
+  Build: 113.40 ms/KLOC
+  Analyze: 117.25 ms/KLOC
+  Runtime: 122.62 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 111.1MB, Avg 83.8MB
-  Build: Peak 6.6MB, Avg 0.0MB
-  Analyze: Peak 4.7MB, Avg 0.0MB
-  Test: Peak 7.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.8MB, Avg 59.8MB
+  Image: Peak 111.0MB, Avg 90.6MB
+  Build: Peak 6.7MB, Avg 0.0MB
+  Analyze: Peak 4.9MB, Avg 0.0MB
+  Test: Peak 7.2MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 61.6MB, Avg 59.6MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.26s)
-  make build: ✅ (0.20s)
-  make analyze: ✅ (0.18s)
-  make test: ✅ (0.19s)
-  make test-chess-engine (track=v2-full): ❌ (9.93s)
+  Image build: ✅ (0.35s)
+  make build: ✅ (0.19s)
+  make analyze: ✅ (0.20s)
+  make test: ✅ (0.21s)
+  make test-chess-engine (track=v2-full): ❌ (9.91s)
   make test score: 1/1
   make test-chess-engine score: 2/16
 
