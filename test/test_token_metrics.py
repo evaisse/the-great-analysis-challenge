@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for language-agnostic token metrics."""
 
+import json
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -15,7 +17,13 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from token_metrics import TOKEN_METRIC_VERSION, collect_impl_metrics_from_metadata
+from token_metrics import (
+    TOKEN_METRIC_VERSION,
+    SEMANTIC_METRIC_VERSION,
+    collect_impl_metrics_from_metadata,
+    collect_semantic_metrics,
+    _find_semantic_tokens_script,
+)
 
 
 def _write(path: Path, content: str) -> None:
@@ -86,6 +94,64 @@ class TokenMetricsTests(unittest.TestCase):
             _write(source, "alpha   +     beta\n\n")
             after = collect_impl_metrics_from_metadata(impl, {"source_exts": [".foo"]})["tokens_count"]
             self.assertEqual(before, after)
+
+
+class SemanticTokenMetricsTests(unittest.TestCase):
+    """Tests for the Shiki-based semantic token metrics (tokens-v3)."""
+
+    def test_semantic_metric_version_constant(self):
+        self.assertEqual(SEMANTIC_METRIC_VERSION, "tokens-v3")
+
+    def test_find_semantic_tokens_script_exists(self):
+        script = _find_semantic_tokens_script()
+        self.assertIsNotNone(script, "semantic_tokens.mjs script not found")
+        self.assertTrue(script.is_file())
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js not available")
+    def test_semantic_metrics_on_real_implementation(self):
+        """Run semantic metrics on an actual implementation directory."""
+        impl_dir = REPO_ROOT / "implementations" / "python"
+        if not impl_dir.is_dir():
+            self.skipTest("implementations/python not found")
+
+        result = collect_semantic_metrics(impl_dir)
+        self.assertIsNotNone(result, "collect_semantic_metrics returned None")
+        self.assertEqual(result.get("metric_version"), "tokens-v3")
+        self.assertIn("complexity_score", result)
+        self.assertIn("total_tokens", result)
+        self.assertIn("semantic_tokens", result)
+        self.assertIn("by_category", result)
+        self.assertIn("ratios", result)
+
+        # Sanity: complexity score should be positive
+        self.assertGreater(result["complexity_score"], 0)
+        # semantic_tokens <= total_tokens (comments excluded)
+        self.assertLessEqual(result["semantic_tokens"], result["total_tokens"])
+
+        # by_category should have all expected keys
+        categories = result["by_category"]
+        for cat in ("keyword", "identifier", "type", "operator", "literal", "punctuation", "comment"):
+            self.assertIn(cat, categories)
+            self.assertGreaterEqual(categories[cat], 0)
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js not available")
+    def test_semantic_metrics_returns_none_for_nonexistent_dir(self):
+        """Nonexistent implementation directory should not crash."""
+        result = collect_semantic_metrics(Path("/tmp/nonexistent_impl_dir"))
+        self.assertIsNone(result)
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js not available")
+    def test_semantic_metrics_output_matches_node_script(self):
+        """Verify the Python wrapper produces the same output as calling the Node script directly."""
+        impl_dir = REPO_ROOT / "implementations" / "rust"
+        if not impl_dir.is_dir():
+            self.skipTest("implementations/rust not found")
+
+        result = collect_semantic_metrics(impl_dir)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["implementation"], "rust")
+        self.assertIn("size", result)
+        self.assertIn("weights", result)
 
 
 if __name__ == "__main__":

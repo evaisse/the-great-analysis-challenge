@@ -3,12 +3,15 @@
 
 from __future__ import annotations
 
+import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 TOKEN_METRIC_VERSION = "tokens-v2"
+SEMANTIC_METRIC_VERSION = "tokens-v3"
 
 # Language-agnostic tokenizer:
 # - identifiers
@@ -164,3 +167,70 @@ def collect_impl_metrics_from_metadata(impl_path: Path, metadata: Dict[str, obje
     """Collect metrics by reading source extension declarations from metadata."""
     source_exts = parse_source_exts(metadata.get("source_exts"))
     return collect_impl_metrics(impl_path, source_exts)
+
+
+def _find_semantic_tokens_script() -> Optional[Path]:
+    """Locate the semantic_tokens.mjs script relative to this module."""
+    module_dir = Path(__file__).resolve().parent
+    script = module_dir / "semantic-tokens" / "semantic_tokens.mjs"
+    if script.is_file():
+        return script
+    return None
+
+
+def _ensure_node_modules(script_dir: Path) -> bool:
+    """Ensure npm dependencies are installed for the semantic tokens script."""
+    node_modules = script_dir / "node_modules"
+    if node_modules.is_dir():
+        return True
+    npm = shutil.which("npm")
+    if not npm:
+        return False
+    result = subprocess.run(
+        [npm, "install", "--no-audit", "--no-fund"],
+        cwd=str(script_dir),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+    return result.returncode == 0
+
+
+def collect_semantic_metrics(impl_path: Path) -> Optional[Dict[str, object]]:
+    """Collect semantic token metrics by calling the Node.js Shiki-based analyzer.
+
+    Returns a dict with ``semantic_metrics`` keys on success, or ``None``
+    when the Node.js script is unavailable or fails.
+    """
+    node = shutil.which("node")
+    if not node:
+        return None
+
+    script = _find_semantic_tokens_script()
+    if script is None:
+        return None
+
+    if not _ensure_node_modules(script.parent):
+        return None
+
+    try:
+        result = subprocess.run(
+            [node, str(script), str(impl_path.resolve())],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=120,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+    if result.returncode != 0:
+        return None
+
+    try:
+        data = json.loads(result.stdout)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+    return data

@@ -44,7 +44,7 @@ except ImportError:
 # Import existing test harness
 from test_harness import ChessEngineTester, TestSuite, find_implementations, TRACK_TO_SUITE
 from code_size_metrics import collect_metrics_for_impl
-from token_metrics import TOKEN_METRIC_VERSION
+from token_metrics import TOKEN_METRIC_VERSION, collect_semantic_metrics
 
 TRUTHY_VALUES = {"1", "true", "yes", "y", "on"}
 FALSY_VALUES = {"0", "false", "no", "n", "off"}
@@ -243,6 +243,25 @@ class ImplementationTester:
             self.results["errors"].append(f"Code size metrics error: {str(e)}")
             self.results["size"] = {"source_loc": 0, "source_files": 0}
             self.results["metrics"] = {"tokens_count": None, "metric_version": TOKEN_METRIC_VERSION}
+
+        # Collect semantic metrics (tokens-v3) via Shiki
+        try:
+            semantic = collect_semantic_metrics(self.impl_path)
+            if semantic is not None:
+                self.results["semantic_metrics"] = {
+                    "metric_version": semantic.get("metric_version", "tokens-v3"),
+                    "complexity_score": semantic.get("complexity_score"),
+                    "total_tokens": semantic.get("total_tokens"),
+                    "semantic_tokens": semantic.get("semantic_tokens"),
+                    "by_category": semantic.get("by_category"),
+                    "ratios": semantic.get("ratios"),
+                }
+                print(
+                    f"🧠 Semantic: complexity_score={semantic.get('complexity_score')}, "
+                    f"semantic_tokens={semantic.get('semantic_tokens')}"
+                )
+        except Exception as e:
+            self.results["errors"].append(f"Semantic metrics error: {str(e)}")
 
     def _compute_normalized_metrics(self):
         """Compute normalized metrics (ms/KLOC)."""

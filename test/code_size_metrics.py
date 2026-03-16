@@ -18,13 +18,13 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from chess_metadata import get_metadata
-from token_metrics import collect_impl_metrics_from_metadata
+from token_metrics import collect_impl_metrics_from_metadata, collect_semantic_metrics
 
 
 def collect_metrics_for_impl(impl_path: Path) -> Dict:
     metadata = get_metadata(str(impl_path))
     metrics = collect_impl_metrics_from_metadata(impl_path, metadata)
-    return {
+    result = {
         "implementation": metrics["implementation"],
         "path": metrics["path"],
         "source_files": metrics["source_files"],
@@ -34,6 +34,19 @@ def collect_metrics_for_impl(impl_path: Path) -> Dict:
         "source_exts": metrics["source_exts"],
         "skipped_binary_or_unreadable": metrics["skipped_binary_or_unreadable"],
     }
+
+    semantic = collect_semantic_metrics(impl_path)
+    if semantic is not None:
+        result["semantic_metrics"] = {
+            "metric_version": semantic.get("metric_version", "tokens-v3"),
+            "complexity_score": semantic.get("complexity_score"),
+            "total_tokens": semantic.get("total_tokens"),
+            "semantic_tokens": semantic.get("semantic_tokens"),
+            "by_category": semantic.get("by_category"),
+            "ratios": semantic.get("ratios"),
+        }
+
+    return result
 
 
 def collect_metrics_for_dir(base_dir: Path) -> List[Dict]:

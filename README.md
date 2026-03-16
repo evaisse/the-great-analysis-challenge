@@ -48,6 +48,39 @@ Legend:
 - `make ...` columns: `<duration>, <peak memory>`.
 - `-`: metric missing or intentionally skipped.
 
+## Semantic Token Metrics (tokens-v3)
+
+In addition to the raw `tokens-v2` count, the project provides **semantic token metrics** powered by [Shiki](https://shiki.style) (TextMate/VS Code grammars). These metrics classify tokens into semantic categories and compute a weighted **complexity score** that is fairer across languages.
+
+### Running semantic analysis
+
+```bash
+# Single implementation
+node scripts/semantic-tokens/semantic_tokens.mjs implementations/rust --pretty
+
+# All implementations
+node scripts/semantic-tokens/semantic_tokens.mjs --all implementations/ --pretty
+
+# Via the Python metrics pipeline (includes both tokens-v2 and tokens-v3)
+python3 test/code_size_metrics.py --impl implementations/rust --pretty
+```
+
+### Complexity score
+
+Each token is classified into a semantic category with a weight:
+
+| Category | Weight | Examples |
+|---|---|---|
+| `keyword` | 1.0 | `if`, `fn`, `return`, `class` |
+| `identifier` | 1.0 | variables, functions, methods |
+| `type` | 1.0 | type annotations, generics |
+| `operator` | 0.5 | `+`, `==`, `&&`, `->` |
+| `literal` | 0.5 | numbers, strings (whole string = 1 token) |
+| `punctuation` | 0.25 | `{}`, `()`, `;`, `,` |
+| `comment` | 0.0 | excluded from scoring |
+
+The `complexity_score = Σ (weight × count)` gives a language-fair measure of implementation complexity where syntactic noise (`;` in Rust vs nothing in Python) is down-weighted.
+
 ## Quick Commands
 
 ```bash
