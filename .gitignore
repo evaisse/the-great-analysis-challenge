@@ -8,3 +8,4 @@ reports/elm-stuff
 reports/error-analysis/
 reports/error-analysis-workspaces/
 implementations/*/chess
+node_modules/
