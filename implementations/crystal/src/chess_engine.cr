@@ -50,6 +50,14 @@ class ChessEngine
       when "ai"
         depth = parts.size > 1 ? (parts[1].to_i? || 3) : 3
         make_ai_move(depth)
+      when "go"
+        handle_go(parts[1..-1])
+      when "uci"
+        handle_uci
+      when "isready"
+        handle_isready
+      when "ucinewgame"
+        @game_state = FEN.starting_position
       when "status"
         show_status
       when "hash"
@@ -199,6 +207,62 @@ class ChessEngine
     else
       puts "ERROR: No legal moves"
     end
+  end
+
+  private def handle_go(args : Array(String))
+    if args.empty?
+      puts "ERROR: go requires subcommand"
+      return
+    end
+
+    case args[0].downcase
+    when "depth"
+      if args.size < 2
+        puts "ERROR: go depth requires a value"
+        return
+      end
+
+      depth = args[1].to_i?
+      if depth.nil? || depth < 1
+        puts "ERROR: go depth requires a positive integer"
+        return
+      end
+
+      make_ai_move(depth)
+    when "movetime"
+      if args.size < 2
+        puts "ERROR: go movetime requires a value in milliseconds"
+        return
+      end
+
+      movetime_ms = args[1].to_i?
+      if movetime_ms.nil? || movetime_ms <= 0
+        puts "ERROR: go movetime requires a positive integer"
+        return
+      end
+
+      make_ai_move(depth_for_movetime(movetime_ms))
+    else
+      puts "ERROR: Unsupported go command"
+    end
+  end
+
+  private def depth_for_movetime(movetime_ms : Int32) : Int32
+    return 1 if movetime_ms <= 200
+    return 2 if movetime_ms <= 500
+    return 3 if movetime_ms <= 2_000
+    return 4 if movetime_ms <= 5_000
+    5
+  end
+
+  private def handle_uci
+    puts "id name TGAC Crystal"
+    puts "id author TGAC"
+    puts "uciok"
+  end
+
+  private def handle_isready
+    puts "readyok"
   end
 
   private def show_status
