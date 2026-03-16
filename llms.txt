@@ -14,7 +14,7 @@ Use this file as a compact map of canonical project docs.
 
 ## Primary Entry Points
 
-- [README.md](README.md): Project overview, live implementation matrix, benchmark charts.
+- [README.md](README.md): Project overview and live implementation matrix.
 - [docs/README.md](docs/README.md): Documentation hub by role/task.
 - [AGENTS.md](AGENTS.md): Operational instructions and constraints for AI agents.
 
