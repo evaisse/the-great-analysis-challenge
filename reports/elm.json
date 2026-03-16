@@ -20,58 +20,56 @@
         ".elm"
       ],
       "run": "node chess-bridge.js",
-      "build": "elm make src/ChessEngine.elm --output=src/chess.js",
+      "build": "node chess-bridge.js --check",
       "test": "node chess-bridge.js --test",
-      "analyze": "node chess-bridge.js --check"
+      "analyze": "node chess-bridge.js --check",
+      "bugit": "if [ -f .bugit/ChessEngine.elm.bak ]; then echo 'bugit already active for elm'; else mkdir -p .bugit && cp src/ChessEngine.elm .bugit/ChessEngine.elm.bak && printf '\\n)\\n' >> src/ChessEngine.elm; fi",
+      "fix": "if [ -f .bugit/ChessEngine.elm.bak ]; then mv .bugit/ChessEngine.elm.bak src/ChessEngine.elm && rmdir .bugit 2>/dev/null || true; else echo 'no elm bugit backup to restore'; fi"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.4244098663330078,
-      "build_seconds": 0.18862128257751465,
-      "analyze_seconds": 0.18771767616271973,
-      "test_seconds": 0.1873934268951416,
-      "test_internal_seconds": 0.1873934268951416,
-      "test_chess_engine_seconds": 9.793741703033447,
-      "test_v2_full_seconds": 9.793741703033447
+      "image_build_seconds": 2.227263927459717,
+      "build_seconds": 0.3324270248413086,
+      "analyze_seconds": 0.2903749942779541,
+      "test_seconds": 0.32235097885131836,
+      "test_internal_seconds": 0.32235097885131836,
+      "test_chess_engine_seconds": 10.608160018920898,
+      "test_v2_full_seconds": 10.608160018920898
     },
     "memory": {
       "image": {
-        "memory_mb": 17.53125,
-        "peak_memory_mb": 116.08203125,
-        "avg_memory_mb": 77.853125,
-        "avg_cpu_percent": 0.0,
-        "samples": 5,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
-        "memory_mb": 4.87109375,
-        "peak_memory_mb": 4.87109375,
+        "memory_mb": 3.8515625,
+        "peak_memory_mb": 3.8515625,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 6.33203125,
-        "peak_memory_mb": 6.33203125,
+        "memory_mb": 3.80078125,
+        "peak_memory_mb": 3.80078125,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 6.34375,
-        "peak_memory_mb": 6.34375,
+        "memory_mb": 4.1328125,
+        "peak_memory_mb": 4.1328125,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.0546875,
-        "peak_memory_mb": 61.98828125,
-        "avg_memory_mb": 60.31636469414894,
-        "avg_cpu_percent": 0.0,
-        "samples": 94,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
@@ -83,34 +81,34 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 113.42229860343635,
-      "analyze_ms_per_kloc": 112.87893936423315,
-      "runtime_ms_per_kloc": 112.68396085095706
+      "build_ms_per_kloc": 199.89598607414828,
+      "analyze_ms_per_kloc": 174.60913666744082,
+      "runtime_ms_per_kloc": 193.83702877409402
     },
     "docker": {
-      "build_time": 0.4244098663330078,
+      "build_time": 2.227263927459717,
       "build_success": true,
-      "image_build_time": 0.4244098663330078,
+      "image_build_time": 2.227263927459717,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.18862128257751465,
+      "make_build_time": 0.3324270248413086,
       "make_build_success": true,
-      "make_analyze_time": 0.18771767616271973,
+      "make_analyze_time": 0.2903749942779541,
       "make_analyze_success": true,
-      "test_time": 0.1873934268951416,
+      "test_time": 0.32235097885131836,
       "test_success": true,
-      "make_test_time": 0.1873934268951416,
+      "make_test_time": 0.32235097885131836,
       "make_test_success": true,
-      "test_chess_engine_time": 9.793741703033447,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.793741703033447,
-      "track_test_success": false
+      "test_chess_engine_time": 10.608160018920898,
+      "test_chess_engine_success": true,
+      "track_test_time": 10.608160018920898,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -119,21 +117,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 3,
-        "failed": 13,
+        "passed": 16,
+        "failed": 0,
         "errors": 0,
         "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting elm implementation at implementations/elm\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2713\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunning"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]

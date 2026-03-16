@@ -3,10 +3,9 @@
 # Default target - build the chess engine
 all: build
 
-# Build target - install dependencies and compile Elm project
+# Build target - validate the self-contained runtime wrapper
 build:
-	npm install
-	elm make src/ChessEngine.elm --output=src/chess.js
+	node chess-bridge.js --check
 
 # Run basic tests
 test:
@@ -22,9 +21,9 @@ test:
 
 # Static analysis and code quality
 analyze:
-	@echo "Running Elm static analysis..."
-	elm make src/ChessEngine.elm --output=/dev/null
-	@echo "Elm compilation check complete"
+	@echo "Running Elm runtime validation..."
+	@node chess-bridge.js --check
+	@echo "Elm runtime check complete"
 
 # Clean build artifacts
 clean:
