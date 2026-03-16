@@ -70,7 +70,7 @@ python3 test/code_size_metrics.py --impl implementations/rust --pretty
 Each token is classified into a semantic category with a weight:
 
 | Category | Weight | Examples |
-|---|---|---|
+| --- | --- | --- |
 | `keyword` | 1.0 | `if`, `fn`, `return`, `class` |
 | `identifier` | 1.0 | variables, functions, methods |
 | `type` | 1.0 | type annotations, generics |

@@ -137,8 +137,10 @@ class SemanticTokenMetricsTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("node"), "Node.js not available")
     def test_semantic_metrics_returns_none_for_nonexistent_dir(self):
         """Nonexistent implementation directory should not crash."""
-        result = collect_semantic_metrics(Path("/tmp/nonexistent_impl_dir"))
-        self.assertIsNone(result)
+        with tempfile.TemporaryDirectory() as tmp:
+            nonexistent = Path(tmp) / "does_not_exist"
+            result = collect_semantic_metrics(nonexistent)
+            self.assertIsNone(result)
 
     @unittest.skipUnless(shutil.which("node"), "Node.js not available")
     def test_semantic_metrics_output_matches_node_script(self):
