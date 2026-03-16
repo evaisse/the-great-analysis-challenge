@@ -18,7 +18,7 @@
       ],
       "deadlocks": 0,
       "deterministic": true,
-      "elapsed_ms": 53,
+      "elapsed_ms": 59,
       "invariant_errors": 0,
       "ops_total": 3904,
       "profile": "quick",

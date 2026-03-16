@@ -15,7 +15,7 @@ Path: implementations/lua
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-lua .
-  ✅ Docker build completed in 0.32s
+  ✅ Docker build completed in 0.25s
   ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
   🔧 Running task: make analyze
     🔧 Running: make analyze
@@ -26,26 +26,26 @@ Path: implementations/lua
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 14:23:02
+Generated: 2026-03-16 16:25:22
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-lua          completed  20806      2884     -/-MB              0.2s/7MB           0.2s/7MB           10.9s/62MB                1/1              16/16             
+lua          completed  20806      2884     -/-MB              0.2s/7MB           0.2s/7MB           10.9s/63MB                1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: LUA
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.32s
-  make analyze: 0.19s
-  make test: 0.18s
-  make test-chess-engine: 10.85s
-  make test (internal mirror): 0.18s
-  test v2 full seconds: 10.85s
+  docker build image: 0.25s
+  make analyze: 0.21s
+  make test: 0.19s
+  make test-chess-engine: 10.87s
+  make test (internal mirror): 0.19s
+  test v2 full seconds: 10.87s
 
 SOURCE SIZE:
   Source LOC: 2884 (files: 1)
@@ -53,24 +53,24 @@ SOURCE SIZE:
 
 NORMALIZED METRICS:
   Build: 0.00 ms/KLOC
-  Analyze: 66.03 ms/KLOC
-  Runtime: 61.32 ms/KLOC
+  Analyze: 73.53 ms/KLOC
+  Runtime: 67.56 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 112.8MB, Avg 67.7MB
+  Image: Peak 111.2MB, Avg 84.4MB
   Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 6.6MB, Avg 0.0MB
-  Test: Peak 7.1MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.4MB, Avg 60.6MB
+  Analyze: Peak 7.1MB, Avg 0.0MB
+  Test: Peak 7.2MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 62.6MB, Avg 60.9MB
 
 CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.32s)
+  Image build: ✅ (0.25s)
   make build: ⏭️ skipped
-  make analyze: ✅ (0.19s)
-  make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ✅ (10.85s)
+  make analyze: ✅ (0.21s)
+  make test: ✅ (0.19s)
+  make test-chess-engine (track=v2-full): ✅ (10.87s)
   make test score: 1/1
   make test-chess-engine score: 16/16
 

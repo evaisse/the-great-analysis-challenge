@@ -29,48 +29,48 @@
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.4486846923828125,
-      "build_seconds": 0.19452905654907227,
-      "analyze_seconds": 0.18663978576660156,
-      "test_seconds": 0.1908268928527832,
-      "test_internal_seconds": 0.1908268928527832,
-      "test_chess_engine_seconds": 10.010144472122192,
-      "test_v2_full_seconds": 10.010144472122192
+      "image_build_seconds": 0.3487377166748047,
+      "build_seconds": 0.15395450592041016,
+      "analyze_seconds": 0.15294480323791504,
+      "test_seconds": 0.1514430046081543,
+      "test_internal_seconds": 0.1514430046081543,
+      "test_chess_engine_seconds": 9.977763891220093,
+      "test_v2_full_seconds": 9.977763891220093
     },
     "memory": {
       "image": {
-        "memory_mb": 111.2109375,
-        "peak_memory_mb": 111.2109375,
-        "avg_memory_mb": 94.56796875,
+        "memory_mb": 111.6328125,
+        "peak_memory_mb": 111.6328125,
+        "avg_memory_mb": 90.1943359375,
         "avg_cpu_percent": 0.0,
-        "samples": 5,
+        "samples": 4,
         "psutil_available": true
       },
       "build": {
-        "memory_mb": 7.05078125,
-        "peak_memory_mb": 7.05078125,
+        "memory_mb": 6.9765625,
+        "peak_memory_mb": 6.9765625,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 6.36328125,
-        "peak_memory_mb": 6.36328125,
+        "memory_mb": 6.609375,
+        "peak_memory_mb": 6.609375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 7.0078125,
-        "peak_memory_mb": 7.0078125,
+        "memory_mb": 6.58984375,
+        "peak_memory_mb": 6.58984375,
         "avg_cpu_percent": 0,
         "psutil_available": true,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.1171875,
-        "peak_memory_mb": 61.95703125,
-        "avg_memory_mb": 60.02939755154639,
+        "memory_mb": 32.2265625,
+        "peak_memory_mb": 62.00390625,
+        "avg_memory_mb": 60.06946681701031,
         "avg_cpu_percent": 0.0,
         "samples": 97,
         "psutil_available": true
@@ -85,27 +85,27 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 127.64373789309204,
-      "analyze_ms_per_kloc": 122.46705102795379,
-      "runtime_ms_per_kloc": 125.21449662256116
+      "build_ms_per_kloc": 101.02001700814314,
+      "analyze_ms_per_kloc": 100.3574824395768,
+      "runtime_ms_per_kloc": 99.37205026781778
     },
     "docker": {
-      "build_time": 0.4486846923828125,
+      "build_time": 0.3487377166748047,
       "build_success": true,
-      "image_build_time": 0.4486846923828125,
+      "image_build_time": 0.3487377166748047,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.19452905654907227,
+      "make_build_time": 0.15395450592041016,
       "make_build_success": true,
-      "make_analyze_time": 0.18663978576660156,
+      "make_analyze_time": 0.15294480323791504,
       "make_analyze_success": true,
-      "test_time": 0.1908268928527832,
+      "test_time": 0.1514430046081543,
       "test_success": true,
-      "make_test_time": 0.1908268928527832,
+      "make_test_time": 0.1514430046081543,
       "make_test_success": true,
-      "test_chess_engine_time": 10.010144472122192,
+      "test_chess_engine_time": 9.977763891220093,
       "test_chess_engine_success": false,
-      "track_test_time": 10.010144472122192,
+      "track_test_time": 9.977763891220093,
       "track_test_success": false
     },
     "task_results": {

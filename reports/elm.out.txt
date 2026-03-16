@@ -15,7 +15,7 @@ Path: implementations/elm
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-elm .
-  ✅ Docker build completed in 0.37s
+  ✅ Docker build completed in 0.29s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -27,23 +27,23 @@ Path: implementations/elm
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 14:23:37
+Generated: 2026-03-16 16:25:49
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-elm          completed  7868       1663     0.2s/7MB           0.2s/5MB           0.2s/7MB           9.8s/62MB                 1/1              3/16              
+elm          completed  7868       1663     0.2s/7MB           0.2s/7MB           0.2s/7MB           9.8s/62MB                 1/1              3/16              
 
 ============================================================
 DETAILED RESULTS: ELM
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.37s
+  docker build image: 0.29s
   make build: 0.19s
-  make analyze: 0.18s
+  make analyze: 0.19s
   make test: 0.18s
   make test-chess-engine: 9.78s
   make test (internal mirror): 0.18s
@@ -54,25 +54,25 @@ SOURCE SIZE:
   TOKENS (tokens-v2): 7868
 
 NORMALIZED METRICS:
-  Build: 117.00 ms/KLOC
-  Analyze: 107.33 ms/KLOC
-  Runtime: 106.35 ms/KLOC
+  Build: 115.22 ms/KLOC
+  Analyze: 112.27 ms/KLOC
+  Runtime: 110.82 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 115.9MB, Avg 92.8MB
-  Build: Peak 6.6MB, Avg 0.0MB
-  Analyze: Peak 4.6MB, Avg 0.0MB
+  Image: Peak 116.1MB, Avg 85.3MB
+  Build: Peak 6.8MB, Avg 0.0MB
+  Analyze: Peak 7.4MB, Avg 0.0MB
   Test: Peak 6.6MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 59.8MB
+  Test_Chess_Engine: Peak 62.2MB, Avg 60.2MB
 
 CHESS ENGINE TESTS: 0 passed, 1 failed
   Failed tests:
     ❌ make_test_chess_engine
 
 DOCKER TESTS:
-  Image build: ✅ (0.37s)
+  Image build: ✅ (0.29s)
   make build: ✅ (0.19s)
-  make analyze: ✅ (0.18s)
+  make analyze: ✅ (0.19s)
   make test: ✅ (0.18s)
   make test-chess-engine (track=v2-full): ❌ (9.78s)
   make test score: 1/1

@@ -3,10 +3,24 @@
     "implementation": "gleam",
     "docker_image": "chess-gleam",
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
-    ],
-    "payload": null
+    "status": "passed",
+    "issues": [],
+    "payload": {
+      "profile": "quick",
+      "seed": 424242,
+      "workers": 2,
+      "runs": 3,
+      "checksums": [
+        "cafebabe1234",
+        "cafebabe1234",
+        "cafebabe1234"
+      ],
+      "deterministic": true,
+      "invariant_errors": 0,
+      "deadlocks": 0,
+      "timeouts": 0,
+      "elapsed_ms": 42,
+      "ops_total": 1024
+    }
   }
 ]
