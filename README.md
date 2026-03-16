@@ -36,7 +36,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 🐘 Php | 🟡 | [24,435](implementations/php/chess.php) | -, - MB | 328ms, 9 MB | 201ms, 9 MB | 13.6s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐍 Python | 🟡 | [24,228](implementations/python/chess.py) | -, - MB | 192ms, 7 MB | 195ms, 7 MB | 16.7s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🧠 Rescript | 🟡 | [14,724](implementations/rescript/src/Chess.res) | 293ms, 3 MB | 263ms, 4 MB | 259ms, 4 MB | 10.7s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| ❤️ Ruby | 🟡 | [9,600](implementations/ruby/chess.rb) | -, - MB | 2s, 230 MB | 230ms, 9 MB | 11.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| ❤️ Ruby | 🟡 | [11,220](implementations/ruby/chess.rb) | -, - MB | 2.7s, 478 MB | 597ms, 26 MB | 10.4s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🦀 Rust | 🟡 | [15,872](implementations/rust/src/main.rs) | 424ms, 4 MB | 405ms, 4 MB | 404ms, 4 MB | 10.5s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐦 Swift | 🟡 | [11,407](implementations/swift/src/main.swift) | 315ms, 4 MB | 299ms, 4 MB | 301ms, 4 MB | 10.3s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 📘 Typescript | 🟡 | [17,636](implementations/typescript/src/chess.ts) | 263ms, 4 MB | 265ms, 4 MB | 269ms, 4 MB | 10.7s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
@@ -88,7 +88,7 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 | 2 | 🦊 Nim | 10.2s | `###################` |
 | 3 | ⚡ Zig | 10.3s | `###################` |
 | 4 | 🐦 Swift | 10.3s | `###################` |
-| 5 | 💠 Crystal | 10.4s | `###################` |
+| 5 | ❤️ Ruby | 10.4s | `###################` |
 <!-- speed-chart-end -->
 
 ## Quick Commands

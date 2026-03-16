@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'types'
+require_relative 'zobrist'
 
 module Chess
   class FenParser
@@ -37,6 +38,11 @@ module Chess
       # Parse move counters
       @board.halfmove_clock = halfmove_part.to_i
       @board.fullmove_number = fullmove_part.to_i
+
+      # FEN imports start a fresh history from the imported position.
+      @board.position_history = []
+      @board.irreversible_history = []
+      @board.zobrist_hash = ZOBRIST.compute_hash(@board)
       
       true
     rescue StandardError

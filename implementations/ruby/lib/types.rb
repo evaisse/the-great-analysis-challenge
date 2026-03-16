@@ -43,7 +43,7 @@ module Chess
     def to_algebraic
       from_square = "#{('a'.ord + @from_col).chr}#{8 - @from_row}"
       to_square = "#{('a'.ord + @to_col).chr}#{8 - @to_row}"
-      promotion_part = @promotion ? @promotion.to_s.upcase : ''
+      promotion_part = @promotion ? PIECE_SYMBOLS[:white][@promotion] : ''
       "#{from_square}#{to_square}#{promotion_part}"
     end
     
