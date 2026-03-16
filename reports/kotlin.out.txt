@@ -1,3 +1,4 @@
+⚠️  psutil not available - memory monitoring disabled
 🚀 Chess Engine Performance Testing Suite
 ============================================================
 Found 1 implementation(s) to test
@@ -6,19 +7,19 @@ Found 1 implementation(s) to test
 Testing kotlin implementation
 Path: implementations/kotlin
 ============================================================
-📏 Source size: 1524 LOC across 8 files, 9666 TOKENS
+📏 Source size: 1822 LOC across 8 files, 12071 TOKENS
 🧹 Clearing build cache...
 🔧 Running: make clean
-⚠️  make clean returned non-zero exit code: Error: Could not find or load main class "-Dorg.gradle.appname=gradlew"
-Caused by: java.lang.ClassNotFoundException: "-Dorg.gradle.appname=gradlew"
-make: *** [Makefile:24: clean] Error 1
+⚠️  make clean returned non-zero exit code: Erreur : impossible de trouver ou de charger la classe principale "-Xdock:name=Gradle"
+Causé par : java.lang.ClassNotFoundException: "-Xdock:name=Gradle"
+make: *** [clean] Error 1
 
 ✅ Cache clearing completed
 🐳 Running all tests via Docker (ensures consistent environment)
 🐳 Running comprehensive Docker-based tests...
   🔨 Building Docker image (prerequisite)...
   🔧 Running: docker build -t chess-kotlin .
-  ✅ Docker build completed in 0.29s
+  ✅ Docker build completed in 41.85s
   🔧 Running task: make build
     🔧 Running: make build
   🔧 Running task: make analyze
@@ -26,78 +27,58 @@ make: *** [Makefile:24: clean] Error 1
   🔧 Running task: make test
     🔧 Running: make test
   🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
+  ✅ All Docker tests passed (image: 41.8s, make build: 1.1s, make analyze: 0.8s, make test: 0.7s, make test-chess-engine: 11.4s)
 
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-13 15:54:51
+Generated: 2026-03-16 12:40:34
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-kotlin       completed  9666       1524     0.2s/6MB           0.2s/7MB           0.2s/7MB           10.0s/62MB                1/1              2/16              
+kotlin       completed  12071      1822     1.1s/6MB           0.8s/4MB           0.7s/4MB           11.4s/-MB                 1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: KOTLIN
 ============================================================
 
 TIMING BREAKDOWN:
-  docker build image: 0.29s
-  make build: 0.16s
-  make analyze: 0.17s
-  make test: 0.16s
-  make test-chess-engine: 9.96s
-  make test (internal mirror): 0.16s
-  test v2 full seconds: 9.96s
+  docker build image: 41.85s
+  make build: 1.06s
+  make analyze: 0.84s
+  make test: 0.67s
+  make test-chess-engine: 11.43s
+  make test (internal mirror): 0.67s
+  test v2 full seconds: 11.43s
 
 SOURCE SIZE:
-  Source LOC: 1524 (files: 8)
-  TOKENS (tokens-v2): 9666
+  Source LOC: 1822 (files: 8)
+  TOKENS (tokens-v2): 12071
 
 NORMALIZED METRICS:
-  Build: 102.65 ms/KLOC
-  Analyze: 112.52 ms/KLOC
-  Runtime: 103.39 ms/KLOC
+  Build: 584.04 ms/KLOC
+  Analyze: 461.90 ms/KLOC
+  Runtime: 366.04 ms/KLOC
 
 MEMORY USAGE:
-  Image: Peak 111.0MB, Avg 82.5MB
-  Build: Peak 6.4MB, Avg 0.0MB
-  Analyze: Peak 7.1MB, Avg 0.0MB
-  Test: Peak 7.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.1MB, Avg 60.2MB
+  Image: Peak 0.0MB, Avg 0.0MB
+  Build: Peak 5.6MB, Avg 0.0MB
+  Analyze: Peak 4.2MB, Avg 0.0MB
+  Test: Peak 3.9MB, Avg 0.0MB
+  Test_Chess_Engine: Peak 0.0MB, Avg 0.0MB
 
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
+CHESS ENGINE TESTS: 4 passed, 0 failed
 
 DOCKER TESTS:
-  Image build: ✅ (0.29s)
-  make build: ✅ (0.16s)
-  make analyze: ✅ (0.17s)
-  make test: ✅ (0.16s)
-  make test-chess-engine (track=v2-full): ❌ (9.96s)
+  Image build: ✅ (41.85s)
+  make build: ✅ (1.06s)
+  make analyze: ✅ (0.84s)
+  make test: ✅ (0.67s)
+  make test-chess-engine (track=v2-full): ✅ (11.43s)
   make test score: 1/1
-  make test-chess-engine score: 2/16
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing kotlin implementation at implementations/kotlin
-----------------------------------------
-Running test: Hash Command Baseline ✓
-Running test: Hash Command After Move ✓
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✗
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Handshake ✗
-R
+  make test-chess-engine score: 16/16
 
 ================================================================================
 📄 JSON results saved to reports/kotlin.json (1 valid benchmark(s))

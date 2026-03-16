@@ -22,95 +22,93 @@
       "run": "java -jar build/libs/chess-1.0.0.jar",
       "build": "kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar",
       "test": "java -jar build/libs/chess-1.0.0.jar --test",
-      "analyze": "kotlinc src/main/kotlin/*.kt"
+      "analyze": "kotlinc src/main/kotlin/*.kt",
+      "bugit": "if [ -f .bugit/ChessEngine.kt.bak ]; then echo 'bugit already active for kotlin'; else mkdir -p .bugit && cp src/main/kotlin/ChessEngine.kt .bugit/ChessEngine.kt.bak && printf '\\n)\\n' >> src/main/kotlin/ChessEngine.kt; fi",
+      "fix": "if [ -f .bugit/ChessEngine.kt.bak ]; then mv .bugit/ChessEngine.kt.bak src/main/kotlin/ChessEngine.kt && rmdir .bugit 2>/dev/null || true; else echo 'no kotlin bugit backup to restore'; fi"
     },
     "track": "v2-full",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 0.28505373001098633,
-      "build_seconds": 0.15643525123596191,
-      "analyze_seconds": 0.1714775562286377,
-      "test_seconds": 0.15757226943969727,
-      "test_internal_seconds": 0.15757226943969727,
-      "test_chess_engine_seconds": 9.956977128982544,
-      "test_v2_full_seconds": 9.956977128982544
+      "image_build_seconds": 41.8461127281189,
+      "build_seconds": 1.064119815826416,
+      "analyze_seconds": 0.8415892124176025,
+      "test_seconds": 0.6669261455535889,
+      "test_internal_seconds": 0.6669261455535889,
+      "test_chess_engine_seconds": 11.43473505973816,
+      "test_v2_full_seconds": 11.43473505973816
     },
     "memory": {
       "image": {
-        "memory_mb": 110.98046875,
-        "peak_memory_mb": 110.98046875,
-        "avg_memory_mb": 82.47916666666667,
-        "avg_cpu_percent": 0.0,
-        "samples": 3,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       },
       "build": {
-        "memory_mb": 6.3515625,
-        "peak_memory_mb": 6.3515625,
+        "memory_mb": 5.62109375,
+        "peak_memory_mb": 5.62109375,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "analyze": {
-        "memory_mb": 7.125,
-        "peak_memory_mb": 7.125,
+        "memory_mb": 4.25,
+        "peak_memory_mb": 4.25,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test": {
-        "memory_mb": 6.9765625,
-        "peak_memory_mb": 6.9765625,
+        "memory_mb": 3.89453125,
+        "peak_memory_mb": 3.89453125,
         "avg_cpu_percent": 0,
-        "psutil_available": true,
+        "psutil_available": false,
         "source": "cgroup"
       },
       "test_chess_engine": {
-        "memory_mb": 32.2578125,
-        "peak_memory_mb": 62.12890625,
-        "avg_memory_mb": 60.19519168814433,
-        "avg_cpu_percent": 0.0,
-        "samples": 97,
-        "psutil_available": true
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false
       }
     },
     "size": {
-      "source_loc": 1524,
+      "source_loc": 1822,
       "source_files": 8
     },
     "metrics": {
-      "tokens_count": 9666,
+      "tokens_count": 12071,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 102.64780264826896,
-      "analyze_ms_per_kloc": 112.51808151485413,
-      "runtime_ms_per_kloc": 103.3938775851032
+      "build_ms_per_kloc": 584.0394159310736,
+      "analyze_ms_per_kloc": 461.90406828628016,
+      "runtime_ms_per_kloc": 366.04069459582263
     },
     "docker": {
-      "build_time": 0.28505373001098633,
+      "build_time": 41.8461127281189,
       "build_success": true,
-      "image_build_time": 0.28505373001098633,
+      "image_build_time": 41.8461127281189,
       "image_build_success": true,
       "make_build_skipped": false,
-      "make_build_time": 0.15643525123596191,
+      "make_build_time": 1.064119815826416,
       "make_build_success": true,
-      "make_analyze_time": 0.1714775562286377,
+      "make_analyze_time": 0.8415892124176025,
       "make_analyze_success": true,
-      "test_time": 0.15757226943969727,
+      "test_time": 0.6669261455535889,
       "test_success": true,
-      "make_test_time": 0.15757226943969727,
+      "make_test_time": 0.6669261455535889,
       "make_test_success": true,
-      "test_chess_engine_time": 9.956977128982544,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.956977128982544,
-      "track_test_success": false
+      "test_chess_engine_time": 11.43473505973816,
+      "test_chess_engine_success": true,
+      "track_test_time": 11.43473505973816,
+      "track_test_success": true
     },
     "task_results": {
       "make_build": true,
       "make_analyze": true,
       "make_test": true,
-      "make_test_chess_engine": false
+      "make_test_chess_engine": true
     },
     "scores": {
       "make_test": {
@@ -119,21 +117,22 @@
         "total": 1
       },
       "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
+        "passed": 16,
+        "failed": 0,
         "errors": 0,
         "total": 16
       }
     },
     "test_results": {
-      "passed": [],
-      "failed": [
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
         "make_test_chess_engine"
-      ]
+      ],
+      "failed": []
     },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting kotlin implementation at implementations/kotlin\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nR"
-    ],
+    "errors": [],
     "status": "completed"
   }
 ]

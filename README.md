@@ -30,7 +30,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 🪶 Imba | 🟡 | [9,098](implementations/imba/chess.imba) | 346ms, 4 MB | 365ms, 4 MB | 326ms, 4 MB | 10.8s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🟨 Javascript | 🟡 | [10,094](implementations/javascript/chess.js) | -, - MB | 291ms, 4 MB | 282ms, 4 MB | 10.7s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🔮 Julia | 🟢 | [9,783](implementations/julia/chess.jl) | -, - MB | 144ms, 6 MB | 151ms, 7 MB | 11.9s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
-| 🧡 Kotlin | 🟡 | [9,666](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 156ms, 6 MB | 171ms, 7 MB | 158ms, 7 MB | 10s, 62 MB | 1/1 | 2/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
+| 🧡 Kotlin | 🟡 | [12,071](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 1.1s, 6 MB | 842ms, 4 MB | 667ms, 4 MB | 11.4s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🪐 Lua | 🟢 | [18,838](implementations/lua/chess.lua) | -, - MB | 159ms, 7 MB | 154ms, 7 MB | 10.7s, 63 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🦊 Nim | 🟡 | [10,616](implementations/nim/chess.nim) | 264ms, 4 MB | 240ms, 4 MB | 229ms, 4 MB | 10.2s, - MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
 | 🐘 Php | 🟢 | [24,435](implementations/php/chess.php) | -, - MB | 328ms, 9 MB | 201ms, 9 MB | 13.6s, 62 MB | 1/1 | 16/16 | 6/9 (67%) `perft` `fen` `ai` `castling` `en_passant` `promotion` |
@@ -57,38 +57,38 @@ Lower is better. Bars are normalized per step (`####################` = fastest)
 #### `make build`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
-| 1 | 🧡 Kotlin | 156ms | `####################` |
-| 2 | 🌳 Elm | 189ms | `#################` |
-| 3 | 🦀 Rust | 199ms | `################` |
-| 4 | 🎯 Dart | 202ms | `###############` |
-| 5 | ⚡ Zig | 261ms | `############` |
+| 1 | 🌳 Elm | 189ms | `####################` |
+| 2 | 🦀 Rust | 199ms | `###################` |
+| 3 | 🎯 Dart | 202ms | `###################` |
+| 4 | ⚡ Zig | 261ms | `##############` |
+| 5 | 📘 Typescript | 263ms | `##############` |
 
 #### `make analyze`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
 | 1 | 🔮 Julia | 144ms | `####################` |
 | 2 | 🪐 Lua | 159ms | `##################` |
-| 3 | 🧡 Kotlin | 171ms | `#################` |
-| 4 | 📐 Haskell | 185ms | `################` |
-| 5 | 🌳 Elm | 188ms | `###############` |
+| 3 | 📐 Haskell | 185ms | `################` |
+| 4 | 🌳 Elm | 188ms | `###############` |
+| 5 | 🎯 Dart | 192ms | `###############` |
 
 #### `make test`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
 | 1 | 🔮 Julia | 151ms | `####################` |
 | 2 | 🪐 Lua | 154ms | `####################` |
-| 3 | 🧡 Kotlin | 158ms | `###################` |
-| 4 | 🎯 Dart | 180ms | `#################` |
-| 5 | 🌳 Elm | 187ms | `################` |
+| 3 | 🎯 Dart | 180ms | `#################` |
+| 4 | 🌳 Elm | 187ms | `################` |
+| 5 | 🦀 Rust | 191ms | `################` |
 
 #### `make test-chess-engine`
 | Rank | Implementation | Time | Chart |
 |------|----------------|------|-------|
 | 1 | 🦀 Rust | 9.7s | `####################` |
 | 2 | 🌳 Elm | 9.8s | `####################` |
-| 3 | 🧡 Kotlin | 10s | `####################` |
-| 4 | 🦊 Nim | 10.2s | `###################` |
-| 5 | ⚡ Zig | 10.3s | `###################` |
+| 3 | 🦊 Nim | 10.2s | `###################` |
+| 4 | ⚡ Zig | 10.3s | `###################` |
+| 5 | 🐦 Swift | 10.3s | `###################` |
 <!-- speed-chart-end -->
 
 ## Quick Commands
