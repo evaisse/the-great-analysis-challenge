@@ -43,7 +43,7 @@
         "memory_mb": 116.51171875,
         "peak_memory_mb": 116.51171875,
         "avg_memory_mb": 92.1982421875,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -72,13 +72,13 @@
         "memory_mb": 32.78125,
         "peak_memory_mb": 62.55078125,
         "avg_memory_mb": 61.08642578125,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 128,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 3435,
+      "source_loc": 3445,
       "source_files": 10
     },
     "metrics": {
@@ -86,7 +86,7 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 81.70642880546647,
       "runtime_ms_per_kloc": 48.80626128750597
     },
@@ -138,6 +138,29 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 9808.25,
+      "total_tokens": 15321,
+      "semantic_tokens": 15076,
+      "by_category": {
+        "keyword": 1535,
+        "identifier": 4571,
+        "type": 21,
+        "operator": 3200,
+        "literal": 2576,
+        "punctuation": 3173,
+        "comment": 245,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.102,
+        "comment_ratio": 0.016,
+        "punctuation_ratio": 0.21,
+        "complexity_per_loc": 2.85,
+        "complexity_per_file": 980.83
+      }
+    }
   }
 ]

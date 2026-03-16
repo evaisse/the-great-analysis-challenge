@@ -50,7 +50,7 @@
         "memory_mb": 17.45703125,
         "peak_memory_mb": 116.04296875,
         "avg_memory_mb": 90.57769097222223,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 9,
         "psutil_available": true
       },
@@ -77,9 +77,9 @@
       },
       "test_chess_engine": {
         "memory_mb": 31.91796875,
-        "peak_memory_mb": 62.0,
+        "peak_memory_mb": 62,
         "avg_memory_mb": 60.532430959302324,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 129,
         "psutil_available": true
       }
@@ -148,7 +148,7 @@
       "make build failed: ",
       "make analyze failed: ",
       "make test failed: ",
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting mojo implementation at implementations/mojo\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunni"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting mojo implementation at implementations/mojo\n----------------------------------------\nRunning test: Hash Command Baseline ✗\nRunning test: Hash Command After Move ✗\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunni"
     ],
     "status": "completed"
   },
@@ -160,7 +160,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 1908,
+      "source_files": 10
+    },
+    "metrics": {
+      "tokens_count": 9603,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 4133.25,
+      "total_tokens": 5810,
+      "semantic_tokens": 5713,
+      "by_category": {
+        "keyword": 821,
+        "identifier": 2142,
+        "type": 23,
+        "operator": 816,
+        "literal": 1046,
+        "punctuation": 865,
+        "comment": 97,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.144,
+        "comment_ratio": 0.017,
+        "punctuation_ratio": 0.151,
+        "complexity_per_loc": 2.17,
+        "complexity_per_file": 413.33
+      }
+    }
   },
   {
     "implementation": "swift",
@@ -170,7 +201,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 932,
+      "source_files": 3
+    },
+    "metrics": {
+      "tokens_count": 7650,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 3387,
+      "total_tokens": 4654,
+      "semantic_tokens": 4614,
+      "by_category": {
+        "keyword": 486,
+        "identifier": 1926,
+        "type": 120,
+        "operator": 747,
+        "literal": 591,
+        "punctuation": 744,
+        "comment": 40,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.105,
+        "comment_ratio": 0.009,
+        "punctuation_ratio": 0.161,
+        "complexity_per_loc": 3.63,
+        "complexity_per_file": 1129
+      }
+    }
   },
   {
     "language": "haskell",
@@ -215,7 +277,7 @@
         "memory_mb": 114.45703125,
         "peak_memory_mb": 114.45703125,
         "avg_memory_mb": 99.60611979166667,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 6,
         "psutil_available": true
       },
@@ -244,13 +306,13 @@
         "memory_mb": 32.1015625,
         "peak_memory_mb": 61.95703125,
         "avg_memory_mb": 61.64646399962742,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 671,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1398,
+      "source_loc": 1407,
       "source_files": 14
     },
     "metrics": {
@@ -307,9 +369,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting haskell implementation at implementations/haskell\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting haskell implementation at implementations/haskell\n----------------------------------------\nRunning test: Hash Command Baseline ✗\nRunning test: Hash Command After Move ✗\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5560.5,
+      "total_tokens": 7895,
+      "semantic_tokens": 7846,
+      "by_category": {
+        "keyword": 973,
+        "identifier": 2786,
+        "type": 0,
+        "operator": 1954,
+        "literal": 1165,
+        "punctuation": 968,
+        "comment": 49,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.124,
+        "comment_ratio": 0.006,
+        "punctuation_ratio": 0.123,
+        "complexity_per_loc": 3.95,
+        "complexity_per_file": 397.18
+      }
+    }
   },
   {
     "language": "swift",
@@ -354,7 +439,7 @@
         "memory_mb": 115.7578125,
         "peak_memory_mb": 115.7578125,
         "avg_memory_mb": 100.23763020833333,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 6,
         "psutil_available": true
       },
@@ -381,7 +466,7 @@
       }
     },
     "size": {
-      "source_loc": 929,
+      "source_loc": 932,
       "source_files": 3
     },
     "metrics": {
@@ -440,7 +525,30 @@
     "errors": [
       "track v2-full suite timeout after 180.1s"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 3387,
+      "total_tokens": 4654,
+      "semantic_tokens": 4614,
+      "by_category": {
+        "keyword": 486,
+        "identifier": 1926,
+        "type": 120,
+        "operator": 747,
+        "literal": 591,
+        "punctuation": 744,
+        "comment": 40,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.105,
+        "comment_ratio": 0.009,
+        "punctuation_ratio": 0.161,
+        "complexity_per_loc": 3.63,
+        "complexity_per_file": 1129
+      }
+    }
   },
   {
     "implementation": "lua",
@@ -471,6 +579,37 @@
       "timeouts": 0,
       "elapsed_ms": 76,
       "ops_total": 2400
+    },
+    "size": {
+      "source_loc": 2885,
+      "source_files": 1
+    },
+    "metrics": {
+      "tokens_count": 20806,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 10381.5,
+      "total_tokens": 12945,
+      "semantic_tokens": 12852,
+      "by_category": {
+        "keyword": 2325,
+        "identifier": 5575,
+        "type": 51,
+        "operator": 2459,
+        "literal": 2362,
+        "punctuation": 80,
+        "comment": 93,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.181,
+        "comment_ratio": 0.007,
+        "punctuation_ratio": 0.006,
+        "complexity_per_loc": 3.6,
+        "complexity_per_file": 10381.5
+      }
     }
   },
   {
@@ -516,7 +655,7 @@
         "memory_mb": 116.65234375,
         "peak_memory_mb": 116.65234375,
         "avg_memory_mb": 100.85221354166667,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 6,
         "psutil_available": true
       },
@@ -545,17 +684,17 @@
         "memory_mb": 33.03125,
         "peak_memory_mb": 62.98046875,
         "avg_memory_mb": 60.87455702319588,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 97,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 14933,
+      "source_loc": 14964,
       "source_files": 31
     },
     "metrics": {
-      "tokens_count": 112398,
+      "tokens_count": 112410,
       "metric_version": "tokens-v2"
     },
     "normalized": {
@@ -611,7 +750,30 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 27937,
+      "total_tokens": 37725,
+      "semantic_tokens": 30634,
+      "by_category": {
+        "keyword": 2755,
+        "identifier": 17922,
+        "type": 4563,
+        "operator": 3824,
+        "literal": 1570,
+        "punctuation": 0,
+        "comment": 7091,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.09,
+        "comment_ratio": 0.188,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 1.87,
+        "complexity_per_file": 901.19
+      }
+    }
   },
   {
     "implementation": "zig",
@@ -621,7 +783,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 1633,
+      "source_files": 8
+    },
+    "metrics": {
+      "tokens_count": 13277,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 8232.75,
+      "total_tokens": 10783,
+      "semantic_tokens": 10670,
+      "by_category": {
+        "keyword": 1300,
+        "identifier": 5510,
+        "type": 17,
+        "operator": 1100,
+        "literal": 680,
+        "punctuation": 2063,
+        "comment": 113,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.122,
+        "comment_ratio": 0.01,
+        "punctuation_ratio": 0.193,
+        "complexity_per_loc": 5.04,
+        "complexity_per_file": 1029.09
+      }
+    }
   },
   {
     "language": "bun",
@@ -667,7 +860,7 @@
         "memory_mb": 116.9140625,
         "peak_memory_mb": 116.9140625,
         "avg_memory_mb": 98.26328125,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 5,
         "psutil_available": true
       },
@@ -696,7 +889,7 @@
         "memory_mb": 32.08984375,
         "peak_memory_mb": 61.86328125,
         "avg_memory_mb": 61.56069176557863,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 674,
         "psutil_available": true
       }
@@ -710,7 +903,7 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 298.7830271813545,
       "runtime_ms_per_kloc": 281.838914560452
     },
@@ -759,7 +952,7 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting bun implementation at implementations/bun\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunning"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting bun implementation at implementations/bun\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunning"
     ],
     "status": "completed"
   },
@@ -771,7 +964,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 1854,
+      "source_files": 9
+    },
+    "metrics": {
+      "tokens_count": 12770,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6761,
+      "total_tokens": 9569,
+      "semantic_tokens": 9513,
+      "by_category": {
+        "keyword": 963,
+        "identifier": 3103,
+        "type": 807,
+        "operator": 2300,
+        "literal": 612,
+        "punctuation": 1728,
+        "comment": 56,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.101,
+        "comment_ratio": 0.006,
+        "punctuation_ratio": 0.182,
+        "complexity_per_loc": 3.65,
+        "complexity_per_file": 751.22
+      }
+    }
   },
   {
     "implementation": "gleam",
@@ -795,6 +1019,37 @@
       "timeouts": 0,
       "elapsed_ms": 42,
       "ops_total": 1024
+    },
+    "size": {
+      "source_loc": 14964,
+      "source_files": 31
+    },
+    "metrics": {
+      "tokens_count": 112410,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 27937,
+      "total_tokens": 37725,
+      "semantic_tokens": 30634,
+      "by_category": {
+        "keyword": 2755,
+        "identifier": 17922,
+        "type": 4563,
+        "operator": 3824,
+        "literal": 1570,
+        "punctuation": 0,
+        "comment": 7091,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.09,
+        "comment_ratio": 0.188,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 1.87,
+        "complexity_per_file": 901.19
+      }
     }
   },
   {
@@ -842,7 +1097,7 @@
         "memory_mb": 116.7265625,
         "peak_memory_mb": 116.7265625,
         "avg_memory_mb": 100.17643229166667,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 6,
         "psutil_available": true
       },
@@ -871,21 +1126,21 @@
         "memory_mb": 32.50390625,
         "peak_memory_mb": 62.2421875,
         "avg_memory_mb": 61.0767578125,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 160,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 3672,
+      "source_loc": 3678,
       "source_files": 13
     },
     "metrics": {
-      "tokens_count": 26928,
+      "tokens_count": 26934,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 59.84566050676998,
       "runtime_ms_per_kloc": 51.7470254877294
     },
@@ -937,7 +1192,30 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 9146.5,
+      "total_tokens": 14587,
+      "semantic_tokens": 14477,
+      "by_category": {
+        "keyword": 1314,
+        "identifier": 3871,
+        "type": 304,
+        "operator": 2004,
+        "literal": 3638,
+        "punctuation": 3346,
+        "comment": 110,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.091,
+        "comment_ratio": 0.008,
+        "punctuation_ratio": 0.231,
+        "complexity_per_loc": 2.49,
+        "complexity_per_file": 703.58
+      }
+    }
   },
   {
     "language": "nim",
@@ -982,7 +1260,7 @@
         "memory_mb": 111.53515625,
         "peak_memory_mb": 111.53515625,
         "avg_memory_mb": 90.8740234375,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -1011,17 +1289,17 @@
         "memory_mb": 32.3515625,
         "peak_memory_mb": 62.12109375,
         "avg_memory_mb": 60.121426196808514,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 94,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1105,
+      "source_loc": 1339,
       "source_files": 1
     },
     "metrics": {
-      "tokens_count": 8410,
+      "tokens_count": 10036,
       "metric_version": "tokens-v2"
     },
     "normalized": {
@@ -1074,9 +1352,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting nim implementation at implementations/nim\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunning"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting nim implementation at implementations/nim\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunning"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5748,
+      "total_tokens": 7345,
+      "semantic_tokens": 7252,
+      "by_category": {
+        "keyword": 1064,
+        "identifier": 2932,
+        "type": 248,
+        "operator": 1939,
+        "literal": 1069,
+        "punctuation": 0,
+        "comment": 93,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.147,
+        "comment_ratio": 0.013,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 4.29,
+        "complexity_per_file": 5748
+      }
+    }
   },
   {
     "language": "php",
@@ -1122,7 +1423,7 @@
         "memory_mb": 116.51171875,
         "peak_memory_mb": 116.51171875,
         "avg_memory_mb": 92.1982421875,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -1151,13 +1452,13 @@
         "memory_mb": 32.78125,
         "peak_memory_mb": 62.55078125,
         "avg_memory_mb": 61.08642578125,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 128,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 3435,
+      "source_loc": 3445,
       "source_files": 10
     },
     "metrics": {
@@ -1165,7 +1466,7 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 81.70642880546647,
       "runtime_ms_per_kloc": 48.80626128750597
     },
@@ -1217,7 +1518,30 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 9808.25,
+      "total_tokens": 15321,
+      "semantic_tokens": 15076,
+      "by_category": {
+        "keyword": 1535,
+        "identifier": 4571,
+        "type": 21,
+        "operator": 3200,
+        "literal": 2576,
+        "punctuation": 3173,
+        "comment": 245,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.102,
+        "comment_ratio": 0.016,
+        "punctuation_ratio": 0.21,
+        "complexity_per_loc": 2.85,
+        "complexity_per_file": 980.83
+      }
+    }
   },
   {
     "implementation": "elm",
@@ -1227,7 +1551,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 1669,
+      "source_files": 7
+    },
+    "metrics": {
+      "tokens_count": 7868,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5305,
+      "total_tokens": 6310,
+      "semantic_tokens": 6286,
+      "by_category": {
+        "keyword": 1553,
+        "identifier": 2943,
+        "type": 0,
+        "operator": 1007,
+        "literal": 439,
+        "punctuation": 344,
+        "comment": 24,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.247,
+        "comment_ratio": 0.004,
+        "punctuation_ratio": 0.055,
+        "complexity_per_loc": 3.18,
+        "complexity_per_file": 757.86
+      }
+    }
   },
   {
     "language": "typescript",
@@ -1273,7 +1628,7 @@
         "memory_mb": 17.4921875,
         "peak_memory_mb": 110.98046875,
         "avg_memory_mb": 67.3212890625,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -1302,17 +1657,17 @@
         "memory_mb": 31.9375,
         "peak_memory_mb": 61.9140625,
         "avg_memory_mb": 59.93112664473684,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 95,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1838,
-      "source_files": 11
+      "source_loc": 2038,
+      "source_files": 21
     },
     "metrics": {
-      "tokens_count": 13192,
+      "tokens_count": 14364,
       "metric_version": "tokens-v2"
     },
     "normalized": {
@@ -1365,9 +1720,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting typescript implementation at implementations/typescript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Hands"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting typescript implementation at implementations/typescript\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Hands"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6211,
+      "total_tokens": 9433,
+      "semantic_tokens": 9409,
+      "by_category": {
+        "keyword": 1012,
+        "identifier": 2767,
+        "type": 425,
+        "operator": 1445,
+        "literal": 1378,
+        "punctuation": 2382,
+        "comment": 24,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.108,
+        "comment_ratio": 0.003,
+        "punctuation_ratio": 0.253,
+        "complexity_per_loc": 3.05,
+        "complexity_per_file": 295.76
+      }
+    }
   },
   {
     "implementation": "kotlin",
@@ -1377,7 +1755,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 1525,
+      "source_files": 8
+    },
+    "metrics": {
+      "tokens_count": 9666,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 4868.5,
+      "total_tokens": 5647,
+      "semantic_tokens": 5586,
+      "by_category": {
+        "keyword": 876,
+        "identifier": 3024,
+        "type": 251,
+        "operator": 764,
+        "literal": 671,
+        "punctuation": 0,
+        "comment": 61,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.157,
+        "comment_ratio": 0.011,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 3.19,
+        "complexity_per_file": 608.56
+      }
+    }
   },
   {
     "implementation": "julia",
@@ -1401,6 +1810,37 @@
       "timeouts": 0,
       "elapsed_ms": 42,
       "ops_total": 1024
+    },
+    "size": {
+      "source_loc": 1949,
+      "source_files": 9
+    },
+    "metrics": {
+      "tokens_count": 12280,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5517.5,
+      "total_tokens": 8570,
+      "semantic_tokens": 8488,
+      "by_category": {
+        "keyword": 802,
+        "identifier": 2391,
+        "type": 147,
+        "operator": 1958,
+        "literal": 1604,
+        "punctuation": 1586,
+        "comment": 82,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.094,
+        "comment_ratio": 0.01,
+        "punctuation_ratio": 0.187,
+        "complexity_per_loc": 2.83,
+        "complexity_per_file": 613.06
+      }
     }
   },
   {
@@ -1447,7 +1887,7 @@
         "memory_mb": 110.9140625,
         "peak_memory_mb": 110.9140625,
         "avg_memory_mb": 83.99609375,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 3,
         "psutil_available": true
       },
@@ -1476,13 +1916,13 @@
         "memory_mb": 61.93359375,
         "peak_memory_mb": 61.93359375,
         "avg_memory_mb": 61.62977099236641,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 131,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1941,
+      "source_loc": 1949,
       "source_files": 9
     },
     "metrics": {
@@ -1490,7 +1930,7 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 93.88520753242378,
       "runtime_ms_per_kloc": 92.06138524365511
     },
@@ -1542,7 +1982,30 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5517.5,
+      "total_tokens": 8570,
+      "semantic_tokens": 8488,
+      "by_category": {
+        "keyword": 802,
+        "identifier": 2391,
+        "type": 147,
+        "operator": 1958,
+        "literal": 1604,
+        "punctuation": 1586,
+        "comment": 82,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.094,
+        "comment_ratio": 0.01,
+        "punctuation_ratio": 0.187,
+        "complexity_per_loc": 2.83,
+        "complexity_per_file": 613.06
+      }
+    }
   },
   {
     "language": "ruby",
@@ -1588,7 +2051,7 @@
         "memory_mb": 116.0703125,
         "peak_memory_mb": 116.0703125,
         "avg_memory_mb": 93.64296875,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 5,
         "psutil_available": true
       },
@@ -1617,21 +2080,21 @@
         "memory_mb": 32.26171875,
         "peak_memory_mb": 62.1953125,
         "avg_memory_mb": 60.581256734913794,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 116,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1906,
+      "source_loc": 1908,
       "source_files": 10
     },
     "metrics": {
-      "tokens_count": 9600,
+      "tokens_count": 9603,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 1220.912147794165,
       "runtime_ms_per_kloc": 157.0988301840559
     },
@@ -1680,9 +2143,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting ruby implementation at implementations/ruby\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunni"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting ruby implementation at implementations/ruby\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunni"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 4133.25,
+      "total_tokens": 5810,
+      "semantic_tokens": 5713,
+      "by_category": {
+        "keyword": 821,
+        "identifier": 2142,
+        "type": 23,
+        "operator": 816,
+        "literal": 1046,
+        "punctuation": 865,
+        "comment": 97,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.144,
+        "comment_ratio": 0.017,
+        "punctuation_ratio": 0.151,
+        "complexity_per_loc": 2.17,
+        "complexity_per_file": 413.33
+      }
+    }
   },
   {
     "language": "crystal",
@@ -1727,7 +2213,7 @@
         "memory_mb": 116.39453125,
         "peak_memory_mb": 116.39453125,
         "avg_memory_mb": 96.71171875,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 5,
         "psutil_available": true
       },
@@ -1756,17 +2242,17 @@
         "memory_mb": 32.12890625,
         "peak_memory_mb": 62.0234375,
         "avg_memory_mb": 60.03675986842105,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 95,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1692,
-      "source_files": 7
+      "source_loc": 2201,
+      "source_files": 10
     },
     "metrics": {
-      "tokens_count": 9441,
+      "tokens_count": 12598,
       "metric_version": "tokens-v2"
     },
     "normalized": {
@@ -1819,9 +2305,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting crystal implementation at implementations/crystal\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2713\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting crystal implementation at implementations/crystal\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✓\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5325.75,
+      "total_tokens": 7946,
+      "semantic_tokens": 7880,
+      "by_category": {
+        "keyword": 969,
+        "identifier": 2560,
+        "type": 19,
+        "operator": 1020,
+        "literal": 1759,
+        "punctuation": 1553,
+        "comment": 66,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.123,
+        "comment_ratio": 0.008,
+        "punctuation_ratio": 0.197,
+        "complexity_per_loc": 2.42,
+        "complexity_per_file": 532.58
+      }
+    }
   },
   {
     "implementation": "go",
@@ -1850,6 +2359,37 @@
       "seed": 12345,
       "timeouts": 0,
       "workers": 2
+    },
+    "size": {
+      "source_loc": 3919,
+      "source_files": 7
+    },
+    "metrics": {
+      "tokens_count": 24803,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 9967.5,
+      "total_tokens": 14666,
+      "semantic_tokens": 14552,
+      "by_category": {
+        "keyword": 1445,
+        "identifier": 5126,
+        "type": 396,
+        "operator": 1955,
+        "literal": 2462,
+        "punctuation": 3168,
+        "comment": 114,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.099,
+        "comment_ratio": 0.008,
+        "punctuation_ratio": 0.218,
+        "complexity_per_loc": 2.54,
+        "complexity_per_file": 1423.93
+      }
     }
   },
   {
@@ -1895,7 +2435,7 @@
         "memory_mb": 116.0546875,
         "peak_memory_mb": 116.0546875,
         "avg_memory_mb": 85.30338541666667,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 3,
         "psutil_available": true
       },
@@ -1924,13 +2464,13 @@
         "memory_mb": 32.16796875,
         "peak_memory_mb": 62.2109375,
         "avg_memory_mb": 60.210438829787236,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 94,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1663,
+      "source_loc": 1669,
       "source_files": 7
     },
     "metrics": {
@@ -1987,9 +2527,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting elm implementation at implementations/elm\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2713\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunning"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting elm implementation at implementations/elm\n----------------------------------------\nRunning test: Hash Command Baseline ✗\nRunning test: Hash Command After Move ✗\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✓\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunning"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5305,
+      "total_tokens": 6310,
+      "semantic_tokens": 6286,
+      "by_category": {
+        "keyword": 1553,
+        "identifier": 2943,
+        "type": 0,
+        "operator": 1007,
+        "literal": 439,
+        "punctuation": 344,
+        "comment": 24,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.247,
+        "comment_ratio": 0.004,
+        "punctuation_ratio": 0.055,
+        "complexity_per_loc": 3.18,
+        "complexity_per_file": 757.86
+      }
+    }
   },
   {
     "implementation": "haskell",
@@ -1999,7 +2562,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 1407,
+      "source_files": 14
+    },
+    "metrics": {
+      "tokens_count": 11812,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5560.5,
+      "total_tokens": 7895,
+      "semantic_tokens": 7846,
+      "by_category": {
+        "keyword": 973,
+        "identifier": 2786,
+        "type": 0,
+        "operator": 1954,
+        "literal": 1165,
+        "punctuation": 968,
+        "comment": 49,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.124,
+        "comment_ratio": 0.006,
+        "punctuation_ratio": 0.123,
+        "complexity_per_loc": 3.95,
+        "complexity_per_file": 397.18
+      }
+    }
   },
   {
     "implementation": "crystal",
@@ -2009,7 +2603,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 2201,
+      "source_files": 10
+    },
+    "metrics": {
+      "tokens_count": 12598,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5325.75,
+      "total_tokens": 7946,
+      "semantic_tokens": 7880,
+      "by_category": {
+        "keyword": 969,
+        "identifier": 2560,
+        "type": 19,
+        "operator": 1020,
+        "literal": 1759,
+        "punctuation": 1553,
+        "comment": 66,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.123,
+        "comment_ratio": 0.008,
+        "punctuation_ratio": 0.197,
+        "complexity_per_loc": 2.42,
+        "complexity_per_file": 532.58
+      }
+    }
   },
   {
     "language": "lua",
@@ -2055,7 +2680,7 @@
         "memory_mb": 111.15234375,
         "peak_memory_mb": 111.15234375,
         "avg_memory_mb": 84.37760416666667,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 3,
         "psutil_available": true
       },
@@ -2084,13 +2709,13 @@
         "memory_mb": 32.74609375,
         "peak_memory_mb": 62.6484375,
         "avg_memory_mb": 60.862909226190474,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 105,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 2884,
+      "source_loc": 2885,
       "source_files": 1
     },
     "metrics": {
@@ -2098,7 +2723,7 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 73.52749616858368,
       "runtime_ms_per_kloc": 67.56099682409787
     },
@@ -2150,7 +2775,30 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 10381.5,
+      "total_tokens": 12945,
+      "semantic_tokens": 12852,
+      "by_category": {
+        "keyword": 2325,
+        "identifier": 5575,
+        "type": 51,
+        "operator": 2459,
+        "literal": 2362,
+        "punctuation": 80,
+        "comment": 93,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.181,
+        "comment_ratio": 0.007,
+        "punctuation_ratio": 0.006,
+        "complexity_per_loc": 3.6,
+        "complexity_per_file": 10381.5
+      }
+    }
   },
   {
     "language": "javascript",
@@ -2196,7 +2844,7 @@
         "memory_mb": 115.84375,
         "peak_memory_mb": 115.84375,
         "avg_memory_mb": 102.51227678571429,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 7,
         "psutil_available": true
       },
@@ -2225,13 +2873,13 @@
         "memory_mb": 32.06640625,
         "peak_memory_mb": 61.8671875,
         "avg_memory_mb": 61.553426106770836,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 672,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 816,
+      "source_loc": 820,
       "source_files": 4
     },
     "metrics": {
@@ -2239,7 +2887,7 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 253.5850394005869,
       "runtime_ms_per_kloc": 226.43833768134024
     },
@@ -2288,9 +2936,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting javascript implementation at implementations/javascript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Hands"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting javascript implementation at implementations/javascript\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Hands"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 2661,
+      "total_tokens": 4468,
+      "semantic_tokens": 4149,
+      "by_category": {
+        "keyword": 393,
+        "identifier": 1256,
+        "type": 1,
+        "operator": 731,
+        "literal": 814,
+        "punctuation": 954,
+        "comment": 319,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.095,
+        "comment_ratio": 0.071,
+        "punctuation_ratio": 0.23,
+        "complexity_per_loc": 3.25,
+        "complexity_per_file": 665.25
+      }
+    }
   },
   {
     "language": "kotlin",
@@ -2335,7 +3006,7 @@
         "memory_mb": 111.6328125,
         "peak_memory_mb": 111.6328125,
         "avg_memory_mb": 90.1943359375,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -2364,13 +3035,13 @@
         "memory_mb": 32.2265625,
         "peak_memory_mb": 62.00390625,
         "avg_memory_mb": 60.06946681701031,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 97,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1524,
+      "source_loc": 1525,
       "source_files": 8
     },
     "metrics": {
@@ -2427,9 +3098,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting kotlin implementation at implementations/kotlin\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nR"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting kotlin implementation at implementations/kotlin\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nR"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 4868.5,
+      "total_tokens": 5647,
+      "semantic_tokens": 5586,
+      "by_category": {
+        "keyword": 876,
+        "identifier": 3024,
+        "type": 251,
+        "operator": 764,
+        "literal": 671,
+        "punctuation": 0,
+        "comment": 61,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.157,
+        "comment_ratio": 0.011,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 3.19,
+        "complexity_per_file": 608.56
+      }
+    }
   },
   {
     "language": "zig",
@@ -2474,7 +3168,7 @@
         "memory_mb": 111.0546875,
         "peak_memory_mb": 111.0546875,
         "avg_memory_mb": 90.814453125,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -2503,13 +3197,13 @@
         "memory_mb": 32.1015625,
         "peak_memory_mb": 61.96484375,
         "avg_memory_mb": 61.59710122526978,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 556,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1625,
+      "source_loc": 1633,
       "source_files": 8
     },
     "metrics": {
@@ -2566,9 +3260,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting zig implementation at implementations/zig\n----------------------------------------\nRunning test: Hash Command Baseline \u2717\nRunning test: Hash Command After Move \u2717\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunning"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting zig implementation at implementations/zig\n----------------------------------------\nRunning test: Hash Command Baseline ✗\nRunning test: Hash Command After Move ✗\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunning"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 8232.75,
+      "total_tokens": 10783,
+      "semantic_tokens": 10670,
+      "by_category": {
+        "keyword": 1300,
+        "identifier": 5510,
+        "type": 17,
+        "operator": 1100,
+        "literal": 680,
+        "punctuation": 2063,
+        "comment": 113,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.122,
+        "comment_ratio": 0.01,
+        "punctuation_ratio": 0.193,
+        "complexity_per_loc": 5.04,
+        "complexity_per_file": 1029.09
+      }
+    }
   },
   {
     "implementation": "typescript",
@@ -2578,7 +3295,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 2038,
+      "source_files": 21
+    },
+    "metrics": {
+      "tokens_count": 14364,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6211,
+      "total_tokens": 9433,
+      "semantic_tokens": 9409,
+      "by_category": {
+        "keyword": 1012,
+        "identifier": 2767,
+        "type": 425,
+        "operator": 1445,
+        "literal": 1378,
+        "punctuation": 2382,
+        "comment": 24,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.108,
+        "comment_ratio": 0.003,
+        "punctuation_ratio": 0.253,
+        "complexity_per_loc": 3.05,
+        "complexity_per_file": 295.76
+      }
+    }
   },
   {
     "language": "go",
@@ -2623,7 +3371,7 @@
         "memory_mb": 116.265625,
         "peak_memory_mb": 116.265625,
         "avg_memory_mb": 101.0078125,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 6,
         "psutil_available": true
       },
@@ -2652,13 +3400,13 @@
         "memory_mb": 32.5234375,
         "peak_memory_mb": 62.3671875,
         "avg_memory_mb": 60.51392326732673,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 101,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 3913,
+      "source_loc": 3919,
       "source_files": 7
     },
     "metrics": {
@@ -2718,7 +3466,30 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 9967.5,
+      "total_tokens": 14666,
+      "semantic_tokens": 14552,
+      "by_category": {
+        "keyword": 1445,
+        "identifier": 5126,
+        "type": 396,
+        "operator": 1955,
+        "literal": 2462,
+        "punctuation": 3168,
+        "comment": 114,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.099,
+        "comment_ratio": 0.008,
+        "punctuation_ratio": 0.218,
+        "complexity_per_loc": 2.54,
+        "complexity_per_file": 1423.93
+      }
+    }
   },
   {
     "implementation": "imba",
@@ -2749,6 +3520,37 @@
       "timeouts": 0,
       "elapsed_ms": 0,
       "ops_total": 100000
+    },
+    "size": {
+      "source_loc": 1634,
+      "source_files": 1
+    },
+    "metrics": {
+      "tokens_count": 13741,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6002,
+      "total_tokens": 8715,
+      "semantic_tokens": 8715,
+      "by_category": {
+        "keyword": 679,
+        "identifier": 2498,
+        "type": 849,
+        "operator": 1532,
+        "literal": 1683,
+        "punctuation": 1474,
+        "comment": 0,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.078,
+        "comment_ratio": 0,
+        "punctuation_ratio": 0.169,
+        "complexity_per_loc": 3.67,
+        "complexity_per_file": 6002
+      }
     }
   },
   {
@@ -2759,7 +3561,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 1688,
+      "source_files": 11
+    },
+    "metrics": {
+      "tokens_count": 11181,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 4903.75,
+      "total_tokens": 6701,
+      "semantic_tokens": 6685,
+      "by_category": {
+        "keyword": 695,
+        "identifier": 2732,
+        "type": 298,
+        "operator": 1113,
+        "literal": 642,
+        "punctuation": 1205,
+        "comment": 16,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.104,
+        "comment_ratio": 0.002,
+        "punctuation_ratio": 0.18,
+        "complexity_per_loc": 2.91,
+        "complexity_per_file": 445.8
+      }
+    }
   },
   {
     "language": "rust",
@@ -2804,7 +3637,7 @@
         "memory_mb": 111.58203125,
         "peak_memory_mb": 111.58203125,
         "avg_memory_mb": 90.685546875,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -2831,15 +3664,15 @@
       },
       "test_chess_engine": {
         "memory_mb": 32.31640625,
-        "peak_memory_mb": 62.0,
+        "peak_memory_mb": 62,
         "avg_memory_mb": 60.037582236842105,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 95,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1852,
+      "source_loc": 1854,
       "source_files": 9
     },
     "metrics": {
@@ -2896,9 +3729,32 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting rust implementation at implementations/rust\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunni"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting rust implementation at implementations/rust\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunni"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6761,
+      "total_tokens": 9569,
+      "semantic_tokens": 9513,
+      "by_category": {
+        "keyword": 963,
+        "identifier": 3103,
+        "type": 807,
+        "operator": 2300,
+        "literal": 612,
+        "punctuation": 1728,
+        "comment": 56,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.101,
+        "comment_ratio": 0.006,
+        "punctuation_ratio": 0.182,
+        "complexity_per_loc": 3.65,
+        "complexity_per_file": 751.22
+      }
+    }
   },
   {
     "language": "imba",
@@ -2943,7 +3799,7 @@
         "memory_mb": 111.46484375,
         "peak_memory_mb": 111.46484375,
         "avg_memory_mb": 84.45442708333333,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 3,
         "psutil_available": true
       },
@@ -2972,17 +3828,17 @@
         "memory_mb": 32.4765625,
         "peak_memory_mb": 62.3671875,
         "avg_memory_mb": 60.385032894736845,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 95,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1589,
+      "source_loc": 1634,
       "source_files": 1
     },
     "metrics": {
-      "tokens_count": 13544,
+      "tokens_count": 13741,
       "metric_version": "tokens-v2"
     },
     "normalized": {
@@ -3038,7 +3894,30 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6002,
+      "total_tokens": 8715,
+      "semantic_tokens": 8715,
+      "by_category": {
+        "keyword": 679,
+        "identifier": 2498,
+        "type": 849,
+        "operator": 1532,
+        "literal": 1683,
+        "punctuation": 1474,
+        "comment": 0,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.078,
+        "comment_ratio": 0,
+        "punctuation_ratio": 0.169,
+        "complexity_per_loc": 3.67,
+        "complexity_per_file": 6002
+      }
+    }
   },
   {
     "implementation": "nim",
@@ -3048,7 +3927,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 1339,
+      "source_files": 1
+    },
+    "metrics": {
+      "tokens_count": 10036,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5748,
+      "total_tokens": 7345,
+      "semantic_tokens": 7252,
+      "by_category": {
+        "keyword": 1064,
+        "identifier": 2932,
+        "type": 248,
+        "operator": 1939,
+        "literal": 1069,
+        "punctuation": 0,
+        "comment": 93,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.147,
+        "comment_ratio": 0.013,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 4.29,
+        "complexity_per_file": 5748
+      }
+    }
   },
   {
     "language": "dart",
@@ -3093,7 +4003,7 @@
         "memory_mb": 111.22265625,
         "peak_memory_mb": 111.22265625,
         "avg_memory_mb": 94.6640625,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 5,
         "psutil_available": true
       },
@@ -3122,13 +4032,13 @@
         "memory_mb": 32.45703125,
         "peak_memory_mb": 62.21875,
         "avg_memory_mb": 60.3673422029703,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 101,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 3295,
+      "source_loc": 3308,
       "source_files": 13
     },
     "metrics": {
@@ -3188,7 +4098,30 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 10100.25,
+      "total_tokens": 13220,
+      "semantic_tokens": 13192,
+      "by_category": {
+        "keyword": 1193,
+        "identifier": 6306,
+        "type": 81,
+        "operator": 2067,
+        "literal": 2402,
+        "punctuation": 1143,
+        "comment": 28,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.09,
+        "comment_ratio": 0.002,
+        "punctuation_ratio": 0.087,
+        "complexity_per_loc": 3.05,
+        "complexity_per_file": 776.94
+      }
+    }
   },
   {
     "implementation": "python",
@@ -3219,6 +4152,37 @@
       "timeouts": 0,
       "elapsed_ms": 282,
       "ops_total": 320
+    },
+    "size": {
+      "source_loc": 3678,
+      "source_files": 13
+    },
+    "metrics": {
+      "tokens_count": 26934,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 9146.5,
+      "total_tokens": 14587,
+      "semantic_tokens": 14477,
+      "by_category": {
+        "keyword": 1314,
+        "identifier": 3871,
+        "type": 304,
+        "operator": 2004,
+        "literal": 3638,
+        "punctuation": 3346,
+        "comment": 110,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.091,
+        "comment_ratio": 0.008,
+        "punctuation_ratio": 0.231,
+        "complexity_per_loc": 2.49,
+        "complexity_per_file": 703.58
+      }
     }
   },
   {
@@ -3246,6 +4210,37 @@
       "timeouts": 0,
       "elapsed_ms": 133,
       "ops_total": 780
+    },
+    "size": {
+      "source_loc": 3308,
+      "source_files": 13
+    },
+    "metrics": {
+      "tokens_count": 21057,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 10100.25,
+      "total_tokens": 13220,
+      "semantic_tokens": 13192,
+      "by_category": {
+        "keyword": 1193,
+        "identifier": 6306,
+        "type": 81,
+        "operator": 2067,
+        "literal": 2402,
+        "punctuation": 1143,
+        "comment": 28,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.09,
+        "comment_ratio": 0.002,
+        "punctuation_ratio": 0.087,
+        "complexity_per_loc": 3.05,
+        "complexity_per_file": 776.94
+      }
     }
   },
   {
@@ -3287,6 +4282,37 @@
       "timeouts": 0,
       "elapsed_ms": 132,
       "ops_total": 320
+    },
+    "size": {
+      "source_loc": 3445,
+      "source_files": 10
+    },
+    "metrics": {
+      "tokens_count": 26871,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 9808.25,
+      "total_tokens": 15321,
+      "semantic_tokens": 15076,
+      "by_category": {
+        "keyword": 1535,
+        "identifier": 4571,
+        "type": 21,
+        "operator": 3200,
+        "literal": 2576,
+        "punctuation": 3173,
+        "comment": 245,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.102,
+        "comment_ratio": 0.016,
+        "punctuation_ratio": 0.21,
+        "complexity_per_loc": 2.85,
+        "complexity_per_file": 980.83
+      }
     }
   },
   {
@@ -3297,7 +4323,38 @@
     "issues": [
       "Missing CONCURRENCY: payload"
     ],
-    "payload": null
+    "payload": null,
+    "size": {
+      "source_loc": 820,
+      "source_files": 4
+    },
+    "metrics": {
+      "tokens_count": 7472,
+      "metric_version": "tokens-v2"
+    },
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 2661,
+      "total_tokens": 4468,
+      "semantic_tokens": 4149,
+      "by_category": {
+        "keyword": 393,
+        "identifier": 1256,
+        "type": 1,
+        "operator": 731,
+        "literal": 814,
+        "punctuation": 954,
+        "comment": 319,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.095,
+        "comment_ratio": 0.071,
+        "punctuation_ratio": 0.23,
+        "complexity_per_loc": 3.25,
+        "complexity_per_file": 665.25
+      }
+    }
   },
   {
     "language": "rescript",
@@ -3343,7 +4400,7 @@
         "memory_mb": 110.3828125,
         "peak_memory_mb": 110.3828125,
         "avg_memory_mb": 89.6689453125,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -3372,13 +4429,13 @@
         "memory_mb": 32.171875,
         "peak_memory_mb": 62.1796875,
         "avg_memory_mb": 60.217569986979164,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 96,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1678,
+      "source_loc": 1688,
       "source_files": 11
     },
     "metrics": {
@@ -3435,8 +4492,31 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting rescript implementation at implementations/rescript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting rescript implementation at implementations/rescript\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 4903.75,
+      "total_tokens": 6701,
+      "semantic_tokens": 6685,
+      "by_category": {
+        "keyword": 695,
+        "identifier": 2732,
+        "type": 298,
+        "operator": 1113,
+        "literal": 642,
+        "punctuation": 1205,
+        "comment": 16,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.104,
+        "comment_ratio": 0.002,
+        "punctuation_ratio": 0.18,
+        "complexity_per_loc": 2.91,
+        "complexity_per_file": 445.8
+      }
+    }
   }
 ]

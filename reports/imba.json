@@ -42,7 +42,7 @@
         "memory_mb": 111.46484375,
         "peak_memory_mb": 111.46484375,
         "avg_memory_mb": 84.45442708333333,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 3,
         "psutil_available": true
       },
@@ -71,17 +71,17 @@
         "memory_mb": 32.4765625,
         "peak_memory_mb": 62.3671875,
         "avg_memory_mb": 60.385032894736845,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 95,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1589,
+      "source_loc": 1634,
       "source_files": 1
     },
     "metrics": {
-      "tokens_count": 13544,
+      "tokens_count": 13741,
       "metric_version": "tokens-v2"
     },
     "normalized": {
@@ -137,6 +137,29 @@
       "failed": []
     },
     "errors": [],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6002,
+      "total_tokens": 8715,
+      "semantic_tokens": 8715,
+      "by_category": {
+        "keyword": 679,
+        "identifier": 2498,
+        "type": 849,
+        "operator": 1532,
+        "literal": 1683,
+        "punctuation": 1474,
+        "comment": 0,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.078,
+        "comment_ratio": 0,
+        "punctuation_ratio": 0.169,
+        "complexity_per_loc": 3.67,
+        "complexity_per_file": 6002
+      }
+    }
   }
 ]

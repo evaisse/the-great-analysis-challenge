@@ -43,7 +43,7 @@
         "memory_mb": 110.3828125,
         "peak_memory_mb": 110.3828125,
         "avg_memory_mb": 89.6689453125,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -72,13 +72,13 @@
         "memory_mb": 32.171875,
         "peak_memory_mb": 62.1796875,
         "avg_memory_mb": 60.217569986979164,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 96,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1678,
+      "source_loc": 1688,
       "source_files": 11
     },
     "metrics": {
@@ -135,8 +135,31 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting rescript implementation at implementations/rescript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting rescript implementation at implementations/rescript\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 4903.75,
+      "total_tokens": 6701,
+      "semantic_tokens": 6685,
+      "by_category": {
+        "keyword": 695,
+        "identifier": 2732,
+        "type": 298,
+        "operator": 1113,
+        "literal": 642,
+        "punctuation": 1205,
+        "comment": 16,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.104,
+        "comment_ratio": 0.002,
+        "punctuation_ratio": 0.18,
+        "complexity_per_loc": 2.91,
+        "complexity_per_file": 445.8
+      }
+    }
   }
 ]

@@ -43,7 +43,7 @@
         "memory_mb": 116.9140625,
         "peak_memory_mb": 116.9140625,
         "avg_memory_mb": 98.26328125,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 5,
         "psutil_available": true
       },
@@ -72,7 +72,7 @@
         "memory_mb": 32.08984375,
         "peak_memory_mb": 61.86328125,
         "avg_memory_mb": 61.56069176557863,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 674,
         "psutil_available": true
       }
@@ -86,7 +86,7 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 298.7830271813545,
       "runtime_ms_per_kloc": 281.838914560452
     },
@@ -135,7 +135,7 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting bun implementation at implementations/bun\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nRunning"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting bun implementation at implementations/bun\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunning"
     ],
     "status": "completed"
   }

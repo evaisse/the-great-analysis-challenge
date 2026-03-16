@@ -42,7 +42,7 @@
         "memory_mb": 111.6328125,
         "peak_memory_mb": 111.6328125,
         "avg_memory_mb": 90.1943359375,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 4,
         "psutil_available": true
       },
@@ -71,13 +71,13 @@
         "memory_mb": 32.2265625,
         "peak_memory_mb": 62.00390625,
         "avg_memory_mb": 60.06946681701031,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 97,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1524,
+      "source_loc": 1525,
       "source_files": 8
     },
     "metrics": {
@@ -134,8 +134,31 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting kotlin implementation at implementations/kotlin\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717\nR"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting kotlin implementation at implementations/kotlin\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nR"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 4868.5,
+      "total_tokens": 5647,
+      "semantic_tokens": 5586,
+      "by_category": {
+        "keyword": 876,
+        "identifier": 3024,
+        "type": 251,
+        "operator": 764,
+        "literal": 671,
+        "punctuation": 0,
+        "comment": 61,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.157,
+        "comment_ratio": 0.011,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 3.19,
+        "complexity_per_file": 608.56
+      }
+    }
   }
 ]

@@ -37,6 +37,7 @@ import { runUpdateReadme } from "./update-readme.ts";
 import { triageIssue } from "./issue-triage.ts";
 import { runSemanticTokensCli } from "./semantic-tokens.ts";
 import { runCodeSizeMetricsCli } from "./code-size-metrics.ts";
+import { runRefreshReportMetricsCli } from "./refresh-report-metrics.ts";
 
 async function runMetadataPhaseCli(args: string[]): Promise<number> {
   const { values } = parseArgs({
@@ -167,6 +168,7 @@ function helpText(): string {
     "  check-statistics-freshness",
     "  semantic-tokens",
     "  code-size-metrics",
+    "  refresh-report-metrics",
     "",
     "CI/public commands:",
     "  detect-changes",
@@ -325,6 +327,10 @@ export async function main(argv: string[]): Promise<number> {
 
   if (command === "code-size-metrics") {
     return await runCodeSizeMetricsCli(args);
+  }
+
+  if (command === "refresh-report-metrics") {
+    return await runRefreshReportMetricsCli(args);
   }
 
   if (command === "benchmark-stress" || command === "run-benchmark") {

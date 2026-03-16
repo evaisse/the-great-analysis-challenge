@@ -42,7 +42,7 @@
         "memory_mb": 116.39453125,
         "peak_memory_mb": 116.39453125,
         "avg_memory_mb": 96.71171875,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 5,
         "psutil_available": true
       },
@@ -71,17 +71,17 @@
         "memory_mb": 32.12890625,
         "peak_memory_mb": 62.0234375,
         "avg_memory_mb": 60.03675986842105,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 95,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 1692,
-      "source_files": 7
+      "source_loc": 2201,
+      "source_files": 10
     },
     "metrics": {
-      "tokens_count": 9441,
+      "tokens_count": 12598,
       "metric_version": "tokens-v2"
     },
     "normalized": {
@@ -134,8 +134,31 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting crystal implementation at implementations/crystal\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2713\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Handshake \u2717"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting crystal implementation at implementations/crystal\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✓\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5325.75,
+      "total_tokens": 7946,
+      "semantic_tokens": 7880,
+      "by_category": {
+        "keyword": 969,
+        "identifier": 2560,
+        "type": 19,
+        "operator": 1020,
+        "literal": 1759,
+        "punctuation": 1553,
+        "comment": 66,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.123,
+        "comment_ratio": 0.008,
+        "punctuation_ratio": 0.197,
+        "complexity_per_loc": 2.42,
+        "complexity_per_file": 532.58
+      }
+    }
   }
 ]

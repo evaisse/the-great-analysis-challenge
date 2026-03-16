@@ -4,8 +4,6 @@ import { existsSync } from "node:fs";
 import {
   IMPLEMENTATIONS_DIR,
   REPO_ROOT,
-  TOKEN_METRIC_VERSION,
-  collectImplMetricsFromMetadata,
   discoverImplementationDirs,
   formatGroupedInt,
   formatStepMetric,
@@ -17,6 +15,7 @@ import {
   writeGithubOutput,
   writeTextFile,
 } from "./shared.ts";
+import { collectCodeSizeMetricsForImpl } from "./code-size-metrics.ts";
 import { verifyImplementation } from "./verify.ts";
 
 const CUSTOM_EMOJIS: Record<string, string> = {
@@ -164,6 +163,45 @@ function formatFeatureSummary(metadata: Record<string, unknown>): string {
   return `${matchedCount}/${catalog.length}`;
 }
 
+function formatGroupedNumber(value: number | null | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "-";
+  }
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+}
+
+interface LocalMetricSnapshot {
+  sourceLoc: number | null;
+  complexityScore: number | null;
+}
+
+const localMetricCache = new Map<string, Promise<LocalMetricSnapshot>>();
+
+async function getLocalMetricSnapshot(implPath: string, language: string): Promise<LocalMetricSnapshot> {
+  if (!localMetricCache.has(implPath)) {
+    localMetricCache.set(implPath, (async () => {
+      try {
+        const localMetrics = await collectCodeSizeMetricsForImpl(implPath);
+        const semantic = (
+          localMetrics.semantic_metrics &&
+          typeof localMetrics.semantic_metrics === "object" &&
+          typeof (localMetrics.semantic_metrics as Record<string, unknown>).complexity_score === "number"
+        )
+          ? localMetrics.semantic_metrics as Record<string, unknown>
+          : null;
+        return {
+          sourceLoc: Number.isInteger(localMetrics.source_loc) ? Number(localMetrics.source_loc) : null,
+          complexityScore: semantic ? Number(semantic.complexity_score) : null,
+        };
+      } catch (error) {
+        console.log(`⚠️ ${language}: could not compute local metric fallback: ${error instanceof Error ? error.message : String(error)}`);
+        return { sourceLoc: null, complexityScore: null };
+      }
+    })());
+  }
+  return await localMetricCache.get(implPath)!;
+}
+
 async function loadPerformanceData(): Promise<Record<string, any>[]> {
   const reportsDir = join(REPO_ROOT, "reports");
   if (!existsSync(reportsDir)) {
@@ -197,25 +235,28 @@ async function getVerificationStatus(): Promise<Record<string, string>> {
   return status;
 }
 
-async function resolveTokensCount(implData: Record<string, any>, implPath: string, metadata: Record<string, unknown>, language: string): Promise<number | null> {
-  const metrics = implData.metrics ?? {};
-  if (Number.isInteger(metrics.tokens_count) && metrics.tokens_count >= 0) {
-    if (metrics.metric_version && metrics.metric_version !== TOKEN_METRIC_VERSION) {
-      console.log(`⚠️ ${language}: metric version is ${metrics.metric_version}, expected ${TOKEN_METRIC_VERSION}. Using reported value anyway.`);
-    }
-    return metrics.tokens_count;
+async function resolveSourceLoc(implData: Record<string, any>, implPath: string, language: string): Promise<number | null> {
+  const size = implData.size ?? {};
+  if (Number.isInteger(size.source_loc) && size.source_loc >= 0) {
+    return Number(size.source_loc);
   }
-  try {
-    const localMetrics = await collectImplMetricsFromMetadata(implPath, metadata);
-    const localTokens = localMetrics.tokens_count;
-    if (Number.isInteger(localTokens) && localTokens >= 0) {
-      console.log(`⚠️ ${language}: missing report TOKENS, using local fallback (${TOKEN_METRIC_VERSION})`);
-      return Number(localTokens);
-    }
-  } catch (error) {
-    console.log(`⚠️ ${language}: could not compute TOKENS fallback: ${error instanceof Error ? error.message : String(error)}`);
+  const local = await getLocalMetricSnapshot(implPath, language);
+  if (local.sourceLoc != null) {
+    console.log(`⚠️ ${language}: missing report LOC, using local fallback`);
   }
-  return null;
+  return local.sourceLoc;
+}
+
+async function resolveComplexityScore(implData: Record<string, any>, implPath: string, language: string): Promise<number | null> {
+  const semantic = implData.semantic_metrics ?? {};
+  if (typeof semantic.complexity_score === "number" && Number.isFinite(semantic.complexity_score)) {
+    return Number(semantic.complexity_score);
+  }
+  const local = await getLocalMetricSnapshot(implPath, language);
+  if (local.complexityScore != null) {
+    console.log(`⚠️ ${language}: missing report semantic metrics, using local fallback`);
+  }
+  return local.complexityScore;
 }
 
 function resolveTestChessEngineSeconds(implData: Record<string, any>): number | null {
@@ -276,7 +317,8 @@ export async function updateReadmeStatusTable(): Promise<boolean> {
     const implData = combinedData.get(language) ?? {};
     const implPath = join(IMPLEMENTATIONS_DIR, language);
     const metadata = await getMetadata(implPath);
-    const tokensCount = await resolveTokensCount(implData, implPath, metadata, language);
+    const complexityScore = await resolveComplexityScore(implData, implPath, language);
+    const sourceLoc = await resolveSourceLoc(implData, implPath, language);
     const entrypointFile = await resolveEntrypointFile(implPath, language, metadata);
     const status = verificationData[language] ?? "needs_work";
     const emoji = status === "excellent" ? "🟢" : status === "good" ? "🟡" : "🔴";
@@ -293,23 +335,24 @@ export async function updateReadmeStatusTable(): Promise<boolean> {
     const testMemory = Number(memory.test?.peak_memory_mb ?? 0);
     const ceMemory = Number(memory.test_chess_engine?.peak_memory_mb ?? 0);
 
-    let tokensDisplay = "-";
-    if (typeof tokensCount === "number" && tokensCount >= 0) {
-      tokensDisplay = formatGroupedInt(tokensCount);
+    let complexityDisplay = "-";
+    if (typeof complexityScore === "number" && Number.isFinite(complexityScore)) {
+      complexityDisplay = formatGroupedNumber(complexityScore);
     }
-    if (entrypointFile && typeof tokensCount === "number" && tokensCount >= 0) {
+    if (entrypointFile && typeof complexityScore === "number" && Number.isFinite(complexityScore)) {
       const repoPath = normalizeRelPath(relative(REPO_ROOT, join(implPath, entrypointFile)));
-      tokensDisplay = `[${formatGroupedInt(tokensCount)}](${repoPath})`;
+      complexityDisplay = `[${formatGroupedNumber(complexityScore)}](${repoPath})`;
     }
+    const locDisplay = sourceLoc == null ? "-" : formatGroupedInt(sourceLoc);
 
     rows.push(
-      `| ${languageEmoji} ${language.charAt(0).toUpperCase()}${language.slice(1)} | ${tokensDisplay} | ${formatStepMetric(buildStep, buildMemory)} | ${formatStepMetric(analyzeStep, analyzeMemory)} | ${formatStepMetric(testStep, testMemory)} | ${formatStepMetric(ceStep, ceMemory)} | ${emoji} ${formatFeatureSummary(metadata)} |`,
+      `| ${languageEmoji} ${language.charAt(0).toUpperCase()}${language.slice(1)} | ${complexityDisplay} | ${locDisplay} | ${formatStepMetric(buildStep, buildMemory)} | ${formatStepMetric(analyzeStep, analyzeMemory)} | ${formatStepMetric(testStep, testMemory)} | ${formatStepMetric(ceStep, ceMemory)} | ${emoji} ${formatFeatureSummary(metadata)} |`,
     );
   }
 
   const newTable = [
-    "| Language | TOKENS | make build | make analyze | make test | make test-chess-engine | Features |",
-    "|----------|--------|------------|--------------|-----------|------------------------|----------|",
+    "| Language | Complexity | LOC | make build | make analyze | make test | make test-chess-engine | Features |",
+    "|----------|------------|-----|------------|--------------|-----------|------------------------|----------|",
     ...rows,
   ].join("\n");
 

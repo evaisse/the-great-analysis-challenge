@@ -13,6 +13,7 @@ Useful variants:
 ./workflow benchmark-stress --track v2-full --profile full
 ./workflow benchmark-concurrency --impl implementations/rust --profile quick
 ./workflow code-size-metrics --impl implementations/rust
+./workflow refresh-report-metrics
 ```
 
 The benchmark JSON keeps `tokens-v2` under `metrics` and adds optional `tokens-v3` semantic data under `semantic_metrics`.

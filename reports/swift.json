@@ -42,7 +42,7 @@
         "memory_mb": 115.7578125,
         "peak_memory_mb": 115.7578125,
         "avg_memory_mb": 100.23763020833333,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 6,
         "psutil_available": true
       },
@@ -69,7 +69,7 @@
       }
     },
     "size": {
-      "source_loc": 929,
+      "source_loc": 932,
       "source_files": 3
     },
     "metrics": {
@@ -128,6 +128,29 @@
     "errors": [
       "track v2-full suite timeout after 180.1s"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 3387,
+      "total_tokens": 4654,
+      "semantic_tokens": 4614,
+      "by_category": {
+        "keyword": 486,
+        "identifier": 1926,
+        "type": 120,
+        "operator": 747,
+        "literal": 591,
+        "punctuation": 744,
+        "comment": 40,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.105,
+        "comment_ratio": 0.009,
+        "punctuation_ratio": 0.161,
+        "complexity_per_loc": 3.63,
+        "complexity_per_file": 1129
+      }
+    }
   }
 ]

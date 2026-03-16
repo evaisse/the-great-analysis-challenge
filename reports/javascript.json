@@ -43,7 +43,7 @@
         "memory_mb": 115.84375,
         "peak_memory_mb": 115.84375,
         "avg_memory_mb": 102.51227678571429,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 7,
         "psutil_available": true
       },
@@ -72,13 +72,13 @@
         "memory_mb": 32.06640625,
         "peak_memory_mb": 61.8671875,
         "avg_memory_mb": 61.553426106770836,
-        "avg_cpu_percent": 0.0,
+        "avg_cpu_percent": 0,
         "samples": 672,
         "psutil_available": true
       }
     },
     "size": {
-      "source_loc": 816,
+      "source_loc": 820,
       "source_files": 4
     },
     "metrics": {
@@ -86,7 +86,7 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0.0,
+      "build_ms_per_kloc": 0,
       "analyze_ms_per_kloc": 253.5850394005869,
       "runtime_ms_per_kloc": 226.43833768134024
     },
@@ -135,8 +135,31 @@
       ]
     },
     "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting javascript implementation at implementations/javascript\n----------------------------------------\nRunning test: Hash Command Baseline \u2713\nRunning test: Hash Command After Move \u2713\nRunning test: Draws Command \u2717\nRunning test: Go Movetime \u2717\nRunning test: PGN Show \u2717\nRunning test: PGN Fixture Morphy \u2717\nRunning test: PGN Fixture Byrne-Fischer \u2717\nRunning test: Book Load Stats \u2717\nRunning test: Book AI Move \u2717\nRunning test: UCI Hands"
+      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting javascript implementation at implementations/javascript\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Hands"
     ],
-    "status": "completed"
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 2661,
+      "total_tokens": 4468,
+      "semantic_tokens": 4149,
+      "by_category": {
+        "keyword": 393,
+        "identifier": 1256,
+        "type": 1,
+        "operator": 731,
+        "literal": 814,
+        "punctuation": 954,
+        "comment": 319,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.095,
+        "comment_ratio": 0.071,
+        "punctuation_ratio": 0.23,
+        "complexity_per_loc": 3.25,
+        "complexity_per_file": 665.25
+      }
+    }
   }
 ]
