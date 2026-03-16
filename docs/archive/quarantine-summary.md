@@ -5,7 +5,7 @@ Historical note: this document recorded a period where several implementations w
 The project later evolved, and current implementation status should be read from:
 - [README.md](../../README.md)
 - [reports/](../../reports)
-- [test/verify_implementations.py](../../test/verify_implementations.py)
+- [`workflow verify`](../../workflow)
 
 Original intent preserved:
 - Explain why some implementations could not emit host timing metrics.

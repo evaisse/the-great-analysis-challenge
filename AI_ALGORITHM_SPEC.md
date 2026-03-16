@@ -624,12 +624,12 @@ Expected output should include: `AI: d4e5`
 ### Testing Your Implementation
 
 ```bash
-# Test with Python test harness
+# Test with shared Bun test harness
 cd /path/to/the-great-analysis-challenge
-python3 test/test_harness.py --impl implementations/your_language
+./workflow test-harness --impl implementations/your_language
 
 # Or use the verification script
-python3 test/verify_implementations.py
+./workflow verify
 ```
 
 ## 10. Version History

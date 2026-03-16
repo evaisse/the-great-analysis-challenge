@@ -99,12 +99,12 @@ Core rollout constraints:
   - `test/suites/v2_functional.json`
   - `test/suites/v2_system.json`
   - `test/suites/v2_full.json`
-  - `test/concurrency_harness.py`
-  - `test/code_size_metrics.py`
+  - `./workflow benchmark-concurrency`
+  - `./workflow code-size-metrics`
 
 ### Harness and Bench
-- `test/test_harness.py` accepts `--suite`, `--track`, and docker-backed execution.
-- `test/performance_test.py` includes LOC/file metrics and normalized ratios.
+- `./workflow test-harness` accepts `--suite`, `--track`, and docker-backed execution.
+- `./workflow benchmark-stress` includes LOC/file metrics and normalized ratios.
 
 ### Root Make Targets
 - `make test-chess-engine DIR=<impl> TRACK=<track>`

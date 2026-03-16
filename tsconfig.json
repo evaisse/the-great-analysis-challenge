@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "tooling/**/*.ts",
+    "test/**/*.ts",
+    "scripts/semantic-tokens/**/*.mjs",
+    "workflow"
+  ]
+}

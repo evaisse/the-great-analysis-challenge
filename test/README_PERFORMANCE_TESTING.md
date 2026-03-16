@@ -1,56 +1,18 @@
-# Chess Engine Performance Testing
+# Performance Testing
 
-This directory contains the performance benchmark runner used by CI and local workflows.
-
-## `performance_test.py`
-
-The benchmark now measures strictly separated phases for each implementation:
-
-1. `make image DIR=<lang>`: Docker image build only
-2. `make build`: compilation/build command inside container
-3. `make analyze`: static analysis/lint inside container
-4. `make test`: internal implementation tests inside container
-5. `make test-chess-engine DIR=<lang> [TRACK=...]`: shared chess engine suite (`test/test_suite.json`)
-
-Main JSON timings:
-- `build_seconds` -> step 2 (`make build`)
-- `analyze_seconds` -> step 3 (`make analyze`)
-- `test_seconds` -> step 4 (`make test`)
-- `test_chess_engine_seconds` -> step 5 (`make test-chess-engine`)
-
-Build-phase skip for interpreted runtimes:
-- Set Docker metadata `org.chess.runtime="interpreted"` (or `org.chess.benchmark.build="skip"`) to skip step 2 in benchmarks.
-- When skipped, `docker.make_build_skipped=true` and `build_seconds` is omitted/`null`.
-
-Additional timing:
-- `image_build_seconds` measures step 1 (Docker image build prerequisite)
-
-Scores exported in JSON:
-- `scores.make_test`: binary score for `make test` (`1/1` or `0/1`)
-- `scores.make_test_chess_engine`: shared suite score (`passed/total`)
-
-Memory exported in JSON:
-- `memory.build`, `memory.analyze`, `memory.test`, `memory.test_chess_engine`
-- README/summary tables display each benchmarked `make ...` phase as `<duration>, <peak memory>`
-
-## Usage
+Shared performance reporting is handled by:
 
 ```bash
-# Benchmark all implementations
-python3 test/performance_test.py
-
-# Benchmark one implementation
-python3 test/performance_test.py --impl implementations/rust
-
-# Save reports
-python3 test/performance_test.py --output reports/rust.out.txt --json reports/rust.json
+./workflow benchmark-stress --impl implementations/<language> --track v1 --profile quick
 ```
 
-## Notes
+Useful variants:
 
-- Benchmarks are Docker-only via root Make targets.
-- `build` is compile-only by contract.
-- For interpreted runtimes, `build` can be intentionally skipped in benchmark mode.
-- `test` covers implementation-internal checks.
-- `test-chess-engine` runs the shared suite for the selected track.
-- Host memory sampling is best-effort (requires `psutil`).
+```bash
+./workflow benchmark-stress --impl implementations/rust --output reports/rust.out.txt --json reports/rust.json
+./workflow benchmark-stress --track v2-full --profile full
+./workflow benchmark-concurrency --impl implementations/rust --profile quick
+./workflow code-size-metrics --impl implementations/rust
+```
+
+The benchmark JSON keeps `tokens-v2` under `metrics` and adds optional `tokens-v3` semantic data under `semantic_metrics`.

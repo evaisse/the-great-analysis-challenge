@@ -70,7 +70,7 @@ Board rendering, move legality, error messages, and output format must match the
 - `org.chess.run`
 
 Recommended for the shared unit-parity lane:
-- `org.chess.test_contract` - adapter command invoked by `test/unit_contract_harness.py`; the harness appends `--suite` and `--report`
+- `org.chess.test_contract` - adapter command invoked by `./workflow unit-contract`; the harness appends `--suite` and `--report`
 
 Optional benchmark labels:
 - `org.chess.bugit`

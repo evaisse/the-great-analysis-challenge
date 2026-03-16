@@ -55,7 +55,7 @@ help:
 	@echo ""
 	@echo "Other commands:"
 	@echo "  make list-implementations - List all available implementations"
-	@echo "  make analyze-tools        - Static analysis for Python tooling (outside implementations)"
+	@echo "  make analyze-tools        - Static analysis for Bun/TypeScript shared tooling"
 	@echo "  make help                 - Show this help message"
 	@echo ""
 	@echo "Available implementations: $(IMPLEMENTATIONS)"
@@ -104,7 +104,7 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
-	@python3 scripts/run_metadata_phase.py --impl implementations/$(DIR) --phase build --image chess-$(DIR)
+	@./workflow run-metadata-phase --impl implementations/$(DIR) --phase build --image chess-$(DIR)
 else
 	@echo "Running build phase for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
@@ -130,7 +130,7 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
-	@python3 scripts/run_metadata_phase.py --impl implementations/$(DIR) --phase analyze --image chess-$(DIR)
+	@./workflow run-metadata-phase --impl implementations/$(DIR) --phase analyze --image chess-$(DIR)
 else
 	@echo "Running analysis phase for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
@@ -155,7 +155,7 @@ else
 		echo "ERROR: Implementation '$(DIR)' not found"; \
 		exit 1; \
 	fi
-	@python3 scripts/error_analysis_benchmark.py bugit --impl implementations/$(DIR) --image chess-$(DIR)
+	@./workflow error-analysis bugit --impl implementations/$(DIR) --image chess-$(DIR)
 endif
 
 # Restore the reproducible benchmark bug in the extracted Docker workspace
@@ -168,7 +168,7 @@ else
 		echo "ERROR: Implementation '$(DIR)' not found"; \
 		exit 1; \
 	fi
-	@python3 scripts/error_analysis_benchmark.py fix --impl implementations/$(DIR) --image chess-$(DIR)
+	@./workflow error-analysis fix --impl implementations/$(DIR) --image chess-$(DIR)
 endif
 
 # Benchmark analyzer output with an injected bug and a repaired workspace
@@ -181,7 +181,7 @@ else
 		echo "ERROR: Implementation '$(DIR)' not found"; \
 		exit 1; \
 	fi
-	@python3 scripts/error_analysis_benchmark.py benchmark --impl implementations/$(DIR) --image chess-$(DIR)
+	@./workflow error-analysis benchmark --impl implementations/$(DIR) --image chess-$(DIR)
 endif
 
 # Test (implementation internal tests only) target
@@ -195,7 +195,7 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
-	@python3 scripts/run_metadata_phase.py --impl implementations/$(DIR) --phase test --image chess-$(DIR)
+	@./workflow run-metadata-phase --impl implementations/$(DIR) --phase test --image chess-$(DIR)
 else
 	@echo "Running internal tests for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
@@ -224,7 +224,7 @@ ifdef DIR
 	@echo "Running unit contract suite for $(DIR)..."
 	@STRICT_FLAG=""; \
 	if [ "$(STRICT)" = "1" ]; then STRICT_FLAG="--require-contract"; fi; \
-	python3 test/unit_contract_harness.py \
+	./workflow unit-contract \
 		--impl implementations/$(DIR) \
 		--docker-image chess-$(DIR) \
 		$$STRICT_FLAG
@@ -254,7 +254,7 @@ ifdef DIR
 		exit 1; \
 	fi
 	@echo "Running chess engine harness for $(DIR) (track=$(TRACK))..."
-	@python3 test/test_harness.py \
+	@./workflow test-harness \
 		--impl implementations/$(DIR) \
 		--track $(TRACK) \
 		--docker-image chess-$(DIR)
@@ -280,10 +280,10 @@ ifdef DIR
 		exit 1; \
 	fi
 	@echo "Verifying $(DIR) implementation..."
-	@python3 test/verify_implementations.py --implementation $(DIR)
+	@./workflow verify --implementation $(DIR)
 else
 	@echo "Verifying all implementations..."
-	@python3 test/verify_implementations.py
+	@./workflow verify
 endif
 
 # Workflow target
@@ -344,10 +344,10 @@ else
 	@echo "Cleaned up successfully"
 endif
 
-# Static analysis for Python tooling outside implementations directory
+# Static analysis for shared Bun/TypeScript tooling
 analyze-tools:
-	@echo "Running Python tooling static analysis..."
-	@python3 scripts/analyze_python_tools.py
+	@echo "Running Bun tooling static analysis..."
+	@./workflow analyze-tools
 
 # Install git hooks
 install-hooks:
@@ -364,14 +364,14 @@ endif
 		echo "ERROR: Implementation '$(DIR)' not found"; \
 		exit 1; \
 	fi
-	@$(MAKE) build DIR=$(DIR)
 	@mkdir -p reports
 	@echo "Running stress benchmark for $(DIR) (track=$(TRACK), profile=$(PROFILE), timeout=$(TIMEOUT)s)..."
-	@python3 test/performance_test.py \
+	@./workflow benchmark-stress \
 		--impl implementations/$(DIR) \
 		--track $(TRACK) \
 		--profile $(PROFILE) \
 		--timeout $(TIMEOUT) \
+		--output reports/$(DIR).out.txt \
 		--json reports/$(DIR).json
 
 # Concurrency safety harness
@@ -384,10 +384,10 @@ endif
 		echo "ERROR: Implementation '$(DIR)' not found"; \
 		exit 1; \
 	fi
-	@$(MAKE) build DIR=$(DIR)
+	@$(MAKE) image DIR=$(DIR)
 	@mkdir -p reports
 	@echo "Running concurrency harness for $(DIR) (profile=$(PROFILE))..."
-	@python3 test/concurrency_harness.py \
+	@./workflow benchmark-concurrency \
 		--impl implementations/$(DIR) \
 		--profile $(PROFILE) \
 		--skip-build \

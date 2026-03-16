@@ -31,10 +31,10 @@ Use this file as a compact map of canonical project docs.
 ## Build/Test Automation
 
 - [Makefile](Makefile): Canonical `make image/build/analyze/test/test-unit-contract/test-chess-engine` targets.
+- [workflow](workflow): Shared Bun CLI for verification, testing, benchmarking, reporting, and issue triage.
+- [tooling/](tooling): Bun/TypeScript implementation of the shared tooling stack.
 - [test/test_suite.json](test/test_suite.json): Shared behavioral test definitions.
-- [test/test_harness.py](test/test_harness.py): Shared harness invoked by CI and local workflows.
 - [test/contracts/unit_v1.json](test/contracts/unit_v1.json): Shared unit-scope parity contract.
-- [test/unit_contract_harness.py](test/unit_contract_harness.py): Docker-backed validator for implementation unit-contract adapters.
 
 ## Supporting References
 
