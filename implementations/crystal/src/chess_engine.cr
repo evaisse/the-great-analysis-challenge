@@ -4,16 +4,21 @@ require "./move_generator"
 require "./ai"
 require "./fen"
 require "./perft"
+require "./chess960"
 
 class ChessEngine
   @game_state : GameState
   @move_generator : MoveGenerator
   @ai : ChessAI
+  @chess960_id : Int32
+  @chess960_mode : Bool
 
   def initialize
     @game_state = FEN.starting_position
     @move_generator = MoveGenerator.new
     @ai = ChessAI.new
+    @chess960_id = 0
+    @chess960_mode = false
   end
 
   def run
@@ -29,8 +34,12 @@ class ChessEngine
 
       case command
       when "new"
-        @game_state = FEN.starting_position
+        reset_standard_game
         puts "OK: New game started"
+      when "new960"
+        handle_new960(parts[1..-1])
+      when "position960"
+        handle_position960
       when "move"
         if parts.size < 2
           puts "ERROR: Missing move"
@@ -57,7 +66,7 @@ class ChessEngine
       when "isready"
         handle_isready
       when "ucinewgame"
-        @game_state = FEN.starting_position
+        reset_standard_game
       when "status"
         show_status
       when "hash"
@@ -113,10 +122,46 @@ class ChessEngine
   private def load_fen(fen : String)
     if new_state = FEN.parse(fen)
       @game_state = new_state
+      @chess960_id = 0
+      @chess960_mode = false
       puts "OK: FEN loaded"
     else
       puts "ERROR: Invalid FEN string"
     end
+  end
+
+  private def reset_standard_game
+    @game_state = FEN.starting_position
+    @chess960_id = 0
+    @chess960_mode = false
+  end
+
+  private def handle_new960(args : Array(String))
+    requested_id = 0
+
+    unless args.empty?
+      parsed_id = args[0].to_i?
+      if parsed_id.nil?
+        puts "ERROR: new960 id must be an integer"
+        return
+      end
+      requested_id = parsed_id
+    end
+
+    unless Chess960.valid_id?(requested_id)
+      puts "ERROR: new960 id must be between 0 and 959"
+      return
+    end
+
+    @game_state = Chess960.starting_position(requested_id)
+    @chess960_id = requested_id
+    @chess960_mode = true
+    puts "960: new game id=#{@chess960_id}; fen=#{FEN.export(@game_state)}"
+  end
+
+  private def handle_position960
+    mode = @chess960_mode ? "chess960" : "standard"
+    puts "960: id=#{@chess960_id}; mode=#{mode}"
   end
 
   private def move_pattern?(input : String) : Bool
@@ -304,6 +349,8 @@ perft <depth> - Count positions at depth
 status - Show game status
 hash - Show position hash
 draws - Show draw status
+new960 [id] - Start Chess960 position (0-959)
+position960 - Show current Chess960 metadata
 display - Display the board
 quit - Exit program
 HELP

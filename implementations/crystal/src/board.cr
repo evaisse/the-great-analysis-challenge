@@ -4,16 +4,18 @@ require "./types"
 
 class Board
   def self.initial_position : GameState
-    board = Array(Piece?).new(64, nil)
-
-    # White pieces (bottom ranks)
-    pieces = [
+    position_from_back_rank([
       PieceType::Rook, PieceType::Knight, PieceType::Bishop, PieceType::Queen,
       PieceType::King, PieceType::Bishop, PieceType::Knight, PieceType::Rook,
-    ]
+    ])
+  end
+
+  def self.position_from_back_rank(back_rank : Array(PieceType), castling_rights : CastlingRights = CastlingRights.new) : GameState
+    board = Array(Piece?).new(64, nil)
+    raise ArgumentError.new("Back rank must contain exactly 8 pieces") unless back_rank.size == 8
 
     # Place white pieces
-    pieces.each_with_index do |piece_type, i|
+    back_rank.each_with_index do |piece_type, i|
       board[i] = Piece.new(piece_type, Color::White)
     end
 
@@ -28,11 +30,11 @@ class Board
     end
 
     # Place black pieces
-    pieces.each_with_index do |piece_type, i|
+    back_rank.each_with_index do |piece_type, i|
       board[56 + i] = Piece.new(piece_type, Color::Black)
     end
 
-    GameState.new(board)
+    GameState.new(board, Color::White, castling_rights)
   end
 
   def self.display(game_state : GameState) : String
