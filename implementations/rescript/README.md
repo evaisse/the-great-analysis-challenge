@@ -1,60 +1,33 @@
 # ReScript Chess Engine
 
-A complete chess engine implementation in ReScript following the Chess Engine Specification v1.0.
+A ReScript chess engine implementation with the shared core chess spec and the current `v2-full` protocol surface.
 
 ## Features
 
-- Complete chess rules implementation (castling, en passant, promotion)
-- AI opponent with minimax algorithm and alpha-beta pruning
-- FEN import/export support
-- Performance testing with perft
-- Interactive command-line interface
-- All standard chess piece movements and special rules
+- Core chess engine parity: `perft`, `fen`, `ai`, `castling`, `en_passant`, `promotion`
+- Protocol features: `pgn`, `uci`, `chess960`
+- System surfaces: deterministic `hash`, `draws`, `history`, `trace`, and `concurrency`
+- Opening-book and time-managed search command surfaces for the shared harness
 
-## Local Development
+## Validation
 
-### Prerequisites
-- Node.js 18+ 
-- npm
+Run validation from the repository root with the shared Docker-first workflow:
 
-### Setup
 ```bash
-npm install
-npm run build
-node lib/es6/src/Chess.js
+make image DIR=rescript
+make build DIR=rescript
+make analyze DIR=rescript
+make test DIR=rescript
+make test-chess-engine DIR=rescript TRACK=v2-full
 ```
 
-## Docker Usage
+## Runtime
 
-### Build the Docker image
+Build the image directly from this implementation directory if needed:
+
 ```bash
-docker build -t chess-engine .
-```
-
-### Run interactively
-```bash
-docker run --network none -it chess-engine
-```
-
-### Using Docker Compose
-```bash
-# Run the chess engine
-docker-compose up chess-engine
-
-# Development mode with shell access
-docker-compose run chess-dev
-```
-
-### Example Docker commands
-```bash
-# Quick game
-echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run --network none -i chess-engine
-
-# Interactive play
-docker run --network none -it chess-engine
-
-# Build and run in one command
-docker-compose up --build chess-engine
+docker build -t chess-rescript .
+echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run --network none -i chess-rescript
 ```
 
 ## Commands
@@ -63,9 +36,20 @@ docker-compose up --build chess-engine
 - `undo` - Undo the last move
 - `new` - Start a new game  
 - `ai <depth>` - Let AI make a move (depth 1-5)
+- `go movetime <ms>` - Time-managed search
 - `fen <string>` - Load position from FEN
 - `export` - Export current position as FEN
 - `eval` - Evaluate current position
+- `hash` - Show current position hash
+- `draws` - Show draw counters
+- `history` - Show position history summary
+- `pgn load|show|moves` - PGN command surface
+- `book load|stats` - Opening-book command surface
+- `uci` / `isready` / `ucinewgame` - UCI protocol surface
+- `new960 [id]` / `position960` - Chess960 metadata surface
+- `trace on|off|report` - Trace command surface
+- `concurrency quick|full` - Deterministic concurrency fixture
+- `status` - Show current game status
 - `perft <depth>` - Run performance test
 - `help` - Show available commands
 - `quit` - Exit the program
@@ -77,10 +61,4 @@ docker-compose up --build chess-engine
 
 ## Testing
 
-The engine includes perft testing for move generation verification:
-```bash
-# In the chess engine
-perft 4
-```
-
-Expected result: 197281 nodes for perft(4) from starting position.
+The implementation passes the shared `v2-full` chess-engine harness, including PGN, book, UCI, Chess960, trace, and concurrency command surfaces.

@@ -8,7 +8,7 @@ RUN chmod +x run.sh
 LABEL org.chess.language="julia"
 LABEL org.chess.version="1.11"
 LABEL org.chess.author="Julia Implementation"
-LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion,pgn,uci,chess960"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1000
 LABEL org.chess.source_exts=".jl"

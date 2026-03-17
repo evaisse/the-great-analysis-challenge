@@ -24,6 +24,9 @@ class ChessEngine
   @book_hits : Int32
   @book_misses : Int32
   @book_played : Int32
+  @trace_enabled : Bool
+  @trace_events : Int32
+  @trace_last_ai : String
 
   def initialize
     @game_state = FEN.starting_position
@@ -41,6 +44,9 @@ class ChessEngine
     @book_hits = 0
     @book_misses = 0
     @book_played = 0
+    @trace_enabled = false
+    @trace_events = 0
+    @trace_last_ai = "none"
   end
 
   def run
@@ -68,6 +74,8 @@ class ChessEngine
         handle_book(parts[1..-1])
       when "concurrency"
         handle_concurrency(parts[1..-1])
+      when "trace"
+        handle_trace(parts[1..-1])
       when "move"
         if parts.size < 2
           puts "ERROR: Missing move"
@@ -307,6 +315,24 @@ class ChessEngine
     puts "CONCURRENCY: {\"profile\":\"#{profile}\",\"seed\":12345,\"workers\":#{config[:workers]},\"runs\":#{config[:runs]},\"checksums\":[#{checksums_json}],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":#{config[:elapsed_ms]},\"ops_total\":#{config[:ops_total]}}"
   end
 
+  private def handle_trace(args : Array(String))
+    action = args.empty? ? "report" : args[0].downcase
+
+    case action
+    when "on"
+      @trace_enabled = true
+      @trace_events += 1
+      puts "TRACE: enabled=true"
+    when "off"
+      @trace_enabled = false
+      puts "TRACE: enabled=false"
+    when "report"
+      puts "TRACE: enabled=#{@trace_enabled ? "true" : "false"}; events=#{@trace_events}; last_ai=#{@trace_last_ai}"
+    else
+      puts "ERROR: Unsupported trace command"
+    end
+  end
+
   private def move_pattern?(input : String) : Bool
     input.size >= 4 && input.size <= 5 &&
       input[0].ascii_letter? && input[1].ascii_number? &&
@@ -373,6 +399,8 @@ class ChessEngine
   private def make_ai_move(depth : Int32)
     legal_moves = @move_generator.get_legal_moves(@game_state, @game_state.turn)
     if book_move = choose_book_move(legal_moves)
+      @trace_last_ai = "book:#{book_move}"
+      @trace_events += 1 if @trace_enabled
       apply_ai_move(book_move, "AI: #{book_move} (book)")
       @book_played += 1
       return
@@ -381,6 +409,8 @@ class ChessEngine
     result = @ai.search(@game_state, depth, @game_state.turn.white?)
 
     if best_move = result.best_move
+      @trace_last_ai = "search:#{best_move}"
+      @trace_events += 1 if @trace_enabled
       apply_ai_move(best_move, "AI: #{best_move} (depth=#{depth}, eval=#{result.evaluation}, time=#{result.time_ms})")
     else
       puts "ERROR: No legal moves"
@@ -569,6 +599,7 @@ new960 [id] - Start Chess960 position (0-959)
 position960 - Show current Chess960 metadata
 pgn load|show|moves - PGN command family
 book load|on|off|stats - Opening book command family
+trace on|off|report - Trace command surface
 concurrency quick|full - Emit deterministic concurrency fixture report
 display - Display the board
 quit - Exit program

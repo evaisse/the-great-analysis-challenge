@@ -3,10 +3,11 @@
 Pure JavaScript implementation of the shared chess engine specification.
 
 ## Features
-- Full move generation
+- Full move generation with castling, en passant, and promotion
 - FEN import/export
-- Basic minimax AI
-- Standard CLI, test, and analysis workflow
+- Deterministic minimax AI
+- `v2-full` protocol surface for `hash`, `draws`, `history`, `go`, `pgn`, `book`, `uci`, `new960`, `trace`, and `concurrency`
+- Standard Docker-based build, test, and analysis workflow
 
 ## Development
 Use the repository root Docker workflow for validation:
