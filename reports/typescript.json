@@ -1,165 +1,157 @@
-[
-  {
+{
+  "language": "typescript",
+  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/typescript",
+  "metadata": {
     "language": "typescript",
-    "path": "implementations/typescript",
-    "metadata": {
-      "language": "typescript",
-      "version": "5.0",
-      "author": "TypeScript Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 800,
-      "source_exts": [
-        ".ts"
-      ],
-      "build": "bun run build",
-      "test": "bun run test",
-      "test_contract": "bun run unit_contract_runner.js",
-      "analyze": "bun run lint",
-      "bugit": "if [ -f .bugit/chess.ts.bak ]; then echo 'bugit already active for typescript'; else mkdir -p .bugit && cp src/chess.ts .bugit/chess.ts.bak && printf '\\n)\\n' >> src/chess.ts; fi",
-      "fix": "if [ -f .bugit/chess.ts.bak ]; then mv .bugit/chess.ts.bak src/chess.ts && rmdir .bugit 2>/dev/null || true; else echo 'no typescript bugit backup to restore'; fi",
-      "run": "bun run dist/chess.js"
-    },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.31644535064697266,
-      "build_seconds": 0.19305825233459473,
-      "analyze_seconds": 0.19345378875732422,
-      "test_seconds": 0.1881699562072754,
-      "test_internal_seconds": 0.1881699562072754,
-      "test_chess_engine_seconds": 9.902570009231567,
-      "test_v2_full_seconds": 9.902570009231567
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 17.4921875,
-        "peak_memory_mb": 110.98046875,
-        "avg_memory_mb": 67.3212890625,
-        "avg_cpu_percent": 0,
-        "samples": 4,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 6.60546875,
-        "peak_memory_mb": 6.60546875,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "analyze": {
-        "memory_mb": 6.9375,
-        "peak_memory_mb": 6.9375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 6.31640625,
-        "peak_memory_mb": 6.31640625,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 31.9375,
-        "peak_memory_mb": 61.9140625,
-        "avg_memory_mb": 59.93112664473684,
-        "avg_cpu_percent": 0,
-        "samples": 95,
-        "psutil_available": true
-      }
-    },
-    "size": {
-      "source_loc": 2038,
-      "source_files": 21
-    },
-    "metrics": {
-      "tokens_count": 14364,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 105.03713402317449,
-      "analyze_ms_per_kloc": 105.25233338265735,
-      "runtime_ms_per_kloc": 102.37756050450238
-    },
-    "docker": {
-      "build_time": 0.31644535064697266,
-      "build_success": true,
-      "image_build_time": 0.31644535064697266,
-      "image_build_success": true,
-      "make_build_skipped": false,
-      "make_build_time": 0.19305825233459473,
-      "make_build_success": true,
-      "make_analyze_time": 0.19345378875732422,
-      "make_analyze_success": true,
-      "test_time": 0.1881699562072754,
-      "test_success": true,
-      "make_test_time": 0.1881699562072754,
-      "make_test_success": true,
-      "test_chess_engine_time": 9.902570009231567,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.902570009231567,
-      "track_test_success": false
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": false
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [],
-      "failed": [
-        "make_test_chess_engine"
-      ]
-    },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting typescript implementation at implementations/typescript\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Hands"
+    "version": "5.0",
+    "author": "TypeScript Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
     ],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 6211,
-      "total_tokens": 9433,
-      "semantic_tokens": 9409,
-      "by_category": {
-        "keyword": 1012,
-        "identifier": 2767,
-        "type": 425,
-        "operator": 1445,
-        "literal": 1378,
-        "punctuation": 2382,
-        "comment": 24,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.108,
-        "comment_ratio": 0.003,
-        "punctuation_ratio": 0.253,
-        "complexity_per_loc": 3.05,
-        "complexity_per_file": 295.76
-      }
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 800,
+    "source_exts": [
+      ".ts"
+    ],
+    "build": "bun run build",
+    "test": "bun run test",
+    "test_contract": "bun run unit_contract_runner.js",
+    "analyze": "bun run lint",
+    "bugit": "if [ -f .bugit/chess.ts.bak ]; then echo 'bugit already active for typescript'; else mkdir -p .bugit && cp src/chess.ts .bugit/chess.ts.bak && printf '\\n)\\n' >> src/chess.ts; fi",
+    "fix": "if [ -f .bugit/chess.ts.bak ]; then mv .bugit/chess.ts.bak src/chess.ts && rmdir .bugit 2>/dev/null || true; else echo 'no typescript bugit backup to restore'; fi",
+    "run": "bun run dist/chess.js"
+  },
+  "track": "v2-full",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 6.830122625,
+    "build_seconds": 1.945532375,
+    "analyze_seconds": 1.554176916,
+    "test_seconds": 1.652081916,
+    "test_chess_engine_seconds": 360.712024458,
+    "test_v2_full_seconds": 360.712024458
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 2052,
+    "source_files": 11
+  },
+  "metrics": {
+    "tokens_count": 14874,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 868.1536702365015,
+    "analyze_ms_per_kloc": 693.5193734939759,
+    "runtime_ms_per_kloc": 737.2074591700134
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 6.830122625,
+    "make_build_success": true,
+    "make_build_time": 1.945532375,
+    "make_analyze_success": true,
+    "make_analyze_time": 1.554176916,
+    "make_test_success": true,
+    "make_test_time": 1.652081916,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 360.712024458
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 16,
+      "failed": 0,
+      "errors": 0,
+      "total": 16
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 6194,
+    "total_tokens": 9523,
+    "semantic_tokens": 9509,
+    "by_category": {
+      "keyword": 953,
+      "identifier": 2820,
+      "type": 313,
+      "operator": 1439,
+      "literal": 1570,
+      "punctuation": 2414,
+      "comment": 14,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.1,
+      "comment_ratio": 0.001,
+      "punctuation_ratio": 0.254,
+      "complexity_per_loc": 3.02,
+      "complexity_per_file": 563.09
     }
   }
-]
+}

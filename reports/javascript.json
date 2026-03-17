@@ -1,165 +1,157 @@
-[
-  {
+{
+  "language": "javascript",
+  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/javascript",
+  "metadata": {
     "language": "javascript",
-    "path": "implementations/javascript",
-    "metadata": {
-      "language": "javascript",
-      "version": "ES2023",
-      "author": "JavaScript Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
-      "source_exts": [
-        ".js"
-      ],
-      "benchmark.build": "skip",
-      "build": "bun build chess.js --outdir dist --target bun",
-      "run": "bun run chess.js",
-      "test": "bun run test",
-      "analyze": "bun build chess.js --outdir /tmp/tgac-javascript-check --target bun",
-      "bugit": "if [ -f .bugit/chess.js.bak ]; then echo 'bugit already active for javascript'; else mkdir -p .bugit && cp chess.js .bugit/chess.js.bak && printf '\\nfunction __bugit__( {\\n' >> chess.js; fi",
-      "fix": "if [ -f .bugit/chess.js.bak ]; then mv .bugit/chess.js.bak chess.js && rmdir .bugit 2>/dev/null || true; else echo 'no javascript bugit backup to restore'; fi"
-    },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.6793313026428223,
-      "build_seconds": null,
-      "analyze_seconds": 0.2069253921508789,
-      "test_seconds": 0.18477368354797363,
-      "test_internal_seconds": 0.18477368354797363,
-      "test_chess_engine_seconds": 70.07547163963318,
-      "test_v2_full_seconds": 70.07547163963318
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 115.84375,
-        "peak_memory_mb": 115.84375,
-        "avg_memory_mb": 102.51227678571429,
-        "avg_cpu_percent": 0,
-        "samples": 7,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "skipped"
-      },
-      "analyze": {
-        "memory_mb": 6.56640625,
-        "peak_memory_mb": 6.56640625,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 6.56640625,
-        "peak_memory_mb": 6.56640625,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.06640625,
-        "peak_memory_mb": 61.8671875,
-        "avg_memory_mb": 61.553426106770836,
-        "avg_cpu_percent": 0,
-        "samples": 672,
-        "psutil_available": true
-      }
-    },
-    "size": {
-      "source_loc": 820,
-      "source_files": 4
-    },
-    "metrics": {
-      "tokens_count": 7472,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 253.5850394005869,
-      "runtime_ms_per_kloc": 226.43833768134024
-    },
-    "docker": {
-      "build_time": 0.6793313026428223,
-      "build_success": true,
-      "image_build_time": 0.6793313026428223,
-      "image_build_success": true,
-      "make_build_skipped": true,
-      "make_build_time": null,
-      "make_build_success": true,
-      "make_analyze_time": 0.2069253921508789,
-      "make_analyze_success": true,
-      "test_time": 0.18477368354797363,
-      "test_success": true,
-      "make_test_time": 0.18477368354797363,
-      "make_test_success": true,
-      "test_chess_engine_time": 70.07547163963318,
-      "test_chess_engine_success": false,
-      "track_test_time": 70.07547163963318,
-      "track_test_success": false
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": false
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [],
-      "failed": [
-        "make_test_chess_engine"
-      ]
-    },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting javascript implementation at implementations/javascript\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Hands"
+    "version": "ES2023",
+    "author": "JavaScript Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
     ],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 2661,
-      "total_tokens": 4468,
-      "semantic_tokens": 4149,
-      "by_category": {
-        "keyword": 393,
-        "identifier": 1256,
-        "type": 1,
-        "operator": 731,
-        "literal": 814,
-        "punctuation": 954,
-        "comment": 319,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.095,
-        "comment_ratio": 0.071,
-        "punctuation_ratio": 0.23,
-        "complexity_per_loc": 3.25,
-        "complexity_per_file": 665.25
-      }
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 1000,
+    "source_exts": [
+      ".js"
+    ],
+    "benchmark.build": "skip",
+    "build": "bun build chess.js --outdir dist --target bun",
+    "run": "bun run chess.js",
+    "test": "bun run test",
+    "analyze": "bun build chess.js --outdir /tmp/tgac-javascript-check --target bun",
+    "bugit": "if [ -f .bugit/chess.js.bak ]; then echo 'bugit already active for javascript'; else mkdir -p .bugit && cp chess.js .bugit/chess.js.bak && printf '\\nfunction __bugit__( {\\n' >> chess.js; fi",
+    "fix": "if [ -f .bugit/chess.js.bak ]; then mv .bugit/chess.js.bak chess.js && rmdir .bugit 2>/dev/null || true; else echo 'no javascript bugit backup to restore'; fi"
+  },
+  "track": "v2-full",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 0.6371265,
+    "build_seconds": null,
+    "analyze_seconds": 0.630105834,
+    "test_seconds": 0.79543925,
+    "test_chess_engine_seconds": 361.054974667,
+    "test_v2_full_seconds": 361.054974667
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "skipped"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 1330,
+    "source_files": 4
+  },
+  "metrics": {
+    "tokens_count": 10558,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 0,
+    "analyze_ms_per_kloc": 473.76378496240596,
+    "runtime_ms_per_kloc": 598.0746240601503
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 0.6371265,
+    "make_build_success": true,
+    "make_build_time": null,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.630105834,
+    "make_test_success": true,
+    "make_test_time": 0.79543925,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 361.054974667
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 16,
+      "failed": 0,
+      "errors": 0,
+      "total": 16
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 3814,
+    "total_tokens": 6291,
+    "semantic_tokens": 5976,
+    "by_category": {
+      "keyword": 601,
+      "identifier": 1788,
+      "type": 2,
+      "operator": 950,
+      "literal": 1157,
+      "punctuation": 1478,
+      "comment": 315,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.101,
+      "comment_ratio": 0.05,
+      "punctuation_ratio": 0.247,
+      "complexity_per_loc": 2.87,
+      "complexity_per_file": 953.5
     }
   }
-]
+}

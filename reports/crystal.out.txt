@@ -1,101 +1,26 @@
-🚀 Chess Engine Performance Testing Suite
-============================================================
-Found 1 implementation(s) to test
-
-============================================================
-Testing crystal implementation
-Path: implementations/crystal
-============================================================
-📏 Source size: 1692 LOC across 7 files, 9441 TOKENS
-🧹 Clearing build cache...
-🔧 Running: make clean
-✅ Local cache cleared with make clean
-✅ Cache clearing completed
-🐳 Running all tests via Docker (ensures consistent environment)
-🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (prerequisite)...
-  🔧 Running: docker build -t chess-crystal .
-  ✅ Docker build completed in 0.44s
-  🔧 Running task: make build
-    🔧 Running: make build
-  🔧 Running task: make analyze
-    🔧 Running: make analyze
-  🔧 Running task: make test
-    🔧 Running: make test
-  🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
-
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 16:25:48
+Generated: 2026-03-17T01:16:27.985Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-crystal      completed  9441       1692     1.3s/249MB         1.0s/197MB         2.5s/526MB         9.8s/62MB                 1/1              5/16              
+crystal      completed  12802      2232     4.2s, - MB         890ms, - MB        7.4s, - MB         6m 01s, - MB              1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: CRYSTAL
 ============================================================
-
-TIMING BREAKDOWN:
-  docker build image: 0.44s
-  make build: 1.32s
-  make analyze: 0.98s
-  make test: 2.50s
-  make test-chess-engine: 9.84s
-  make test (internal mirror): 2.50s
-  test v2 full seconds: 9.84s
-
-SOURCE SIZE:
-  Source LOC: 1692 (files: 7)
-  TOKENS (tokens-v2): 9441
-
-NORMALIZED METRICS:
-  Build: 782.18 ms/KLOC
-  Analyze: 578.68 ms/KLOC
-  Runtime: 1480.33 ms/KLOC
-
-MEMORY USAGE:
-  Image: Peak 116.4MB, Avg 96.7MB
-  Build: Peak 249.2MB, Avg 0.0MB
-  Analyze: Peak 196.5MB, Avg 0.0MB
-  Test: Peak 526.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.0MB, Avg 60.0MB
-
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
-
-DOCKER TESTS:
-  Image build: ✅ (0.44s)
-  make build: ✅ (1.32s)
-  make analyze: ✅ (0.98s)
-  make test: ✅ (2.50s)
-  make test-chess-engine (track=v2-full): ❌ (9.84s)
-  make test score: 1/1
-  make test-chess-engine score: 5/16
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing crystal implementation at implementations/crystal
-----------------------------------------
-Running test: Hash Command Baseline ✓
-Running test: Hash Command After Move ✓
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✓
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Handshake ✗
-
-================================================================================
-📄 JSON results saved to reports/crystal.json (1 valid benchmark(s))
-
-✅ All 1 implementation(s) completed successfully
+Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/crystal
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 34.6s
+  - build_seconds: 4.2s
+  - analyze_seconds: 890ms
+  - test_seconds: 7.4s
+  - test_chess_engine_seconds: 6m 01s
+  - test_v2_full_seconds: 6m 01s
+Metrics: TOKENS=12,802, LOC=2,232

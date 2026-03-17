@@ -1,164 +1,156 @@
-[
-  {
+{
+  "language": "kotlin",
+  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/kotlin",
+  "metadata": {
     "language": "kotlin",
-    "path": "implementations/kotlin",
-    "metadata": {
-      "language": "kotlin",
-      "version": "1.9.10",
-      "author": "Kotlin Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 500,
-      "source_exts": [
-        ".kt"
-      ],
-      "run": "java -jar build/libs/chess-1.0.0.jar",
-      "build": "kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar",
-      "test": "java -jar build/libs/chess-1.0.0.jar --test",
-      "analyze": "kotlinc src/main/kotlin/*.kt",
-      "bugit": "if [ -f .bugit/ChessEngine.kt.bak ]; then echo 'bugit already active for kotlin'; else mkdir -p .bugit && cp src/main/kotlin/ChessEngine.kt .bugit/ChessEngine.kt.bak && printf '\\n)\\n' >> src/main/kotlin/ChessEngine.kt; fi",
-      "fix": "if [ -f .bugit/ChessEngine.kt.bak ]; then mv .bugit/ChessEngine.kt.bak src/main/kotlin/ChessEngine.kt && rmdir .bugit 2>/dev/null || true; else echo 'no kotlin bugit backup to restore'; fi"
-    },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.3487377166748047,
-      "build_seconds": 0.15395450592041016,
-      "analyze_seconds": 0.15294480323791504,
-      "test_seconds": 0.1514430046081543,
-      "test_internal_seconds": 0.1514430046081543,
-      "test_chess_engine_seconds": 9.977763891220093,
-      "test_v2_full_seconds": 9.977763891220093
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 111.6328125,
-        "peak_memory_mb": 111.6328125,
-        "avg_memory_mb": 90.1943359375,
-        "avg_cpu_percent": 0,
-        "samples": 4,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 6.9765625,
-        "peak_memory_mb": 6.9765625,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "analyze": {
-        "memory_mb": 6.609375,
-        "peak_memory_mb": 6.609375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 6.58984375,
-        "peak_memory_mb": 6.58984375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.2265625,
-        "peak_memory_mb": 62.00390625,
-        "avg_memory_mb": 60.06946681701031,
-        "avg_cpu_percent": 0,
-        "samples": 97,
-        "psutil_available": true
-      }
-    },
-    "size": {
-      "source_loc": 1525,
-      "source_files": 8
-    },
-    "metrics": {
-      "tokens_count": 9666,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 101.02001700814314,
-      "analyze_ms_per_kloc": 100.3574824395768,
-      "runtime_ms_per_kloc": 99.37205026781778
-    },
-    "docker": {
-      "build_time": 0.3487377166748047,
-      "build_success": true,
-      "image_build_time": 0.3487377166748047,
-      "image_build_success": true,
-      "make_build_skipped": false,
-      "make_build_time": 0.15395450592041016,
-      "make_build_success": true,
-      "make_analyze_time": 0.15294480323791504,
-      "make_analyze_success": true,
-      "test_time": 0.1514430046081543,
-      "test_success": true,
-      "make_test_time": 0.1514430046081543,
-      "make_test_success": true,
-      "test_chess_engine_time": 9.977763891220093,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.977763891220093,
-      "track_test_success": false
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": false
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [],
-      "failed": [
-        "make_test_chess_engine"
-      ]
-    },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting kotlin implementation at implementations/kotlin\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nR"
+    "version": "1.9.10",
+    "author": "Kotlin Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
     ],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 4868.5,
-      "total_tokens": 5647,
-      "semantic_tokens": 5586,
-      "by_category": {
-        "keyword": 876,
-        "identifier": 3024,
-        "type": 251,
-        "operator": 764,
-        "literal": 671,
-        "punctuation": 0,
-        "comment": 61,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.157,
-        "comment_ratio": 0.011,
-        "punctuation_ratio": 0,
-        "complexity_per_loc": 3.19,
-        "complexity_per_file": 608.56
-      }
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 500,
+    "source_exts": [
+      ".kt"
+    ],
+    "run": "java -jar build/libs/chess-1.0.0.jar",
+    "build": "kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar",
+    "test": "java -jar build/libs/chess-1.0.0.jar --test",
+    "analyze": "kotlinc src/main/kotlin/*.kt",
+    "bugit": "if [ -f .bugit/ChessEngine.kt.bak ]; then echo 'bugit already active for kotlin'; else mkdir -p .bugit && cp src/main/kotlin/ChessEngine.kt .bugit/ChessEngine.kt.bak && printf '\\n)\\n' >> src/main/kotlin/ChessEngine.kt; fi",
+    "fix": "if [ -f .bugit/ChessEngine.kt.bak ]; then mv .bugit/ChessEngine.kt.bak src/main/kotlin/ChessEngine.kt && rmdir .bugit 2>/dev/null || true; else echo 'no kotlin bugit backup to restore'; fi"
+  },
+  "track": "v2-full",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 46.230515167,
+    "build_seconds": 37.243012583,
+    "analyze_seconds": 34.031450458,
+    "test_seconds": 0.947095667,
+    "test_chess_engine_seconds": 360.813406917,
+    "test_v2_full_seconds": 360.813406917
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 1708,
+    "source_files": 8
+  },
+  "metrics": {
+    "tokens_count": 11039,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 21805.04249590164,
+    "analyze_ms_per_kloc": 19924.736802107727,
+    "runtime_ms_per_kloc": 554.5056598360657
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 46.230515167,
+    "make_build_success": true,
+    "make_build_time": 37.243012583,
+    "make_analyze_success": true,
+    "make_analyze_time": 34.031450458,
+    "make_test_success": true,
+    "make_test_time": 0.947095667,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 360.813406917
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 16,
+      "failed": 0,
+      "errors": 0,
+      "total": 16
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 5554.5,
+    "total_tokens": 6481,
+    "semantic_tokens": 6420,
+    "by_category": {
+      "keyword": 1007,
+      "identifier": 3415,
+      "type": 267,
+      "operator": 838,
+      "literal": 893,
+      "punctuation": 0,
+      "comment": 61,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.157,
+      "comment_ratio": 0.009,
+      "punctuation_ratio": 0,
+      "complexity_per_loc": 3.25,
+      "complexity_per_file": 694.31
     }
   }
-]
+}

@@ -1,99 +1,26 @@
-🚀 Chess Engine Performance Testing Suite
-============================================================
-Found 1 implementation(s) to test
-
-============================================================
-Testing javascript implementation
-Path: implementations/javascript
-============================================================
-📏 Source size: 816 LOC across 4 files, 7472 TOKENS
-🧹 Clearing build cache...
-🔧 Running: make clean
-✅ Local cache cleared with make clean
-✅ Cache clearing completed
-🐳 Running all tests via Docker (ensures consistent environment)
-🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (prerequisite)...
-  🔧 Running: docker build -t chess-javascript .
-  ✅ Docker build completed in 0.68s
-  ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
-  🔧 Running task: make analyze
-    🔧 Running: make analyze
-  🔧 Running task: make test
-    🔧 Running: make test
-  🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
-
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 16:28:14
+Generated: 2026-03-17T01:15:43.552Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-javascript   completed  7472       816      -/-MB              0.2s/7MB           0.2s/7MB           70.1s/62MB                1/1              2/16              
+javascript   completed  10558      1330     -, - MB            630ms, - MB        795ms, - MB        6m 01s, - MB              1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: JAVASCRIPT
 ============================================================
-
-TIMING BREAKDOWN:
-  docker build image: 0.68s
-  make analyze: 0.21s
-  make test: 0.18s
-  make test-chess-engine: 70.08s
-  make test (internal mirror): 0.18s
-  test v2 full seconds: 70.08s
-
-SOURCE SIZE:
-  Source LOC: 816 (files: 4)
-  TOKENS (tokens-v2): 7472
-
-NORMALIZED METRICS:
-  Build: 0.00 ms/KLOC
-  Analyze: 253.59 ms/KLOC
-  Runtime: 226.44 ms/KLOC
-
-MEMORY USAGE:
-  Image: Peak 115.8MB, Avg 102.5MB
-  Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 6.6MB, Avg 0.0MB
-  Test: Peak 6.6MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 61.9MB, Avg 61.6MB
-
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
-
-DOCKER TESTS:
-  Image build: ✅ (0.68s)
-  make build: ⏭️ skipped
-  make analyze: ✅ (0.21s)
-  make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ❌ (70.08s)
-  make test score: 1/1
-  make test-chess-engine score: 2/16
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing javascript implementation at implementations/javascript
-----------------------------------------
-Running test: Hash Command Baseline ✓
-Running test: Hash Command After Move ✓
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✗
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Hands
-
-================================================================================
-📄 JSON results saved to reports/javascript.json (1 valid benchmark(s))
-
-✅ All 1 implementation(s) completed successfully
+Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/javascript
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 637ms
+  - build_seconds: -
+  - analyze_seconds: 630ms
+  - test_seconds: 795ms
+  - test_chess_engine_seconds: 6m 01s
+  - test_v2_full_seconds: 6m 01s
+Metrics: TOKENS=10,558, LOC=1,330

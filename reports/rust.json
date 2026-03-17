@@ -1,164 +1,156 @@
-[
-  {
+{
+  "language": "rust",
+  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/rust",
+  "metadata": {
     "language": "rust",
-    "path": "implementations/rust",
-    "metadata": {
-      "language": "rust",
-      "version": "1.70",
-      "author": "Rust Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 600,
-      "source_exts": [
-        ".rs"
-      ],
-      "build": "cargo build --release",
-      "test": "cargo test",
-      "analyze": "cargo check --all-targets",
-      "bugit": "if [ -f .bugit/main.rs.bak ]; then echo 'bugit already active for rust'; else mkdir -p .bugit && cp src/main.rs .bugit/main.rs.bak && printf '\\n)\\n' >> src/main.rs; fi",
-      "fix": "if [ -f .bugit/main.rs.bak ]; then mv .bugit/main.rs.bak src/main.rs && rmdir .bugit 2>/dev/null || true; else echo 'no rust bugit backup to restore'; fi",
-      "run": "./target/release/chess"
-    },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.36889195442199707,
-      "build_seconds": 0.1502082347869873,
-      "analyze_seconds": 0.14758563041687012,
-      "test_seconds": 0.1444101333618164,
-      "test_internal_seconds": 0.1444101333618164,
-      "test_chess_engine_seconds": 9.701304912567139,
-      "test_v2_full_seconds": 9.701304912567139
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 111.58203125,
-        "peak_memory_mb": 111.58203125,
-        "avg_memory_mb": 90.685546875,
-        "avg_cpu_percent": 0,
-        "samples": 4,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 7.078125,
-        "peak_memory_mb": 7.078125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "analyze": {
-        "memory_mb": 6.93359375,
-        "peak_memory_mb": 6.93359375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 6.59375,
-        "peak_memory_mb": 6.59375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.31640625,
-        "peak_memory_mb": 62,
-        "avg_memory_mb": 60.037582236842105,
-        "avg_cpu_percent": 0,
-        "samples": 95,
-        "psutil_available": true
-      }
-    },
-    "size": {
-      "source_loc": 1854,
-      "source_files": 9
-    },
-    "metrics": {
-      "tokens_count": 12770,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 81.10595830830847,
-      "analyze_ms_per_kloc": 79.68986523589099,
-      "runtime_ms_per_kloc": 77.97523399666112
-    },
-    "docker": {
-      "build_time": 0.36889195442199707,
-      "build_success": true,
-      "image_build_time": 0.36889195442199707,
-      "image_build_success": true,
-      "make_build_skipped": false,
-      "make_build_time": 0.1502082347869873,
-      "make_build_success": true,
-      "make_analyze_time": 0.14758563041687012,
-      "make_analyze_success": true,
-      "test_time": 0.1444101333618164,
-      "test_success": true,
-      "make_test_time": 0.1444101333618164,
-      "make_test_success": true,
-      "test_chess_engine_time": 9.701304912567139,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.701304912567139,
-      "track_test_success": false
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": false
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [],
-      "failed": [
-        "make_test_chess_engine"
-      ]
-    },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting rust implementation at implementations/rust\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunni"
+    "version": "1.70",
+    "author": "Rust Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
     ],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 6761,
-      "total_tokens": 9569,
-      "semantic_tokens": 9513,
-      "by_category": {
-        "keyword": 963,
-        "identifier": 3103,
-        "type": 807,
-        "operator": 2300,
-        "literal": 612,
-        "punctuation": 1728,
-        "comment": 56,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.101,
-        "comment_ratio": 0.006,
-        "punctuation_ratio": 0.182,
-        "complexity_per_loc": 3.65,
-        "complexity_per_file": 751.22
-      }
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 600,
+    "source_exts": [
+      ".rs"
+    ],
+    "build": "cargo build --release",
+    "test": "cargo test",
+    "analyze": "cargo check --all-targets",
+    "bugit": "if [ -f .bugit/main.rs.bak ]; then echo 'bugit already active for rust'; else mkdir -p .bugit && cp src/main.rs .bugit/main.rs.bak && printf '\\n)\\n' >> src/main.rs; fi",
+    "fix": "if [ -f .bugit/main.rs.bak ]; then mv .bugit/main.rs.bak src/main.rs && rmdir .bugit 2>/dev/null || true; else echo 'no rust bugit backup to restore'; fi",
+    "run": "./target/release/chess"
+  },
+  "track": "v2-full",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 15.971823334,
+    "build_seconds": 0.783187625,
+    "analyze_seconds": 2.609468167,
+    "test_seconds": 3.275113917,
+    "test_chess_engine_seconds": 360.623694875,
+    "test_v2_full_seconds": 360.623694875
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 2105,
+    "source_files": 9
+  },
+  "metrics": {
+    "tokens_count": 14708,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 372.0606294536817,
+    "analyze_ms_per_kloc": 1239.6523358669833,
+    "runtime_ms_per_kloc": 1555.8735947743469
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 15.971823334,
+    "make_build_success": true,
+    "make_build_time": 0.783187625,
+    "make_analyze_success": true,
+    "make_analyze_time": 2.609468167,
+    "make_test_success": true,
+    "make_test_time": 3.275113917,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 360.623694875
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 16,
+      "failed": 0,
+      "errors": 0,
+      "total": 16
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 7574.25,
+    "total_tokens": 10787,
+    "semantic_tokens": 10731,
+    "by_category": {
+      "keyword": 1046,
+      "identifier": 3514,
+      "type": 839,
+      "operator": 2559,
+      "literal": 810,
+      "punctuation": 1963,
+      "comment": 56,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.097,
+      "comment_ratio": 0.005,
+      "punctuation_ratio": 0.183,
+      "complexity_per_loc": 3.6,
+      "complexity_per_file": 841.58
     }
   }
-]
+}
