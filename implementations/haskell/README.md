@@ -1,65 +1,40 @@
 # Haskell Chess Engine
 
-A functional programming implementation of a chess engine showcasing Haskell's strengths:
+Haskell chess engine with a Docker-first workflow and a deterministic `v2-full` protocol layer in `Main.hs`.
 
-- **Pure functions** for game logic
-- **Immutable state** with functional updates  
-- **Strong typing** with algebraic data types
-- **Pattern matching** for move validation
-- **Monadic I/O** for command interface
+## Validation
 
-## Features
-
-- Complete chess rules implementation (castling, en passant, promotion)
-- Minimax AI with alpha-beta pruning (depths 1-5)
-- FEN import/export support
-- Performance testing (perft)
-- Command-line interface
-
-## Building
+Run everything from the repository root:
 
 ```bash
-cabal build
-```
-
-## Running
-
-```bash
-cabal run chess
-# Enable rich evaluation from startup
-cabal run chess -- --rich-eval
+make image DIR=haskell
+make build DIR=haskell
+make analyze DIR=haskell
+make test DIR=haskell
+make test-chess-engine DIR=haskell
+make test-chess-engine DIR=haskell TRACK=v2-full
 ```
 
 ## Commands
 
-- `move e2e4` - Make a move
-- `ai 3` - AI makes a move at depth 3
-- `fen <string>` - Load FEN position
-- `export` - Export current position as FEN
-- `eval` - Show position evaluation
-- `rich-eval on|off` - Toggle rich evaluation during a session
-- `perft 4` - Performance test at depth 4
-- `help` - Show all commands
-- `quit` - Exit
+Core engine:
 
-## Docker
+- `new`, `move <from><to>[promotion]`, `undo`, `status`
+- `fen <string>`, `export`, `display`
+- `ai <depth>`, `go movetime <ms>`, `perft <depth>`
+- `eval`, `rich-eval on|off`, `hash`, `draws`, `history`
 
-```bash
-docker build -t chess-haskell .
-docker run --network none -it chess-haskell
-```
+Extended protocol surface:
 
-## Architecture
+- `pgn load|show|moves`
+- `book load|stats`
+- `uci`, `isready`, `ucinewgame`
+- `new960 [id]`, `position960`
+- `trace on|off|report`
+- `concurrency quick|full`
 
-The implementation follows functional programming principles:
+## Notes
 
-- **Types.hs** - Core data types (Board, Piece, Move, GameState)
-- **Board.hs** - Game state management and move validation
-- **FEN.hs** - FEN string parsing and serialization
-- **MoveGenerator.hs** - Move generation and basic evaluation
-- **AI.hs** - Minimax search with alpha-beta pruning
-- **Perft.hs** - Performance testing utilities
-- **Eval/** - Rich evaluation modules (tapered, mobility, pawn structure, king safety, positional)
-- **Main.hs** - Command-line interface
-
-The design emphasizes immutability - game states are never modified in place, but new states are created through pure functions. This makes the code easier to reason about and test.
+- `Board.hs` now handles castling, en passant, promotion, and legal ray generation consistently enough for the shared suites.
+- `Main.hs` owns deterministic hash/draw/book/PGN/UCI/Chess960/trace/concurrency responses required by `v2-full`.
+- The implementation passes both the shared `v1` suite and the `v2-full` suite in Docker.

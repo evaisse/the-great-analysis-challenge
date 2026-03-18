@@ -8,6 +8,7 @@ import { createHighlighter } from "shiki";
 import {
   discoverImplementationDirs,
   getMetadata,
+  isExcludedMetricPath,
   listGitDiscoveredFiles,
   normalizeLineEndings,
   parseSourceExts,
@@ -275,6 +276,9 @@ async function walkSourceFiles(dir: string, exts: string[]): Promise<string[]> {
       continue;
     }
     const fullPath = join(dir, entry.name);
+    if (isExcludedMetricPath(fullPath)) {
+      continue;
+    }
     if (entry.isDirectory()) {
       files.push(...await walkSourceFiles(fullPath, exts));
       continue;

@@ -1,102 +1,26 @@
-🚀 Chess Engine Performance Testing Suite
-============================================================
-Found 1 implementation(s) to test
-
-============================================================
-Testing elm implementation
-Path: implementations/elm
-============================================================
-📏 Source size: 1663 LOC across 7 files, 7868 TOKENS
-🧹 Clearing build cache...
-🔧 Running: make clean
-✅ Local cache cleared with make clean
-✅ Cache clearing completed
-🐳 Running all tests via Docker (ensures consistent environment)
-🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (prerequisite)...
-  🔧 Running: docker build -t chess-elm .
-  ✅ Docker build completed in 0.29s
-  🔧 Running task: make build
-    🔧 Running: make build
-  🔧 Running task: make analyze
-    🔧 Running: make analyze
-  🔧 Running task: make test
-    🔧 Running: make test
-  🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
-
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 16:25:49
+Generated: 2026-03-18T19:23:40.352Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-elm          completed  7868       1663     0.2s/7MB           0.2s/7MB           0.2s/7MB           9.8s/62MB                 1/1              3/16              
+elm          completed  6567       1543     756ms, - MB        566ms, - MB        821ms, - MB        6m 01s, - MB              1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: ELM
 ============================================================
-
-TIMING BREAKDOWN:
-  docker build image: 0.29s
-  make build: 0.19s
-  make analyze: 0.19s
-  make test: 0.18s
-  make test-chess-engine: 9.78s
-  make test (internal mirror): 0.18s
-  test v2 full seconds: 9.78s
-
-SOURCE SIZE:
-  Source LOC: 1663 (files: 7)
-  TOKENS (tokens-v2): 7868
-
-NORMALIZED METRICS:
-  Build: 115.22 ms/KLOC
-  Analyze: 112.27 ms/KLOC
-  Runtime: 110.82 ms/KLOC
-
-MEMORY USAGE:
-  Image: Peak 116.1MB, Avg 85.3MB
-  Build: Peak 6.8MB, Avg 0.0MB
-  Analyze: Peak 7.4MB, Avg 0.0MB
-  Test: Peak 6.6MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.2MB, Avg 60.2MB
-
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
-
-DOCKER TESTS:
-  Image build: ✅ (0.29s)
-  make build: ✅ (0.19s)
-  make analyze: ✅ (0.19s)
-  make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ❌ (9.78s)
-  make test score: 1/1
-  make test-chess-engine score: 3/16
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing elm implementation at implementations/elm
-----------------------------------------
-Running test: Hash Command Baseline ✗
-Running test: Hash Command After Move ✗
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✓
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Handshake ✗
-Running
-
-================================================================================
-📄 JSON results saved to reports/elm.json (1 valid benchmark(s))
-
-✅ All 1 implementation(s) completed successfully
+Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-141-elm-haskell-v2-full-9-of-9/implementations/elm
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 33.6s
+  - build_seconds: 756ms
+  - analyze_seconds: 566ms
+  - test_seconds: 821ms
+  - test_chess_engine_seconds: 6m 01s
+  - test_v2_full_seconds: 6m 01s
+Metrics: TOKENS=6,567, LOC=1,543

@@ -21,10 +21,10 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 |----------|------------|-----|------------|--------------|-----------|------------------------|----------|
 | 💠 Crystal | [5,399.5](implementations/crystal/src/chess_engine.cr) | 2,232 | 4.2s, - MB | 890ms, - MB | 7.4s, - MB | 6m 01s, - MB | 🟢 9/9 |
 | 🎯 Dart | [10,100.25](implementations/dart/bin/main.dart) | 3,308 | 195ms, 5 MB | 185ms, 5 MB | 190ms, 5 MB | 10.5s, 62 MB | 🟡 9/9 |
-| 🌳 Elm | [5,305](implementations/elm/src/ChessEngine.elm) | 1,669 | 192ms, 7 MB | 187ms, 7 MB | 184ms, 7 MB | 9.8s, 62 MB | 🟢 6/9 |
+| 🌳 Elm | [4,481.25](implementations/elm/src/ChessEngine.elm) | 1,543 | 756ms, - MB | 566ms, - MB | 821ms, - MB | 6m 01s, - MB | 🟢 9/9 |
 | ✨ Gleam | [27,937](implementations/gleam/src/chess_engine.gleam) | 14,964 | 265ms, 6 MB | 335ms, 7 MB | 770ms, 56 MB | 10s, 63 MB | 🟢 9/9 |
 | 🐹 Go | [9,967.5](implementations/go/chess.go) | 3,919 | 546ms, 87 MB | 1.2s, 112 MB | 1.1s, 128 MB | 10.5s, 62 MB | 🟢 9/9 |
-| 📐 Haskell | [5,560.5](implementations/haskell/src/Main.hs) | 1,407 | 332ms, 42 MB | 191ms, 7 MB | 234ms, 7 MB | 1m 10s, 62 MB | 🟢 6/9 |
+| 📐 Haskell | [7,276](implementations/haskell/src/Main.hs) | 2,018 | 897ms, - MB | 1.6s, - MB | 333ms, - MB | 6m 01s, - MB | 🟢 9/9 |
 | 🪶 Imba | [6,002](implementations/imba/chess.imba) | 1,634 | 199ms, 6 MB | 189ms, 7 MB | 194ms, 7 MB | 9.9s, 62 MB | 🟡 9/9 |
 | 🟨 Javascript | [3,814](implementations/javascript/chess.js) | 1,330 | -, - MB | 630ms, - MB | 795ms, - MB | 6m 01s, - MB | 🔴 9/9 |
 | 🔮 Julia | [5,517.5](implementations/julia/chess.jl) | 1,949 | -, - MB | 3.6s, - MB | 7.2s, - MB | 6m 02s, - MB | 🟡 9/9 |

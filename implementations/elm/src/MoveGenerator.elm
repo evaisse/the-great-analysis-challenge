@@ -434,9 +434,9 @@ makeMove state move =
         boardAfterEnPassant =
             if move.enPassant then
                 let
-                    captureRow = if piece.color == White then move.to - 8 else move.to + 8
+                    captureSquare = if piece.color == White then move.to - 8 else move.to + 8
                 in
-                setPiece state captureRow Nothing
+                setPiece state captureSquare Nothing
             else
                 state
         
@@ -445,20 +445,20 @@ makeMove state move =
             case move.castling of
                 Just "K" ->
                     boardAfterEnPassant
-                        |> setPiece 7 Nothing
-                        |> setPiece 5 (Just { pieceType = Rook, color = White })
+                        |> (\currentState -> setPiece currentState 7 Nothing)
+                        |> (\currentState -> setPiece currentState 5 (Just { pieceType = Rook, color = White }))
                 Just "Q" ->
                     boardAfterEnPassant
-                        |> setPiece 0 Nothing
-                        |> setPiece 3 (Just { pieceType = Rook, color = White })
+                        |> (\currentState -> setPiece currentState 0 Nothing)
+                        |> (\currentState -> setPiece currentState 3 (Just { pieceType = Rook, color = White }))
                 Just "k" ->
                     boardAfterEnPassant
-                        |> setPiece 63 Nothing
-                        |> setPiece 61 (Just { pieceType = Rook, color = Black })
+                        |> (\currentState -> setPiece currentState 63 Nothing)
+                        |> (\currentState -> setPiece currentState 61 (Just { pieceType = Rook, color = Black }))
                 Just "q" ->
                     boardAfterEnPassant
-                        |> setPiece 56 Nothing
-                        |> setPiece 59 (Just { pieceType = Rook, color = Black })
+                        |> (\currentState -> setPiece currentState 56 Nothing)
+                        |> (\currentState -> setPiece currentState 59 (Just { pieceType = Rook, color = Black }))
                 _ ->
                     boardAfterEnPassant
         
@@ -473,8 +473,8 @@ makeMove state move =
         -- Move piece
         boardAfterMove =
             boardAfterCastling
-                |> setPiece move.from Nothing
-                |> setPiece move.to (Just finalPiece)
+                |> (\currentState -> setPiece currentState move.from Nothing)
+                |> (\currentState -> setPiece currentState move.to (Just finalPiece))
         
         -- Update castling rights
         newCastlingRights =

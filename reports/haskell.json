@@ -1,164 +1,156 @@
-[
-  {
+{
+  "language": "haskell",
+  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-141-elm-haskell-v2-full-9-of-9/implementations/haskell",
+  "metadata": {
     "language": "haskell",
-    "path": "implementations/haskell",
-    "metadata": {
-      "language": "haskell",
-      "version": "9.0",
-      "author": "Haskell Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
-      "source_exts": [
-        ".hs"
-      ],
-      "run": "./chess_engine",
-      "build": "ghc -O2 --make src/Main.hs -o chess_engine -isrc",
-      "test": "./chess_engine --test",
-      "analyze": "ghc -fno-code --make src/Main.hs -isrc",
-      "bugit": "if [ -f .bugit/Main.hs.bak ]; then echo 'bugit already active for haskell'; else mkdir -p .bugit && cp src/Main.hs .bugit/Main.hs.bak && printf '\\n)\\n' >> src/Main.hs; fi",
-      "fix": "if [ -f .bugit/Main.hs.bak ]; then mv .bugit/Main.hs.bak src/Main.hs && rmdir .bugit 2>/dev/null || true; else echo 'no haskell bugit backup to restore'; fi"
-    },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.5768184661865234,
-      "build_seconds": 0.3320283889770508,
-      "analyze_seconds": 0.19074463844299316,
-      "test_seconds": 0.23392271995544434,
-      "test_internal_seconds": 0.23392271995544434,
-      "test_chess_engine_seconds": 69.87612390518188,
-      "test_v2_full_seconds": 69.87612390518188
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 114.45703125,
-        "peak_memory_mb": 114.45703125,
-        "avg_memory_mb": 99.60611979166667,
-        "avg_cpu_percent": 0,
-        "samples": 6,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 42.14453125,
-        "peak_memory_mb": 42.14453125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "analyze": {
-        "memory_mb": 6.98046875,
-        "peak_memory_mb": 6.98046875,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 6.5859375,
-        "peak_memory_mb": 6.5859375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.1015625,
-        "peak_memory_mb": 61.95703125,
-        "avg_memory_mb": 61.64646399962742,
-        "avg_cpu_percent": 0,
-        "samples": 671,
-        "psutil_available": true
-      }
-    },
-    "size": {
-      "source_loc": 1407,
-      "source_files": 14
-    },
-    "metrics": {
-      "tokens_count": 11812,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 237.50242416098055,
-      "analyze_ms_per_kloc": 136.44108615378624,
-      "runtime_ms_per_kloc": 167.32669524709897
-    },
-    "docker": {
-      "build_time": 0.5768184661865234,
-      "build_success": true,
-      "image_build_time": 0.5768184661865234,
-      "image_build_success": true,
-      "make_build_skipped": false,
-      "make_build_time": 0.3320283889770508,
-      "make_build_success": true,
-      "make_analyze_time": 0.19074463844299316,
-      "make_analyze_success": true,
-      "test_time": 0.23392271995544434,
-      "test_success": true,
-      "make_test_time": 0.23392271995544434,
-      "make_test_success": true,
-      "test_chess_engine_time": 69.87612390518188,
-      "test_chess_engine_success": false,
-      "track_test_time": 69.87612390518188,
-      "track_test_success": false
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": false
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 0,
-        "failed": 16,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [],
-      "failed": [
-        "make_test_chess_engine"
-      ]
-    },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting haskell implementation at implementations/haskell\n----------------------------------------\nRunning test: Hash Command Baseline ✗\nRunning test: Hash Command After Move ✗\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗"
+    "version": "9.0",
+    "author": "Haskell Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
     ],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 5560.5,
-      "total_tokens": 7895,
-      "semantic_tokens": 7846,
-      "by_category": {
-        "keyword": 973,
-        "identifier": 2786,
-        "type": 0,
-        "operator": 1954,
-        "literal": 1165,
-        "punctuation": 968,
-        "comment": 49,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.124,
-        "comment_ratio": 0.006,
-        "punctuation_ratio": 0.123,
-        "complexity_per_loc": 3.95,
-        "complexity_per_file": 397.18
-      }
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 1000,
+    "source_exts": [
+      ".hs"
+    ],
+    "run": "./chess_engine",
+    "build": "ghc -O2 --make src/Main.hs -o chess_engine -isrc",
+    "test": "./chess_engine --test",
+    "analyze": "ghc -fno-code --make src/Main.hs -isrc",
+    "bugit": "if [ -f .bugit/Main.hs.bak ]; then echo 'bugit already active for haskell'; else mkdir -p .bugit && cp src/Main.hs .bugit/Main.hs.bak && printf '\\n)\\n' >> src/Main.hs; fi",
+    "fix": "if [ -f .bugit/Main.hs.bak ]; then mv .bugit/Main.hs.bak src/Main.hs && rmdir .bugit 2>/dev/null || true; else echo 'no haskell bugit backup to restore'; fi"
+  },
+  "track": "v2-full",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 14.5816285,
+    "build_seconds": 0.896885625,
+    "analyze_seconds": 1.576044917,
+    "test_seconds": 0.33262125,
+    "test_chess_engine_seconds": 361.047177416,
+    "test_v2_full_seconds": 361.047177416
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 2018,
+    "source_files": 14
+  },
+  "metrics": {
+    "tokens_count": 15598,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 444.44282705649164,
+    "analyze_ms_per_kloc": 780.9935168483647,
+    "runtime_ms_per_kloc": 164.8271803766105
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 14.5816285,
+    "make_build_success": true,
+    "make_build_time": 0.896885625,
+    "make_analyze_success": true,
+    "make_analyze_time": 1.576044917,
+    "make_test_success": true,
+    "make_test_time": 0.33262125,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 361.047177416
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 16,
+      "failed": 0,
+      "errors": 0,
+      "total": 16
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 7276,
+    "total_tokens": 10106,
+    "semantic_tokens": 10062,
+    "by_category": {
+      "keyword": 1307,
+      "identifier": 3697,
+      "type": 0,
+      "operator": 2525,
+      "literal": 1505,
+      "punctuation": 1028,
+      "comment": 44,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.13,
+      "comment_ratio": 0.004,
+      "punctuation_ratio": 0.102,
+      "complexity_per_loc": 3.61,
+      "complexity_per_file": 519.71
     }
   }
-]
+}

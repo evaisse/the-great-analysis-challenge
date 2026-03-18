@@ -167,7 +167,6 @@ parseFenPieces pieces =
             
             parsedRanks =
                 ranks
-                    |> List.reverse
                     |> List.map parseRank
                     |> List.foldr
                         (\rankResult acc ->

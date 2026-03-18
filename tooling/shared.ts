@@ -245,6 +245,29 @@ export function countTokens(text: string): number {
   return normalizeLineEndings(text).match(TOKEN_PATTERN)?.length ?? 0;
 }
 
+const METRIC_EXCLUDED_SEGMENTS = [
+  "/node_modules/",
+  "/vendor/",
+  "/dist/",
+  "/build/",
+  "/target/",
+  "/.dart_tool/",
+  "/elm-stuff/",
+  "/.git/",
+  "/.next/",
+  "/coverage/",
+  "/__pycache__/",
+];
+
+function normalizeMetricPath(path: string): string {
+  return `/${resolve(path).replaceAll("\\", "/").toLowerCase().replace(/^\/+/, "")}`;
+}
+
+export function isExcludedMetricPath(path: string): boolean {
+  const normalized = normalizeMetricPath(path);
+  return METRIC_EXCLUDED_SEGMENTS.some((segment) => normalized.includes(segment));
+}
+
 async function isProbablyBinary(path: string): Promise<boolean> {
   try {
     const bytes = new Uint8Array(await Bun.file(path).slice(0, 8192).arrayBuffer());
@@ -282,7 +305,7 @@ export async function listGitDiscoveredFiles(targetPath: string): Promise<string
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => resolve(repoRoot, line))
-    .filter((path) => existsSync(path));
+    .filter((path) => existsSync(path) && !isExcludedMetricPath(path));
 }
 
 export async function collectImplMetrics(

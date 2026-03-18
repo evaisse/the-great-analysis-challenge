@@ -8,7 +8,7 @@ RUN ghc -O2 --make src/Main.hs -o chess_engine -i/app/src
 LABEL org.chess.language="haskell"
 LABEL org.chess.version="9.0"
 LABEL org.chess.author="Haskell Implementation"
-LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion,pgn,uci,chess960"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1000
 LABEL org.chess.source_exts=".hs"

@@ -1,37 +1,11 @@
-const readline = require('readline');
-const { Elm } = require('./chess.js');
+const path = require("path");
+const { runProtocolEngine } = require("../protocol-runner");
 
-// Initialize Elm app
-const app = Elm.ChessEngine.init({ flags: process.argv.slice(2) || [] });
-
-// Setup readline interface
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false,
-  crlfDelay: Infinity
-});
-
-// Handle messages from Elm
-if (app.ports.stdout) {
-  app.ports.stdout.subscribe(function(message) {
-    process.stdout.write(message);
-  });
-}
-
-if (app.ports.exit) {
-  app.ports.exit.subscribe(function(code) {
-    process.exit(code);
-  });
-}
-
-// Send commands to Elm
-rl.on('line', (line) => {
-  if (app.ports.stdin) {
-    app.ports.stdin.send(line);
-  }
-});
-
-rl.on('close', () => {
-  process.exit(0);
+runProtocolEngine({
+  elmModulePath: path.join(__dirname, "chess.js"),
+  args: process.argv.slice(2),
+}).catch((error) => {
+  console.error("ERROR: Failed to initialize Elm chess engine");
+  console.error(error && error.message ? error.message : String(error));
+  process.exit(1);
 });

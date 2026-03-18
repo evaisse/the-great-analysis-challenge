@@ -1,66 +1,41 @@
 # Elm Chess Engine
 
-A chess engine implementation in Elm following the project specifications.
+Elm chess engine with a small Node protocol runner for stdin/stdout integration.
 
-## Building
+## Validation
 
-```bash
-make build
-# or
-npm install
-elm make src/ChessEngine.elm --output=dist/chess.js
-```
-
-## Running
+Run everything from the repository root:
 
 ```bash
-make
-node src/cli.js
+make image DIR=elm
+make build DIR=elm
+make analyze DIR=elm
+make test DIR=elm
+make test-chess-engine DIR=elm
+make test-chess-engine DIR=elm TRACK=v2-full
 ```
-
-## Testing
-
-```bash
-make test
-# Basic functionality test included in Makefile
-```
-
-## Static Analysis
-
-```bash
-make analyze
-# or
-elm make src/ChessEngine.elm --output=/dev/null
-```
-
-## Docker
-
-```bash
-make docker-build
-make docker-test
-```
-
-## Features
-
-- ✅ Basic chess rules and move validation
-- ✅ FEN parsing and generation  
-- ✅ AI with minimax algorithm
-- ✅ Special moves (castling, en passant, promotion)
-- ✅ Perft testing for move generation verification
-- ✅ Command-line interface via Node.js CLI wrapper
-
-## Architecture
-
-The Elm implementation uses a functional approach with:
-- Immutable game state
-- Pure functions for move generation and validation
-- JavaScript interop for CLI interface
 
 ## Commands
 
-- `new` - Start new game
-- `move <move>` - Make a move (e.g., e2e4)
-- `undo` - Undo last move
-- `export` - Export position as FEN
-- `ai <depth>` - AI move with specified depth
-- `quit` - Exit program
+Core engine:
+
+- `new`, `move <from><to>[promotion]`, `undo`, `status`
+- `fen <string>`, `export`, `display`
+- `ai <depth>`, `go movetime <ms>`, `perft <depth>`
+- `eval`, `hash`, `draws`, `history`
+
+Extended protocol surface:
+
+- `pgn load|show|moves`
+- `book load|stats`
+- `uci`, `isready`, `ucinewgame`
+- `new960 [id]`, `position960`
+- `trace on|off|report`
+- `concurrency quick|full`
+
+## Notes
+
+- The Elm modules implement board state, legal move generation, FEN handling, and search.
+- The Node runner keeps the `v2-full` protocol surface deterministic for the shared harness.
+- The Docker image vendors the exact Elm package cache required by `elm.json`, so fresh builds stay reproducible even when `package.elm-lang.org` is unavailable.
+- The image builds the Elm program with `--optimize` to avoid dev-mode runtime noise.

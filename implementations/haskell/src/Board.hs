@@ -2,37 +2,26 @@ module Board where
 
 import Types
 import Data.Array
-import Data.Maybe (isJust, isNothing, fromJust)
+import Data.List (intercalate)
+import Data.Maybe (isJust, isNothing)
 
 -- Board display
 displayBoard :: GameState -> String
-displayBoard gs = unlines $ 
-  ["  a b c d e f g h"] ++
-  [show (8-r) ++ " " ++ [displaySquare (board gs ! (c,7-r)) | c <- [0..7]] ++ " " ++ show (8-r) | r <- [0..7]] ++
-  ["  a b c d e f g h"] ++
-  [""] ++
-  [show (currentPlayer gs) ++ " to move"]
+displayBoard gs =
+  unlines $
+    ["  a b c d e f g h"]
+      ++ [show (8 - r) ++ " " ++ rowText (7 - r) ++ " " ++ show (8 - r) | r <- [0 .. 7]]
+      ++ ["  a b c d e f g h", "", show (currentPlayer gs) ++ " to move"]
+  where
+    rowText row =
+      intercalate " " [[displaySquare (board gs ! (col, row))] | col <- [0 .. 7]]
 
 displaySquare :: Maybe Piece -> Char
 displaySquare Nothing = '.'
 displaySquare (Just piece) = pieceChar piece
 
--- Move validation
-isValidMove :: GameState -> Move -> Bool
-isValidMove gs move = 
-  isLegalMove gs move && not (wouldBeInCheck gs move)
-
-isLegalMove :: GameState -> Move -> Bool
-isLegalMove gs (Move from to promotion) = 
-  case getPiece gs from of
-    Nothing -> False
-    Just piece -> 
-      pieceColor piece == currentPlayer gs &&
-      isValidPieceMove gs piece from to &&
-      (isNothing promotion || pieceType piece == Pawn)
-
 getPiece :: GameState -> Square -> Maybe Piece
-getPiece gs (Square col row) 
+getPiece gs (Square col row)
   | col >= 0 && col <= 7 && row >= 0 && row <= 7 = board gs ! (col, row)
   | otherwise = Nothing
 
@@ -42,47 +31,73 @@ pieceColor (Piece color _) = color
 pieceType :: Piece -> PieceType
 pieceType (Piece _ ptype) = ptype
 
+-- Move validation
+isValidMove :: GameState -> Move -> Bool
+isValidMove gs move = isLegalMove gs move && not (wouldBeInCheck gs move)
+
+isLegalMove :: GameState -> Move -> Bool
+isLegalMove gs (Move from to promotion) =
+  from /= to
+    && case getPiece gs from of
+      Nothing -> False
+      Just piece ->
+        pieceColor piece == currentPlayer gs
+          && destinationAvailable gs piece to
+          && promotionAllowed piece to promotion
+          && isValidPieceMove gs piece from to
+
+destinationAvailable :: GameState -> Piece -> Square -> Bool
+destinationAvailable gs movingPiece square =
+  case getPiece gs square of
+    Nothing -> True
+    Just target -> pieceColor target /= pieceColor movingPiece
+
+promotionAllowed :: Piece -> Square -> Maybe PieceType -> Bool
+promotionAllowed piece (Square _ toRow) promotion =
+  case pieceType piece of
+    Pawn ->
+      case promotion of
+        Nothing -> True
+        Just promoted ->
+          promoted `elem` [Queen, Rook, Bishop, Knight]
+            && ((pieceColor piece == White && toRow == 7) || (pieceColor piece == Black && toRow == 0))
+    _ -> isNothing promotion
+
 isValidPieceMove :: GameState -> Piece -> Square -> Square -> Bool
 isValidPieceMove gs piece from to =
   case pieceType piece of
     Pawn -> isValidPawnMove gs piece from to
     Knight -> isValidKnightMove from to
-    Bishop -> isValidBishopMove gs from to
-    Rook -> isValidRookMove gs from to
-    Queen -> isValidQueenMove gs from to
+    Bishop -> isDiagonal from to && isPathClear gs from to
+    Rook -> isStraight from to && isPathClear gs from to
+    Queen -> (isDiagonal from to || isStraight from to) && isPathClear gs from to
     King -> isValidKingMove gs piece from to
 
 isValidPawnMove :: GameState -> Piece -> Square -> Square -> Bool
 isValidPawnMove gs piece (Square fromCol fromRow) (Square toCol toRow) =
   let direction = if pieceColor piece == White then 1 else -1
       startRow = if pieceColor piece == White then 1 else 6
-      oneStep = toRow == fromRow + direction
-      twoStep = fromRow == startRow && toRow == fromRow + 2 * direction
-      straight = fromCol == toCol
-      diagonal = abs (fromCol - toCol) == 1
-      capture = isJust (getPiece gs (Square toCol toRow)) || 
-                enPassantTarget gs == Just (Square toCol toRow)
-  in (oneStep && straight && isNothing (getPiece gs (Square toCol toRow))) ||
-     (twoStep && straight && isNothing (getPiece gs (Square toCol toRow))) ||
-     (oneStep && diagonal && capture)
+      oneStepSquare = Square fromCol (fromRow + direction)
+      oneStep = toCol == fromCol && toRow == fromRow + direction && isNothing (getPiece gs oneStepSquare)
+      twoStep =
+        toCol == fromCol
+          && fromRow == startRow
+          && toRow == fromRow + 2 * direction
+          && isNothing (getPiece gs oneStepSquare)
+          && isNothing (getPiece gs (Square toCol toRow))
+      diagonalCapture =
+        abs (toCol - fromCol) == 1
+          && toRow == fromRow + direction
+          && (case getPiece gs (Square toCol toRow) of
+                Just target -> pieceColor target /= pieceColor piece
+                Nothing -> enPassantTarget gs == Just (Square toCol toRow))
+  in oneStep || twoStep || diagonalCapture
 
 isValidKnightMove :: Square -> Square -> Bool
 isValidKnightMove (Square fromCol fromRow) (Square toCol toRow) =
   let deltaCol = abs (fromCol - toCol)
       deltaRow = abs (fromRow - toRow)
   in (deltaCol == 2 && deltaRow == 1) || (deltaCol == 1 && deltaRow == 2)
-
-isValidBishopMove :: GameState -> Square -> Square -> Bool
-isValidBishopMove gs from to = 
-  isDiagonal from to && isPathClear gs from to
-
-isValidRookMove :: GameState -> Square -> Square -> Bool
-isValidRookMove gs from to = 
-  isStraight from to && isPathClear gs from to
-
-isValidQueenMove :: GameState -> Square -> Square -> Bool
-isValidQueenMove gs from to = 
-  (isDiagonal from to || isStraight from to) && isPathClear gs from to
 
 isValidKingMove :: GameState -> Piece -> Square -> Square -> Bool
 isValidKingMove gs piece from to =
@@ -109,17 +124,29 @@ pathSquares (Square fromCol fromRow) (Square toCol toRow) =
   let deltaCol = signum (toCol - fromCol)
       deltaRow = signum (toRow - fromRow)
       steps = max (abs (toCol - fromCol)) (abs (toRow - fromRow)) - 1
-  in [Square (fromCol + i * deltaCol) (fromRow + i * deltaRow) | i <- [1..steps]]
+  in [Square (fromCol + i * deltaCol) (fromRow + i * deltaRow) | i <- [1 .. steps]]
 
 isValidCastle :: GameState -> Piece -> Square -> Square -> Bool
-isValidCastle gs piece (Square fromCol fromRow) (Square toCol toRow) =
-  pieceType piece == King &&
-  fromRow == toRow &&
-  abs (fromCol - toCol) == 2 &&
-  canCastle gs (pieceColor piece) (toCol > fromCol) &&
-  isPathClear gs (Square fromCol fromRow) (Square toCol toRow) &&
-  not (isInCheck gs (currentPlayer gs)) &&
-  not (wouldPassThroughCheck gs (Square fromCol fromRow) (Square toCol toRow))
+isValidCastle gs piece from@(Square fromCol fromRow) to@(Square toCol toRow) =
+  pieceType piece == King
+    && fromRow == toRow
+    && abs (toCol - fromCol) == 2
+    && canCastle gs (pieceColor piece) kingside
+    && rookPresent
+    && all (isNothing . getPiece gs) betweenSquares
+    && all (not . isSquareAttacked gs (opponentColor (pieceColor piece))) kingSquares
+  where
+    kingside = toCol > fromCol
+    rookSquare = if kingside then Square 7 fromRow else Square 0 fromRow
+    rookPresent = getPiece gs rookSquare == Just (Piece (pieceColor piece) Rook)
+    betweenSquares =
+      if kingside
+        then [Square 5 fromRow, Square 6 fromRow]
+        else [Square 3 fromRow, Square 2 fromRow, Square 1 fromRow]
+    kingSquares =
+      if kingside
+        then [from, Square 5 fromRow, to]
+        else [from, Square 3 fromRow, to]
 
 canCastle :: GameState -> Color -> Bool -> Bool
 canCastle gs color kingside =
@@ -131,13 +158,6 @@ canCastle gs color kingside =
        (Black, True) -> blackKS
        (Black, False) -> blackQS
 
-wouldPassThroughCheck :: GameState -> Square -> Square -> Bool
-wouldPassThroughCheck gs from@(Square fromCol fromRow) to@(Square toCol toRow) =
-  let deltaCol = signum (toCol - fromCol)
-      intermediateSquare = Square (fromCol + deltaCol) fromRow
-      testMove = Move from intermediateSquare Nothing
-  in wouldBeInCheck gs testMove
-
 -- Check detection
 isInCheck :: GameState -> Color -> Bool
 isInCheck gs color =
@@ -146,72 +166,130 @@ isInCheck gs color =
     Just kingSquare -> isSquareAttacked gs (opponentColor color) kingSquare
 
 findKing :: GameState -> Color -> Maybe Square
-findKing gs color = 
-  case [Square col row | col <- [0..7], row <- [0..7], 
-        getPiece gs (Square col row) == Just (Piece color King)] of
-    [square] -> Just square
-    _ -> Nothing
+findKing gs color =
+  case [Square col row | col <- [0 .. 7], row <- [0 .. 7], getPiece gs (Square col row) == Just (Piece color King)] of
+    square : _ -> Just square
+    [] -> Nothing
 
 isSquareAttacked :: GameState -> Color -> Square -> Bool
-isSquareAttacked gs attackerColor square =
-  any (\attackerSquare -> 
-    case getPiece gs attackerSquare of
-      Just piece | pieceColor piece == attackerColor ->
-        isValidPieceMove gs piece attackerSquare square
-      _ -> False
-  ) allSquares
-  where allSquares = [Square col row | col <- [0..7], row <- [0..7]]
+isSquareAttacked gs attackerColor target =
+  any attacksFrom [Square col row | col <- [0 .. 7], row <- [0 .. 7]]
+  where
+    attacksFrom square =
+      case getPiece gs square of
+        Just piece | pieceColor piece == attackerColor -> pieceAttacksSquare gs piece square target
+        _ -> False
+
+pieceAttacksSquare :: GameState -> Piece -> Square -> Square -> Bool
+pieceAttacksSquare gs piece from@(Square fromCol fromRow) to@(Square toCol toRow) =
+  case pieceType piece of
+    Pawn ->
+      let direction = if pieceColor piece == White then 1 else -1
+      in toRow == fromRow + direction && abs (toCol - fromCol) == 1
+    Knight -> isValidKnightMove from to
+    Bishop -> isDiagonal from to && isPathClear gs from to
+    Rook -> isStraight from to && isPathClear gs from to
+    Queen -> (isDiagonal from to || isStraight from to) && isPathClear gs from to
+    King -> maxDistance from to == 1
 
 wouldBeInCheck :: GameState -> Move -> Bool
-wouldBeInCheck gs move =
-  isInCheck (makeMove gs move) (currentPlayer gs)
+wouldBeInCheck gs move = isInCheck (makeMove gs move) (currentPlayer gs)
 
 -- Make/undo moves
 makeMove :: GameState -> Move -> GameState
-makeMove gs (Move from to promotion) =
-  let newBoard = updateBoard (board gs) from to promotion
-      newPlayer = opponentColor (currentPlayer gs)
-      newCastling = updateCastlingRights gs from to
-      newEnPassant = calculateEnPassant gs from to
-      newHalfMove = updateHalfMoveClock gs from to
-      newFullMove = if currentPlayer gs == Black 
-                   then fullMoveNumber gs + 1 
-                   else fullMoveNumber gs
-  in GameState newBoard newPlayer (fst newCastling) (snd newCastling) 
-                newEnPassant newHalfMove newFullMove
+makeMove gs move =
+  case getPiece gs (fromSquare move) of
+    Nothing -> gs
+    Just movingPiece ->
+      let newBoard = updateBoard gs move movingPiece
+          newPlayer = opponentColor (currentPlayer gs)
+          newCastling = updateCastlingRights gs move movingPiece
+          newEnPassant = calculateEnPassant gs move movingPiece
+          newHalfMove = updateHalfMoveClock gs move movingPiece
+          newFullMove =
+            if currentPlayer gs == Black
+              then fullMoveNumber gs + 1
+              else fullMoveNumber gs
+      in GameState newBoard newPlayer (fst newCastling) (snd newCastling) newEnPassant newHalfMove newFullMove
 
-updateBoard :: Board -> Square -> Square -> Maybe PieceType -> Board
-updateBoard board from@(Square fromCol fromRow) to@(Square toCol toRow) promotion =
-  let piece = board ! (fromCol, fromRow)
-      promotedPiece = case (piece, promotion) of
-        (Just (Piece color Pawn), Just newType) -> Just (Piece color newType)
-        _ -> piece
-      clearedFrom = board // [((fromCol, fromRow), Nothing)]
-  in clearedFrom // [((toCol, toRow), promotedPiece)]
+updateBoard :: GameState -> Move -> Piece -> Board
+updateBoard gs move movingPiece =
+  boardAfterCastle
+  where
+    from@(Square fromCol fromRow) = fromSquare move
+    to@(Square toCol toRow) = toSquare move
+    originalBoard = board gs
+    boardWithoutFrom = originalBoard // [((fromCol, fromRow), Nothing)]
+    boardAfterEnPassant =
+      if pieceType movingPiece == Pawn && fromCol /= toCol && isNothing (getPiece gs to)
+        then boardWithoutFrom // [((toCol, fromRow), Nothing)]
+        else boardWithoutFrom
+    promotedPiece =
+      case (pieceType movingPiece, promotion move, toRow) of
+        (Pawn, Just promoted, _) -> Piece (pieceColor movingPiece) promoted
+        (Pawn, Nothing, 7) | pieceColor movingPiece == White -> Piece White Queen
+        (Pawn, Nothing, 0) | pieceColor movingPiece == Black -> Piece Black Queen
+        _ -> movingPiece
+    boardAfterMove = boardAfterEnPassant // [((toCol, toRow), Just promotedPiece)]
+    boardAfterCastle =
+      if pieceType movingPiece == King && abs (toCol - fromCol) == 2
+        then
+          if toCol > fromCol
+            then boardAfterMove // [((7, fromRow), Nothing), ((5, fromRow), Just (Piece (pieceColor movingPiece) Rook))]
+            else boardAfterMove // [((0, fromRow), Nothing), ((3, fromRow), Just (Piece (pieceColor movingPiece) Rook))]
+        else boardAfterMove
 
-updateCastlingRights :: GameState -> Square -> Square -> ((Bool, Bool), (Bool, Bool))
-updateCastlingRights gs from to =
-  let (whiteKS, blackKS) = canCastleKS gs
+updateCastlingRights :: GameState -> Move -> Piece -> ((Bool, Bool), (Bool, Bool))
+updateCastlingRights gs move movingPiece =
+  let from = fromSquare move
+      to = toSquare move
+      (whiteKS, blackKS) = canCastleKS gs
       (whiteQS, blackQS) = canCastleQS gs
-      -- Lose castling rights if king or rook moves
-      newWhiteKS = whiteKS && from /= Square 4 0 && from /= Square 7 0 && to /= Square 7 0
-      newWhiteQS = whiteQS && from /= Square 4 0 && from /= Square 0 0 && to /= Square 0 0
-      newBlackKS = blackKS && from /= Square 4 7 && from /= Square 7 7 && to /= Square 7 7
-      newBlackQS = blackQS && from /= Square 4 7 && from /= Square 0 7 && to /= Square 0 7
+      capturedRookWhiteKS = to == Square 7 0
+      capturedRookWhiteQS = to == Square 0 0
+      capturedRookBlackKS = to == Square 7 7
+      capturedRookBlackQS = to == Square 0 7
+      moveKillsWhiteKS = from == Square 4 0 || from == Square 7 0
+      moveKillsWhiteQS = from == Square 4 0 || from == Square 0 0
+      moveKillsBlackKS = from == Square 4 7 || from == Square 7 7
+      moveKillsBlackQS = from == Square 4 7 || from == Square 0 7
+      newWhiteKS =
+        whiteKS
+          && not capturedRookWhiteKS
+          && not (pieceColor movingPiece == White && moveKillsWhiteKS)
+      newWhiteQS =
+        whiteQS
+          && not capturedRookWhiteQS
+          && not (pieceColor movingPiece == White && moveKillsWhiteQS)
+      newBlackKS =
+        blackKS
+          && not capturedRookBlackKS
+          && not (pieceColor movingPiece == Black && moveKillsBlackKS)
+      newBlackQS =
+        blackQS
+          && not capturedRookBlackQS
+          && not (pieceColor movingPiece == Black && moveKillsBlackQS)
   in ((newWhiteKS, newBlackKS), (newWhiteQS, newBlackQS))
 
-calculateEnPassant :: GameState -> Square -> Square -> Maybe Square
-calculateEnPassant gs (Square fromCol fromRow) (Square toCol toRow) =
-  case getPiece gs (Square fromCol fromRow) of
-    Just (Piece _ Pawn) | abs (toRow - fromRow) == 2 ->
-      Just (Square toCol ((fromRow + toRow) `div` 2))
+calculateEnPassant :: GameState -> Move -> Piece -> Maybe Square
+calculateEnPassant _ (Move (Square fromCol fromRow) (Square toCol toRow) _) movingPiece =
+  case pieceType movingPiece of
+    Pawn | abs (toRow - fromRow) == 2 -> Just (Square toCol ((fromRow + toRow) `div` 2))
     _ -> Nothing
 
-updateHalfMoveClock :: GameState -> Square -> Square -> Int
-updateHalfMoveClock gs from to =
-  case getPiece gs from of
-    Just (Piece _ Pawn) -> 0
-    _ -> if isJust (getPiece gs to) then 0 else halfMoveClock gs + 1
+updateHalfMoveClock :: GameState -> Move -> Piece -> Int
+updateHalfMoveClock gs move movingPiece =
+  if pieceType movingPiece == Pawn || isCapture gs move
+    then 0
+    else halfMoveClock gs + 1
+
+isCapture :: GameState -> Move -> Bool
+isCapture gs (Move (Square fromCol fromRow) to _) =
+  case getPiece gs (Square fromCol fromRow) of
+    Just movingPiece ->
+      isJust (getPiece gs to)
+        || (pieceType movingPiece == Pawn && fromCol /= squareCol to && isNothing (getPiece gs to))
+    Nothing -> False
 
 -- Game end detection
 isCheckmate :: GameState -> Bool
@@ -225,23 +303,28 @@ generateLegalMoves gs = filter (isValidMove gs) (generatePseudoLegalMoves gs)
 
 generatePseudoLegalMoves :: GameState -> [Move]
 generatePseudoLegalMoves gs =
-  [Move from to promotion 
-  | col <- [0..7], row <- [0..7]
+  [ Move from to promotionChoice
+  | col <- [0 .. 7]
+  , row <- [0 .. 7]
   , let from = Square col row
   , Just piece <- [getPiece gs from]
   , pieceColor piece == currentPlayer gs
   , to <- generatePieceMoves gs piece from
-  , promotion <- generatePromotions piece to
+  , promotionChoice <- generatePromotions piece to
   ]
 
 generatePieceMoves :: GameState -> Piece -> Square -> [Square]
 generatePieceMoves gs piece from@(Square col row) =
   case pieceType piece of
     Pawn -> generatePawnMoves gs piece from
-    Knight -> [Square (col + dc) (row + dr) | (dc, dr) <- knightDeltas, 
-               isInBounds (col + dc) (row + dr), canMoveTo gs (Square (col + dc) (row + dr))]
+    Knight ->
+      [ Square (col + dc) (row + dr)
+      | (dc, dr) <- knightDeltas
+      , isInBounds (col + dc) (row + dr)
+      , canMoveTo gs (Square (col + dc) (row + dr))
+      ]
     Bishop -> generateSlidingMoves gs from bishopDirections
-    Rook -> generateSlidingMoves gs from rookDirections  
+    Rook -> generateSlidingMoves gs from rookDirections
     Queen -> generateSlidingMoves gs from queenDirections
     King -> generateKingMoves gs piece from
 
@@ -253,42 +336,64 @@ generatePawnMoves gs piece from@(Square col row) =
       twoStep = Square col (row + 2 * direction)
       leftCapture = Square (col - 1) (row + direction)
       rightCapture = Square (col + 1) (row + direction)
-      moves = [oneStep | isInBounds col (row + direction), isNothing (getPiece gs oneStep)] ++
-              [twoStep | row == (if color == White then 1 else 6), 
-                        isInBounds col (row + 2 * direction), isNothing (getPiece gs twoStep)] ++
-              [leftCapture | isInBounds (col - 1) (row + direction), canCapture gs leftCapture] ++
-              [rightCapture | isInBounds (col + 1) (row + direction), canCapture gs rightCapture]
-  in moves
+      oneStepMoves =
+        [oneStep | isInBounds col (row + direction), isNothing (getPiece gs oneStep)]
+      twoStepMoves =
+        [ twoStep
+        | row == (if color == White then 1 else 6)
+        , isInBounds col (row + 2 * direction)
+        , isNothing (getPiece gs oneStep)
+        , isNothing (getPiece gs twoStep)
+        ]
+      captureMoves =
+        [target | target <- [leftCapture, rightCapture], isInBounds (squareCol target) (squareRow target), canCapture gs target]
+  in oneStepMoves ++ twoStepMoves ++ captureMoves
 
 generateSlidingMoves :: GameState -> Square -> [(Int, Int)] -> [Square]
 generateSlidingMoves gs from directions =
   [to | direction <- directions, to <- generateRayMoves gs from direction]
 
 generateRayMoves :: GameState -> Square -> (Int, Int) -> [Square]
-generateRayMoves gs (Square col row) (dc, dr) =
-  takeWhile (canMoveTo gs) $ 
-  map (\i -> Square (col + i * dc) (row + i * dr)) [1..7]
+generateRayMoves gs (Square col row) (dc, dr) = go 1
+  where
+    go step =
+      let square = Square (col + step * dc) (row + step * dr)
+      in if not (isInBounds (squareCol square) (squareRow square))
+           then []
+           else case getPiece gs square of
+             Nothing -> square : go (step + 1)
+             Just piece ->
+               if pieceColor piece /= currentPlayer gs
+                 then [square]
+                 else []
 
 generateKingMoves :: GameState -> Piece -> Square -> [Square]
 generateKingMoves gs piece from@(Square col row) =
-  let normalMoves = [Square (col + dc) (row + dr) | (dc, dr) <- kingDirections,
-                     isInBounds (col + dc) (row + dr), canMoveTo gs (Square (col + dc) (row + dr))]
-      castleMoves = [Square (col + 2) row | canCastle gs (pieceColor piece) True] ++
-                   [Square (col - 2) row | canCastle gs (pieceColor piece) False]
+  let normalMoves =
+        [ Square (col + dc) (row + dr)
+        | (dc, dr) <- kingDirections
+        , isInBounds (col + dc) (row + dr)
+        , canMoveTo gs (Square (col + dc) (row + dr))
+        ]
+      kingside = Square (col + 2) row
+      queenside = Square (col - 2) row
+      castleMoves =
+        [ kingside | isValidCastle gs piece from kingside ]
+          ++ [ queenside | isValidCastle gs piece from queenside ]
   in normalMoves ++ castleMoves
 
 generatePromotions :: Piece -> Square -> [Maybe PieceType]
-generatePromotions (Piece color Pawn) (Square _ row) 
-  | (color == White && row == 7) || (color == Black && row == 0) = 
-    [Just Queen, Just Rook, Just Bishop, Just Knight]
+generatePromotions (Piece color Pawn) (Square _ row)
+  | (color == White && row == 7) || (color == Black && row == 0) =
+      [Just Queen, Just Rook, Just Bishop, Just Knight]
 generatePromotions _ _ = [Nothing]
 
 canMoveTo :: GameState -> Square -> Bool
 canMoveTo gs square =
-  isInBounds (squareCol square) (squareRow square) &&
-  case getPiece gs square of
-    Nothing -> True
-    Just piece -> pieceColor piece /= currentPlayer gs
+  isInBounds (squareCol square) (squareRow square)
+    && case getPiece gs square of
+      Nothing -> True
+      Just piece -> pieceColor piece /= currentPlayer gs
 
 canCapture :: GameState -> Square -> Bool
 canCapture gs square =
@@ -307,13 +412,13 @@ squareRow (Square _ row) = row
 
 -- Direction vectors
 knightDeltas :: [(Int, Int)]
-knightDeltas = [(2,1), (2,-1), (-2,1), (-2,-1), (1,2), (1,-2), (-1,2), (-1,-2)]
+knightDeltas = [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]
 
 bishopDirections :: [(Int, Int)]
-bishopDirections = [(1,1), (1,-1), (-1,1), (-1,-1)]
+bishopDirections = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
 
 rookDirections :: [(Int, Int)]
-rookDirections = [(0,1), (0,-1), (1,0), (-1,0)]
+rookDirections = [(0, 1), (0, -1), (1, 0), (-1, 0)]
 
 queenDirections :: [(Int, Int)]
 queenDirections = bishopDirections ++ rookDirections
