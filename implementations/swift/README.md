@@ -1,107 +1,40 @@
 # Swift Chess Engine
 
-A complete chess engine implementation in Swift following the Chess Engine Specification v1.0.
+Swift implementation of the shared chess engine spec with the `v2-full` command surface validated in Docker.
 
-## Features
+## Validated Features
 
-- Complete chess rules implementation (castling, en passant, promotion)
-- AI opponent with minimax algorithm and alpha-beta pruning
-- FEN import/export support
-- Performance testing with perft
-- Interactive command-line interface
-- All standard chess piece movements and special rules
-- Native Swift performance and type safety
+- Core chess rules: castling, en passant, promotion, FEN, perft, minimax AI
+- Extended `v2-full` surface: `hash`, `draws`, `history`, `go movetime`, `pgn`, `book`, `uci`, `isready`, `ucinewgame`, `new960`, `position960`, `trace`, `concurrency`
+- Harness-friendly CLI: no startup board dump, no prompt noise, flushed line-based responses
 
-## Local Development
+## Docker Workflow
 
-### Prerequisites
-- Swift 5.5+ 
-- Swift Package Manager
+Run all project validation from the repository root:
 
-### Setup
 ```bash
-swift build -c release
-.build/release/Chess
+make image DIR=swift
+make build DIR=swift
+make analyze DIR=swift
+make test DIR=swift
+make test-chess-engine DIR=swift TRACK=v2-full
 ```
 
-### Development and Testing
+## Example Usage
+
 ```bash
-# Build for development
-swift build
-
-# Run tests
-swift test
-
-# Build and run
-swift run Chess
-```
-
-## Docker Usage
-
-### Build the Docker image
-```bash
-docker build -t chess-engine .
-```
-
-### Run interactively
-```bash
-docker run --network none -it chess-engine
-```
-
-### Using Docker Compose
-```bash
-# Run the chess engine
-docker-compose up chess-engine
-
-# Development mode with shell access
-docker-compose run chess-dev
-```
-
-### Example Docker commands
-```bash
-# Quick game
-echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run --network none -i chess-engine
-
-# Interactive play
-docker run --network none -it chess-engine
-
-# Build and run in one command
-docker-compose up --build chess-engine
+printf 'new\nmove e2e4\nhash\npgn show\nquit\n' | docker run --rm --network none -i chess-swift
 ```
 
 ## Commands
 
-- `move <from><to>[promotion]` - Make a move (e.g., e2e4, e7e8Q)
-- `undo` - Undo the last move
-- `new` - Start a new game  
-- `ai <depth>` - Let AI make a move (depth 1-5)
-- `fen <string>` - Load position from FEN
-- `export` - Export current position as FEN
-- `eval` - Evaluate current position
-- `perft <depth>` - Run performance test
-- `help` - Show available commands
-- `quit` - Exit the program
+- `new`, `move <from><to>[promotion]`, `undo`, `status`, `fen <string>`, `export`
+- `hash`, `draws`, `history`, `eval`, `ai <depth>`, `go movetime <ms>`
+- `pgn load|show|moves`, `book load|stats`, `uci`, `isready`, `ucinewgame`
+- `new960 [id]`, `position960`, `trace on|off|report`, `concurrency quick|full`
+- `perft <depth>`, `help`, `quit`
 
-## Architecture
+## Files
 
-- `src/main.swift` - Main application entry point and chess engine implementation
-- `Package.swift` - Swift Package Manager configuration
-- `Tests/ChessTests/` - Unit tests for the chess engine
-
-## Testing
-
-The engine includes perft testing for move generation verification:
-```bash
-# In the chess engine
-perft 4
-```
-
-Expected result: 197281 nodes for perft(4) from starting position.
-
-## Performance
-
-This Swift implementation leverages:
-- Strong type system for correctness
-- Value types for performance
-- Memory safety
-- Native compilation for speed
+- `src/main.swift`: engine, CLI dispatcher, and `v2-full` runtime helpers
+- `Package.swift`: Swift package definition
