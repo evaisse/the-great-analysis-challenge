@@ -1,102 +1,26 @@
-🚀 Chess Engine Performance Testing Suite
-============================================================
-Found 1 implementation(s) to test
-
-============================================================
-Testing zig implementation
-Path: implementations/zig
-============================================================
-📏 Source size: 1625 LOC across 8 files, 13277 TOKENS
-🧹 Clearing build cache...
-🔧 Running: make clean
-✅ Local cache cleared with make clean
-✅ Cache clearing completed
-🐳 Running all tests via Docker (ensures consistent environment)
-🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (prerequisite)...
-  🔧 Running: docker build -t chess-zig .
-  ✅ Docker build completed in 0.36s
-  🔧 Running task: make build
-    🔧 Running: make build
-  🔧 Running task: make analyze
-    🔧 Running: make analyze
-  🔧 Running task: make test
-    🔧 Running: make test
-  🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
-
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 16:26:26
+Generated: 2026-03-18T12:01:29.609Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-zig          completed  13277      1625     0.2s/6MB           0.2s/7MB           0.2s/7MB           58.0s/62MB                1/1              0/36              
+zig          completed  18334      2194     738ms, - MB        352ms, - MB        286ms, - MB        6m 01s, - MB              1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: ZIG
 ============================================================
-
-TIMING BREAKDOWN:
-  docker build image: 0.36s
-  make build: 0.21s
-  make analyze: 0.18s
-  make test: 0.18s
-  make test-chess-engine: 58.04s
-  make test (internal mirror): 0.18s
-  test v2 full seconds: 58.04s
-
-SOURCE SIZE:
-  Source LOC: 1625 (files: 8)
-  TOKENS (tokens-v2): 13277
-
-NORMALIZED METRICS:
-  Build: 132.11 ms/KLOC
-  Analyze: 112.47 ms/KLOC
-  Runtime: 113.20 ms/KLOC
-
-MEMORY USAGE:
-  Image: Peak 111.1MB, Avg 90.8MB
-  Build: Peak 6.3MB, Avg 0.0MB
-  Analyze: Peak 6.7MB, Avg 0.0MB
-  Test: Peak 6.6MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.0MB, Avg 61.6MB
-
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
-
-DOCKER TESTS:
-  Image build: ✅ (0.36s)
-  make build: ✅ (0.21s)
-  make analyze: ✅ (0.18s)
-  make test: ✅ (0.18s)
-  make test-chess-engine (track=v2-full): ❌ (58.04s)
-  make test score: 1/1
-  make test-chess-engine score: 0/36
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing zig implementation at implementations/zig
-----------------------------------------
-Running test: Hash Command Baseline ✗
-Running test: Hash Command After Move ✗
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✗
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Handshake ✗
-Running
-
-================================================================================
-📄 JSON results saved to reports/zig.json (1 valid benchmark(s))
-
-✅ All 1 implementation(s) completed successfully
+Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-139-swift-zig-v2-full-9-of-9/implementations/zig
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 37.7s
+  - build_seconds: 738ms
+  - analyze_seconds: 352ms
+  - test_seconds: 286ms
+  - test_chess_engine_seconds: 6m 01s
+  - test_v2_full_seconds: 6m 01s
+Metrics: TOKENS=18,334, LOC=2,194

@@ -36,9 +36,9 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 🧠 Rescript | [5,895.25](implementations/rescript/src/Chess.res) | 2,053 | 3s, - MB | 3.4s, - MB | 1.3s, - MB | 6m 01s, - MB | 🟡 9/9 |
 | ❤️ Ruby | [4,583](implementations/ruby/chess.rb) | 2,117 | -, - MB | 3.4s, - MB | 698ms, - MB | 6m 01s, - MB | 🟡 9/9 |
 | 🦀 Rust | [7,574.25](implementations/rust/src/main.rs) | 2,105 | 783ms, - MB | 2.6s, - MB | 3.3s, - MB | 6m 01s, - MB | 🟢 9/9 |
-| 🐦 Swift | [3,387](implementations/swift/src/main.swift) | 932 | 192ms, 7 MB | 184ms, 7 MB | 188ms, 7 MB | 3m 00s, - MB | 🟢 6/9 |
-| 📘 Typescript | [6,816.75](implementations/typescript/src/chess.ts) | 2,241 | 1.9s, - MB | 1.6s, - MB | 1.7s, - MB | 6m 01s, - MB | 🟡 9/9 |
-| ⚡ Zig | [8,232.75](implementations/zig/src/main.zig) | 1,633 | 215ms, 6 MB | 183ms, 7 MB | 184ms, 7 MB | 58s, 62 MB | 🟢 6/9 |
+| 🐦 Swift | [4,547](implementations/swift/src/main.swift) | 1,258 | 19.6s, - MB | 20.3s, - MB | 30.7s, - MB | 6m 01s, - MB | 🟢 9/9 |
+| 📘 Typescript | [6,194](implementations/typescript/src/chess.ts) | 2,052 | 1.9s, - MB | 1.6s, - MB | 1.7s, - MB | 6m 01s, - MB | 🟡 9/9 |
+| ⚡ Zig | [11,357.75](implementations/zig/src/main.zig) | 2,194 | 738ms, - MB | 352ms, - MB | 286ms, - MB | 6m 01s, - MB | 🟢 9/9 |
 <!-- status-table-end -->
 
 Legend:

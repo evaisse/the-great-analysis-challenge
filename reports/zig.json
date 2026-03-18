@@ -1,164 +1,156 @@
-[
-  {
+{
+  "language": "zig",
+  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-139-swift-zig-v2-full-9-of-9/implementations/zig",
+  "metadata": {
     "language": "zig",
-    "path": "implementations/zig",
-    "metadata": {
-      "language": "zig",
-      "version": "latest",
-      "author": "Zig Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 800,
-      "source_exts": [
-        ".zig"
-      ],
-      "build": "zig build -Doptimize=ReleaseFast",
-      "run": "./zig-out/bin/chess",
-      "test": "./zig-out/bin/chess --test",
-      "analyze": "zig fmt --check src/",
-      "bugit": "if [ -f .bugit/main.zig.bak ]; then echo 'bugit already active for zig'; else mkdir -p .bugit && cp src/main.zig .bugit/main.zig.bak && printf '\\n)\\n' >> src/main.zig; fi",
-      "fix": "if [ -f .bugit/main.zig.bak ]; then mv .bugit/main.zig.bak src/main.zig && rmdir .bugit 2>/dev/null || true; else echo 'no zig bugit backup to restore'; fi"
-    },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.3578369617462158,
-      "build_seconds": 0.21467328071594238,
-      "analyze_seconds": 0.18276619911193848,
-      "test_seconds": 0.1839444637298584,
-      "test_internal_seconds": 0.1839444637298584,
-      "test_chess_engine_seconds": 58.035218477249146,
-      "test_v2_full_seconds": 58.035218477249146
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 111.0546875,
-        "peak_memory_mb": 111.0546875,
-        "avg_memory_mb": 90.814453125,
-        "avg_cpu_percent": 0,
-        "samples": 4,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 6.32421875,
-        "peak_memory_mb": 6.32421875,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "analyze": {
-        "memory_mb": 6.6953125,
-        "peak_memory_mb": 6.6953125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 6.578125,
-        "peak_memory_mb": 6.578125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.1015625,
-        "peak_memory_mb": 61.96484375,
-        "avg_memory_mb": 61.59710122526978,
-        "avg_cpu_percent": 0,
-        "samples": 556,
-        "psutil_available": true
-      }
-    },
-    "size": {
-      "source_loc": 1633,
-      "source_files": 8
-    },
-    "metrics": {
-      "tokens_count": 13277,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 132.10663428673377,
-      "analyze_ms_per_kloc": 112.47150714580829,
-      "runtime_ms_per_kloc": 113.19659306452824
-    },
-    "docker": {
-      "build_time": 0.3578369617462158,
-      "build_success": true,
-      "image_build_time": 0.3578369617462158,
-      "image_build_success": true,
-      "make_build_skipped": false,
-      "make_build_time": 0.21467328071594238,
-      "make_build_success": true,
-      "make_analyze_time": 0.18276619911193848,
-      "make_analyze_success": true,
-      "test_time": 0.1839444637298584,
-      "test_success": true,
-      "make_test_time": 0.1839444637298584,
-      "make_test_success": true,
-      "test_chess_engine_time": 58.035218477249146,
-      "test_chess_engine_success": false,
-      "track_test_time": 58.035218477249146,
-      "track_test_success": false
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": false
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 0,
-        "failed": 36,
-        "errors": 20,
-        "total": 36
-      }
-    },
-    "test_results": {
-      "passed": [],
-      "failed": [
-        "make_test_chess_engine"
-      ]
-    },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting zig implementation at implementations/zig\n----------------------------------------\nRunning test: Hash Command Baseline ✗\nRunning test: Hash Command After Move ✗\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunning"
+    "version": "latest",
+    "author": "Zig Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
     ],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 8232.75,
-      "total_tokens": 10783,
-      "semantic_tokens": 10670,
-      "by_category": {
-        "keyword": 1300,
-        "identifier": 5510,
-        "type": 17,
-        "operator": 1100,
-        "literal": 680,
-        "punctuation": 2063,
-        "comment": 113,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.122,
-        "comment_ratio": 0.01,
-        "punctuation_ratio": 0.193,
-        "complexity_per_loc": 5.04,
-        "complexity_per_file": 1029.09
-      }
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 800,
+    "source_exts": [
+      ".zig"
+    ],
+    "build": "zig build -Doptimize=ReleaseFast",
+    "run": "./zig-out/bin/chess",
+    "test": "./zig-out/bin/chess --test",
+    "analyze": "zig fmt --check src/",
+    "bugit": "if [ -f .bugit/main.zig.bak ]; then echo 'bugit already active for zig'; else mkdir -p .bugit && cp src/main.zig .bugit/main.zig.bak && printf '\\n)\\n' >> src/main.zig; fi",
+    "fix": "if [ -f .bugit/main.zig.bak ]; then mv .bugit/main.zig.bak src/main.zig && rmdir .bugit 2>/dev/null || true; else echo 'no zig bugit backup to restore'; fi"
+  },
+  "track": "v2-full",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 37.689932042,
+    "build_seconds": 0.737882584,
+    "analyze_seconds": 0.351793167,
+    "test_seconds": 0.286343625,
+    "test_chess_engine_seconds": 360.756076875,
+    "test_v2_full_seconds": 360.756076875
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 2194,
+    "source_files": 8
+  },
+  "metrics": {
+    "tokens_count": 18334,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 336.3184065633546,
+    "analyze_ms_per_kloc": 160.34328486782135,
+    "runtime_ms_per_kloc": 130.51213536918868
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 37.689932042,
+    "make_build_success": true,
+    "make_build_time": 0.737882584,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.351793167,
+    "make_test_success": true,
+    "make_test_time": 0.286343625,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 360.756076875
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 16,
+      "failed": 0,
+      "errors": 0,
+      "total": 16
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 11357.75,
+    "total_tokens": 14865,
+    "semantic_tokens": 14763,
+    "by_category": {
+      "keyword": 1918,
+      "identifier": 7454,
+      "type": 27,
+      "operator": 1386,
+      "literal": 1085,
+      "punctuation": 2893,
+      "comment": 102,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.13,
+      "comment_ratio": 0.007,
+      "punctuation_ratio": 0.196,
+      "complexity_per_loc": 5.18,
+      "complexity_per_file": 1419.72
     }
   }
-]
+}

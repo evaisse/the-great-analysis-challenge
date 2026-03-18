@@ -19,30 +19,24 @@ pub const AI = struct {
         self.nodes_searched = 0;
 
         const allocator = std.heap.page_allocator;
-        var move_generator = move_gen.MoveGenerator.init(self.board_ref);
-
-        var legal_moves = move_generator.generateLegalMoves(allocator) catch return null;
+        var legal_moves = self.generateFilteredLegalMoves(allocator) catch return null;
         defer legal_moves.deinit(allocator);
 
         if (legal_moves.items.len == 0) return null;
 
         var best_move = legal_moves.items[0];
         var best_score: i32 = if (self.board_ref.white_to_move) -999999 else 999999;
+        const maximizing = self.board_ref.white_to_move;
 
         for (legal_moves.items) |move| {
-            // Make the move
-            const original_state = self.saveGameState();
+            const original_state = self.board_ref.*;
             self.board_ref.makeMove(move) catch continue;
 
-            // Evaluate the position after the move
-            const score = self.minimax(depth - 1, -999999, 999999, !self.board_ref.white_to_move);
+            const score = self.minimax(depth - 1, -999999, 999999);
 
-            // Restore the original position
-            self.restoreGameState(original_state);
-            self.board_ref.undoMove(move);
+            self.board_ref.* = original_state;
 
-            // Update best move
-            if (self.board_ref.white_to_move) {
+            if (maximizing) {
                 if (score > best_score) {
                     best_score = score;
                     best_move = move;
@@ -59,46 +53,40 @@ pub const AI = struct {
         return best_move;
     }
 
-    fn minimax(self: *AI, depth: u8, alpha: i32, beta: i32, maximizing: bool) i32 {
+    fn minimax(self: *AI, depth: u8, alpha: i32, beta: i32) i32 {
         self.nodes_searched += 1;
+
+        const allocator = std.heap.page_allocator;
+        var legal_moves = self.generateFilteredLegalMoves(allocator) catch return self.evaluatePosition();
+        defer legal_moves.deinit(allocator);
+        const current_color: board.PieceColor = if (self.board_ref.white_to_move) .White else .Black;
+        const in_check = self.board_ref.isInCheck(current_color);
+
+        if (legal_moves.items.len == 0) {
+            if (in_check) {
+                return if (self.board_ref.white_to_move) -100000 else 100000;
+            }
+            return 0;
+        }
 
         if (depth == 0) {
             return self.evaluatePosition();
         }
 
-        // Check for game end
-        if (self.board_ref.isCheckmate()) {
-            return if (maximizing) -100000 else 100000;
-        }
-
-        if (self.board_ref.isStalemate()) {
-            return 0;
-        }
-
-        const allocator = std.heap.page_allocator;
-        var move_generator = move_gen.MoveGenerator.init(self.board_ref);
-
-        var legal_moves = move_generator.generateLegalMoves(allocator) catch return 0;
-        defer legal_moves.deinit(allocator);
-
-        if (legal_moves.items.len == 0) {
-            return 0; // Stalemate
-        }
-
         var current_alpha = alpha;
         var current_beta = beta;
+        const maximizing = self.board_ref.white_to_move;
 
         if (maximizing) {
             var max_eval: i32 = -999999;
 
             for (legal_moves.items) |move| {
-                const original_state = self.saveGameState();
+                const original_state = self.board_ref.*;
                 self.board_ref.makeMove(move) catch continue;
 
-                const eval = self.minimax(depth - 1, current_alpha, current_beta, false);
+                const eval = self.minimax(depth - 1, current_alpha, current_beta);
 
-                self.restoreGameState(original_state);
-                self.board_ref.undoMove(move);
+                self.board_ref.* = original_state;
 
                 max_eval = @max(max_eval, eval);
                 current_alpha = @max(current_alpha, eval);
@@ -113,13 +101,12 @@ pub const AI = struct {
             var min_eval: i32 = 999999;
 
             for (legal_moves.items) |move| {
-                const original_state = self.saveGameState();
+                const original_state = self.board_ref.*;
                 self.board_ref.makeMove(move) catch continue;
 
-                const eval = self.minimax(depth - 1, current_alpha, current_beta, true);
+                const eval = self.minimax(depth - 1, current_alpha, current_beta);
 
-                self.restoreGameState(original_state);
-                self.board_ref.undoMove(move);
+                self.board_ref.* = original_state;
 
                 min_eval = @min(min_eval, eval);
                 current_beta = @min(current_beta, eval);
@@ -206,30 +193,29 @@ pub const AI = struct {
         return self.nodes_searched;
     }
 
-    // Helper functions for game state management
-    const GameState = struct {
-        white_to_move: bool,
-        castling_rights: board.CastlingRights,
-        en_passant_target: ?u8,
-        halfmove_clock: u16,
-        fullmove_number: u16,
-    };
+    fn generateFilteredLegalMoves(self: *AI, allocator: std.mem.Allocator) !std.ArrayList(board.Move) {
+        var move_generator = move_gen.MoveGenerator.init(self.board_ref);
+        var pseudo_moves = try move_generator.generateLegalMoves(allocator);
+        defer pseudo_moves.deinit(allocator);
 
-    fn saveGameState(self: *AI) GameState {
-        return GameState{
-            .white_to_move = self.board_ref.white_to_move,
-            .castling_rights = self.board_ref.castling_rights,
-            .en_passant_target = self.board_ref.en_passant_target,
-            .halfmove_clock = self.board_ref.halfmove_clock,
-            .fullmove_number = self.board_ref.fullmove_number,
-        };
-    }
+        var legal_moves = std.ArrayList(board.Move).empty;
+        errdefer legal_moves.deinit(allocator);
 
-    fn restoreGameState(self: *AI, state: GameState) void {
-        self.board_ref.white_to_move = state.white_to_move;
-        self.board_ref.castling_rights = state.castling_rights;
-        self.board_ref.en_passant_target = state.en_passant_target;
-        self.board_ref.halfmove_clock = state.halfmove_clock;
-        self.board_ref.fullmove_number = state.fullmove_number;
+        const current_color: board.PieceColor = if (self.board_ref.white_to_move) .White else .Black;
+        for (pseudo_moves.items) |move| {
+            const snapshot = self.board_ref.*;
+            self.board_ref.makeMove(move) catch {
+                self.board_ref.* = snapshot;
+                continue;
+            };
+
+            if (!self.board_ref.isInCheck(current_color)) {
+                try legal_moves.append(allocator, move);
+            }
+
+            self.board_ref.* = snapshot;
+        }
+
+        return legal_moves;
     }
 };
