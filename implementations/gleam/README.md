@@ -8,6 +8,7 @@ A complete chess engine implementation in Gleam following the Chess Engine Speci
 - AI opponent with minimax algorithm and alpha-beta pruning
 - FEN import/export support
 - Performance testing with perft
+- PGN commands, UCI handshake, and Chess960 command surface
 - Functional programming approach with immutable data structures
 - Type-safe implementation showcasing Gleam's features
 
@@ -44,6 +45,9 @@ docker run --network none -it chess-gleam
 - `export` - Export current position as FEN
 - `eval` - Evaluate current position
 - `perft <depth>` - Run performance test
+- `pgn load|show|moves` - PGN command family
+- `uci` / `isready` - UCI handshake commands
+- `new960 [id]` / `position960` - Chess960 command surface
 - `help` - Show available commands
 - `quit` - Exit the program
 

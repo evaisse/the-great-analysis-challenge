@@ -51,6 +51,7 @@ make docker-test
 - ✅ AI with minimax algorithm
 - ✅ Special moves (castling, en passant, promotion)
 - ✅ Perft testing for move generation verification
+- ✅ PGN commands, UCI handshake, and Chess960 command surface
 - ✅ Command-line interface matching project specification
 
 ## Commands
@@ -58,6 +59,10 @@ make docker-test
 - `new` - Start new game
 - `move <move>` - Make a move (e.g., e2e4)
 - `undo` - Undo last move
+- `fen <string>` - Load position from FEN
 - `export` - Export position as FEN
 - `ai <depth>` - AI move with specified depth
+- `pgn load|show|moves` - PGN command family
+- `uci` / `isready` - UCI handshake commands
+- `new960 [id]` / `position960` - Chess960 command surface
 - `quit` - Exit program

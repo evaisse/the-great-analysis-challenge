@@ -7,6 +7,7 @@ A high-performance chess engine implementation in **Imba 2**, compiling to Node.
 - Full move generation (castling, en passant, promotion)
 - Minimax AI with Alpha-Beta pruning
 - Fast perft implementation
+- PGN commands, UCI handshake, and Chess960 command surface
 
 ## Development
 - `make build`: Compiles Imba to JS
