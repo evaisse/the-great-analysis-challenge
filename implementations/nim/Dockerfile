@@ -7,7 +7,7 @@ RUN nim c -d:release chess.nim
 LABEL org.chess.language="nim"
 LABEL org.chess.version="2.0"
 LABEL org.chess.author="Nim Implementation"
-LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion"
+LABEL org.chess.features="perft,fen,ai,castling,en_passant,promotion,pgn,uci,chess960"
 LABEL org.chess.max_ai_depth=5
 LABEL org.chess.estimated_perft4_ms=1000
 LABEL org.chess.source_exts=".nim"

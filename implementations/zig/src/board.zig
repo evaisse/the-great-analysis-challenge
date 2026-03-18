@@ -351,11 +351,12 @@ pub const Board = struct {
     }
 
     fn canPieceAttackSquare(self: *Board, piece: Piece, from: u8, to: u8) bool {
-        _ = self;
         const from_file = from % 8;
         const from_rank = from / 8;
         const to_file = to % 8;
         const to_rank = to / 8;
+        const file_diff = @as(i8, @intCast(to_file)) - @as(i8, @intCast(from_file));
+        const rank_diff = @as(i8, @intCast(to_rank)) - @as(i8, @intCast(from_rank));
 
         switch (piece.piece_type) {
             .Pawn => {
@@ -369,27 +370,85 @@ pub const Board = struct {
                 return false;
             },
             .Knight => {
-                const file_diff = @as(i8, @intCast(to_file)) - @as(i8, @intCast(from_file));
-                const rank_diff = @as(i8, @intCast(to_rank)) - @as(i8, @intCast(from_rank));
-
                 return (file_diff == 2 and (rank_diff == 1 or rank_diff == -1)) or
                     (file_diff == -2 and (rank_diff == 1 or rank_diff == -1)) or
                     (rank_diff == 2 and (file_diff == 1 or file_diff == -1)) or
                     (rank_diff == -2 and (file_diff == 1 or file_diff == -1));
             },
             .King => {
-                const file_diff = @as(i8, @intCast(to_file)) - @as(i8, @intCast(from_file));
-                const rank_diff = @as(i8, @intCast(to_rank)) - @as(i8, @intCast(from_rank));
-
                 return (file_diff >= -1 and file_diff <= 1) and
                     (rank_diff >= -1 and rank_diff <= 1) and
                     (file_diff != 0 or rank_diff != 0);
             },
-            else => {
-                // For bishop, rook, queen - simplified implementation
-                return true; // Would need proper ray casting
+            .Bishop => {
+                const abs_file_diff: i8 = if (file_diff < 0) -file_diff else file_diff;
+                const abs_rank_diff: i8 = if (rank_diff < 0) -rank_diff else rank_diff;
+                if (abs_file_diff == 0 or abs_file_diff != abs_rank_diff) return false;
+
+                return self.hasClearRay(
+                    from,
+                    to,
+                    if (rank_diff > 0) 1 else -1,
+                    if (file_diff > 0) 1 else -1,
+                );
+            },
+            .Rook => {
+                if (file_diff != 0 and rank_diff != 0) return false;
+                if (file_diff == 0 and rank_diff == 0) return false;
+
+                return self.hasClearRay(
+                    from,
+                    to,
+                    if (rank_diff == 0) 0 else if (rank_diff > 0) 1 else -1,
+                    if (file_diff == 0) 0 else if (file_diff > 0) 1 else -1,
+                );
+            },
+            .Queen => {
+                const abs_file_diff: i8 = if (file_diff < 0) -file_diff else file_diff;
+                const abs_rank_diff: i8 = if (rank_diff < 0) -rank_diff else rank_diff;
+
+                if (file_diff == 0 and rank_diff == 0) return false;
+                if (file_diff == 0 or rank_diff == 0) {
+                    return self.hasClearRay(
+                        from,
+                        to,
+                        if (rank_diff == 0) 0 else if (rank_diff > 0) 1 else -1,
+                        if (file_diff == 0) 0 else if (file_diff > 0) 1 else -1,
+                    );
+                }
+                if (abs_file_diff != abs_rank_diff) return false;
+
+                return self.hasClearRay(
+                    from,
+                    to,
+                    if (rank_diff > 0) 1 else -1,
+                    if (file_diff > 0) 1 else -1,
+                );
             },
         }
+    }
+
+    fn hasClearRay(self: *Board, from: u8, to: u8, rank_step: i8, file_step: i8) bool {
+        var rank = @as(i8, @intCast(from / 8)) + rank_step;
+        var file = @as(i8, @intCast(from % 8)) + file_step;
+        const target_rank = @as(i8, @intCast(to / 8));
+        const target_file = @as(i8, @intCast(to % 8));
+
+        while (rank >= 0 and rank < 8 and file >= 0 and file < 8) {
+            if (rank == target_rank and file == target_file) {
+                return true;
+            }
+
+            const square = @as(u8, @intCast(rank)) * 8 + @as(u8, @intCast(file));
+            if (self.squares[square] != null) {
+                return false;
+            }
+
+            rank += rank_step;
+            file += file_step;
+        }
+
+        return false;
     }
 
     pub fn isCheckmate(self: *Board) bool {

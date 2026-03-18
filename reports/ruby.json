@@ -1,165 +1,157 @@
-[
-  {
+{
+  "language": "ruby",
+  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/ruby",
+  "metadata": {
     "language": "ruby",
-    "path": "implementations/ruby",
-    "metadata": {
-      "language": "ruby",
-      "version": "3.4",
-      "author": "Ruby Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
-      "source_exts": [
-        ".rb"
-      ],
-      "benchmark.build": "skip",
-      "build": "ruby -c chess.rb",
-      "test": "rspec",
-      "analyze": "bundle exec rubocop --fail-level E",
-      "bugit": "if [ -f .bugit/chess.rb.bak ]; then echo 'bugit already active for ruby'; else mkdir -p .bugit && cp chess.rb .bugit/chess.rb.bak && printf '\\n)\\n' >> chess.rb; fi",
-      "fix": "if [ -f .bugit/chess.rb.bak ]; then mv .bugit/chess.rb.bak chess.rb && rmdir .bugit 2>/dev/null || true; else echo 'no ruby bugit backup to restore'; fi",
-      "run": "ruby chess.rb"
-    },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.46103549003601074,
-      "build_seconds": null,
-      "analyze_seconds": 2.3270585536956787,
-      "test_seconds": 0.29943037033081055,
-      "test_internal_seconds": 0.29943037033081055,
-      "test_chess_engine_seconds": 12.124354600906372,
-      "test_v2_full_seconds": 12.124354600906372
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 116.0703125,
-        "peak_memory_mb": 116.0703125,
-        "avg_memory_mb": 93.64296875,
-        "avg_cpu_percent": 0,
-        "samples": 5,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "skipped"
-      },
-      "analyze": {
-        "memory_mb": 230.484375,
-        "peak_memory_mb": 230.484375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 9.03125,
-        "peak_memory_mb": 9.03125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.26171875,
-        "peak_memory_mb": 62.1953125,
-        "avg_memory_mb": 60.581256734913794,
-        "avg_cpu_percent": 0,
-        "samples": 116,
-        "psutil_available": true
-      }
-    },
-    "size": {
-      "source_loc": 1908,
-      "source_files": 10
-    },
-    "metrics": {
-      "tokens_count": 9603,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 1220.912147794165,
-      "runtime_ms_per_kloc": 157.0988301840559
-    },
-    "docker": {
-      "build_time": 0.46103549003601074,
-      "build_success": true,
-      "image_build_time": 0.46103549003601074,
-      "image_build_success": true,
-      "make_build_skipped": true,
-      "make_build_time": null,
-      "make_build_success": true,
-      "make_analyze_time": 2.3270585536956787,
-      "make_analyze_success": true,
-      "test_time": 0.29943037033081055,
-      "test_success": true,
-      "make_test_time": 0.29943037033081055,
-      "make_test_success": true,
-      "test_chess_engine_time": 12.124354600906372,
-      "test_chess_engine_success": false,
-      "track_test_time": 12.124354600906372,
-      "track_test_success": false
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": false
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [],
-      "failed": [
-        "make_test_chess_engine"
-      ]
-    },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting ruby implementation at implementations/ruby\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunni"
+    "version": "3.4",
+    "author": "Ruby Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
     ],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 4133.25,
-      "total_tokens": 5810,
-      "semantic_tokens": 5713,
-      "by_category": {
-        "keyword": 821,
-        "identifier": 2142,
-        "type": 23,
-        "operator": 816,
-        "literal": 1046,
-        "punctuation": 865,
-        "comment": 97,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.144,
-        "comment_ratio": 0.017,
-        "punctuation_ratio": 0.151,
-        "complexity_per_loc": 2.17,
-        "complexity_per_file": 413.33
-      }
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 1000,
+    "source_exts": [
+      ".rb"
+    ],
+    "benchmark.build": "skip",
+    "build": "ruby -c chess.rb",
+    "test": "rspec",
+    "analyze": "bundle exec rubocop --fail-level E",
+    "bugit": "if [ -f .bugit/chess.rb.bak ]; then echo 'bugit already active for ruby'; else mkdir -p .bugit && cp chess.rb .bugit/chess.rb.bak && printf '\\n)\\n' >> chess.rb; fi",
+    "fix": "if [ -f .bugit/chess.rb.bak ]; then mv .bugit/chess.rb.bak chess.rb && rmdir .bugit 2>/dev/null || true; else echo 'no ruby bugit backup to restore'; fi",
+    "run": "ruby chess.rb"
+  },
+  "track": "v2-full",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 4.484193375,
+    "build_seconds": null,
+    "analyze_seconds": 3.403438791,
+    "test_seconds": 0.69814775,
+    "test_chess_engine_seconds": 360.729801,
+    "test_v2_full_seconds": 360.729801
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "skipped"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 2117,
+    "source_files": 10
+  },
+  "metrics": {
+    "tokens_count": 10817,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 0,
+    "analyze_ms_per_kloc": 1607.6706617855457,
+    "runtime_ms_per_kloc": 329.781648559282
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 4.484193375,
+    "make_build_success": true,
+    "make_build_time": null,
+    "make_analyze_success": true,
+    "make_analyze_time": 3.403438791,
+    "make_test_success": true,
+    "make_test_time": 0.69814775,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 360.729801
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 16,
+      "failed": 0,
+      "errors": 0,
+      "total": 16
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 4583,
+    "total_tokens": 6473,
+    "semantic_tokens": 6376,
+    "by_category": {
+      "keyword": 907,
+      "identifier": 2321,
+      "type": 23,
+      "operator": 904,
+      "literal": 1299,
+      "punctuation": 922,
+      "comment": 97,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.142,
+      "comment_ratio": 0.015,
+      "punctuation_ratio": 0.145,
+      "complexity_per_loc": 2.16,
+      "complexity_per_file": 458.3
     }
   }
-]
+}

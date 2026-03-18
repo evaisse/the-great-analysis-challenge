@@ -1,105 +1,26 @@
-🚀 Chess Engine Performance Testing Suite
-============================================================
-Found 1 implementation(s) to test
-
-============================================================
-Testing kotlin implementation
-Path: implementations/kotlin
-============================================================
-📏 Source size: 1524 LOC across 8 files, 9666 TOKENS
-🧹 Clearing build cache...
-🔧 Running: make clean
-⚠️  make clean returned non-zero exit code: Error: Could not find or load main class "-Dorg.gradle.appname=gradlew"
-Caused by: java.lang.ClassNotFoundException: "-Dorg.gradle.appname=gradlew"
-make: *** [Makefile:24: clean] Error 1
-
-✅ Cache clearing completed
-🐳 Running all tests via Docker (ensures consistent environment)
-🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (prerequisite)...
-  🔧 Running: docker build -t chess-kotlin .
-  ✅ Docker build completed in 0.35s
-  🔧 Running task: make build
-    🔧 Running: make build
-  🔧 Running task: make analyze
-    🔧 Running: make analyze
-  🔧 Running task: make test
-    🔧 Running: make test
-  🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
-
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 16:25:35
+Generated: 2026-03-17T01:17:40.450Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-kotlin       completed  9666       1524     0.2s/7MB           0.2s/7MB           0.2s/7MB           10.0s/62MB                1/1              2/16              
+kotlin       completed  11039      1708     37.2s, - MB        34s, - MB          947ms, - MB        6m 01s, - MB              1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: KOTLIN
 ============================================================
-
-TIMING BREAKDOWN:
-  docker build image: 0.35s
-  make build: 0.15s
-  make analyze: 0.15s
-  make test: 0.15s
-  make test-chess-engine: 9.98s
-  make test (internal mirror): 0.15s
-  test v2 full seconds: 9.98s
-
-SOURCE SIZE:
-  Source LOC: 1524 (files: 8)
-  TOKENS (tokens-v2): 9666
-
-NORMALIZED METRICS:
-  Build: 101.02 ms/KLOC
-  Analyze: 100.36 ms/KLOC
-  Runtime: 99.37 ms/KLOC
-
-MEMORY USAGE:
-  Image: Peak 111.6MB, Avg 90.2MB
-  Build: Peak 7.0MB, Avg 0.0MB
-  Analyze: Peak 6.6MB, Avg 0.0MB
-  Test: Peak 6.6MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.0MB, Avg 60.1MB
-
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
-
-DOCKER TESTS:
-  Image build: ✅ (0.35s)
-  make build: ✅ (0.15s)
-  make analyze: ✅ (0.15s)
-  make test: ✅ (0.15s)
-  make test-chess-engine (track=v2-full): ❌ (9.98s)
-  make test score: 1/1
-  make test-chess-engine score: 2/16
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing kotlin implementation at implementations/kotlin
-----------------------------------------
-Running test: Hash Command Baseline ✓
-Running test: Hash Command After Move ✓
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✗
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Handshake ✗
-R
-
-================================================================================
-📄 JSON results saved to reports/kotlin.json (1 valid benchmark(s))
-
-✅ All 1 implementation(s) completed successfully
+Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/kotlin
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 46.2s
+  - build_seconds: 37.2s
+  - analyze_seconds: 34s
+  - test_seconds: 947ms
+  - test_chess_engine_seconds: 6m 01s
+  - test_v2_full_seconds: 6m 01s
+Metrics: TOKENS=11,039, LOC=1,708

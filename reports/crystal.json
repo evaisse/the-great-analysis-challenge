@@ -1,164 +1,156 @@
-[
-  {
+{
+  "language": "crystal",
+  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/crystal",
+  "metadata": {
     "language": "crystal",
-    "path": "implementations/crystal",
-    "metadata": {
-      "language": "crystal",
-      "version": "1.14.0",
-      "author": "Crystal Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 800,
-      "source_exts": [
-        ".cr"
-      ],
-      "build": "crystal build src/chess_engine.cr --release -o chess_engine",
-      "run": "./chess_engine",
-      "test": "crystal spec",
-      "analyze": "crystal tool format --check",
-      "bugit": "if [ -f .bugit/chess_engine.cr.bak ]; then echo 'bugit already active for crystal'; else mkdir -p .bugit && cp src/chess_engine.cr .bugit/chess_engine.cr.bak && printf '\\n)\\n' >> src/chess_engine.cr; fi",
-      "fix": "if [ -f .bugit/chess_engine.cr.bak ]; then mv .bugit/chess_engine.cr.bak src/chess_engine.cr && rmdir .bugit 2>/dev/null || true; else echo 'no crystal bugit backup to restore'; fi"
-    },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.4358675479888916,
-      "build_seconds": 1.3234541416168213,
-      "analyze_seconds": 0.9791281223297119,
-      "test_seconds": 2.5047123432159424,
-      "test_internal_seconds": 2.5047123432159424,
-      "test_chess_engine_seconds": 9.836311101913452,
-      "test_v2_full_seconds": 9.836311101913452
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 116.39453125,
-        "peak_memory_mb": 116.39453125,
-        "avg_memory_mb": 96.71171875,
-        "avg_cpu_percent": 0,
-        "samples": 5,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 249.203125,
-        "peak_memory_mb": 249.203125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "analyze": {
-        "memory_mb": 196.515625,
-        "peak_memory_mb": 196.515625,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 525.96484375,
-        "peak_memory_mb": 525.96484375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.12890625,
-        "peak_memory_mb": 62.0234375,
-        "avg_memory_mb": 60.03675986842105,
-        "avg_cpu_percent": 0,
-        "samples": 95,
-        "psutil_available": true
-      }
-    },
-    "size": {
-      "source_loc": 2201,
-      "source_files": 10
-    },
-    "metrics": {
-      "tokens_count": 12598,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 782.1832988279086,
-      "analyze_ms_per_kloc": 578.6809233627139,
-      "runtime_ms_per_kloc": 1480.3264439810534
-    },
-    "docker": {
-      "build_time": 0.4358675479888916,
-      "build_success": true,
-      "image_build_time": 0.4358675479888916,
-      "image_build_success": true,
-      "make_build_skipped": false,
-      "make_build_time": 1.3234541416168213,
-      "make_build_success": true,
-      "make_analyze_time": 0.9791281223297119,
-      "make_analyze_success": true,
-      "test_time": 2.5047123432159424,
-      "test_success": true,
-      "make_test_time": 2.5047123432159424,
-      "make_test_success": true,
-      "test_chess_engine_time": 9.836311101913452,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.836311101913452,
-      "track_test_success": false
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": false
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 5,
-        "failed": 11,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [],
-      "failed": [
-        "make_test_chess_engine"
-      ]
-    },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting crystal implementation at implementations/crystal\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✓\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗"
+    "version": "1.14.0",
+    "author": "Crystal Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
     ],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 5325.75,
-      "total_tokens": 7946,
-      "semantic_tokens": 7880,
-      "by_category": {
-        "keyword": 969,
-        "identifier": 2560,
-        "type": 19,
-        "operator": 1020,
-        "literal": 1759,
-        "punctuation": 1553,
-        "comment": 66,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.123,
-        "comment_ratio": 0.008,
-        "punctuation_ratio": 0.197,
-        "complexity_per_loc": 2.42,
-        "complexity_per_file": 532.58
-      }
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 800,
+    "source_exts": [
+      ".cr"
+    ],
+    "build": "crystal build src/chess_engine.cr --release -o chess_engine",
+    "run": "./chess_engine",
+    "test": "crystal spec",
+    "analyze": "crystal tool format --check",
+    "bugit": "if [ -f .bugit/chess_engine.cr.bak ]; then echo 'bugit already active for crystal'; else mkdir -p .bugit && cp src/chess_engine.cr .bugit/chess_engine.cr.bak && printf '\\n)\\n' >> src/chess_engine.cr; fi",
+    "fix": "if [ -f .bugit/chess_engine.cr.bak ]; then mv .bugit/chess_engine.cr.bak src/chess_engine.cr && rmdir .bugit 2>/dev/null || true; else echo 'no crystal bugit backup to restore'; fi"
+  },
+  "track": "v2-full",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 34.568172583,
+    "build_seconds": 4.158885375,
+    "analyze_seconds": 0.889638708,
+    "test_seconds": 7.449642958,
+    "test_chess_engine_seconds": 360.603812959,
+    "test_v2_full_seconds": 360.603812959
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 2232,
+    "source_files": 10
+  },
+  "metrics": {
+    "tokens_count": 12802,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 1863.299899193548,
+    "analyze_ms_per_kloc": 398.58365053763436,
+    "runtime_ms_per_kloc": 3337.653655017921
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 34.568172583,
+    "make_build_success": true,
+    "make_build_time": 4.158885375,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.889638708,
+    "make_test_success": true,
+    "make_test_time": 7.449642958,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 360.603812959
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 16,
+      "failed": 0,
+      "errors": 0,
+      "total": 16
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 5399.5,
+    "total_tokens": 8055,
+    "semantic_tokens": 7989,
+    "by_category": {
+      "keyword": 981,
+      "identifier": 2590,
+      "type": 19,
+      "operator": 1033,
+      "literal": 1806,
+      "punctuation": 1560,
+      "comment": 66,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.123,
+      "comment_ratio": 0.008,
+      "punctuation_ratio": 0.195,
+      "complexity_per_loc": 2.42,
+      "complexity_per_file": 539.95
     }
   }
-]
+}

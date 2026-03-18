@@ -1,143 +1,44 @@
 # Zig Chess Engine
 
-A high-performance chess engine implementation in Zig, showcasing the language's systems programming capabilities and zero-cost abstractions.
+Zig implementation of the shared chess engine spec with both the historical `v1` suite and the `v2-full` surface validated in Docker.
 
-## Features
+## Validated Features
 
-- **Complete Chess Rules**: All standard chess rules including castling, en passant, and promotion
-- **AI Engine**: Minimax algorithm with alpha-beta pruning (depths 1-5)
-- **FEN Support**: Full import/export of chess positions using Forsyth-Edwards Notation
-- **Performance Testing**: Perft functionality for move generation verification
-- **Memory Safety**: Leverages Zig's compile-time safety features
-- **High Performance**: Compiled to optimized native machine code
+- Core chess rules: castling, en passant, promotion, FEN, perft, minimax AI
+- Extended `v2-full` surface: `hash`, `draws`, `history`, `go movetime`, `pgn`, `book`, `uci`, `isready`, `ucinewgame`, `new960`, `position960`, `trace`, `concurrency`
+- Harness-friendly CLI: no startup board dump, no prompt noise, deterministic line-based responses
 
-## Building
+## Docker Workflow
 
-### Prerequisites
-- Zig 0.13.0 or later
-
-### Build Commands
+Run all project validation from the repository root:
 
 ```bash
-# Build the chess engine
-zig build
-
-# Build in release mode (optimized)
-zig build -Doptimize=ReleaseFast
-
-# Run the chess engine
-zig build run
-
-# Run tests
-zig build test
+make image DIR=zig
+make build DIR=zig
+make analyze DIR=zig
+make test DIR=zig
+make test-chess-engine DIR=zig TRACK=v1
+make test-chess-engine DIR=zig TRACK=v2-full
 ```
 
-### Direct Execution
+## Example Usage
 
 ```bash
-# Run directly from source
-zig run src/main.zig
+printf 'new\nmove e2e4\nhash\nbook load /repo/test/fixtures/book/opening.book\nai 3\nquit\n' | docker run --rm --network none -i chess-zig
 ```
 
-## Usage
+## Commands
 
-The chess engine supports the following commands:
+- `new`, `move <from><to>[promotion]`, `undo`, `status`, `fen <string>`, `export`
+- `hash`, `draws`, `history`, `eval`, `ai <depth>`, `go movetime <ms>`
+- `pgn load|show|moves`, `book load|stats|on|off`, `uci`, `isready`, `ucinewgame`
+- `new960 [id]`, `position960`, `trace on|off|report`, `concurrency quick|full`
+- `perft <depth>`, `help`, `quit`
 
-- `new` - Start a new game
-- `move <from><to>[promotion]` - Make a move (e.g., e2e4, e7e8Q)
-- `undo` - Undo the last move
-- `ai <depth>` - AI makes a move (depth 1-5)
-- `fen <string>` - Load position from FEN notation
-- `export` - Export current position as FEN
-- `eval` - Display position evaluation
-- `perft <depth>` - Performance test (move count)
-- `help` - Display available commands
-- `quit` - Exit the program
+## Files
 
-## Example Session
-
-```
-  a b c d e f g h
-8 r n b q k b n r 8
-7 p p p p p p p p 7
-6 . . . . . . . . 6
-5 . . . . . . . . 5
-4 . . . . . . . . 4
-3 . . . . . . . . 3
-2 P P P P P P P P 2
-1 R N B Q K B N R 1
-  a b c d e f g h
-
-White to move
-
-> move e2e4
-OK: e2e4
-
-> move e7e5
-OK: e7e5
-
-> ai 3
-AI: Nf3 (depth=3, eval=25, time=150ms)
-
-> export
-FEN: rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2
-```
-
-## Docker Usage
-
-```bash
-# Build Docker image
-docker build -t chess-zig .
-
-# Run the chess engine
-docker run --network none -it chess-zig
-```
-
-## Performance
-
-Zig's performance characteristics make it excellent for chess engines:
-
-- **Compilation Speed**: Fast builds during development
-- **Runtime Performance**: Zero-cost abstractions and manual memory management
-- **Memory Safety**: Compile-time bounds checking without runtime overhead
-- **Cross-platform**: Compiles to native code for multiple architectures
-
-## Architecture
-
-The implementation is organized into several modules:
-
-- `main.zig` - Main game loop and command processing
-- `board.zig` - Board representation and basic move handling
-- `move_generator.zig` - Legal move generation for all piece types
-- `ai.zig` - Minimax algorithm with alpha-beta pruning
-- `fen.zig` - FEN notation parsing and generation
-- `perft.zig` - Performance testing and move counting
-
-## Language Features Demonstrated
-
-This implementation showcases several Zig language features:
-
-- **Comptime**: Compile-time execution for optimal performance
-- **Optional Types**: Safe null handling with `?T` syntax
-- **Error Handling**: Explicit error types and propagation
-- **Memory Management**: Manual allocation with safety guarantees
-- **Packed Structs**: Efficient memory layout for game state
-- **Generics**: Type-safe containers and algorithms
-
-## Test Verification
-
-The engine passes all standard chess engine tests:
-
-- **Perft(4)**: 197,281 nodes from starting position
-- **Legal Move Generation**: Handles all chess rules correctly
-- **FEN Import/Export**: Round-trip compatibility
-- **AI Tactical Awareness**: Finds basic tactics at depth 3+
-
-## Contributing
-
-This implementation follows the Chess Engine Specification v1.0. When making changes:
-
-1. Ensure all tests pass
-2. Maintain performance benchmarks
-3. Follow Zig coding conventions
-4. Update documentation as needed
+- `src/main.zig`: CLI dispatcher, runtime state, and perft/status helpers
+- `src/board.zig`: board state, attack detection, and move application
+- `src/move_generator.zig`: pseudo-legal move generation
+- `src/ai.zig`: filtered legal move search with alpha-beta pruning
+- `src/fen.zig`: FEN import/export

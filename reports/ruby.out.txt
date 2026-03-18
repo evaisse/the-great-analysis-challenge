@@ -1,100 +1,26 @@
-🚀 Chess Engine Performance Testing Suite
-============================================================
-Found 1 implementation(s) to test
-
-============================================================
-Testing ruby implementation
-Path: implementations/ruby
-============================================================
-📏 Source size: 1906 LOC across 10 files, 9600 TOKENS
-🧹 Clearing build cache...
-🔧 Running: make clean
-✅ Local cache cleared with make clean
-✅ Cache clearing completed
-🐳 Running all tests via Docker (ensures consistent environment)
-🐳 Running comprehensive Docker-based tests...
-  🔨 Building Docker image (prerequisite)...
-  🔧 Running: docker build -t chess-ruby .
-  ✅ Docker build completed in 0.46s
-  ⏭️ Skipping task: make build (metadata runtime/benchmark flag)
-  🔧 Running task: make analyze
-    🔧 Running: make analyze
-  🔧 Running task: make test
-    🔧 Running: make test
-  🔧 Running task: make test-chess-engine (track=v2-full)
-  ❌ Docker tests failed in phases: make_test_chess_engine
-
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-16 16:26:21
+Generated: 2026-03-17T01:24:27.052Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ruby         completed  9600       1906     -/-MB              2.3s/230MB         0.3s/9MB           12.1s/62MB                1/1              2/16              
+ruby         completed  10817      2117     -, - MB            3.4s, - MB         698ms, - MB        6m 01s, - MB              1/1              16/16             
 
 ============================================================
 DETAILED RESULTS: RUBY
 ============================================================
-
-TIMING BREAKDOWN:
-  docker build image: 0.46s
-  make analyze: 2.33s
-  make test: 0.30s
-  make test-chess-engine: 12.12s
-  make test (internal mirror): 0.30s
-  test v2 full seconds: 12.12s
-
-SOURCE SIZE:
-  Source LOC: 1906 (files: 10)
-  TOKENS (tokens-v2): 9600
-
-NORMALIZED METRICS:
-  Build: 0.00 ms/KLOC
-  Analyze: 1220.91 ms/KLOC
-  Runtime: 157.10 ms/KLOC
-
-MEMORY USAGE:
-  Image: Peak 116.1MB, Avg 93.6MB
-  Build: Peak 0.0MB, Avg 0.0MB
-  Analyze: Peak 230.5MB, Avg 0.0MB
-  Test: Peak 9.0MB, Avg 0.0MB
-  Test_Chess_Engine: Peak 62.2MB, Avg 60.6MB
-
-CHESS ENGINE TESTS: 0 passed, 1 failed
-  Failed tests:
-    ❌ make_test_chess_engine
-
-DOCKER TESTS:
-  Image build: ✅ (0.46s)
-  make build: ⏭️ skipped
-  make analyze: ✅ (2.33s)
-  make test: ✅ (0.30s)
-  make test-chess-engine (track=v2-full): ❌ (12.12s)
-  make test score: 1/1
-  make test-chess-engine score: 2/16
-
-ERRORS:
-  ❌ track v2-full suite failed: Found 1 implementation(s)
-Loaded 16 tests from test/suites/v2_full.json
-
-Testing ruby implementation at implementations/ruby
-----------------------------------------
-Running test: Hash Command Baseline ✓
-Running test: Hash Command After Move ✓
-Running test: Draws Command ✗
-Running test: Go Movetime ✗
-Running test: PGN Show ✗
-Running test: PGN Fixture Morphy ✗
-Running test: PGN Fixture Byrne-Fischer ✗
-Running test: Book Load Stats ✗
-Running test: Book AI Move ✗
-Running test: UCI Handshake ✗
-Runni
-
-================================================================================
-📄 JSON results saved to reports/ruby.json (1 valid benchmark(s))
-
-✅ All 1 implementation(s) completed successfully
+Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/ruby
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 4.5s
+  - build_seconds: -
+  - analyze_seconds: 3.4s
+  - test_seconds: 698ms
+  - test_chess_engine_seconds: 6m 01s
+  - test_v2_full_seconds: 6m 01s
+Metrics: TOKENS=10,817, LOC=2,117
