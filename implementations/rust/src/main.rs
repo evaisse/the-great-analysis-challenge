@@ -14,7 +14,14 @@ use crate::ai::AI;
 use crate::perft::Perft;
 use crate::types::*;
 use std::io::{self, Write};
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
+
+#[derive(Clone)]
+struct TraceEvent {
+    event: String,
+    detail: String,
+    ts_ms: u128,
+}
 
 struct ChessEngine {
     board: Board,
@@ -31,7 +38,17 @@ struct ChessEngine {
     book_hits: usize,
     chess960_id: i32,
     trace_enabled: bool,
-    trace_events: usize,
+    trace_level: String,
+    trace_events: Vec<TraceEvent>,
+    trace_command_count: usize,
+    trace_export_count: usize,
+    trace_last_export_target: Option<String>,
+    trace_last_export_events: usize,
+    trace_last_export_bytes: usize,
+    trace_chrome_count: usize,
+    trace_last_chrome_target: Option<String>,
+    trace_last_chrome_events: usize,
+    trace_last_chrome_bytes: usize,
     trace_last_ai: String,
 }
 
@@ -52,7 +69,17 @@ impl ChessEngine {
             book_hits: 0,
             chess960_id: 0,
             trace_enabled: false,
-            trace_events: 0,
+            trace_level: "info".to_string(),
+            trace_events: Vec::new(),
+            trace_command_count: 0,
+            trace_export_count: 0,
+            trace_last_export_target: None,
+            trace_last_export_events: 0,
+            trace_last_export_bytes: 0,
+            trace_chrome_count: 0,
+            trace_last_chrome_target: None,
+            trace_last_chrome_events: 0,
+            trace_last_chrome_bytes: 0,
             trace_last_ai: "none".to_string(),
         }
     }
@@ -86,7 +113,13 @@ impl ChessEngine {
             return true;
         }
 
-        match parts[0].to_lowercase().as_str() {
+        let cmd = parts[0].to_lowercase();
+        if cmd != "trace" {
+            self.trace_command_count += 1;
+            self.record_trace("command", command.to_string());
+        }
+
+        match cmd.as_str() {
             "move" => {
                 if parts.len() > 1 {
                     self.handle_move(parts[1]);
@@ -289,10 +322,8 @@ impl ChessEngine {
         if self.book_enabled {
             self.book_lookups += 1;
             self.book_hits += 1;
-            self.trace_last_ai = "book:e2e4".to_string();
-            if self.trace_enabled {
-                self.trace_events += 1;
-            }
+            self.trace_last_ai = "source=book,move=e2e4,depth=0,eval=0,time_ms=0,nodes=0".to_string();
+            self.record_trace("ai", self.trace_last_ai.clone());
             println!("AI: e2e4 (book)");
             return;
         }
@@ -308,10 +339,15 @@ impl ChessEngine {
                 );
                 
                 self.board.make_move(&chess_move);
-                self.trace_last_ai = format!("search:{}", move_str);
-                if self.trace_enabled {
-                    self.trace_events += 1;
-                }
+                self.trace_last_ai = format!(
+                    "source=search,move={},depth={},eval={},time_ms={},nodes={}",
+                    move_str,
+                    depth,
+                    result.evaluation,
+                    result.time_ms,
+                    result.nodes
+                );
+                self.record_trace("ai", self.trace_last_ai.clone());
                 println!("AI: {} (depth={}, eval={}, time={}ms)", 
                     move_str, depth, result.evaluation, result.time_ms);
                 println!("{}", self.board);
@@ -430,7 +466,7 @@ impl ChessEngine {
         println!("  book load|stats - Opening book command surface");
         println!("  uci / isready - UCI handshake");
         println!("  new960 / position960 - Chess960 metadata");
-        println!("  trace on|off|report - Trace command surface");
+        println!("  trace on|off|level|report|reset|export|chrome - Trace diagnostics");
         println!("  concurrency quick|full - Deterministic concurrency fixture");
         println!("  perft <depth> - Run performance test");
         println!("  help - Show this help message");
@@ -562,27 +598,215 @@ impl ChessEngine {
     }
 
     fn handle_trace(&mut self, args: &[&str]) {
-        let action = args.first().copied().unwrap_or("report");
+        if args.is_empty() {
+            println!("ERROR: trace requires subcommand");
+            return;
+        }
+
+        let action = args[0];
         match action {
             "on" => {
                 self.trace_enabled = true;
-                self.trace_events += 1;
-                println!("TRACE: enabled=true");
+                self.record_trace("trace", "enabled".to_string());
+                println!(
+                    "TRACE: enabled=true; level={}; events={}",
+                    self.trace_level,
+                    self.trace_events.len()
+                );
             }
             "off" => {
+                self.record_trace("trace", "disabled".to_string());
                 self.trace_enabled = false;
-                println!("TRACE: enabled=false");
+                println!(
+                    "TRACE: enabled=false; level={}; events={}",
+                    self.trace_level,
+                    self.trace_events.len()
+                );
+            }
+            "level" => {
+                if args.len() < 2 || args[1].trim().is_empty() {
+                    println!("ERROR: trace level requires a value");
+                    return;
+                }
+                self.trace_level = args[1].trim().to_lowercase();
+                self.record_trace("trace", format!("level={}", self.trace_level));
+                println!("TRACE: level={}", self.trace_level);
             }
             "report" => {
                 println!(
-                    "TRACE: enabled={}; events={}; last_ai={}",
+                    "TRACE: enabled={}; level={}; events={}; commands={}; exports={}; last_export={}; chrome_exports={}; last_chrome={}; last_ai={}",
                     if self.trace_enabled { "true" } else { "false" },
-                    self.trace_events,
+                    self.trace_level,
+                    self.trace_events.len(),
+                    self.trace_command_count,
+                    self.trace_export_count,
+                    self.format_trace_transfer_summary(
+                        self.trace_export_count,
+                        self.trace_last_export_target.as_ref(),
+                        self.trace_last_export_events,
+                        self.trace_last_export_bytes
+                    ),
+                    self.trace_chrome_count,
+                    self.format_trace_transfer_summary(
+                        self.trace_chrome_count,
+                        self.trace_last_chrome_target.as_ref(),
+                        self.trace_last_chrome_events,
+                        self.trace_last_chrome_bytes
+                    ),
                     self.trace_last_ai
                 );
             }
+            "reset" => {
+                self.trace_events.clear();
+                self.trace_command_count = 0;
+                self.trace_export_count = 0;
+                self.trace_last_export_target = None;
+                self.trace_last_export_events = 0;
+                self.trace_last_export_bytes = 0;
+                self.trace_chrome_count = 0;
+                self.trace_last_chrome_target = None;
+                self.trace_last_chrome_events = 0;
+                self.trace_last_chrome_bytes = 0;
+                self.trace_last_ai = "none".to_string();
+                println!("TRACE: reset");
+            }
+            "export" => {
+                let target = self.resolve_trace_target(args);
+                let payload = self.build_trace_export_payload();
+                match self.write_trace_payload(&target, &payload) {
+                    Ok(byte_count) => {
+                        self.trace_export_count += 1;
+                        self.trace_last_export_target = Some(target.clone());
+                        self.trace_last_export_events = self.trace_events.len();
+                        self.trace_last_export_bytes = byte_count;
+                        println!(
+                            "TRACE: export={}; events={}; bytes={}",
+                            target,
+                            self.trace_events.len(),
+                            byte_count
+                        );
+                    }
+                    Err(error) => println!("ERROR: trace export failed: {}", error),
+                }
+            }
+            "chrome" => {
+                let target = self.resolve_trace_target(args);
+                let payload = self.build_trace_chrome_payload();
+                match self.write_trace_payload(&target, &payload) {
+                    Ok(byte_count) => {
+                        self.trace_chrome_count += 1;
+                        self.trace_last_chrome_target = Some(target.clone());
+                        self.trace_last_chrome_events = self.trace_events.len();
+                        self.trace_last_chrome_bytes = byte_count;
+                        println!(
+                            "TRACE: chrome={}; events={}; bytes={}",
+                            target,
+                            self.trace_events.len(),
+                            byte_count
+                        );
+                    }
+                    Err(error) => println!("ERROR: trace chrome failed: {}", error),
+                }
+            }
             _ => println!("ERROR: Unsupported trace command"),
         }
+    }
+
+    fn record_trace(&mut self, event: &str, detail: String) {
+        if !self.trace_enabled {
+            return;
+        }
+
+        self.trace_events.push(TraceEvent {
+            event: event.to_string(),
+            detail,
+            ts_ms: current_trace_timestamp_ms(),
+        });
+    }
+
+    fn format_trace_transfer_summary(
+        &self,
+        count: usize,
+        target: Option<&String>,
+        events: usize,
+        bytes: usize,
+    ) -> String {
+        if count == 0 {
+            return "none".to_string();
+        }
+
+        format!(
+            "{}@{}e/{}b/{}x",
+            target.cloned().unwrap_or_else(|| "(memory)".to_string()),
+            events,
+            bytes,
+            count
+        )
+    }
+
+    fn resolve_trace_target(&self, args: &[&str]) -> String {
+        let target = args[1..].join(" ").trim().to_string();
+        if target.is_empty() {
+            "(memory)".to_string()
+        } else {
+            target
+        }
+    }
+
+    fn build_trace_export_payload(&self) -> String {
+        let events = self
+            .trace_events
+            .iter()
+            .map(|event| {
+                format!(
+                    "{{\"event\":\"{}\",\"detail\":\"{}\",\"ts_ms\":{}}}",
+                    json_escape(&event.event),
+                    json_escape(&event.detail),
+                    event.ts_ms
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+
+        format!(
+            "{{\"format\":\"tgac.trace.v1\",\"level\":\"{}\",\"command_count\":{},\"event_count\":{},\"events\":[{}],\"last_ai\":\"{}\"}}\n",
+            json_escape(&self.trace_level),
+            self.trace_command_count,
+            self.trace_events.len(),
+            events,
+            json_escape(&self.trace_last_ai)
+        )
+    }
+
+    fn build_trace_chrome_payload(&self) -> String {
+        let events = self
+            .trace_events
+            .iter()
+            .map(|event| {
+                format!(
+                    "{{\"name\":\"{}\",\"cat\":\"engine.trace\",\"ph\":\"i\",\"s\":\"p\",\"ts\":{},\"pid\":1,\"tid\":1,\"args\":{{\"detail\":\"{}\",\"level\":\"{}\",\"ts_ms\":{}}}}}",
+                    json_escape(&event.event),
+                    event.ts_ms * 1000,
+                    json_escape(&event.detail),
+                    json_escape(&self.trace_level),
+                    event.ts_ms
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+
+        format!(
+            "{{\"displayTimeUnit\":\"ms\",\"traceEvents\":[{}]}}\n",
+            events
+        )
+    }
+
+    fn write_trace_payload(&self, target: &str, payload: &str) -> Result<usize, String> {
+        let byte_count = payload.as_bytes().len();
+        if target != "(memory)" {
+            std::fs::write(target, payload).map_err(|error| error.to_string())?;
+        }
+        Ok(byte_count)
     }
 
     fn handle_concurrency(&self, args: &[&str]) {
@@ -621,6 +845,22 @@ impl ChessEngine {
             println!("DRAW: {}", self.board.get_draw_info());
         }
     }
+}
+
+fn current_trace_timestamp_ms() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or(0)
+}
+
+fn json_escape(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
+        .replace('\t', "\\t")
 }
 
 fn main() {

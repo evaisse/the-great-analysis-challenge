@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import * as readline from "readline";
 import { Board } from "./board";
 import { MoveGenerator } from "./moveGenerator";
@@ -5,6 +6,12 @@ import { FenParser } from "./fen";
 import { AI } from "./ai";
 import { Perft } from "./perft";
 import { Move, PieceType } from "./types";
+
+interface TraceEvent {
+  event: string;
+  detail: string;
+  ts_ms: number;
+}
 
 export class ChessEngine {
   private board: Board;
@@ -22,7 +29,17 @@ export class ChessEngine {
   private bookHits: number = 0;
   private chess960Id: number = 0;
   private traceEnabled: boolean = false;
-  private traceEvents: number = 0;
+  private traceLevel: string = "info";
+  private traceEvents: TraceEvent[] = [];
+  private traceCommandCount: number = 0;
+  private traceExportCount: number = 0;
+  private traceLastExportTarget: string | null = null;
+  private traceLastExportEvents: number = 0;
+  private traceLastExportBytes: number = 0;
+  private traceChromeCount: number = 0;
+  private traceLastChromeTarget: string | null = null;
+  private traceLastChromeEvents: number = 0;
+  private traceLastChromeBytes: number = 0;
   private traceLastAi: string = "none";
 
   constructor() {
@@ -51,6 +68,10 @@ export class ChessEngine {
   private processCommand(command: string): void {
     const parts = command.split(" ");
     const cmd = parts[0].toLowerCase();
+    if (cmd !== "trace") {
+      this.traceCommandCount += 1;
+      this.recordTrace("command", command.trim());
+    }
 
     try {
       switch (cmd) {
@@ -243,8 +264,8 @@ export class ChessEngine {
     if (this.bookEnabled) {
       this.bookLookups += 1;
       this.bookHits += 1;
-      this.traceLastAi = "book:e2e4";
-      if (this.traceEnabled) this.traceEvents += 1;
+      this.traceLastAi = "source=book,move=e2e4,depth=0,eval=0,time_ms=0,nodes=0";
+      this.recordTrace("ai", this.traceLastAi);
       console.log("AI: e2e4 (book)");
       return;
     }
@@ -262,8 +283,8 @@ export class ChessEngine {
 
     const turn = this.board.getTurn();
     this.board.makeMove(result.move);
-    this.traceLastAi = `search:${moveStr}`;
-    if (this.traceEnabled) this.traceEvents += 1;
+    this.traceLastAi = `source=search,move=${moveStr},depth=${depth},eval=${result.eval},time_ms=${result.time},nodes=${result.nodes}`;
+    this.recordTrace("ai", this.traceLastAi);
 
     const nextTurn = this.board.getTurn();
     if (this.moveGenerator.isCheckmate(nextTurn)) {
@@ -380,7 +401,7 @@ export class ChessEngine {
     console.log("  book load|stats  - Opening book command surface");
     console.log("  uci / isready    - UCI handshake");
     console.log("  new960 / position960 - Chess960 metadata");
-    console.log("  trace on|off|report - Trace command surface");
+    console.log("  trace on|off|level|report|reset|export|chrome - Trace diagnostics");
     console.log("  concurrency quick|full - Deterministic concurrency fixture");
     console.log("  eval             - Show evaluation");
     console.log("  perft <depth>    - Performance test");
@@ -484,23 +505,147 @@ export class ChessEngine {
   }
 
   private handleTrace(args: string[]): void {
-    const action = args[0] ?? "report";
+    if (args.length === 0) {
+      console.log("ERROR: trace requires subcommand");
+      return;
+    }
+
+    const action = args[0];
     switch (action) {
       case "on":
         this.traceEnabled = true;
-        this.traceEvents += 1;
-        console.log("TRACE: enabled=true");
+        this.recordTrace("trace", "enabled");
+        console.log(`TRACE: enabled=true; level=${this.traceLevel}; events=${this.traceEvents.length}`);
         break;
       case "off":
+        this.recordTrace("trace", "disabled");
         this.traceEnabled = false;
-        console.log("TRACE: enabled=false");
+        console.log(`TRACE: enabled=false; level=${this.traceLevel}; events=${this.traceEvents.length}`);
+        break;
+      case "level":
+        if (args.length < 2 || !args[1].trim()) {
+          console.log("ERROR: trace level requires a value");
+          break;
+        }
+        this.traceLevel = args[1].trim().toLowerCase();
+        this.recordTrace("trace", `level=${this.traceLevel}`);
+        console.log(`TRACE: level=${this.traceLevel}`);
         break;
       case "report":
-        console.log(`TRACE: enabled=${this.traceEnabled}; events=${this.traceEvents}; last_ai=${this.traceLastAi}`);
+        console.log(
+          `TRACE: enabled=${this.traceEnabled}; level=${this.traceLevel}; events=${this.traceEvents.length}; commands=${this.traceCommandCount}; exports=${this.traceExportCount}; last_export=${this.formatTraceTransferSummary(this.traceExportCount, this.traceLastExportTarget, this.traceLastExportEvents, this.traceLastExportBytes)}; chrome_exports=${this.traceChromeCount}; last_chrome=${this.formatTraceTransferSummary(this.traceChromeCount, this.traceLastChromeTarget, this.traceLastChromeEvents, this.traceLastChromeBytes)}; last_ai=${this.traceLastAi}`,
+        );
         break;
+      case "reset":
+        this.traceEvents = [];
+        this.traceCommandCount = 0;
+        this.traceExportCount = 0;
+        this.traceLastExportTarget = null;
+        this.traceLastExportEvents = 0;
+        this.traceLastExportBytes = 0;
+        this.traceChromeCount = 0;
+        this.traceLastChromeTarget = null;
+        this.traceLastChromeEvents = 0;
+        this.traceLastChromeBytes = 0;
+        this.traceLastAi = "none";
+        console.log("TRACE: reset");
+        break;
+      case "export": {
+        const target = this.resolveTraceTarget(args);
+        const payload = this.buildTraceExportPayload();
+        try {
+          const byteCount = this.writeTracePayload(target, payload);
+          this.traceExportCount += 1;
+          this.traceLastExportTarget = target;
+          this.traceLastExportEvents = this.traceEvents.length;
+          this.traceLastExportBytes = byteCount;
+          console.log(`TRACE: export=${target}; events=${this.traceEvents.length}; bytes=${byteCount}`);
+        } catch (error: any) {
+          console.log(`ERROR: trace export failed: ${error?.message ?? String(error)}`);
+        }
+        break;
+      }
+      case "chrome": {
+        const target = this.resolveTraceTarget(args);
+        const payload = this.buildTraceChromePayload();
+        try {
+          const byteCount = this.writeTracePayload(target, payload);
+          this.traceChromeCount += 1;
+          this.traceLastChromeTarget = target;
+          this.traceLastChromeEvents = this.traceEvents.length;
+          this.traceLastChromeBytes = byteCount;
+          console.log(`TRACE: chrome=${target}; events=${this.traceEvents.length}; bytes=${byteCount}`);
+        } catch (error: any) {
+          console.log(`ERROR: trace chrome failed: ${error?.message ?? String(error)}`);
+        }
+        break;
+      }
       default:
         console.log("ERROR: Unsupported trace command");
     }
+  }
+
+  private recordTrace(event: string, detail: string): void {
+    if (!this.traceEnabled) {
+      return;
+    }
+
+    this.traceEvents.push({
+      event,
+      detail,
+      ts_ms: Date.now(),
+    });
+  }
+
+  private formatTraceTransferSummary(count: number, target: string | null, events: number, bytes: number): string {
+    if (count === 0) {
+      return "none";
+    }
+    return `${target ?? "(memory)"}@${events}e/${bytes}b/${count}x`;
+  }
+
+  private resolveTraceTarget(args: string[]): string {
+    const target = args.slice(1).join(" ").trim();
+    return target === "" ? "(memory)" : target;
+  }
+
+  private buildTraceExportPayload(): string {
+    return `${JSON.stringify({
+      format: "tgac.trace.v1",
+      level: this.traceLevel,
+      command_count: this.traceCommandCount,
+      event_count: this.traceEvents.length,
+      events: this.traceEvents,
+      last_ai: this.traceLastAi,
+    })}\n`;
+  }
+
+  private buildTraceChromePayload(): string {
+    return `${JSON.stringify({
+      displayTimeUnit: "ms",
+      traceEvents: this.traceEvents.map((event) => ({
+        name: event.event,
+        cat: "engine.trace",
+        ph: "i",
+        s: "p",
+        ts: event.ts_ms * 1000,
+        pid: 1,
+        tid: 1,
+        args: {
+          detail: event.detail,
+          level: this.traceLevel,
+          ts_ms: event.ts_ms,
+        },
+      })),
+    })}\n`;
+  }
+
+  private writeTracePayload(target: string, payload: string): number {
+    const byteCount = Buffer.byteLength(payload, "utf8");
+    if (target !== "(memory)") {
+      fs.writeFileSync(target, payload, "utf8");
+    }
+    return byteCount;
   }
 
   private handleConcurrency(args: string[]): void {

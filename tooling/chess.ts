@@ -17,6 +17,7 @@ export const TRACK_TO_SUITE: Record<string, string> = {
   "v2-foundation": join(REPO_ROOT, "test", "suites", "v2_foundation.json"),
   "v2-functional": join(REPO_ROOT, "test", "suites", "v2_functional.json"),
   "v2-system": join(REPO_ROOT, "test", "suites", "v2_system.json"),
+  "v2-system-extended": join(REPO_ROOT, "test", "suites", "v2_system_extended.json"),
   "v2-full": join(REPO_ROOT, "test", "suites", "v2_full.json"),
   "v3-book": join(REPO_ROOT, "test", "suites", "v3_book.json"),
 };

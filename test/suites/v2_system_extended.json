@@ -1,0 +1,81 @@
+{
+  "version": "2.0",
+  "track": "v2-system-extended",
+  "description": "Extended tracing diagnostics contract for PRD-09 reference implementations",
+  "test_categories": {
+    "system_trace": {
+      "description": "Structured trace command surface",
+      "required": true,
+      "tests": [
+        {
+          "id": "trace_level_report",
+          "name": "Trace Level Report",
+          "commands": [
+            { "cmd": "trace on" },
+            { "cmd": "trace level debug" },
+            { "cmd": "new" },
+            { "cmd": "ai 1" },
+            { "cmd": "trace report" }
+          ],
+          "expected_patterns": [
+            "TRACE:",
+            "level=debug",
+            "commands=2",
+            "last_ai="
+          ],
+          "timeout": 12000
+        },
+        {
+          "id": "trace_export_memory",
+          "name": "Trace Export Memory",
+          "commands": [
+            { "cmd": "trace on" },
+            { "cmd": "new" },
+            { "cmd": "ai 1" },
+            { "cmd": "trace export" }
+          ],
+          "expected_patterns": [
+            "TRACE: export=(memory);",
+            "events=",
+            "bytes="
+          ],
+          "timeout": 12000
+        },
+        {
+          "id": "trace_chrome_memory",
+          "name": "Trace Chrome Memory",
+          "commands": [
+            { "cmd": "trace on" },
+            { "cmd": "new" },
+            { "cmd": "ai 1" },
+            { "cmd": "trace chrome" }
+          ],
+          "expected_patterns": [
+            "TRACE: chrome=(memory);",
+            "events=",
+            "bytes="
+          ],
+          "timeout": 12000
+        },
+        {
+          "id": "trace_reset_report",
+          "name": "Trace Reset Report",
+          "commands": [
+            { "cmd": "trace on" },
+            { "cmd": "new" },
+            { "cmd": "ai 1" },
+            { "cmd": "trace reset" },
+            { "cmd": "trace report" }
+          ],
+          "expected_patterns": [
+            "TRACE: reset",
+            "events=0",
+            "commands=0",
+            "last_ai=none"
+          ],
+          "timeout": 12000
+        }
+      ]
+    }
+  }
+}

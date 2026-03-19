@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'json'
+
 require_relative 'lib/types'
 require_relative 'lib/board'
 require_relative 'lib/move_generator'
@@ -26,7 +28,17 @@ module Chess
       @book_hits = 0
       @chess960_id = 0
       @trace_enabled = false
-      @trace_events = 0
+      @trace_level = 'info'
+      @trace_events = []
+      @trace_command_count = 0
+      @trace_export_count = 0
+      @trace_last_export_target = nil
+      @trace_last_export_events = 0
+      @trace_last_export_bytes = 0
+      @trace_chrome_count = 0
+      @trace_last_chrome_target = nil
+      @trace_last_chrome_events = 0
+      @trace_last_chrome_bytes = 0
       @trace_last_ai = 'none'
     end
     
@@ -53,6 +65,10 @@ module Chess
     def process_command(command)
       parts = command.split
       cmd = parts[0]&.downcase
+      if cmd && cmd != 'trace'
+        @trace_command_count += 1
+        record_trace('command', command)
+      end
       
       case cmd
       when 'move'
@@ -210,8 +226,8 @@ module Chess
       if @book_enabled
         @book_lookups += 1
         @book_hits += 1
-        @trace_last_ai = 'book:e2e4'
-        @trace_events += 1 if @trace_enabled
+        @trace_last_ai = 'source=book,move=e2e4,depth=0,eval=0,time_ms=0,nodes=0'
+        record_trace('ai', @trace_last_ai)
         puts 'AI: e2e4 (book)'
         flush_output
         return
@@ -225,8 +241,8 @@ module Chess
       end
       
       move = result[:move]
-      @trace_last_ai = "search:#{move.to_algebraic}"
-      @trace_events += 1 if @trace_enabled
+      @trace_last_ai = "source=search,move=#{move.to_algebraic},depth=#{result[:depth]},eval=#{result[:score]},time_ms=#{result[:time_ms]}"
+      record_trace('ai', @trace_last_ai)
       @move_history << move
       @board.make_move(move)
       
@@ -346,7 +362,7 @@ module Chess
         book load|stats            - Opening book command surface
         uci / isready              - UCI handshake
         new960 [id] / position960  - Chess960 metadata
-        trace on|off|report        - Trace command surface
+        trace on|off|level|report|reset|export|chrome - Trace diagnostics
         concurrency quick|full     - Deterministic concurrency fixture
         perft <depth>             - Performance test (move count)
         help                       - Display this help message
@@ -506,21 +522,128 @@ module Chess
     end
 
     def handle_trace(args)
-      action = (args[0] || 'report').downcase
+      if args.empty?
+        puts 'ERROR: trace requires subcommand'
+        flush_output
+        return
+      end
+
+      action = args[0].downcase
       case action
       when 'on'
         @trace_enabled = true
-        @trace_events += 1
-        puts 'TRACE: enabled=true'
+        record_trace('trace', 'enabled')
+        puts "TRACE: enabled=true; level=#{@trace_level}; events=#{@trace_events.length}"
       when 'off'
+        record_trace('trace', 'disabled')
         @trace_enabled = false
-        puts 'TRACE: enabled=false'
+        puts "TRACE: enabled=false; level=#{@trace_level}; events=#{@trace_events.length}"
+      when 'level'
+        if args[1].nil? || args[1].strip.empty?
+          puts 'ERROR: trace level requires a value'
+        else
+          @trace_level = args[1].strip.downcase
+          record_trace('trace', "level=#{@trace_level}")
+          puts "TRACE: level=#{@trace_level}"
+        end
       when 'report'
-        puts "TRACE: enabled=#{@trace_enabled}; events=#{@trace_events}; last_ai=#{@trace_last_ai}"
+        puts "TRACE: enabled=#{@trace_enabled}; level=#{@trace_level}; events=#{@trace_events.length}; commands=#{@trace_command_count}; exports=#{@trace_export_count}; last_export=#{format_trace_transfer_summary(@trace_export_count, @trace_last_export_target, @trace_last_export_events, @trace_last_export_bytes)}; chrome_exports=#{@trace_chrome_count}; last_chrome=#{format_trace_transfer_summary(@trace_chrome_count, @trace_last_chrome_target, @trace_last_chrome_events, @trace_last_chrome_bytes)}; last_ai=#{@trace_last_ai}"
+      when 'reset'
+        @trace_events = []
+        @trace_command_count = 0
+        @trace_export_count = 0
+        @trace_last_export_target = nil
+        @trace_last_export_events = 0
+        @trace_last_export_bytes = 0
+        @trace_chrome_count = 0
+        @trace_last_chrome_target = nil
+        @trace_last_chrome_events = 0
+        @trace_last_chrome_bytes = 0
+        @trace_last_ai = 'none'
+        puts 'TRACE: reset'
+      when 'export'
+        target = args.length > 1 ? args[1..].join(' ').strip : '(memory)'
+        target = '(memory)' if target.empty?
+        payload = build_trace_export_payload
+        byte_count = write_trace_payload(target, payload)
+        @trace_export_count += 1
+        @trace_last_export_target = target
+        @trace_last_export_events = @trace_events.length
+        @trace_last_export_bytes = byte_count
+        puts "TRACE: export=#{target}; events=#{@trace_events.length}; bytes=#{byte_count}"
+      when 'chrome'
+        target = args.length > 1 ? args[1..].join(' ').strip : '(memory)'
+        target = '(memory)' if target.empty?
+        payload = build_trace_chrome_payload
+        byte_count = write_trace_payload(target, payload)
+        @trace_chrome_count += 1
+        @trace_last_chrome_target = target
+        @trace_last_chrome_events = @trace_events.length
+        @trace_last_chrome_bytes = byte_count
+        puts "TRACE: chrome=#{target}; events=#{@trace_events.length}; bytes=#{byte_count}"
       else
         puts 'ERROR: Unsupported trace command'
       end
       flush_output
+    end
+
+    def record_trace(event, detail)
+      return unless @trace_enabled
+
+      @trace_events << {
+        event: event,
+        detail: detail,
+        ts_ms: Process.clock_gettime(Process::CLOCK_REALTIME, :millisecond)
+      }
+    end
+
+    def format_trace_transfer_summary(count, target, events, bytes)
+      return 'none' if count.zero?
+
+      "#{target || '(memory)'}@#{events}e/#{bytes}b/#{count}x"
+    end
+
+    def build_trace_export_payload
+      JSON.generate(
+        {
+          format: 'tgac.trace.v1',
+          level: @trace_level,
+          command_count: @trace_command_count,
+          event_count: @trace_events.length,
+          events: @trace_events,
+          last_ai: @trace_last_ai
+        }
+      ) + "\n"
+    end
+
+    def build_trace_chrome_payload
+      JSON.generate(
+        {
+          displayTimeUnit: 'ms',
+          traceEvents: @trace_events.map do |event|
+            {
+              name: event[:event],
+              cat: 'engine.trace',
+              ph: 'i',
+              s: 'p',
+              ts: event[:ts_ms] * 1000,
+              pid: 1,
+              tid: 1,
+              args: {
+                detail: event[:detail],
+                level: @trace_level,
+                ts_ms: event[:ts_ms]
+              }
+            }
+          end
+        }
+      ) + "\n"
+    end
+
+    def write_trace_payload(target, payload)
+      byte_count = payload.bytesize
+      File.write(target, payload) unless target == '(memory)'
+      byte_count
     end
 
     def handle_concurrency(args)
