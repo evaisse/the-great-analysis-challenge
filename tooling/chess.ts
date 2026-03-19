@@ -59,6 +59,7 @@ export interface SuiteTestCase extends Record<string, any> {
   category?: string;
   commands?: Array<string | Record<string, unknown>>;
   expected_patterns?: string[];
+  output_assertions?: Array<Record<string, unknown>>;
   optional?: boolean;
   timeout?: number;
 }
@@ -299,7 +300,9 @@ export class TestSuite {
       const elapsed = Number(Bun.nanoseconds() - startedAt) / 1_000_000_000;
       const fullOutput = allOutput.join("\n");
       const patterns = (test.expected_patterns ?? []).map((pattern) => pattern.toUpperCase());
-      const success = patterns.every((pattern) => fullOutput.toUpperCase().includes(pattern));
+      const patternsMatch = patterns.every((pattern) => fullOutput.toUpperCase().includes(pattern));
+      const assertionError = this.evaluateOutputAssertions(allOutput, test.output_assertions ?? []);
+      const success = patternsMatch && assertionError === null;
 
       if (success) {
         tester.results.passed.push(test.name);
@@ -310,6 +313,7 @@ export class TestSuite {
       tester.results.failed.push({
         test: test.name,
         output: fullOutput.slice(0, 1000),
+        assertion: assertionError ?? undefined,
       });
       return false;
     } catch (error) {
@@ -319,6 +323,32 @@ export class TestSuite {
       });
       return false;
     }
+  }
+
+  private evaluateOutputAssertions(outputs: string[], assertions: Array<Record<string, unknown>>): string | null {
+    for (const assertion of assertions) {
+      if (assertion.type !== "equal") {
+        return `Unsupported output assertion type: ${String(assertion.type)}`;
+      }
+
+      const firstCommand = Number(assertion.first_command);
+      const secondCommand = Number(assertion.second_command);
+      if (!Number.isInteger(firstCommand) || !Number.isInteger(secondCommand)) {
+        return "Output assertion requires integer first_command and second_command values";
+      }
+
+      const firstIndex = firstCommand - 1;
+      const secondIndex = secondCommand - 1;
+      if (firstIndex < 0 || firstIndex >= outputs.length || secondIndex < 0 || secondIndex >= outputs.length) {
+        return `Output assertion references missing command output (${firstCommand}, ${secondCommand})`;
+      }
+
+      if (outputs[firstIndex].trim() !== outputs[secondIndex].trim()) {
+        return `Command output ${firstCommand} does not match command output ${secondCommand}`;
+      }
+    }
+
+    return null;
   }
 }
 
