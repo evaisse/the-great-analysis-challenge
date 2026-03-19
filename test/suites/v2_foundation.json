@@ -41,7 +41,17 @@
             {"cmd": "new"},
             {"cmd": "draws"}
           ],
-          "expected_patterns": ["DRAWS:"],
+          "expected_patterns": ["DRAWS:", "repetition=", "halfmove=", "draw=", "reason="],
+          "timeout": 3000
+        },
+        {
+          "id": "history_command",
+          "name": "History Command",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "history"}
+          ],
+          "expected_patterns": ["HISTORY:", "count=", "current="],
           "timeout": 3000
         }
       ]

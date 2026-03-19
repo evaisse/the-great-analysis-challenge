@@ -33,6 +33,7 @@ const END_KEYWORDS = [
   "REPETITION:",
   "DRAW:",
   "DRAWS:",
+  "HISTORY:",
   "CONCURRENCY:",
   "NODES:",
   "960:",
