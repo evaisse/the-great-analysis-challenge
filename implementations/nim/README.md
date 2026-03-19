@@ -17,6 +17,8 @@ This directory contains a complete chess engine implementation in Nim, rewritten
 - ✅ **Check Detection**: Complete king safety validation
 - ✅ **Perft Testing**: Performance testing for move generation verification
 - ✅ **Game State Management**: Full move history and undo functionality
+- ✅ **Deterministic Position Hashing**: Full-state 64-bit hash including side-to-move, castling rights, and en passant state
+- ✅ **Draw State Commands**: `hash`, `draws`, and `history` command surface for `v2-foundation`
 
 ## Building and Running
 
@@ -67,6 +69,12 @@ This implementation showcases Nim's features:
 - **Clean Syntax**: Python-like readability with C-like performance
 - **Type Safety**: Compile-time type checking
 - **Minimal Dependencies**: Uses only standard library
+
+## Additional v2 Command Surface
+
+- `hash`: Show the deterministic 64-bit position hash
+- `draws`: Show repetition count, halfmove clock, and draw reason
+- `history`: Show the position-hash history for the current game
 
 ## Architecture
 
