@@ -39,7 +39,7 @@ module Chess
       @trace_last_chrome_target = nil
       @trace_last_chrome_events = 0
       @trace_last_chrome_bytes = 0
-      @trace_last_ai = 'none'
+      @trace_last_ai = nil
     end
     
     def start
@@ -226,8 +226,7 @@ module Chess
       if @book_enabled
         @book_lookups += 1
         @book_hits += 1
-        @trace_last_ai = 'source=book,move=e2e4,depth=0,eval=0,time_ms=0,nodes=0'
-        record_trace('ai', @trace_last_ai)
+        record_trace_ai('book', 'e2e4', 0, 0, 0, false, 0, 0, 0, 0, 0)
         puts 'AI: e2e4 (book)'
         flush_output
         return
@@ -241,8 +240,19 @@ module Chess
       end
       
       move = result[:move]
-      @trace_last_ai = "source=search,move=#{move.to_algebraic},depth=#{result[:depth]},eval=#{result[:score]},time_ms=#{result[:time_ms]}"
-      record_trace('ai', @trace_last_ai)
+      record_trace_ai(
+        'search',
+        move.to_algebraic,
+        result[:depth],
+        result[:score],
+        result[:time_ms],
+        false,
+        result[:nodes],
+        result[:eval_calls],
+        0,
+        0,
+        result[:beta_cutoffs]
+      )
       @move_history << move
       @board.make_move(move)
       
@@ -547,7 +557,10 @@ module Chess
           puts "TRACE: level=#{@trace_level}"
         end
       when 'report'
-        puts "TRACE: enabled=#{@trace_enabled}; level=#{@trace_level}; events=#{@trace_events.length}; commands=#{@trace_command_count}; exports=#{@trace_export_count}; last_export=#{format_trace_transfer_summary(@trace_export_count, @trace_last_export_target, @trace_last_export_events, @trace_last_export_bytes)}; chrome_exports=#{@trace_chrome_count}; last_chrome=#{format_trace_transfer_summary(@trace_chrome_count, @trace_last_chrome_target, @trace_last_chrome_events, @trace_last_chrome_bytes)}; last_ai=#{@trace_last_ai}"
+        report = "TRACE: enabled=#{@trace_enabled}; level=#{@trace_level}; events=#{@trace_events.length}; commands=#{@trace_command_count}; exports=#{@trace_export_count}; last_export=#{format_trace_transfer_summary(@trace_export_count, @trace_last_export_target, @trace_last_export_events, @trace_last_export_bytes)}; chrome_exports=#{@trace_chrome_count}; last_chrome=#{format_trace_transfer_summary(@trace_chrome_count, @trace_last_chrome_target, @trace_last_chrome_events, @trace_last_chrome_bytes)}; last_ai=#{format_trace_ai_summary}"
+        search_metrics = format_trace_search_metrics
+        report += "; search_metrics=#{search_metrics}" if search_metrics
+        puts report
       when 'reset'
         @trace_events = []
         @trace_command_count = 0
@@ -559,7 +572,7 @@ module Chess
         @trace_last_chrome_target = nil
         @trace_last_chrome_events = 0
         @trace_last_chrome_bytes = 0
-        @trace_last_ai = 'none'
+        reset_trace_search_state
         puts 'TRACE: reset'
       when 'export'
         target = args.length > 1 ? args[1..].join(' ').strip : '(memory)'
@@ -595,6 +608,7 @@ module Chess
         detail: detail,
         ts_ms: Process.clock_gettime(Process::CLOCK_REALTIME, :millisecond)
       }
+      @trace_events = @trace_events.last(256) if @trace_events.length > 256
     end
 
     def format_trace_transfer_summary(count, target, events, bytes)
@@ -603,17 +617,62 @@ module Chess
       "#{target || '(memory)'}@#{events}e/#{bytes}b/#{count}x"
     end
 
+    def reset_trace_search_state
+      @trace_last_ai = nil
+    end
+
+    def format_trace_ai_summary
+      return 'none' unless @trace_last_ai
+
+      @trace_last_ai[:summary]
+    end
+
+    def format_trace_search_metrics
+      return nil unless @trace_last_ai && @trace_last_ai[:source].include?('search')
+
+      "nodes=#{@trace_last_ai[:nodes]},eval_calls=#{@trace_last_ai[:eval_calls]},tt_hits=#{@trace_last_ai[:tt_hits]},tt_misses=#{@trace_last_ai[:tt_misses]},beta_cutoffs=#{@trace_last_ai[:beta_cutoffs]},nps=#{@trace_last_ai[:nps]}"
+    end
+
+    def record_trace_ai(source, move, depth, score_cp, elapsed_ms, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+      divisor = elapsed_ms.to_i.positive? ? elapsed_ms.to_i : 1
+      nps = nodes.to_i.positive? ? ((nodes.to_i * 1000) / divisor) : 0
+
+      summary = "#{source}:#{move}"
+      if source.include?('search')
+        summary += "@d#{depth}/#{score_cp}cp/#{elapsed_ms}ms/n#{nodes}/e#{eval_calls}/nps#{nps}"
+        summary += '/timeout' if timed_out
+      elsif source.include?('endgame')
+        summary += "/#{score_cp}cp"
+      end
+
+      @trace_last_ai = {
+        source: source,
+        move: move,
+        depth: depth,
+        score_cp: score_cp,
+        elapsed_ms: elapsed_ms,
+        timed_out: timed_out,
+        nodes: nodes,
+        eval_calls: eval_calls,
+        nps: nps,
+        tt_hits: tt_hits,
+        tt_misses: tt_misses,
+        beta_cutoffs: beta_cutoffs,
+        summary: summary
+      }
+      record_trace('ai', summary)
+    end
+
     def build_trace_export_payload
-      JSON.generate(
-        {
-          format: 'tgac.trace.v1',
-          level: @trace_level,
-          command_count: @trace_command_count,
-          event_count: @trace_events.length,
-          events: @trace_events,
-          last_ai: @trace_last_ai
-        }
-      ) + "\n"
+      payload = {
+        format: 'tgac.trace.v1',
+        level: @trace_level,
+        command_count: @trace_command_count,
+        event_count: @trace_events.length,
+        events: @trace_events
+      }
+      payload[:last_ai] = @trace_last_ai if @trace_last_ai
+      JSON.generate(payload) + "\n"
     end
 
     def build_trace_chrome_payload

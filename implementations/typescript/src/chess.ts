@@ -13,6 +13,22 @@ interface TraceEvent {
   ts_ms: number;
 }
 
+interface TraceAiState {
+  source: string;
+  move: string;
+  depth: number;
+  score_cp: number;
+  elapsed_ms: number;
+  timed_out: boolean;
+  nodes: number;
+  eval_calls: number;
+  nps: number;
+  tt_hits: number;
+  tt_misses: number;
+  beta_cutoffs: number;
+  summary: string;
+}
+
 export class ChessEngine {
   private board: Board;
   private moveGenerator: MoveGenerator;
@@ -40,7 +56,7 @@ export class ChessEngine {
   private traceLastChromeTarget: string | null = null;
   private traceLastChromeEvents: number = 0;
   private traceLastChromeBytes: number = 0;
-  private traceLastAi: string = "none";
+  private traceLastAi: TraceAiState | null = null;
 
   constructor() {
     this.board = new Board();
@@ -264,8 +280,7 @@ export class ChessEngine {
     if (this.bookEnabled) {
       this.bookLookups += 1;
       this.bookHits += 1;
-      this.traceLastAi = "source=book,move=e2e4,depth=0,eval=0,time_ms=0,nodes=0";
-      this.recordTrace("ai", this.traceLastAi);
+      this.recordTraceAi("book", "e2e4", 0, 0, 0, false, 0, 0, 0, 0, 0);
       console.log("AI: e2e4 (book)");
       return;
     }
@@ -281,10 +296,20 @@ export class ChessEngine {
       this.board.squareToAlgebraic(result.move.to) +
       (result.move.promotion || "").toLowerCase();
 
-    const turn = this.board.getTurn();
     this.board.makeMove(result.move);
-    this.traceLastAi = `source=search,move=${moveStr},depth=${depth},eval=${result.eval},time_ms=${result.time},nodes=${result.nodes}`;
-    this.recordTrace("ai", this.traceLastAi);
+    this.recordTraceAi(
+      "search",
+      moveStr,
+      depth,
+      result.eval,
+      result.time,
+      false,
+      result.nodes,
+      result.evalCalls,
+      0,
+      0,
+      result.betaCutoffs,
+    );
 
     const nextTurn = this.board.getTurn();
     if (this.moveGenerator.isCheckmate(nextTurn)) {
@@ -297,7 +322,7 @@ export class ChessEngine {
         console.log(`AI: ${moveStr} (DRAW: by ${drawInfo})`);
       } else {
         console.log(
-          `AI: ${moveStr} (depth=${depth}, eval=${result.eval}, time=${result.time})`,
+          `AI: ${moveStr} (depth=${depth}, eval=${result.eval}, time=${result.time}ms)`,
         );
       }
     }
@@ -510,7 +535,7 @@ export class ChessEngine {
       return;
     }
 
-    const action = args[0];
+    const action = args[0].toLowerCase();
     switch (action) {
       case "on":
         this.traceEnabled = true;
@@ -531,11 +556,16 @@ export class ChessEngine {
         this.recordTrace("trace", `level=${this.traceLevel}`);
         console.log(`TRACE: level=${this.traceLevel}`);
         break;
-      case "report":
-        console.log(
-          `TRACE: enabled=${this.traceEnabled}; level=${this.traceLevel}; events=${this.traceEvents.length}; commands=${this.traceCommandCount}; exports=${this.traceExportCount}; last_export=${this.formatTraceTransferSummary(this.traceExportCount, this.traceLastExportTarget, this.traceLastExportEvents, this.traceLastExportBytes)}; chrome_exports=${this.traceChromeCount}; last_chrome=${this.formatTraceTransferSummary(this.traceChromeCount, this.traceLastChromeTarget, this.traceLastChromeEvents, this.traceLastChromeBytes)}; last_ai=${this.traceLastAi}`,
-        );
+      case "report": {
+        let report =
+          `TRACE: enabled=${this.traceEnabled}; level=${this.traceLevel}; events=${this.traceEvents.length}; commands=${this.traceCommandCount}; exports=${this.traceExportCount}; last_export=${this.formatTraceTransferSummary(this.traceExportCount, this.traceLastExportTarget, this.traceLastExportEvents, this.traceLastExportBytes)}; chrome_exports=${this.traceChromeCount}; last_chrome=${this.formatTraceTransferSummary(this.traceChromeCount, this.traceLastChromeTarget, this.traceLastChromeEvents, this.traceLastChromeBytes)}; last_ai=${this.formatTraceAiSummary()}`;
+        const searchMetrics = this.formatTraceSearchMetrics();
+        if (searchMetrics) {
+          report += `; search_metrics=${searchMetrics}`;
+        }
+        console.log(report);
         break;
+      }
       case "reset":
         this.traceEvents = [];
         this.traceCommandCount = 0;
@@ -547,7 +577,7 @@ export class ChessEngine {
         this.traceLastChromeTarget = null;
         this.traceLastChromeEvents = 0;
         this.traceLastChromeBytes = 0;
-        this.traceLastAi = "none";
+        this.resetTraceSearchState();
         console.log("TRACE: reset");
         break;
       case "export": {
@@ -595,6 +625,9 @@ export class ChessEngine {
       detail,
       ts_ms: Date.now(),
     });
+    if (this.traceEvents.length > 256) {
+      this.traceEvents = this.traceEvents.slice(-256);
+    }
   }
 
   private formatTraceTransferSummary(count: number, target: string | null, events: number, bytes: number): string {
@@ -602,6 +635,64 @@ export class ChessEngine {
       return "none";
     }
     return `${target ?? "(memory)"}@${events}e/${bytes}b/${count}x`;
+  }
+
+  private resetTraceSearchState(): void {
+    this.traceLastAi = null;
+  }
+
+  private formatTraceAiSummary(): string {
+    return this.traceLastAi?.summary ?? "none";
+  }
+
+  private formatTraceSearchMetrics(): string | null {
+    if (!this.traceLastAi || !this.traceLastAi.source.includes("search")) {
+      return null;
+    }
+    return `nodes=${this.traceLastAi.nodes},eval_calls=${this.traceLastAi.eval_calls},tt_hits=${this.traceLastAi.tt_hits},tt_misses=${this.traceLastAi.tt_misses},beta_cutoffs=${this.traceLastAi.beta_cutoffs},nps=${this.traceLastAi.nps}`;
+  }
+
+  private recordTraceAi(
+    source: string,
+    move: string,
+    depth: number,
+    scoreCp: number,
+    elapsedMs: number,
+    timedOut: boolean,
+    nodes: number,
+    evalCalls: number,
+    ttHits: number,
+    ttMisses: number,
+    betaCutoffs: number,
+  ): void {
+    const divisor = elapsedMs > 0 ? elapsedMs : 1;
+    const nps = nodes > 0 ? Math.floor((nodes * 1000) / divisor) : 0;
+    let summary = `${source}:${move}`;
+    if (source.includes("search")) {
+      summary += `@d${depth}/${scoreCp}cp/${elapsedMs}ms/n${nodes}/e${evalCalls}/nps${nps}`;
+      if (timedOut) {
+        summary += "/timeout";
+      }
+    } else if (source.includes("endgame")) {
+      summary += `/${scoreCp}cp`;
+    }
+
+    this.traceLastAi = {
+      source,
+      move,
+      depth,
+      score_cp: scoreCp,
+      elapsed_ms: elapsedMs,
+      timed_out: timedOut,
+      nodes,
+      eval_calls: evalCalls,
+      nps,
+      tt_hits: ttHits,
+      tt_misses: ttMisses,
+      beta_cutoffs: betaCutoffs,
+      summary,
+    };
+    this.recordTrace("ai", summary);
   }
 
   private resolveTraceTarget(args: string[]): string {
@@ -616,7 +707,7 @@ export class ChessEngine {
       command_count: this.traceCommandCount,
       event_count: this.traceEvents.length,
       events: this.traceEvents,
-      last_ai: this.traceLastAi,
+      last_ai: this.traceLastAi ?? undefined,
     })}\n`;
   }
 

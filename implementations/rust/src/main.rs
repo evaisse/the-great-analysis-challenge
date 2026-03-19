@@ -23,6 +23,22 @@ struct TraceEvent {
     ts_ms: u128,
 }
 
+#[derive(Clone)]
+struct TraceAiState {
+    source: String,
+    move_str: String,
+    depth: u8,
+    score_cp: i32,
+    elapsed_ms: u128,
+    timed_out: bool,
+    nodes: u64,
+    eval_calls: u64,
+    nps: u128,
+    tt_hits: u64,
+    tt_misses: u64,
+    beta_cutoffs: u64,
+}
+
 struct ChessEngine {
     board: Board,
     move_generator: MoveGenerator,
@@ -49,7 +65,7 @@ struct ChessEngine {
     trace_last_chrome_target: Option<String>,
     trace_last_chrome_events: usize,
     trace_last_chrome_bytes: usize,
-    trace_last_ai: String,
+    trace_last_ai: Option<TraceAiState>,
 }
 
 impl ChessEngine {
@@ -80,7 +96,7 @@ impl ChessEngine {
             trace_last_chrome_target: None,
             trace_last_chrome_events: 0,
             trace_last_chrome_bytes: 0,
-            trace_last_ai: "none".to_string(),
+            trace_last_ai: None,
         }
     }
 
@@ -322,8 +338,7 @@ impl ChessEngine {
         if self.book_enabled {
             self.book_lookups += 1;
             self.book_hits += 1;
-            self.trace_last_ai = "source=book,move=e2e4,depth=0,eval=0,time_ms=0,nodes=0".to_string();
-            self.record_trace("ai", self.trace_last_ai.clone());
+            self.record_trace_ai("book", "e2e4", 0, 0, 0, false, 0, 0, 0, 0, 0);
             println!("AI: e2e4 (book)");
             return;
         }
@@ -339,15 +354,19 @@ impl ChessEngine {
                 );
                 
                 self.board.make_move(&chess_move);
-                self.trace_last_ai = format!(
-                    "source=search,move={},depth={},eval={},time_ms={},nodes={}",
-                    move_str,
+                self.record_trace_ai(
+                    "search",
+                    &move_str,
                     depth,
                     result.evaluation,
                     result.time_ms,
-                    result.nodes
+                    false,
+                    result.nodes,
+                    result.eval_calls,
+                    0,
+                    0,
+                    result.beta_cutoffs
                 );
-                self.record_trace("ai", self.trace_last_ai.clone());
                 println!("AI: {} (depth={}, eval={}, time={}ms)", 
                     move_str, depth, result.evaluation, result.time_ms);
                 println!("{}", self.board);
@@ -603,8 +622,8 @@ impl ChessEngine {
             return;
         }
 
-        let action = args[0];
-        match action {
+        let action = args[0].to_lowercase();
+        match action.as_str() {
             "on" => {
                 self.trace_enabled = true;
                 self.record_trace("trace", "enabled".to_string());
@@ -633,7 +652,7 @@ impl ChessEngine {
                 println!("TRACE: level={}", self.trace_level);
             }
             "report" => {
-                println!(
+                let mut report = format!(
                     "TRACE: enabled={}; level={}; events={}; commands={}; exports={}; last_export={}; chrome_exports={}; last_chrome={}; last_ai={}",
                     if self.trace_enabled { "true" } else { "false" },
                     self.trace_level,
@@ -653,8 +672,13 @@ impl ChessEngine {
                         self.trace_last_chrome_events,
                         self.trace_last_chrome_bytes
                     ),
-                    self.trace_last_ai
+                    self.format_trace_ai_summary()
                 );
+                if let Some(search_metrics) = self.format_trace_search_metrics() {
+                    report.push_str("; search_metrics=");
+                    report.push_str(&search_metrics);
+                }
+                println!("{}", report);
             }
             "reset" => {
                 self.trace_events.clear();
@@ -667,7 +691,7 @@ impl ChessEngine {
                 self.trace_last_chrome_target = None;
                 self.trace_last_chrome_events = 0;
                 self.trace_last_chrome_bytes = 0;
-                self.trace_last_ai = "none".to_string();
+                self.reset_trace_search_state();
                 println!("TRACE: reset");
             }
             "export" => {
@@ -722,6 +746,14 @@ impl ChessEngine {
             detail,
             ts_ms: current_trace_timestamp_ms(),
         });
+        if self.trace_events.len() > 256 {
+            let drain_len = self.trace_events.len() - 256;
+            self.trace_events.drain(0..drain_len);
+        }
+    }
+
+    fn reset_trace_search_state(&mut self) {
+        self.trace_last_ai = None;
     }
 
     fn format_trace_transfer_summary(
@@ -744,6 +776,89 @@ impl ChessEngine {
         )
     }
 
+    fn format_trace_ai_summary(&self) -> String {
+        let Some(last_ai) = &self.trace_last_ai else {
+            return "none".to_string();
+        };
+
+        let mut summary = format!("{}:{}", last_ai.source, last_ai.move_str);
+        if last_ai.source.contains("search") {
+            summary.push_str(&format!(
+                "@d{}/{}cp/{}ms/n{}/e{}/nps{}",
+                last_ai.depth,
+                last_ai.score_cp,
+                last_ai.elapsed_ms,
+                last_ai.nodes,
+                last_ai.eval_calls,
+                last_ai.nps
+            ));
+            if last_ai.timed_out {
+                summary.push_str("/timeout");
+            }
+        } else if last_ai.source.contains("endgame") {
+            summary.push_str(&format!("/{}cp", last_ai.score_cp));
+        }
+
+        summary
+    }
+
+    fn format_trace_search_metrics(&self) -> Option<String> {
+        let last_ai = self.trace_last_ai.as_ref()?;
+        if !last_ai.source.contains("search") {
+            return None;
+        }
+
+        Some(format!(
+            "nodes={},eval_calls={},tt_hits={},tt_misses={},beta_cutoffs={},nps={}",
+            last_ai.nodes,
+            last_ai.eval_calls,
+            last_ai.tt_hits,
+            last_ai.tt_misses,
+            last_ai.beta_cutoffs,
+            last_ai.nps
+        ))
+    }
+
+    fn record_trace_ai(
+        &mut self,
+        source: &str,
+        move_str: &str,
+        depth: u8,
+        score_cp: i32,
+        elapsed_ms: u128,
+        timed_out: bool,
+        nodes: u64,
+        eval_calls: u64,
+        tt_hits: u64,
+        tt_misses: u64,
+        beta_cutoffs: u64,
+    ) {
+        let divisor = if elapsed_ms == 0 { 1 } else { elapsed_ms };
+        let nps = if nodes > 0 {
+            u128::from(nodes) * 1000 / divisor
+        } else {
+            0
+        };
+
+        self.trace_last_ai = Some(TraceAiState {
+            source: source.to_string(),
+            move_str: move_str.to_string(),
+            depth,
+            score_cp,
+            elapsed_ms,
+            timed_out,
+            nodes,
+            eval_calls,
+            nps,
+            tt_hits,
+            tt_misses,
+            beta_cutoffs,
+        });
+
+        let summary = self.format_trace_ai_summary();
+        self.record_trace("ai", summary);
+    }
+
     fn resolve_trace_target(&self, args: &[&str]) -> String {
         let target = args[1..].join(" ").trim().to_string();
         if target.is_empty() {
@@ -751,6 +866,26 @@ impl ChessEngine {
         } else {
             target
         }
+    }
+
+    fn trace_last_ai_payload(&self) -> Option<String> {
+        let last_ai = self.trace_last_ai.as_ref()?;
+        Some(format!(
+            "{{\"source\":\"{}\",\"move\":\"{}\",\"depth\":{},\"score_cp\":{},\"elapsed_ms\":{},\"timed_out\":{},\"nodes\":{},\"eval_calls\":{},\"nps\":{},\"tt_hits\":{},\"tt_misses\":{},\"beta_cutoffs\":{},\"summary\":\"{}\"}}",
+            json_escape(&last_ai.source),
+            json_escape(&last_ai.move_str),
+            last_ai.depth,
+            last_ai.score_cp,
+            last_ai.elapsed_ms,
+            if last_ai.timed_out { "true" } else { "false" },
+            last_ai.nodes,
+            last_ai.eval_calls,
+            last_ai.nps,
+            last_ai.tt_hits,
+            last_ai.tt_misses,
+            last_ai.beta_cutoffs,
+            json_escape(&self.format_trace_ai_summary())
+        ))
     }
 
     fn build_trace_export_payload(&self) -> String {
@@ -767,14 +902,18 @@ impl ChessEngine {
             })
             .collect::<Vec<_>>()
             .join(",");
+        let last_ai = self
+            .trace_last_ai_payload()
+            .map(|payload| format!(",\"last_ai\":{}", payload))
+            .unwrap_or_default();
 
         format!(
-            "{{\"format\":\"tgac.trace.v1\",\"level\":\"{}\",\"command_count\":{},\"event_count\":{},\"events\":[{}],\"last_ai\":\"{}\"}}\n",
+            "{{\"format\":\"tgac.trace.v1\",\"level\":\"{}\",\"command_count\":{},\"event_count\":{},\"events\":[{}]{} }}\n",
             json_escape(&self.trace_level),
             self.trace_command_count,
             self.trace_events.len(),
             events,
-            json_escape(&self.trace_last_ai)
+            last_ai
         )
     }
 

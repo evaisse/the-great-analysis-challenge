@@ -21,7 +21,8 @@
             "TRACE:",
             "level=debug",
             "commands=2",
-            "last_ai="
+            "last_ai=search:",
+            "search_metrics=nodes="
           ],
           "timeout": 12000
         },
