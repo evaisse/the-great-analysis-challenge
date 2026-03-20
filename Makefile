@@ -39,7 +39,7 @@ help:
 	@echo "  make test [DIR=<impl>]              - Run internal implementation test command(s) only"
 	@echo "  make test-unit-contract [DIR=<impl>] [STRICT=1]"
 	@echo "                                     - Run shared unit-contract parity suite (STRICT=1 fails on missing adapters)"
-	@echo "  make test-chess-engine [DIR=<impl>] [TRACK=v1|v2-foundation|v2-functional|v2-system|v2-system-extended|v2-full|v3-book]"
+	@echo "  make test-chess-engine [DIR=<impl>] [TRACK=v1|v2-foundation|v2-functional|v2-system|v2-full|v3-book]"
 	@echo "                                     - Run shared chess engine suite only"
 	@echo "  make benchmark-stress [DIR=<impl>] [TRACK=...] [PROFILE=quick|full] [TIMEOUT=<s>]"
 	@echo "                                     - Run performance benchmark suite with normalized metrics"

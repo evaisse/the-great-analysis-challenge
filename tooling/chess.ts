@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 
@@ -17,7 +18,6 @@ export const TRACK_TO_SUITE: Record<string, string> = {
   "v2-foundation": join(REPO_ROOT, "test", "suites", "v2_foundation.json"),
   "v2-functional": join(REPO_ROOT, "test", "suites", "v2_functional.json"),
   "v2-system": join(REPO_ROOT, "test", "suites", "v2_system.json"),
-  "v2-system-extended": join(REPO_ROOT, "test", "suites", "v2_system_extended.json"),
   "v2-full": join(REPO_ROOT, "test", "suites", "v2_full.json"),
   "v3-book": join(REPO_ROOT, "test", "suites", "v3_book.json"),
 };
@@ -59,8 +59,135 @@ export interface SuiteTestCase extends Record<string, any> {
   category?: string;
   commands?: Array<string | Record<string, unknown>>;
   expected_patterns?: string[];
+  expected_artifacts?: TraceArtifactExpectation[];
   optional?: boolean;
   timeout?: number;
+}
+
+export interface TraceArtifactExpectation {
+  placeholder: "trace_export_path" | "trace_chrome_path";
+  format: "trace" | "chrome";
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isNonNegativeNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function validateTraceMetadata(payload: unknown, expectedFormat: "trace" | "chrome"): string[] {
+  const errors: string[] = [];
+  if (!isObject(payload)) {
+    return ["artifact root must be a JSON object"];
+  }
+
+  const expectedValue = expectedFormat === "trace" ? "tgac.trace.v1" : "tgac.chrome_trace.v1";
+  if (payload.format !== expectedValue) {
+    errors.push(`format must be '${expectedValue}'`);
+  }
+  if (!isNonEmptyString(payload.engine)) {
+    errors.push("engine must be a non-empty string");
+  }
+  if (!isNonNegativeNumber(payload.generated_at_ms)) {
+    errors.push("generated_at_ms must be a non-negative number");
+  }
+  if (typeof payload.enabled !== "boolean") {
+    errors.push("enabled must be a boolean");
+  }
+  if (!isNonEmptyString(payload.level)) {
+    errors.push("level must be a non-empty string");
+  }
+  if (!isNonNegativeNumber(payload.command_count)) {
+    errors.push("command_count must be a non-negative number");
+  }
+  if (!isNonNegativeNumber(payload.event_count)) {
+    errors.push("event_count must be a non-negative number");
+  }
+  if (!Array.isArray(payload.events)) {
+    errors.push("events must be an array");
+  } else if (payload.events.length !== payload.event_count) {
+    errors.push("event_count must match events.length");
+  }
+  if (expectedFormat === "chrome" && payload.display_time_unit !== "ms") {
+    errors.push("display_time_unit must be 'ms'");
+  }
+  return errors;
+}
+
+function validateStructuredTraceEvents(payload: unknown): string[] {
+  if (!isObject(payload) || !Array.isArray(payload.events)) {
+    return ["events must be present before validating trace event shape"];
+  }
+
+  const errors: string[] = [];
+  for (const [index, event] of payload.events.entries()) {
+    if (!isObject(event)) {
+      errors.push(`events[${index}] must be an object`);
+      continue;
+    }
+    if (!isNonNegativeNumber(event.ts_ms)) {
+      errors.push(`events[${index}].ts_ms must be a non-negative number`);
+    }
+    if (!isNonEmptyString(event.event)) {
+      errors.push(`events[${index}].event must be a non-empty string`);
+    }
+    if (typeof event.detail !== "string") {
+      errors.push(`events[${index}].detail must be a string`);
+    }
+  }
+  return errors;
+}
+
+function validateChromeTraceEvents(payload: unknown): string[] {
+  if (!isObject(payload) || !Array.isArray(payload.events)) {
+    return ["events must be present before validating chrome event shape"];
+  }
+
+  const errors: string[] = [];
+  for (const [index, event] of payload.events.entries()) {
+    if (!isObject(event)) {
+      errors.push(`events[${index}] must be an object`);
+      continue;
+    }
+    if (!isNonEmptyString(event.name)) {
+      errors.push(`events[${index}].name must be a non-empty string`);
+    }
+    if (!isNonEmptyString(event.cat)) {
+      errors.push(`events[${index}].cat must be a non-empty string`);
+    }
+    if (!isNonEmptyString(event.ph)) {
+      errors.push(`events[${index}].ph must be a non-empty string`);
+    }
+    if (!isNonNegativeNumber(event.ts)) {
+      errors.push(`events[${index}].ts must be a non-negative number`);
+    }
+    if (!isNonNegativeNumber(event.pid)) {
+      errors.push(`events[${index}].pid must be a non-negative number`);
+    }
+    if (!isNonNegativeNumber(event.tid)) {
+      errors.push(`events[${index}].tid must be a non-negative number`);
+    }
+    if (!isObject(event.args)) {
+      errors.push(`events[${index}].args must be an object`);
+      continue;
+    }
+    if (typeof event.args.detail !== "string") {
+      errors.push(`events[${index}].args.detail must be a string`);
+    }
+    if (!isNonEmptyString(event.args.level)) {
+      errors.push(`events[${index}].args.level must be a non-empty string`);
+    }
+    if (!isNonNegativeNumber(event.args.ts_ms)) {
+      errors.push(`events[${index}].args.ts_ms must be a non-negative number`);
+    }
+  }
+  return errors;
 }
 
 export interface ChessHarnessReport {
@@ -77,6 +204,8 @@ export class ChessEngineTester {
   stdoutLog = "";
   stderrLog = "";
   lastStdoutAt = 0;
+  artifactHostDir: string;
+  artifactContainerDir: string;
   results: ChessHarnessResults = {
     passed: [],
     failed: [],
@@ -88,6 +217,21 @@ export class ChessEngineTester {
     this.path = implementationPath;
     this.metadata = metadata;
     this.dockerImage = dockerImage;
+    const artifactRoot = mkdtempSync(join(tmpdir(), "tgac-trace-"));
+    this.artifactHostDir = join(artifactRoot, basename(implementationPath));
+    mkdirSync(this.artifactHostDir, { recursive: true });
+    this.artifactContainerDir = dockerImage ? "/trace" : this.artifactHostDir;
+  }
+
+  private replaceArtifactPlaceholders(value: string, hostPaths = false): string {
+    const baseDir = hostPaths ? this.artifactHostDir : this.artifactContainerDir;
+    return value
+      .replaceAll("{trace_export_path}", join(baseDir, "trace-export.json"))
+      .replaceAll("{trace_chrome_path}", join(baseDir, "trace-chrome.json"));
+  }
+
+  getArtifactHostPath(placeholder: TraceArtifactExpectation["placeholder"]): string {
+    return this.replaceArtifactPlaceholders(`{${placeholder}}`, true);
   }
 
   private buildCommand(): string[] {
@@ -106,6 +250,8 @@ export class ChessEngineTester {
         "-i",
         "-v",
         `${REPO_ROOT}:/repo:ro`,
+        "-v",
+        `${this.artifactHostDir}:${this.artifactContainerDir}`,
         this.dockerImage,
         "sh",
         "-c",
@@ -252,9 +398,9 @@ export class TestSuite {
     }
   }
 
-  private async resolveCommands(cmdInfo: string | Record<string, any>): Promise<string[]> {
+  private async resolveCommands(cmdInfo: string | Record<string, any>, tester: ChessEngineTester): Promise<string[]> {
     if (typeof cmdInfo === "string") {
-      return [cmdInfo];
+      return [tester.replaceArtifactPlaceholders(cmdInfo)];
     }
 
     if (!cmdInfo || typeof cmdInfo !== "object") {
@@ -271,16 +417,41 @@ export class TestSuite {
         if (!trimmed || trimmed.startsWith("#")) {
           continue;
         }
-        commands.push(lineTemplate.replace("{line}", trimmed).replace("{index}", String(index)));
-      }
+          commands.push(tester.replaceArtifactPlaceholders(lineTemplate.replace("{line}", trimmed).replace("{index}", String(index))));
+        }
       return commands;
     }
 
     if (cmdInfo.cmd) {
-      return [String(cmdInfo.cmd)];
+      return [tester.replaceArtifactPlaceholders(String(cmdInfo.cmd))];
     }
 
     return [];
+  }
+
+  private async validateArtifacts(test: SuiteTestCase, tester: ChessEngineTester): Promise<string[]> {
+    const expectations = test.expected_artifacts ?? [];
+    const errors: string[] = [];
+    for (const expectation of expectations) {
+      const hostPath = tester.getArtifactHostPath(expectation.placeholder);
+      if (!existsSync(hostPath)) {
+        errors.push(`Expected artifact missing: ${hostPath}`);
+        continue;
+      }
+
+      try {
+        const payload = JSON.parse(await Bun.file(hostPath).text());
+        errors.push(...validateTraceMetadata(payload, expectation.format));
+        if (expectation.format === "trace") {
+          errors.push(...validateStructuredTraceEvents(payload));
+        } else {
+          errors.push(...validateChromeTraceEvents(payload));
+        }
+      } catch (error) {
+        errors.push(`Failed to parse artifact ${hostPath}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    return errors;
   }
 
   async runTest(tester: ChessEngineTester, test: SuiteTestCase): Promise<boolean> {
@@ -288,8 +459,13 @@ export class TestSuite {
       const allOutput: string[] = [];
       const startedAt = Bun.nanoseconds();
 
+      for (const expectation of test.expected_artifacts ?? []) {
+        const hostPath = tester.getArtifactHostPath(expectation.placeholder);
+        rmSync(hostPath, { force: true });
+      }
+
       for (const cmdInfo of test.commands ?? []) {
-        const commands = await this.resolveCommands(cmdInfo as any);
+        const commands = await this.resolveCommands(cmdInfo as any, tester);
         for (const command of commands) {
           const output = await tester.sendCommand(command, (test.timeout ?? 1000) / 1000);
           allOutput.push(output);
@@ -299,7 +475,8 @@ export class TestSuite {
       const elapsed = Number(Bun.nanoseconds() - startedAt) / 1_000_000_000;
       const fullOutput = allOutput.join("\n");
       const patterns = (test.expected_patterns ?? []).map((pattern) => pattern.toUpperCase());
-      const success = patterns.every((pattern) => fullOutput.toUpperCase().includes(pattern));
+      const artifactErrors = await this.validateArtifacts(test, tester);
+      const success = patterns.every((pattern) => fullOutput.toUpperCase().includes(pattern)) && artifactErrors.length === 0;
 
       if (success) {
         tester.results.passed.push(test.name);
@@ -310,6 +487,7 @@ export class TestSuite {
       tester.results.failed.push({
         test: test.name,
         output: fullOutput.slice(0, 1000),
+        artifact_errors: artifactErrors,
       });
       return false;
     } catch (error) {
