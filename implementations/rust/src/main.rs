@@ -1,4 +1,5 @@
 mod ai;
+mod attack_tables;
 mod board;
 mod draw_detection;
 mod fen;
