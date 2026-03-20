@@ -95,9 +95,9 @@ type AI struct {
 	ttHits         int
 	ttMisses       int
 	betaCutoffs    int
-	tt            map[uint64]TTEntry
-	deadline      time.Time
-	timedOut      bool
+	tt             map[uint64]TTEntry
+	deadline       time.Time
+	timedOut       bool
 }
 
 type TTFlag int
@@ -116,15 +116,15 @@ type TTEntry struct {
 }
 
 type SearchResult struct {
-	Move      Move
-	Score     int
-	Depth     int
-	TimedOut  bool
-	ElapsedMS int64
-	Nodes     int
-	EvalCalls int
-	TTHits    int
-	TTMisses  int
+	Move        Move
+	Score       int
+	Depth       int
+	TimedOut    bool
+	ElapsedMS   int64
+	Nodes       int
+	EvalCalls   int
+	TTHits      int
+	TTMisses    int
 	BetaCutoffs int
 }
 
@@ -134,7 +134,7 @@ func NewAI() *AI {
 		ttHits:         0,
 		ttMisses:       0,
 		betaCutoffs:    0,
-		tt:            make(map[uint64]TTEntry, 1<<16),
+		tt:             make(map[uint64]TTEntry, 1<<16),
 	}
 }
 
@@ -165,15 +165,15 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 	legalMoves := gs.GenerateLegalMoves()
 	if len(legalMoves) == 0 {
 		return SearchResult{
-			Move:      Move{},
-			Score:     DRAW_VALUE,
-			Depth:     0,
-			TimedOut:  false,
-			ElapsedMS: time.Since(start).Milliseconds(),
-			Nodes:     0,
-			EvalCalls: 0,
-			TTHits:    0,
-			TTMisses:  0,
+			Move:        Move{},
+			Score:       DRAW_VALUE,
+			Depth:       0,
+			TimedOut:    false,
+			ElapsedMS:   time.Since(start).Milliseconds(),
+			Nodes:       0,
+			EvalCalls:   0,
+			TTHits:      0,
+			TTMisses:    0,
 			BetaCutoffs: 0,
 		}
 	}
@@ -201,15 +201,15 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 	}
 
 	return SearchResult{
-		Move:      bestMove,
-		Score:     bestScore,
-		Depth:     completedDepth,
-		TimedOut:  ai.timedOut,
-		ElapsedMS: time.Since(start).Milliseconds(),
-		Nodes:     ai.nodesEvaluated,
-		EvalCalls: ai.evalCalls,
-		TTHits:    ai.ttHits,
-		TTMisses:  ai.ttMisses,
+		Move:        bestMove,
+		Score:       bestScore,
+		Depth:       completedDepth,
+		TimedOut:    ai.timedOut,
+		ElapsedMS:   time.Since(start).Milliseconds(),
+		Nodes:       ai.nodesEvaluated,
+		EvalCalls:   ai.evalCalls,
+		TTHits:      ai.ttHits,
+		TTMisses:    ai.ttMisses,
 		BetaCutoffs: ai.betaCutoffs,
 	}
 }
@@ -269,6 +269,10 @@ func (ai *AI) negamax(gs *GameState, depth int, alpha int, beta int) (int, Move,
 		return 0, Move{}, false
 	}
 	ai.nodesEvaluated++
+
+	if gs.IsDraw() {
+		return DRAW_VALUE, Move{}, true
+	}
 
 	originalAlpha := alpha
 	bestMove := Move{}

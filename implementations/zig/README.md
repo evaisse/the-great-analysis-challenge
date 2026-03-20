@@ -32,7 +32,7 @@ printf 'new\nmove e2e4\nhash\nbook load /repo/test/fixtures/book/opening.book\na
 - `new`, `move <from><to>[promotion]`, `undo`, `status`, `fen <string>`, `export`
 - `hash`, `draws`, `history`, `eval`, `ai <depth>`, `go movetime <ms>`
 - `pgn load|show|moves`, `book load|stats|on|off`, `uci`, `isready`, `ucinewgame`
-- `new960 [id]`, `position960`, `trace on|off|report`, `concurrency quick|full`
+- `new960 [id]`, `position960`, `trace on|off|level|report|reset|export|chrome`, `concurrency quick|full`
 - `perft <depth>`, `help`, `quit`
 
 ## Files

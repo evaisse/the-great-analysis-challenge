@@ -6,6 +6,8 @@ export class AI {
   private board: Board;
   private moveGenerator: MoveGenerator;
   private nodesEvaluated: number = 0;
+  private evalCalls: number = 0;
+  private betaCutoffs: number = 0;
 
   private static readonly PAWN_TABLE: number[] = [
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -82,16 +84,20 @@ export class AI {
     move: Move | null;
     eval: number;
     nodes: number;
+    evalCalls: number;
+    betaCutoffs: number;
     time: number;
   } {
     const startTime = Date.now();
     this.nodesEvaluated = 0;
+    this.evalCalls = 0;
+    this.betaCutoffs = 0;
 
     const color = this.board.getTurn();
     const moves = this.moveGenerator.getLegalMoves(color);
 
     if (moves.length === 0) {
-      return { move: null, eval: 0, nodes: 0, time: 0 };
+      return { move: null, eval: 0, nodes: 0, evalCalls: 0, betaCutoffs: 0, time: 0 };
     }
 
     const orderedMoves = this.orderMoves(moves);
@@ -130,6 +136,8 @@ export class AI {
       move: bestMove,
       eval: bestEval,
       nodes: this.nodesEvaluated,
+      evalCalls: this.evalCalls,
+      betaCutoffs: this.betaCutoffs,
       time: endTime - startTime,
     };
   }
@@ -176,6 +184,7 @@ export class AI {
         alpha = Math.max(alpha, evaluation);
 
         if (beta <= alpha) {
+          this.betaCutoffs += 1;
           break;
         }
       }
@@ -195,6 +204,7 @@ export class AI {
         beta = Math.min(beta, evaluation);
 
         if (beta <= alpha) {
+          this.betaCutoffs += 1;
           break;
         }
       }
@@ -204,6 +214,7 @@ export class AI {
   }
 
   private evaluate(): number {
+    this.evalCalls += 1;
     let score = 0;
 
     for (let square = 0; square < 64; square++) {

@@ -709,13 +709,98 @@ struct RuntimeState {
     var bookPlayed = 0
     var chess960Id = 0
     var traceEnabled = false
-    var traceEvents = 0
+    var traceLevel = "info"
+    var traceCommandCount = 0
+    var traceEvents: [TraceEvent] = []
     var traceLastAi = "none"
+}
+
+struct TraceEvent {
+    let tsMs: Int64
+    let event: String
+    let detail: String
 }
 
 func emit(_ line: String) {
     print(line)
     fflush(stdout)
+}
+
+func recordTraceEvent(runtime: inout RuntimeState, event: String, detail: String) {
+    guard runtime.traceEnabled else { return }
+    runtime.traceEvents.append(TraceEvent(tsMs: Int64(Date().timeIntervalSince1970 * 1000), event: event, detail: detail))
+    if runtime.traceEvents.count > 256 {
+        runtime.traceEvents.removeFirst(runtime.traceEvents.count - 256)
+    }
+}
+
+func resetTraceState(runtime: inout RuntimeState) {
+    runtime.traceEvents = []
+    runtime.traceCommandCount = 0
+    runtime.traceLastAi = "none"
+}
+
+func buildTraceReport(runtime: RuntimeState) -> String {
+    "TRACE: enabled=\(runtime.traceEnabled ? "true" : "false"); level=\(runtime.traceLevel); events=\(runtime.traceEvents.count); commands=\(runtime.traceCommandCount); last_ai=\(runtime.traceLastAi)"
+}
+
+func traceExportPayload(runtime: RuntimeState, engine: String) -> [String: Any] {
+    var payload: [String: Any] = [
+        "format": "tgac.trace.v1",
+        "engine": engine,
+        "generated_at_ms": Int64(Date().timeIntervalSince1970 * 1000),
+        "enabled": runtime.traceEnabled,
+        "level": runtime.traceLevel,
+        "command_count": runtime.traceCommandCount,
+        "event_count": runtime.traceEvents.count,
+        "events": runtime.traceEvents.map { event in
+            [
+                "ts_ms": event.tsMs,
+                "event": event.event,
+                "detail": event.detail,
+            ]
+        },
+    ]
+    if runtime.traceLastAi != "none" {
+        payload["last_ai"] = ["summary": runtime.traceLastAi]
+    }
+    return payload
+}
+
+func traceChromePayload(runtime: RuntimeState, engine: String) -> [String: Any] {
+    [
+        "format": "tgac.chrome_trace.v1",
+        "engine": engine,
+        "generated_at_ms": Int64(Date().timeIntervalSince1970 * 1000),
+        "enabled": runtime.traceEnabled,
+        "level": runtime.traceLevel,
+        "command_count": runtime.traceCommandCount,
+        "event_count": runtime.traceEvents.count,
+        "display_time_unit": "ms",
+        "events": runtime.traceEvents.map { event in
+            [
+                "name": event.event,
+                "cat": "engine.trace",
+                "ph": "i",
+                "ts": event.tsMs * 1000,
+                "pid": 1,
+                "tid": 1,
+                "args": [
+                    "detail": event.detail,
+                    "level": runtime.traceLevel,
+                    "ts_ms": event.tsMs,
+                ],
+            ]
+        },
+    ]
+}
+
+func writeTracePayload(target: String, payload: [String: Any]) throws -> Int {
+    let data = try JSONSerialization.data(withJSONObject: payload, options: [])
+    var fileData = data
+    fileData.append(0x0a)
+    try fileData.write(to: URL(fileURLWithPath: target))
+    return fileData.count
 }
 
 func moveToNotation(_ move: Move) -> String {
@@ -860,7 +945,7 @@ func main() {
             runtime.bookPlayed = 0
         }
         if clearTraceCounters {
-            runtime.traceEvents = 0
+            resetTraceState(runtime: &runtime)
         }
     }
 
@@ -890,7 +975,7 @@ func main() {
             runtime.bookHits += 1
             runtime.bookPlayed += 1
             runtime.traceLastAi = "book:e2e4"
-            if runtime.traceEnabled { runtime.traceEvents += 1 }
+            recordTraceEvent(runtime: &runtime, event: "ai", detail: runtime.traceLastAi)
             applyMove(bookMove, notation: "e2e4")
             emit("AI: e2e4 (book)")
             emitTerminalStatus()
@@ -904,7 +989,7 @@ func main() {
             let notation = moveToNotation(bestMove)
             applyMove(bestMove, notation: notation)
             runtime.traceLastAi = "search:\(notation)"
-            if runtime.traceEnabled { runtime.traceEvents += 1 }
+            recordTraceEvent(runtime: &runtime, event: "ai", detail: runtime.traceLastAi)
             emit("AI: \(notation) (depth=\(depth), eval=\(board.evaluate()), time=0ms)")
             emitTerminalStatus()
         } else {
@@ -919,6 +1004,11 @@ func main() {
         let components = input.split(separator: " ").map(String.init)
         guard let command = components.first?.lowercased() else { continue }
         let args = Array(components.dropFirst())
+
+        if command != "trace" {
+            runtime.traceCommandCount += 1
+            recordTraceEvent(runtime: &runtime, event: "command", detail: input)
+        }
 
         switch command {
         case "quit", "exit":
@@ -1064,17 +1154,56 @@ func main() {
         case "position960":
             emit("960: id=\(runtime.chess960Id); mode=chess960")
         case "trace":
-            let action = args.first?.lowercased() ?? "report"
+            guard let action = args.first?.lowercased() else {
+                emit("ERROR: trace requires subcommand")
+                continue
+            }
             switch action {
             case "on":
                 runtime.traceEnabled = true
-                runtime.traceEvents += 1
-                emit("TRACE: enabled=true")
+                recordTraceEvent(runtime: &runtime, event: "trace", detail: "enabled")
+                emit("TRACE: enabled=true; level=\(runtime.traceLevel); events=\(runtime.traceEvents.count)")
             case "off":
+                recordTraceEvent(runtime: &runtime, event: "trace", detail: "disabled")
                 runtime.traceEnabled = false
-                emit("TRACE: enabled=false")
+                emit("TRACE: enabled=false; level=\(runtime.traceLevel); events=\(runtime.traceEvents.count)")
+            case "level":
+                guard let level = args.dropFirst().first, !level.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    emit("ERROR: trace level requires a value")
+                    continue
+                }
+                runtime.traceLevel = level.lowercased()
+                recordTraceEvent(runtime: &runtime, event: "trace", detail: "level=\(runtime.traceLevel)")
+                emit("TRACE: level=\(runtime.traceLevel)")
             case "report":
-                emit("TRACE: enabled=\(runtime.traceEnabled ? "true" : "false"); events=\(runtime.traceEvents); last_ai=\(runtime.traceLastAi)")
+                emit(buildTraceReport(runtime: runtime))
+            case "reset":
+                resetTraceState(runtime: &runtime)
+                emit("TRACE: reset")
+            case "export":
+                let target = Array(args.dropFirst()).joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !target.isEmpty else {
+                    emit("ERROR: trace export requires a file path")
+                    continue
+                }
+                do {
+                    let bytes = try writeTracePayload(target: target, payload: traceExportPayload(runtime: runtime, engine: "swift"))
+                    emit("TRACE: export=\(target); events=\(runtime.traceEvents.count); bytes=\(bytes)")
+                } catch {
+                    emit("ERROR: trace export failed: \(error.localizedDescription)")
+                }
+            case "chrome":
+                let target = Array(args.dropFirst()).joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !target.isEmpty else {
+                    emit("ERROR: trace chrome requires a file path")
+                    continue
+                }
+                do {
+                    let bytes = try writeTracePayload(target: target, payload: traceChromePayload(runtime: runtime, engine: "swift"))
+                    emit("TRACE: chrome=\(target); events=\(runtime.traceEvents.count); bytes=\(bytes)")
+                } catch {
+                    emit("ERROR: trace chrome failed: \(error.localizedDescription)")
+                }
             default:
                 emit("ERROR: Unsupported trace command")
             }

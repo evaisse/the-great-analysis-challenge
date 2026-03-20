@@ -36,6 +36,12 @@ fn FixedText(comptime N: usize) type {
 const Text64 = FixedText(64);
 const Text256 = FixedText(256);
 
+const TraceEvent = struct {
+    ts_ms: u64,
+    event: Text64,
+    detail: Text256,
+};
+
 const PgnFixture = enum {
     none,
     morphy,
@@ -75,7 +81,8 @@ const RuntimeState = struct {
     book_played: u32 = 0,
     chess960_id: u16 = 0,
     trace_enabled: bool = false,
-    trace_events: u32 = 0,
+    trace_level: Text64 = Text64.init("basic"),
+    trace_command_count: u32 = 0,
     trace_last_ai: Text64 = Text64.init("none"),
 };
 
@@ -86,6 +93,7 @@ const ChessEngine = struct {
     ai_engine: ai.AI,
     move_history: std.ArrayList(HistoryEntry),
     position_history: std.ArrayList(board.Board),
+    trace_events: std.ArrayList(TraceEvent),
     runtime: RuntimeState,
 
     pub fn init(allocator: std.mem.Allocator) ChessEngine {
@@ -96,6 +104,7 @@ const ChessEngine = struct {
             .ai_engine = undefined,
             .move_history = std.ArrayList(HistoryEntry).empty,
             .position_history = std.ArrayList(board.Board).empty,
+            .trace_events = std.ArrayList(TraceEvent).empty,
             .runtime = RuntimeState{},
         };
     }
@@ -109,6 +118,7 @@ const ChessEngine = struct {
     pub fn deinit(self: *ChessEngine) void {
         self.move_history.deinit(self.allocator);
         self.position_history.deinit(self.allocator);
+        self.trace_events.deinit(self.allocator);
     }
 
     pub fn start(self: *ChessEngine) !void {
@@ -131,6 +141,8 @@ const ChessEngine = struct {
     fn processCommand(self: *ChessEngine, command: []const u8, stdout: anytype) !bool {
         var tokenizer = std.mem.tokenizeScalar(u8, command, ' ');
         const cmd = tokenizer.next() orelse return true;
+
+        try self.traceCommandIfNeeded(command, cmd);
 
         if (std.mem.eql(u8, cmd, "quit") or std.mem.eql(u8, cmd, "exit")) {
             return false;
@@ -343,25 +355,66 @@ const ChessEngine = struct {
             const action = tokenizer.next() orelse "report";
             if (std.mem.eql(u8, action, "on")) {
                 self.runtime.trace_enabled = true;
-                self.runtime.trace_events += 1;
-                try stdout.print("TRACE: enabled=true\n", .{});
+                try self.appendTraceEvent("trace", "enabled");
+                try stdout.print("TRACE: enabled=true; level={s}\n", .{self.runtime.trace_level.slice()});
             } else if (std.mem.eql(u8, action, "off")) {
+                if (self.runtime.trace_enabled) {
+                    try self.appendTraceEvent("trace", "disabled");
+                }
                 self.runtime.trace_enabled = false;
                 try stdout.print("TRACE: enabled=false\n", .{});
             } else if (std.mem.eql(u8, action, "level")) {
-                const level = tokenizer.next() orelse "basic";
-                var trace_buf: [64]u8 = undefined;
-                self.runtime.trace_last_ai.set(try std.fmt.bufPrint(&trace_buf, "level:{s}", .{level}));
-                try stdout.print("TRACE: level={s}\n", .{level});
+                const level = tokenizer.next() orelse {
+                    try stdout.print("ERROR: trace level requires a value\n", .{});
+                    return true;
+                };
+                self.runtime.trace_level.set(level);
+                if (self.runtime.trace_enabled) {
+                    var detail_buf: [80]u8 = undefined;
+                    const detail = try std.fmt.bufPrint(&detail_buf, "level={s}", .{level});
+                    try self.appendTraceEvent("trace", detail);
+                }
+                try stdout.print("TRACE: level={s}\n", .{self.runtime.trace_level.slice()});
             } else if (std.mem.eql(u8, action, "report")) {
                 try stdout.print(
-                    "TRACE: enabled={s}; events={d}; last_ai={s}\n",
+                    "TRACE: enabled={s}; level={s}; events={d}; commands={d}; last_ai={s}\n",
                     .{
                         boolText(self.runtime.trace_enabled),
-                        self.runtime.trace_events,
+                        self.runtime.trace_level.slice(),
+                        self.trace_events.items.len,
+                        self.runtime.trace_command_count,
                         self.runtime.trace_last_ai.slice(),
                     },
                 );
+            } else if (std.mem.eql(u8, action, "reset")) {
+                self.resetTraceState();
+                try stdout.print("TRACE: reset\n", .{});
+            } else if (std.mem.eql(u8, action, "export")) {
+                const target = std.mem.trim(u8, tokenizer.rest(), " ");
+                if (target.len == 0) {
+                    try stdout.print("ERROR: trace export requires a file path\n", .{});
+                    return true;
+                }
+                const payload = try self.buildTraceExportPayload();
+                defer self.allocator.free(payload);
+                self.writeTracePayload(target, payload) catch |err| {
+                    try stdout.print("ERROR: trace export failed: {s}\n", .{@errorName(err)});
+                    return true;
+                };
+                try stdout.print("TRACE: export={s}; events={d}; bytes={d}\n", .{ target, self.trace_events.items.len, payload.len });
+            } else if (std.mem.eql(u8, action, "chrome")) {
+                const target = std.mem.trim(u8, tokenizer.rest(), " ");
+                if (target.len == 0) {
+                    try stdout.print("ERROR: trace chrome requires a file path\n", .{});
+                    return true;
+                }
+                const payload = try self.buildTraceChromePayload();
+                defer self.allocator.free(payload);
+                self.writeTracePayload(target, payload) catch |err| {
+                    try stdout.print("ERROR: trace chrome failed: {s}\n", .{@errorName(err)});
+                    return true;
+                };
+                try stdout.print("TRACE: chrome={s}; events={d}; bytes={d}\n", .{ target, self.trace_events.items.len, payload.len });
             } else {
                 try stdout.print("ERROR: Unsupported trace command\n", .{});
             }
@@ -414,6 +467,29 @@ const ChessEngine = struct {
         self.runtime.pgn_source.clear();
         self.runtime.pgn_fixture = .none;
         self.runtime.chess960_id = 0;
+        self.runtime.trace_last_ai.set("none");
+    }
+
+    fn traceCommandIfNeeded(self: *ChessEngine, raw_command: []const u8, cmd: []const u8) !void {
+        if (!self.runtime.trace_enabled or std.mem.eql(u8, cmd, "trace")) return;
+        self.runtime.trace_command_count += 1;
+        try self.appendTraceEvent("command", raw_command);
+    }
+
+    fn appendTraceEvent(self: *ChessEngine, event: []const u8, detail: []const u8) !void {
+        if (self.trace_events.items.len >= 256) {
+            _ = self.trace_events.orderedRemove(0);
+        }
+        try self.trace_events.append(self.allocator, TraceEvent{
+            .ts_ms = currentTimestampMs(),
+            .event = Text64.init(event),
+            .detail = Text256.init(detail),
+        });
+    }
+
+    fn resetTraceState(self: *ChessEngine) void {
+        self.trace_events.clearRetainingCapacity();
+        self.runtime.trace_command_count = 0;
         self.runtime.trace_last_ai.set("none");
     }
 
@@ -496,7 +572,7 @@ const ChessEngine = struct {
                     self.runtime.book_hits += 1;
                     self.runtime.book_played += 1;
                     self.runtime.trace_last_ai.set("book:e2e4");
-                    if (self.runtime.trace_enabled) self.runtime.trace_events += 1;
+                    if (self.runtime.trace_enabled) try self.appendTraceEvent("ai", self.runtime.trace_last_ai.slice());
                     try self.applyMove(book_move);
                     try stdout.print("AI: e2e4 (book)\n", .{});
                     try self.emitTerminalStatus(stdout);
@@ -511,7 +587,7 @@ const ChessEngine = struct {
             const notation = formatMove(best_move, &move_buf);
             var trace_buf: [64]u8 = undefined;
             self.runtime.trace_last_ai.set(try std.fmt.bufPrint(&trace_buf, "search:{s}", .{notation}));
-            if (self.runtime.trace_enabled) self.runtime.trace_events += 1;
+            if (self.runtime.trace_enabled) try self.appendTraceEvent("ai", self.runtime.trace_last_ai.slice());
             try self.applyMove(best_move);
             try stdout.print(
                 "AI: {s} (depth={d}, eval={d}, time=0ms)\n",
@@ -527,6 +603,85 @@ const ChessEngine = struct {
         const fen_text = try self.fen_parser.toFen(self.allocator);
         defer self.allocator.free(fen_text);
         return std.fmt.bufPrint(buffer, "{x}", .{stableHash64(fen_text)});
+    }
+
+    fn buildTraceExportPayload(self: *ChessEngine) ![]u8 {
+        var list_builder = std.ArrayList(u8).empty;
+        errdefer list_builder.deinit(self.allocator);
+
+        const header = try std.fmt.allocPrint(
+            self.allocator,
+            "{{\"format\":\"tgac.trace.v1\",\"engine\":\"zig\",\"generated_at_ms\":{},\"enabled\":{s},\"level\":\"{s}\",\"command_count\":{},\"event_count\":{},\"events\":[",
+            .{
+                currentTimestampMs(),
+                boolText(self.runtime.trace_enabled),
+                self.runtime.trace_level.slice(),
+                self.runtime.trace_command_count,
+                self.trace_events.items.len,
+            },
+        );
+        defer self.allocator.free(header);
+        try list_builder.appendSlice(self.allocator, header);
+        for (self.trace_events.items, 0..) |event, index| {
+            if (index > 0) try list_builder.append(self.allocator, ',');
+            const event_json = try std.fmt.allocPrint(
+                self.allocator,
+                "{{\"ts_ms\":{},\"event\":\"{s}\",\"detail\":\"{s}\"}}",
+                .{ event.ts_ms, event.event.slice(), event.detail.slice() },
+            );
+            defer self.allocator.free(event_json);
+            try list_builder.appendSlice(self.allocator, event_json);
+        }
+        if (!std.mem.eql(u8, self.runtime.trace_last_ai.slice(), "none")) {
+            const footer = try std.fmt.allocPrint(
+                self.allocator,
+                "],\"last_ai\":{{\"summary\":\"{s}\"}}}}\n",
+                .{self.runtime.trace_last_ai.slice()},
+            );
+            defer self.allocator.free(footer);
+            try list_builder.appendSlice(self.allocator, footer);
+        } else {
+            try list_builder.appendSlice(self.allocator, "]}\n");
+        }
+        return try list_builder.toOwnedSlice(self.allocator);
+    }
+
+    fn buildTraceChromePayload(self: *ChessEngine) ![]u8 {
+        var list_builder = std.ArrayList(u8).empty;
+        errdefer list_builder.deinit(self.allocator);
+
+        const header = try std.fmt.allocPrint(
+            self.allocator,
+            "{{\"format\":\"tgac.chrome_trace.v1\",\"engine\":\"zig\",\"generated_at_ms\":{},\"enabled\":{s},\"level\":\"{s}\",\"command_count\":{},\"event_count\":{},\"display_time_unit\":\"ms\",\"events\":[",
+            .{
+                currentTimestampMs(),
+                boolText(self.runtime.trace_enabled),
+                self.runtime.trace_level.slice(),
+                self.runtime.trace_command_count,
+                self.trace_events.items.len,
+            },
+        );
+        defer self.allocator.free(header);
+        try list_builder.appendSlice(self.allocator, header);
+        for (self.trace_events.items, 0..) |event, index| {
+            if (index > 0) try list_builder.append(self.allocator, ',');
+            const event_json = try std.fmt.allocPrint(
+                self.allocator,
+                "{{\"name\":\"{s}\",\"cat\":\"engine.trace\",\"ph\":\"i\",\"ts\":{},\"pid\":1,\"tid\":1,\"args\":{{\"detail\":\"{s}\",\"level\":\"{s}\",\"ts_ms\":{}}}}}",
+                .{ event.event.slice(), event.ts_ms, event.detail.slice(), self.runtime.trace_level.slice(), event.ts_ms },
+            );
+            defer self.allocator.free(event_json);
+            try list_builder.appendSlice(self.allocator, event_json);
+        }
+        try list_builder.appendSlice(self.allocator, "]}\n");
+        return try list_builder.toOwnedSlice(self.allocator);
+    }
+
+    fn writeTracePayload(self: *ChessEngine, target: []const u8, payload: []const u8) !void {
+        var threaded = std.Io.Threaded.init(self.allocator, .{});
+        defer threaded.deinit();
+        const io_ctx = threaded.io();
+        try std.Io.Dir.cwd().writeFile(io_ctx, .{ .sub_path = target, .data = payload });
     }
 
     fn pgnMovesText(self: *ChessEngine) ![]u8 {
@@ -722,6 +877,12 @@ fn boundedDepth(movetime: i32) u8 {
     if (movetime <= 1000) return 2;
     if (movetime <= 5000) return 3;
     return 4;
+}
+
+fn currentTimestampMs() u64 {
+    var threaded = std.Io.Threaded.init_single_threaded;
+    const now = std.Io.Timestamp.now(threaded.io(), .real);
+    return @as(u64, @intCast(@divFloor(now.nanoseconds, std.time.ns_per_ms)));
 }
 
 fn boolText(value: bool) []const u8 {

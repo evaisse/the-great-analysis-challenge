@@ -30,7 +30,7 @@ Extended protocol surface:
 - `book load|stats`
 - `uci`, `isready`, `ucinewgame`
 - `new960 [id]`, `position960`
-- `trace on|off|report`
+- `trace on|off|level|report|reset|export|chrome`
 - `concurrency quick|full`
 
 ## Notes

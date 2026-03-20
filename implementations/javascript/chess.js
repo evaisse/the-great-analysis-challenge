@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
 import { ChessEngine, INITIAL_FEN } from './engine.js';
 
@@ -19,8 +19,110 @@ let bookPlayed = 0;
 let bookMovesByKey = new Map();
 let chess960Id = 0;
 let traceEnabled = false;
-let traceEvents = 0;
+let traceLevel = 'info';
+let traceEvents = [];
+let traceCommandCount = 0;
+let traceExportCount = 0;
+let traceLastExportTarget = null;
+let traceLastExportEvents = 0;
+let traceLastExportBytes = 0;
+let traceChromeCount = 0;
+let traceLastChromeTarget = null;
+let traceLastChromeEvents = 0;
+let traceLastChromeBytes = 0;
 let traceLastAi = 'none';
+
+function recordTrace(event, detail) {
+    if (!traceEnabled) {
+        return;
+    }
+    traceEvents.push({
+        ts_ms: Date.now(),
+        event,
+        detail,
+    });
+    if (traceEvents.length > 256) {
+        traceEvents = traceEvents.slice(-256);
+    }
+}
+
+function resetTraceState() {
+    traceEvents = [];
+    traceCommandCount = 0;
+    traceExportCount = 0;
+    traceLastExportTarget = null;
+    traceLastExportEvents = 0;
+    traceLastExportBytes = 0;
+    traceChromeCount = 0;
+    traceLastChromeTarget = null;
+    traceLastChromeEvents = 0;
+    traceLastChromeBytes = 0;
+    traceLastAi = 'none';
+}
+
+function resolveTraceTarget(args) {
+    const target = args.join(' ').trim();
+    return target === '' ? '(memory)' : target;
+}
+
+function formatTraceTransferSummary(count, target, eventCount, byteCount) {
+    if (count === 0 || !target) {
+        return 'none';
+    }
+    return `${target} (${eventCount} events, ${byteCount} bytes)`;
+}
+
+function buildTraceExportPayload() {
+    const payload = {
+        format: 'tgac.trace.v1',
+        engine: 'javascript',
+        generated_at_ms: Date.now(),
+        enabled: traceEnabled,
+        level: traceLevel,
+        command_count: traceCommandCount,
+        event_count: traceEvents.length,
+        events: traceEvents,
+    };
+    if (traceLastAi !== 'none') {
+        payload.last_ai = { summary: traceLastAi };
+    }
+    return `${JSON.stringify(payload)}\n`;
+}
+
+function buildTraceChromePayload() {
+    const payload = {
+        format: 'tgac.chrome_trace.v1',
+        engine: 'javascript',
+        generated_at_ms: Date.now(),
+        enabled: traceEnabled,
+        level: traceLevel,
+        command_count: traceCommandCount,
+        event_count: traceEvents.length,
+        display_time_unit: 'ms',
+        events: traceEvents.map((event) => ({
+            name: event.event,
+            cat: 'engine.trace',
+            ph: 'i',
+            ts: event.ts_ms * 1000,
+            pid: 1,
+            tid: 1,
+            args: {
+                detail: event.detail,
+                level: traceLevel,
+                ts_ms: event.ts_ms,
+            },
+        })),
+    };
+    return `${JSON.stringify(payload)}\n`;
+}
+
+function writeTracePayload(target, payload) {
+    const byteCount = Buffer.byteLength(payload, 'utf8');
+    if (target !== '(memory)') {
+        writeFileSync(target, payload, 'utf8');
+    }
+    return byteCount;
+}
 
 const PAWN_PST = [
     [0, 0, 0, 0, 0, 0, 0, 0],
@@ -606,20 +708,70 @@ function handlePosition960() {
 }
 
 function handleTrace(args) {
-    const action = (args[0] ?? 'report').toLowerCase();
+    if (args.length === 0) {
+        emit('ERROR: trace requires subcommand');
+        return;
+    }
+    const action = (args[0] ?? '').toLowerCase();
     if (action === 'on') {
         traceEnabled = true;
-        traceEvents++;
-        emit('TRACE: enabled=true');
+        recordTrace('trace', 'enabled');
+        emit(`TRACE: enabled=true; level=${traceLevel}; events=${traceEvents.length}`);
         return;
     }
     if (action === 'off') {
+        recordTrace('trace', 'disabled');
         traceEnabled = false;
-        emit('TRACE: enabled=false');
+        emit(`TRACE: enabled=false; level=${traceLevel}; events=${traceEvents.length}`);
+        return;
+    }
+    if (action === 'level') {
+        if (!args[1] || args[1].trim() === '') {
+            emit('ERROR: trace level requires a value');
+            return;
+        }
+        traceLevel = args[1].trim().toLowerCase();
+        recordTrace('trace', `level=${traceLevel}`);
+        emit(`TRACE: level=${traceLevel}`);
         return;
     }
     if (action === 'report') {
-        emit(`TRACE: enabled=${traceEnabled}; events=${traceEvents}; last_ai=${traceLastAi}`);
+        emit(`TRACE: enabled=${traceEnabled}; level=${traceLevel}; events=${traceEvents.length}; commands=${traceCommandCount}; exports=${traceExportCount}; last_export=${formatTraceTransferSummary(traceExportCount, traceLastExportTarget, traceLastExportEvents, traceLastExportBytes)}; chrome_exports=${traceChromeCount}; last_chrome=${formatTraceTransferSummary(traceChromeCount, traceLastChromeTarget, traceLastChromeEvents, traceLastChromeBytes)}; last_ai=${traceLastAi}`);
+        return;
+    }
+    if (action === 'reset') {
+        resetTraceState();
+        emit('TRACE: reset');
+        return;
+    }
+    if (action === 'export') {
+        const target = resolveTraceTarget(args.slice(1));
+        try {
+            const payload = buildTraceExportPayload();
+            const byteCount = writeTracePayload(target, payload);
+            traceExportCount += 1;
+            traceLastExportTarget = target;
+            traceLastExportEvents = traceEvents.length;
+            traceLastExportBytes = byteCount;
+            emit(`TRACE: export=${target}; events=${traceEvents.length}; bytes=${byteCount}`);
+        } catch (error) {
+            emit(`ERROR: trace export failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        return;
+    }
+    if (action === 'chrome') {
+        const target = resolveTraceTarget(args.slice(1));
+        try {
+            const payload = buildTraceChromePayload();
+            const byteCount = writeTracePayload(target, payload);
+            traceChromeCount += 1;
+            traceLastChromeTarget = target;
+            traceLastChromeEvents = traceEvents.length;
+            traceLastChromeBytes = byteCount;
+            emit(`TRACE: chrome=${target}; events=${traceEvents.length}; bytes=${byteCount}`);
+        } catch (error) {
+            emit(`ERROR: trace chrome failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
         return;
     }
 
@@ -656,7 +808,7 @@ function handleHelp() {
     emit('  book load|on|off|stats - Opening book command surface');
     emit('  uci / isready / ucinewgame - UCI handshake');
     emit('  new960 [id] / position960 - Chess960 metadata');
-    emit('  trace on|off|report - Trace command surface');
+    emit('  trace on|off|level|report|reset|export|chrome - Trace command surface');
     emit('  concurrency quick|full - Deterministic concurrency fixture');
     emit('  status - Show game status');
     emit('  eval - Evaluate current position');

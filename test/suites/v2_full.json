@@ -27,6 +27,22 @@
           ],
           "expected_patterns": ["HASH:"],
           "timeout": 3000
+        },
+        {
+          "id": "hash_restore_after_undo",
+          "name": "Hash Restores After Undo",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "hash"},
+            {"cmd": "move e2e4"},
+            {"cmd": "undo"},
+            {"cmd": "hash"}
+          ],
+          "expected_patterns": ["HASH:"],
+          "output_assertions": [
+            {"type": "equal", "first_command": 2, "second_command": 5}
+          ],
+          "timeout": 3000
         }
       ]
     },
@@ -41,7 +57,75 @@
             {"cmd": "new"},
             {"cmd": "draws"}
           ],
-          "expected_patterns": ["DRAWS:"],
+          "expected_patterns": ["DRAWS:", "repetition=1", "halfmove=0", "draw=false", "reason=none"],
+          "timeout": 3000
+        },
+        {
+          "id": "draws_repetition",
+          "name": "Draws Repetition Detection",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move g1f3"},
+            {"cmd": "move g8f6"},
+            {"cmd": "move f3g1"},
+            {"cmd": "move f6g8"},
+            {"cmd": "move g1f3"},
+            {"cmd": "move g8f6"},
+            {"cmd": "move f3g1"},
+            {"cmd": "move f6g8"},
+            {"cmd": "draws"}
+          ],
+          "expected_patterns": ["DRAWS:", "repetition=3", "halfmove=8", "draw=true", "reason=repetition"],
+          "timeout": 5000
+        },
+        {
+          "id": "draws_fifty_moves",
+          "name": "Draws Fifty Move Detection",
+          "commands": [
+            {"cmd": "fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 99 1"},
+            {"cmd": "move g1f3"},
+            {"cmd": "draws"}
+          ],
+          "expected_patterns": ["DRAWS:", "halfmove=100", "draw=true", "reason=fifty_moves"],
+          "timeout": 3000
+        }
+      ]
+    },
+    "foundation_history": {
+      "description": "History command contract and rollback behavior",
+      "required": true,
+      "tests": [
+        {
+          "id": "history_command",
+          "name": "History Command",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "history"}
+          ],
+          "expected_patterns": ["HISTORY:", "count=1", "current="],
+          "timeout": 3000
+        },
+        {
+          "id": "history_after_move",
+          "name": "History After Move",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e2e4"},
+            {"cmd": "history"}
+          ],
+          "expected_patterns": ["HISTORY:", "count=2", "current="],
+          "timeout": 3000
+        },
+        {
+          "id": "history_after_undo",
+          "name": "History After Undo",
+          "commands": [
+            {"cmd": "new"},
+            {"cmd": "move e2e4"},
+            {"cmd": "undo"},
+            {"cmd": "history"}
+          ],
+          "expected_patterns": ["HISTORY:", "count=1", "current="],
           "timeout": 3000
         }
       ]
@@ -180,6 +264,17 @@
       "required": true,
       "tests": [
         {
+          "id": "trace_level",
+          "name": "Trace Level",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "trace level debug"},
+            {"cmd": "trace report"}
+          ],
+          "expected_patterns": ["TRACE: enabled=true", "TRACE: level=debug", "level=debug"],
+          "timeout": 8000
+        },
+        {
           "id": "trace_report",
           "name": "Trace Report",
           "commands": [
@@ -189,6 +284,49 @@
             {"cmd": "trace report"}
           ],
           "expected_patterns": ["TRACE"],
+          "timeout": 8000
+        },
+        {
+          "id": "trace_export_file",
+          "name": "Trace Export File",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "new"},
+            {"cmd": "ai 1"},
+            {"cmd": "trace export {trace_export_path}"}
+          ],
+          "expected_patterns": ["TRACE: export=", "events=", "bytes="],
+          "expected_artifacts": [
+            {"placeholder": "trace_export_path", "format": "trace"}
+          ],
+          "timeout": 12000
+        },
+        {
+          "id": "trace_chrome_file",
+          "name": "Trace Chrome File",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "new"},
+            {"cmd": "ai 1"},
+            {"cmd": "trace chrome {trace_chrome_path}"}
+          ],
+          "expected_patterns": ["TRACE: chrome=", "events=", "bytes="],
+          "expected_artifacts": [
+            {"placeholder": "trace_chrome_path", "format": "chrome"}
+          ],
+          "timeout": 12000
+        },
+        {
+          "id": "trace_reset",
+          "name": "Trace Reset",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "new"},
+            {"cmd": "ai 1"},
+            {"cmd": "trace reset"},
+            {"cmd": "trace report"}
+          ],
+          "expected_patterns": ["TRACE: reset", "events=0", "last_ai=none"],
           "timeout": 8000
         }
       ]

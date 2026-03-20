@@ -1,4 +1,4 @@
-import std/[strutils, sequtils, tables, strformat, times, algorithm]
+import std/[strutils, sequtils, tables, strformat, hashes, times, algorithm, json]
 
 # ================================
 # Type Definitions
@@ -59,6 +59,11 @@ type
     sideToMove: uint64
     castling: array[4, uint64]
     enPassant: array[8, uint64]
+
+  TraceEvent = object
+    tsMs: int64
+    event: string
+    detail: string
 
 # ================================
 # Constants
@@ -157,7 +162,9 @@ var
   gBookLookups = 0
   gPosition960Id = 0
   gTraceEnabled = false
-  gTraceEvents = 0
+  gTraceLevel = "info"
+  gTraceCommandCount = 0
+  gTraceEvents: seq[TraceEvent] = @[]
   gTraceLastAi = "none"
   gZobristKeys: ZobristKeys
   gZobristInitialized = false
@@ -168,6 +175,12 @@ var
 
 proc opposite*(c: Color): Color =
   if c == cWhite: cBlack else: cWhite
+
+proc getFile*(sq: Square): int =
+  sq mod 8
+
+proc getRank*(sq: Square): int =
+  sq div 8
 
 proc xorshift64(state: var uint64): uint64 =
   state = state xor (state shl 13)
@@ -237,12 +250,6 @@ proc positionHash*(board: Board): uint64 =
 
 proc refreshPositionHash*(board: var Board) =
   board.zobristHash = positionHash(board)
-
-proc getFile*(sq: Square): int =
-  sq mod 8
-
-proc getRank*(sq: Square): int =
-  sq div 8
 
 proc makeSquare*(file, rank: int): Square =
   if file in 0..7 and rank in 0..7:
@@ -1061,10 +1068,85 @@ proc bookStatsResponse*(): string =
     "; lookups=" & $gBookLookups &
     "; hits=" & $gBookHits
 
+proc recordTrace(event, detail: string) =
+  if not gTraceEnabled:
+    return
+  gTraceEvents.add(TraceEvent(
+    tsMs: int64(epochTime() * 1000),
+    event: event,
+    detail: detail
+  ))
+
+proc resetTraceState() =
+  gTraceCommandCount = 0
+  gTraceEvents = @[]
+  gTraceLastAi = "none"
+
 proc traceReportResponse*(): string =
   "TRACE: enabled=" & (if gTraceEnabled: "true" else: "false") &
-    "; events=" & $gTraceEvents &
+    "; level=" & gTraceLevel &
+    "; events=" & $gTraceEvents.len &
+    "; commands=" & $gTraceCommandCount &
     "; last_ai=" & gTraceLastAi
+
+proc traceTarget(parts: seq[string]): string =
+  if parts.len < 3:
+    return ""
+  parts[2..^1].join(" ").strip()
+
+proc buildTraceExportJson(): string =
+  var payload = newJObject()
+  payload["format"] = %"tgac.trace.v1"
+  payload["engine"] = %"nim"
+  payload["generated_at_ms"] = %(int64(epochTime() * 1000))
+  payload["enabled"] = %gTraceEnabled
+  payload["level"] = %gTraceLevel
+  payload["command_count"] = %gTraceCommandCount
+  payload["event_count"] = %gTraceEvents.len
+
+  var events = newJArray()
+  for traceEvent in gTraceEvents:
+    events.add(%*{
+      "ts_ms": traceEvent.tsMs,
+      "event": traceEvent.event,
+      "detail": traceEvent.detail
+    })
+  payload["events"] = events
+
+  if gTraceLastAi != "none":
+    payload["last_ai"] = %*{"summary": gTraceLastAi}
+
+  result = $payload
+
+proc buildTraceChromeJson(): string =
+  var payload = newJObject()
+  payload["format"] = %"tgac.chrome_trace.v1"
+  payload["engine"] = %"nim"
+  payload["generated_at_ms"] = %(int64(epochTime() * 1000))
+  payload["enabled"] = %gTraceEnabled
+  payload["level"] = %gTraceLevel
+  payload["command_count"] = %gTraceCommandCount
+  payload["event_count"] = %gTraceEvents.len
+  payload["display_time_unit"] = %"ms"
+
+  var events = newJArray()
+  for traceEvent in gTraceEvents:
+    events.add(%*{
+      "name": traceEvent.event,
+      "cat": "engine.trace",
+      "ph": "i",
+      "ts": traceEvent.tsMs * 1000,
+      "pid": 1,
+      "tid": 1,
+      "args": {
+        "detail": traceEvent.detail,
+        "level": gTraceLevel,
+        "ts_ms": traceEvent.tsMs
+      }
+    })
+  payload["events"] = events
+
+  result = $payload
 
 proc concurrencyResponse*(profile: string): string =
   "CONCURRENCY: " &
@@ -1080,8 +1162,7 @@ proc searchAndApplyMove*(game: var GameState, depth: int): string =
       if applied.success:
         gBookHits.inc
         gTraceLastAi = "book:e2e4"
-        if gTraceEnabled:
-          gTraceEvents.inc
+        recordTrace("ai", gTraceLastAi)
         return "AI: " & moveToUCI(applied.move) & " (book)"
 
   let startTime = cpuTime()
@@ -1097,8 +1178,7 @@ proc searchAndApplyMove*(game: var GameState, depth: int): string =
   if game.board.makeMove(move):
     game.moveHistory.add(move)
     gTraceLastAi = "search:" & moveToUCI(move)
-    if gTraceEnabled:
-      gTraceEvents.inc
+    recordTrace("ai", gTraceLastAi)
 
     let nextLegalMoves = game.board.generateLegalMoves()
     var resp = "AI: "
@@ -1131,6 +1211,11 @@ proc processCommand*(game: var GameState, command: string): string =
   let parts = command.strip().split()
   if parts.len == 0:
     return ""
+
+  let normalizedCommand = command.strip()
+  if parts[0].toLowerAscii() != "trace":
+    gTraceCommandCount.inc
+    recordTrace("command", normalizedCommand)
   
   case parts[0].toLowerAscii()
   of "new":
@@ -1330,13 +1415,43 @@ proc processCommand*(game: var GameState, command: string): string =
     case parts[1].toLowerAscii()
     of "on":
       gTraceEnabled = true
-      gTraceEvents.inc
-      return "TRACE: enabled=true"
+      recordTrace("trace", "enabled")
+      return "TRACE: enabled=true; level=" & gTraceLevel & "; events=" & $gTraceEvents.len
     of "off":
+      recordTrace("trace", "disabled")
       gTraceEnabled = false
-      return "TRACE: enabled=false"
+      return "TRACE: enabled=false; level=" & gTraceLevel & "; events=" & $gTraceEvents.len
+    of "level":
+      if parts.len < 3 or parts[2].strip().len == 0:
+        return "ERROR: trace level requires a value"
+      gTraceLevel = parts[2].strip().toLowerAscii()
+      recordTrace("trace", "level=" & gTraceLevel)
+      return "TRACE: level=" & gTraceLevel
     of "report":
       return traceReportResponse()
+    of "reset":
+      resetTraceState()
+      return "TRACE: reset"
+    of "export":
+      let path = traceTarget(parts)
+      if path.len == 0:
+        return "ERROR: trace export requires a file path"
+      try:
+        let payload = buildTraceExportJson()
+        writeFile(path, payload)
+        return "TRACE: export=" & path & "; events=" & $gTraceEvents.len & "; bytes=" & $payload.len
+      except CatchableError as err:
+        return "ERROR: trace export failed: " & err.msg
+    of "chrome":
+      let path = traceTarget(parts)
+      if path.len == 0:
+        return "ERROR: trace chrome requires a file path"
+      try:
+        let payload = buildTraceChromeJson()
+        writeFile(path, payload)
+        return "TRACE: chrome=" & path & "; events=" & $gTraceEvents.len & "; bytes=" & $payload.len
+      except CatchableError as err:
+        return "ERROR: trace chrome failed: " & err.msg
     else:
       return "ERROR: Unsupported trace command"
 
@@ -1394,7 +1509,7 @@ pgn <load|show|moves> - PGN command surface
 book <load|stats> - Opening book command surface
 new960 [id] - Start a Chess960 fixture position
 position960 - Show current Chess960 fixture position
-trace <on|off|report> - Trace command surface
+trace <on|off|level|report|reset|export|chrome> - Trace command surface
 concurrency <quick|full> - Deterministic concurrency fixture
 status - Show game status
 hash - Show position hash

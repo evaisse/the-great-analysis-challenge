@@ -4,6 +4,7 @@ namespace Chess;
 
 require_once __DIR__ . '/Types.php';
 require_once __DIR__ . '/Board.php';
+require_once __DIR__ . '/DrawDetection.php';
 require_once __DIR__ . '/MoveGenerator.php';
 
 /**
@@ -168,6 +169,10 @@ class AI {
             return [0, null, false];
         }
         $this->nodes_visited++;
+
+        if (DrawDetection::is_draw($this->board)) {
+            return [0, null, true];
+        }
 
         $original_alpha = $alpha;
         $key = (string) $this->board->zobrist_hash;

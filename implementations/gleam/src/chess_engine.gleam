@@ -1,5 +1,6 @@
 // Main chess engine with CLI interface
 
+import gleam/dynamic
 import gleam/int
 import gleam/io
 import gleam/list
@@ -8,6 +9,12 @@ import gleam/string
 
 @external(erlang, "io", "get_line")
 fn get_line(prompt: String) -> String
+
+@external(erlang, "erlang", "system_time")
+fn system_time_native() -> Int
+
+@external(erlang, "file", "write_file")
+fn erlang_write_file(path: String, contents: String) -> dynamic.Dynamic
 
 import ai.{find_best_move}
 import board.{display_board, get_piece, make_move, new_game}
@@ -38,8 +45,15 @@ pub type RuntimeState {
     chess960_id: Option(Int),
     base_fen: String,
     trace_enabled: Bool,
-    trace_events_rev: List(String),
+    trace_level: String,
+    trace_command_count: Int,
+    trace_last_ai: String,
+    trace_events_rev: List(TraceEvent),
   )
+}
+
+pub type TraceEvent {
+  TraceEvent(ts_ms: Int, event: String, detail: String)
 }
 
 pub type ChessEngine {
@@ -68,6 +82,9 @@ fn new_runtime() -> RuntimeState {
     None,
     export_fen(game_state),
     False,
+    "basic",
+    0,
+    "none",
     [],
   )
 }
@@ -102,7 +119,8 @@ fn process_command(engine: ChessEngine, command: String) -> ChessEngine {
         ["undo"] -> handle_undo(engine)
         ["new"] -> handle_new(engine)
         ["ai", depth_str] -> handle_ai(engine, depth_str)
-        ["go", "movetime", movetime_str] -> handle_go_movetime(engine, movetime_str)
+        ["go", "movetime", movetime_str] ->
+          handle_go_movetime(engine, movetime_str)
         ["fen", ..fen_parts] -> handle_fen(engine, string.join(fen_parts, " "))
         ["export"] -> handle_export(engine)
         ["status"] -> handle_status(engine)
@@ -124,7 +142,13 @@ fn process_command(engine: ChessEngine, command: String) -> ChessEngine {
         ["position960"] -> handle_position960(engine)
         ["trace", "on"] -> handle_trace_on(engine)
         ["trace", "off"] -> handle_trace_off(engine)
+        ["trace", "level", level] -> handle_trace_level(engine, level)
         ["trace", "report"] -> handle_trace_report(engine)
+        ["trace", "reset"] -> handle_trace_reset(engine)
+        ["trace", "export", ..path_parts] ->
+          handle_trace_export(engine, string.join(path_parts, " "))
+        ["trace", "chrome", ..path_parts] ->
+          handle_trace_chrome(engine, string.join(path_parts, " "))
         ["concurrency", "quick"] -> handle_concurrency(engine, "quick")
         ["concurrency", "full"] -> handle_concurrency(engine, "full")
         ["help"] -> handle_help(engine)
@@ -188,7 +212,10 @@ fn handle_move(engine: ChessEngine, move_str: String) -> ChessEngine {
                     Some(chess_move) -> {
                       let new_state = make_move(engine.game_state, chess_move)
                       let new_runtime =
-                        append_protocol_move(engine.runtime, normalize_move(move_str))
+                        append_protocol_move(
+                          engine.runtime,
+                          normalize_move(move_str),
+                        )
                         |> clear_loaded_pgn
                       io.println("OK: " <> move_str)
                       io.println(display_board(new_state))
@@ -343,6 +370,7 @@ fn handle_ai_search(
               normalize_move(move_str),
             )
             |> clear_loaded_pgn
+            |> set_trace_last_ai("search:" <> move_str)
           let time_ms = case movetime_override {
             Some(ms) -> ms
             None -> result.time_ms
@@ -360,7 +388,11 @@ fn handle_ai_search(
           )
           io.println(display_board(new_state))
           check_game_end(new_state)
-          ChessEngine(..engine, game_state: new_state, runtime: runtime)
+          append_trace_event(
+            ChessEngine(..engine, game_state: new_state, runtime: runtime),
+            "ai",
+            runtime.trace_last_ai,
+          )
         }
       }
     }
@@ -370,7 +402,7 @@ fn handle_ai_search(
 fn maybe_play_book_move(engine: ChessEngine) -> Option(ChessEngine) {
   let runtime = engine.runtime
   case runtime.book_enabled, runtime.book_moves, runtime.protocol_moves_rev {
-    True, [book_move, .._], [] -> {
+    True, [book_move, ..], [] -> {
       case parse_protocol_move(engine.game_state, book_move) {
         Error(Nil) -> None
         Ok(chess_move) -> {
@@ -386,10 +418,15 @@ fn maybe_play_book_move(engine: ChessEngine) -> Option(ChessEngine) {
               normalize_move(book_move),
             )
             |> clear_loaded_pgn
+            |> set_trace_last_ai("book:" <> book_move)
           io.println("AI: " <> book_move <> " (book)")
           io.println(display_board(new_state))
           check_game_end(new_state)
-          Some(ChessEngine(..engine, game_state: new_state, runtime: runtime))
+          Some(append_trace_event(
+            ChessEngine(..engine, game_state: new_state, runtime: runtime),
+            "ai",
+            runtime.trace_last_ai,
+          ))
         }
       }
     }
@@ -513,7 +550,8 @@ fn handle_pgn_show(engine: ChessEngine) -> ChessEngine {
         <> " preview="
         <> preview_moves(engine.runtime.loaded_pgn_moves),
       )
-    None -> io.println("PGN: " <> render_live_pgn(protocol_moves(engine.runtime)))
+    None ->
+      io.println("PGN: " <> render_live_pgn(protocol_moves(engine.runtime)))
   }
   engine
 }
@@ -595,7 +633,9 @@ fn handle_new960(engine: ChessEngine, id: Int) -> ChessEngine {
       chess960_id: Some(id),
     )
   let new_state = new_game()
-  io.println("960: id=" <> int.to_string(id) <> " fen=" <> export_fen(new_state))
+  io.println(
+    "960: id=" <> int.to_string(id) <> " fen=" <> export_fen(new_state),
+  )
   ChessEngine(..engine, game_state: new_state, runtime: runtime)
 }
 
@@ -604,34 +644,119 @@ fn handle_position960(engine: ChessEngine) -> ChessEngine {
     Some(value) -> value
     None -> default_chess960_id
   }
-  io.println("960: id=" <> int.to_string(id) <> " fen=" <> export_fen(engine.game_state))
+  io.println(
+    "960: id=" <> int.to_string(id) <> " fen=" <> export_fen(engine.game_state),
+  )
   engine
 }
 
 fn handle_trace_on(engine: ChessEngine) -> ChessEngine {
-  let runtime = RuntimeState(..engine.runtime, trace_enabled: True, trace_events_rev: [])
-  io.println("TRACE: enabled")
-  ChessEngine(..engine, runtime: runtime)
+  let runtime = RuntimeState(..engine.runtime, trace_enabled: True)
+  let traced: ChessEngine =
+    append_trace_event(
+      ChessEngine(..engine, runtime: runtime),
+      "trace",
+      "enabled",
+    )
+  io.println("TRACE: enabled=true; level=" <> traced.runtime.trace_level)
+  traced
 }
 
 fn handle_trace_off(engine: ChessEngine) -> ChessEngine {
-  let runtime = RuntimeState(..engine.runtime, trace_enabled: False)
-  io.println("TRACE: disabled")
-  ChessEngine(..engine, runtime: runtime)
+  let traced = case engine.runtime.trace_enabled {
+    True -> append_trace_event(engine, "trace", "disabled")
+    False -> engine
+  }
+  let runtime = RuntimeState(..traced.runtime, trace_enabled: False)
+  io.println("TRACE: enabled=false")
+  ChessEngine(..traced, runtime: runtime)
+}
+
+fn handle_trace_level(engine: ChessEngine, level: String) -> ChessEngine {
+  let level = string.trim(level)
+  case level == "" {
+    True -> {
+      io.println("ERROR: trace level requires a value")
+      engine
+    }
+    False -> {
+      let runtime = RuntimeState(..engine.runtime, trace_level: level)
+      let updated = ChessEngine(..engine, runtime: runtime)
+      let traced = case updated.runtime.trace_enabled {
+        True -> append_trace_event(updated, "trace", "level=" <> level)
+        False -> updated
+      }
+      io.println("TRACE: level=" <> level)
+      traced
+    }
+  }
 }
 
 fn handle_trace_report(engine: ChessEngine) -> ChessEngine {
-  let events = list.reverse(engine.runtime.trace_events_rev)
-  io.println(
-    "TRACE: {\"enabled\":"
-    <> bool_text(engine.runtime.trace_enabled)
-    <> ",\"commands\":"
-    <> int.to_string(list.length(events))
-    <> ",\"events\":["
-    <> string.join(list.map(events, quoted_string), ",")
-    <> "]}",
-  )
+  io.println(trace_report_line(engine.runtime))
   engine
+}
+
+fn handle_trace_reset(engine: ChessEngine) -> ChessEngine {
+  let runtime =
+    RuntimeState(
+      ..engine.runtime,
+      trace_command_count: 0,
+      trace_last_ai: "none",
+      trace_events_rev: [],
+    )
+  io.println("TRACE: reset")
+  ChessEngine(..engine, runtime: runtime)
+}
+
+fn handle_trace_export(engine: ChessEngine, path: String) -> ChessEngine {
+  case string.trim(path) == "" {
+    True -> {
+      io.println("ERROR: trace export requires a file path")
+      engine
+    }
+    False -> {
+      let payload = build_trace_export_payload(engine.runtime)
+      case write_trace_payload(path, payload) {
+        Ok(bytes) ->
+          io.println(
+            "TRACE: export="
+            <> path
+            <> "; events="
+            <> int.to_string(list.length(engine.runtime.trace_events_rev))
+            <> "; bytes="
+            <> int.to_string(bytes),
+          )
+        Error(_) -> io.println("ERROR: trace export failed")
+      }
+      engine
+    }
+  }
+}
+
+fn handle_trace_chrome(engine: ChessEngine, path: String) -> ChessEngine {
+  case string.trim(path) == "" {
+    True -> {
+      io.println("ERROR: trace chrome requires a file path")
+      engine
+    }
+    False -> {
+      let payload = build_trace_chrome_payload(engine.runtime)
+      case write_trace_payload(path, payload) {
+        Ok(bytes) ->
+          io.println(
+            "TRACE: chrome="
+            <> path
+            <> "; events="
+            <> int.to_string(list.length(engine.runtime.trace_events_rev))
+            <> "; bytes="
+            <> int.to_string(bytes),
+          )
+        Error(_) -> io.println("ERROR: trace chrome failed")
+      }
+      engine
+    }
+  }
 }
 
 fn handle_concurrency(engine: ChessEngine, profile: String) -> ChessEngine {
@@ -708,7 +833,10 @@ fn move_to_string(chess_move: Move) -> String {
   }
 }
 
-fn parse_protocol_move(game_state: GameState, move_str: String) -> Result(Move, Nil) {
+fn parse_protocol_move(
+  game_state: GameState,
+  move_str: String,
+) -> Result(Move, Nil) {
   case string.length(move_str) >= 4 {
     False -> Error(Nil)
     True -> {
@@ -721,7 +849,14 @@ fn parse_protocol_move(game_state: GameState, move_str: String) -> Result(Move, 
       case algebraic_to_square(from_str), algebraic_to_square(to_str) {
         Ok(from_square), Ok(to_square) -> {
           let legal_moves = get_legal_moves(game_state, game_state.turn)
-          case find_matching_move(legal_moves, from_square, to_square, promotion_str) {
+          case
+            find_matching_move(
+              legal_moves,
+              from_square,
+              to_square,
+              promotion_str,
+            )
+          {
             Some(chess_move) -> Ok(chess_move)
             None -> Error(Nil)
           }
@@ -945,19 +1080,16 @@ fn render_live_pgn_turns(
     [] -> string.join(list.reverse(acc), " ")
     [white_move] ->
       string.join(
-        list.reverse([
-          white_move,
-          int.to_string(turn) <> ".",
-          ..acc
-        ]),
+        list.reverse([white_move, int.to_string(turn) <> ".", ..acc]),
         " ",
       )
     [white_move, black_move, ..rest] ->
-      render_live_pgn_turns(
-        rest,
-        turn + 1,
-        [black_move, white_move, int.to_string(turn) <> ".", ..acc],
-      )
+      render_live_pgn_turns(rest, turn + 1, [
+        black_move,
+        white_move,
+        int.to_string(turn) <> ".",
+        ..acc
+      ])
   }
 }
 
@@ -975,7 +1107,11 @@ fn record_trace_if_needed(engine: ChessEngine, command: String) -> ChessEngine {
           let runtime =
             RuntimeState(
               ..engine.runtime,
-              trace_events_rev: keep_trace_events([command, ..engine.runtime.trace_events_rev]),
+              trace_command_count: engine.runtime.trace_command_count + 1,
+              trace_events_rev: keep_trace_events([
+                TraceEvent(current_timestamp_ms(), "command", command),
+                ..engine.runtime.trace_events_rev
+              ]),
             )
           ChessEngine(..engine, runtime: runtime)
         }
@@ -983,8 +1119,145 @@ fn record_trace_if_needed(engine: ChessEngine, command: String) -> ChessEngine {
   }
 }
 
-fn keep_trace_events(events_rev: List(String)) -> List(String) {
+fn keep_trace_events(events_rev: List(TraceEvent)) -> List(TraceEvent) {
   events_rev |> list.reverse |> list.take(up_to: 16) |> list.reverse
+}
+
+fn current_timestamp_ms() -> Int {
+  system_time_native() * 1000
+}
+
+fn set_trace_last_ai(runtime: RuntimeState, summary: String) -> RuntimeState {
+  RuntimeState(..runtime, trace_last_ai: summary)
+}
+
+fn append_trace_event(
+  engine: ChessEngine,
+  event: String,
+  detail: String,
+) -> ChessEngine {
+  case engine.runtime.trace_enabled {
+    False -> engine
+    True -> {
+      let runtime =
+        RuntimeState(
+          ..engine.runtime,
+          trace_events_rev: keep_trace_events([
+            TraceEvent(current_timestamp_ms(), event, detail),
+            ..engine.runtime.trace_events_rev
+          ]),
+        )
+      ChessEngine(..engine, runtime: runtime)
+    }
+  }
+}
+
+fn trace_report_line(runtime: RuntimeState) -> String {
+  "TRACE: enabled="
+  <> bool_text(runtime.trace_enabled)
+  <> "; level="
+  <> runtime.trace_level
+  <> "; events="
+  <> int.to_string(list.length(runtime.trace_events_rev))
+  <> "; commands="
+  <> int.to_string(runtime.trace_command_count)
+  <> "; last_ai="
+  <> runtime.trace_last_ai
+}
+
+fn trace_event_json(event: TraceEvent) -> String {
+  case event {
+    TraceEvent(ts_ms, kind, detail) ->
+      "{\"ts_ms\":"
+      <> int.to_string(ts_ms)
+      <> ",\"event\":\""
+      <> json_escape(kind)
+      <> "\",\"detail\":\""
+      <> json_escape(detail)
+      <> "\"}"
+  }
+}
+
+fn chrome_trace_event_json(event: TraceEvent, level: String) -> String {
+  case event {
+    TraceEvent(ts_ms, kind, detail) ->
+      "{\"name\":\""
+      <> json_escape(kind)
+      <> "\",\"cat\":\"engine.trace\",\"ph\":\"i\",\"ts\":"
+      <> int.to_string(ts_ms)
+      <> ",\"pid\":1,\"tid\":1,\"args\":{\"detail\":\""
+      <> json_escape(detail)
+      <> "\",\"level\":\""
+      <> json_escape(level)
+      <> "\",\"ts_ms\":"
+      <> int.to_string(ts_ms)
+      <> "}}"
+  }
+}
+
+fn build_trace_export_payload(runtime: RuntimeState) -> String {
+  let events =
+    runtime.trace_events_rev
+    |> list.reverse
+    |> list.map(trace_event_json)
+    |> string.join(",")
+  let last_ai = case runtime.trace_last_ai == "none" {
+    True -> ""
+    False ->
+      ",\"last_ai\":{\"summary\":\""
+      <> json_escape(runtime.trace_last_ai)
+      <> "\"}"
+  }
+  "{\"format\":\"tgac.trace.v1\",\"engine\":\"gleam\",\"generated_at_ms\":"
+  <> int.to_string(current_timestamp_ms())
+  <> ",\"enabled\":"
+  <> bool_text(runtime.trace_enabled)
+  <> ",\"level\":\""
+  <> json_escape(runtime.trace_level)
+  <> "\",\"command_count\":"
+  <> int.to_string(runtime.trace_command_count)
+  <> ",\"event_count\":"
+  <> int.to_string(list.length(runtime.trace_events_rev))
+  <> ",\"events\":["
+  <> events
+  <> "]"
+  <> last_ai
+  <> "}\n"
+}
+
+fn build_trace_chrome_payload(runtime: RuntimeState) -> String {
+  let events =
+    runtime.trace_events_rev
+    |> list.reverse
+    |> list.map(chrome_trace_event_json(_, runtime.trace_level))
+    |> string.join(",")
+  "{\"format\":\"tgac.chrome_trace.v1\",\"engine\":\"gleam\",\"generated_at_ms\":"
+  <> int.to_string(current_timestamp_ms())
+  <> ",\"enabled\":"
+  <> bool_text(runtime.trace_enabled)
+  <> ",\"level\":\""
+  <> json_escape(runtime.trace_level)
+  <> "\",\"command_count\":"
+  <> int.to_string(runtime.trace_command_count)
+  <> ",\"event_count\":"
+  <> int.to_string(list.length(runtime.trace_events_rev))
+  <> ",\"display_time_unit\":\"ms\",\"events\":["
+  <> events
+  <> "]}\n"
+}
+
+fn write_trace_payload(path: String, payload: String) -> Result(Int, Nil) {
+  let _result = erlang_write_file(path, payload)
+  Ok(string.length(payload))
+}
+
+fn json_escape(text: String) -> String {
+  text
+  |> string.replace(each: "\\", with: "\\\\")
+  |> string.replace(each: "\"", with: "\\\"")
+  |> string.replace(each: "\n", with: "\\n")
+  |> string.replace(each: "\r", with: "\\r")
+  |> string.replace(each: "\t", with: "\\t")
 }
 
 fn option_text(value: Option(String)) -> String {
@@ -999,8 +1272,4 @@ fn bool_text(value: Bool) -> String {
     True -> "true"
     False -> "false"
   }
-}
-
-fn quoted_string(text: String) -> String {
-  "\"" <> text <> "\""
 }

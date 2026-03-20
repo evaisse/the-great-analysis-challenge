@@ -1,3 +1,4 @@
+const fs = require("fs");
 const readline = require("readline");
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -107,7 +108,7 @@ function buildHelpText() {
     "  ucinewgame                 - Reset game for UCI mode",
     "  new960 [id]                - Start Chess960 metadata mode",
     "  position960                - Show current Chess960 id",
-    "  trace on|off|report        - Trace command surface",
+    "  trace on|off|level|report|reset|export|chrome - Trace command surface",
     "  concurrency quick|full     - Deterministic concurrency fixture",
     "  perft <depth>              - Performance test",
     "  quit                       - Exit the program",
@@ -133,8 +134,10 @@ class ElmProtocolRunner {
     this.bookPlayed = 0;
     this.chess960Id = 0;
     this.traceEnabled = false;
-    this.traceEvents = 0;
-    this.traceLastAi = "none";
+    this.traceLevel = "info";
+    this.traceEvents = [];
+    this.traceCommandCount = 0;
+    this.traceLastAi = null;
     this.pending = [];
 
     const { Elm } = require(elmModulePath);
@@ -187,6 +190,106 @@ class ElmProtocolRunner {
     process.stdout.write(output);
   }
 
+  nowMs() {
+    return Date.now();
+  }
+
+  recordTrace(event, detail) {
+    if (!this.traceEnabled) {
+      return;
+    }
+
+    this.traceEvents.push({
+      ts_ms: this.nowMs(),
+      event,
+      detail,
+    });
+
+    if (this.traceEvents.length > 256) {
+      this.traceEvents = this.traceEvents.slice(-256);
+    }
+  }
+
+  setTraceLastAi(source, move) {
+    const normalizedSource = String(source || "search");
+    const normalizedMove = String(move || "").toLowerCase();
+    this.traceLastAi = {
+      source: normalizedSource,
+      move: normalizedMove,
+      summary: `${normalizedSource}:${normalizedMove}`,
+    };
+    this.recordTrace("ai", this.traceLastAi.summary);
+  }
+
+  resetTraceState() {
+    this.traceEvents = [];
+    this.traceCommandCount = 0;
+    this.traceLastAi = null;
+  }
+
+  formatTraceReport() {
+    return `TRACE: enabled=${this.traceEnabled}; level=${this.traceLevel}; events=${this.traceEvents.length}; commands=${this.traceCommandCount}; last_ai=${this.traceLastAi ? this.traceLastAi.summary : "none"}`;
+  }
+
+  buildTraceExportPayload() {
+    const payload = {
+      format: "tgac.trace.v1",
+      engine: "elm",
+      generated_at_ms: this.nowMs(),
+      enabled: this.traceEnabled,
+      level: this.traceLevel,
+      command_count: this.traceCommandCount,
+      event_count: this.traceEvents.length,
+      events: this.traceEvents.map((event) => ({
+        ts_ms: event.ts_ms,
+        event: event.event,
+        detail: event.detail,
+      })),
+    };
+
+    if (this.traceLastAi) {
+      payload.last_ai = {
+        source: this.traceLastAi.source,
+        move: this.traceLastAi.move,
+        summary: this.traceLastAi.summary,
+      };
+    }
+
+    return `${JSON.stringify(payload)}\n`;
+  }
+
+  buildTraceChromePayload() {
+    return `${JSON.stringify({
+      format: "tgac.chrome_trace.v1",
+      engine: "elm",
+      generated_at_ms: this.nowMs(),
+      enabled: this.traceEnabled,
+      level: this.traceLevel,
+      command_count: this.traceCommandCount,
+      event_count: this.traceEvents.length,
+      display_time_unit: "ms",
+      events: this.traceEvents.map((event) => ({
+        name: event.event,
+        cat: "engine.trace",
+        ph: "i",
+        ts: event.ts_ms,
+        pid: 1,
+        tid: 1,
+        args: {
+          detail: event.detail,
+          level: this.traceLevel,
+          ts_ms: event.ts_ms,
+        },
+      })),
+    })}\n`;
+  }
+
+  writeTracePayload(target, payload) {
+    const byteCount = Buffer.byteLength(payload, "utf8");
+    fs.writeFileSync(target, payload, "utf8");
+    return byteCount;
+  }
+
   sendToElm(command) {
     return new Promise((resolve, reject) => {
       if (!this.app.ports.stdin) {
@@ -228,7 +331,6 @@ class ElmProtocolRunner {
     this.bookMisses = 0;
     this.bookPlayed = 0;
     this.chess960Id = 0;
-    this.traceLastAi = "none";
   }
 
   currentStatus() {
@@ -263,6 +365,11 @@ class ElmProtocolRunner {
     const parts = trimmed.split(/\s+/);
     const command = parts[0].toLowerCase();
     const args = parts.slice(1);
+
+    if (command !== "trace") {
+      this.traceCommandCount += 1;
+      this.recordTrace("command", trimmed);
+    }
 
     switch (command) {
       case "new":
@@ -444,10 +551,7 @@ class ElmProtocolRunner {
       this.bookLookups += 1;
       this.bookHits += 1;
       this.bookPlayed += 1;
-      this.traceLastAi = "book:e2e4";
-      if (this.traceEnabled) {
-        this.traceEvents += 1;
-      }
+      this.setTraceLastAi("book", "e2e4");
       this.undoStack.push(previousFen);
       const updatedFen = await this.syncFen();
       this.recordPosition(updatedFen);
@@ -468,10 +572,7 @@ class ElmProtocolRunner {
       const updatedFen = await this.syncFen();
       this.recordPosition(updatedFen);
       this.moveLog.push(scriptedMove);
-      this.traceLastAi = `search:${scriptedMove}`;
-      if (this.traceEnabled) {
-        this.traceEvents += 1;
-      }
+      this.setTraceLastAi("search", scriptedMove);
       const board = boardFromOutput(response);
       this.emit(`AI: ${scriptedMove} (depth=${depth}, eval=0, time=0ms)\n${board}`);
       return;
@@ -488,10 +589,7 @@ class ElmProtocolRunner {
     const updatedFen = await this.syncFen();
     this.recordPosition(updatedFen);
     this.moveLog.push(moveStr);
-    this.traceLastAi = `search:${moveStr}`;
-    if (this.traceEnabled) {
-      this.traceEvents += 1;
-    }
+    this.setTraceLastAi("search", moveStr);
     const board = boardFromOutput(response);
     this.emit(`AI: ${moveStr} (depth=${depth}, eval=0, time=0ms)\n${board}`);
   }
@@ -591,22 +689,70 @@ class ElmProtocolRunner {
   }
 
   handleTrace(args) {
-    const action = args[0] || "report";
+    const action = (args[0] || "report").toLowerCase();
     switch (action) {
       case "on":
         this.traceEnabled = true;
-        this.traceEvents += 1;
+        this.recordTrace("trace", "enabled");
         this.emit("TRACE: enabled=true");
         return;
       case "off":
+        this.recordTrace("trace", "disabled");
         this.traceEnabled = false;
         this.emit("TRACE: enabled=false");
         return;
-      case "report":
-        this.emit(
-          `TRACE: enabled=${this.traceEnabled}; events=${this.traceEvents}; last_ai=${this.traceLastAi}`
-        );
+      case "level": {
+        const level = String(args.slice(1).join(" ") || "").trim().toLowerCase();
+        if (!level) {
+          this.emit("ERROR: trace level requires a value");
+          return;
+        }
+        this.traceLevel = level;
+        this.recordTrace("trace", `level=${level}`);
+        this.emit(`TRACE: level=${level}`);
         return;
+      }
+      case "report":
+        this.emit(this.formatTraceReport());
+        return;
+      case "reset":
+        this.resetTraceState();
+        this.emit("TRACE: reset");
+        return;
+      case "export": {
+        const target = String(args.slice(1).join(" ") || "").trim();
+        if (!target) {
+          this.emit("ERROR: trace export requires a file path");
+          return;
+        }
+        try {
+          const payload = this.buildTraceExportPayload();
+          const byteCount = this.writeTracePayload(target, payload);
+          this.emit(`TRACE: export=${target}; events=${this.traceEvents.length}; bytes=${byteCount}`);
+        } catch (error) {
+          this.emit(
+            `ERROR: trace export failed: ${error && error.message ? error.message : String(error)}`
+          );
+        }
+        return;
+      }
+      case "chrome": {
+        const target = String(args.slice(1).join(" ") || "").trim();
+        if (!target) {
+          this.emit("ERROR: trace chrome requires a file path");
+          return;
+        }
+        try {
+          const payload = this.buildTraceChromePayload();
+          const byteCount = this.writeTracePayload(target, payload);
+          this.emit(`TRACE: chrome=${target}; events=${this.traceEvents.length}; bytes=${byteCount}`);
+        } catch (error) {
+          this.emit(
+            `ERROR: trace chrome failed: ${error && error.message ? error.message : String(error)}`
+          );
+        }
+        return;
+      }
       default:
         this.emit("ERROR: Unsupported trace command");
     }
