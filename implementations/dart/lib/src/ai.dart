@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:chess_engine/chess_engine.dart';
+import 'draw_detection.dart';
 
 const int _mateValue = 100000;
 const int _infinity = 1000000000;
@@ -191,6 +192,10 @@ class AI {
       return _NodeResult(0, null, false);
     }
     _nodesVisited++;
+
+    if (DrawDetection.isDraw(board)) {
+      return _NodeResult(0, null, true);
+    }
 
     final originalAlpha = alpha;
     final key = board.zobristHash;
