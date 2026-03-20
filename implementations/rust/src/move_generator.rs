@@ -376,14 +376,6 @@ impl MoveGenerator {
         legal_moves
     }
 
-    pub fn is_checkmate(&self, board: &mut Board, color: Color) -> bool {
-        self.is_in_check(board, color) && self.get_legal_moves(board, color).is_empty()
-    }
-
-    pub fn is_stalemate(&self, board: &mut Board, color: Color) -> bool {
-        !self.is_in_check(board, color) && self.get_legal_moves(board, color).is_empty()
-    }
-
     fn is_valid_square(&self, square: i32) -> bool {
         square >= 0 && square < 64
     }
