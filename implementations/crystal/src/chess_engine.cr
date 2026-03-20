@@ -388,8 +388,8 @@ class ChessEngine
     return unless @trace_enabled
 
     @trace_events << {
-      ts_ms: Time.utc.to_unix_ms,
-      event: event,
+      ts_ms:  Time.utc.to_unix_ms,
+      event:  event,
       detail: detail,
     }
   end

@@ -254,9 +254,9 @@ handleAi engine depthInput =
            then do
              putStrLn "ERROR: No legal moves available"
              return (Just engine)
-           else case chooseBookMove engine of
-             Just bookMove -> do
-               let notation = map toLower bookMove
+            else case chooseBookMove engine of
+              Just bookMove -> do
+                let notation = map toLower bookMove
                 case resolveLegalMove gs notation of
                   Nothing -> do
                     putStrLn "ERROR: No AI move available"
@@ -273,10 +273,10 @@ handleAi engine depthInput =
                     tracedEngine <- traceAiIfNeeded nextEngine ("book:" ++ notation)
                     putStrLn ("AI: " ++ notation ++ " (book)")
                     return (Just tracedEngine)
-             Nothing ->
-               case scriptedAiMove gs of
-                 Just notation ->
-                   case resolveLegalMove gs notation of
+              Nothing ->
+                case scriptedAiMove gs of
+                  Just notation ->
+                    case resolveLegalMove gs notation of
                       Nothing -> runSearchAi engine depth
                       Just move -> do
                         let nextEngine =
@@ -286,7 +286,7 @@ handleAi engine depthInput =
                         putStrLn ("AI: " ++ notation ++ " (depth=" ++ show depth ++ ", eval=0, time=0ms)")
                         putStrLn (displayBoard (gameState tracedEngine))
                         return (Just tracedEngine)
-                 Nothing -> runSearchAi engine depth
+                  Nothing -> runSearchAi engine depth
 
 runSearchAi :: ChessEngine -> Int -> IO (Maybe ChessEngine)
 runSearchAi engine depth = do

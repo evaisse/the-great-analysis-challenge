@@ -609,7 +609,8 @@ const ChessEngine = struct {
         var list_builder = std.ArrayList(u8).empty;
         errdefer list_builder.deinit(self.allocator);
 
-        try list_builder.writer(self.allocator).print(
+        const header = try std.fmt.allocPrint(
+            self.allocator,
             "{{\"format\":\"tgac.trace.v1\",\"engine\":\"zig\",\"generated_at_ms\":{},\"enabled\":{s},\"level\":\"{s}\",\"command_count\":{},\"event_count\":{},\"events\":[",
             .{
                 currentTimestampMs(),
@@ -619,18 +620,26 @@ const ChessEngine = struct {
                 self.trace_events.items.len,
             },
         );
+        defer self.allocator.free(header);
+        try list_builder.appendSlice(self.allocator, header);
         for (self.trace_events.items, 0..) |event, index| {
             if (index > 0) try list_builder.append(self.allocator, ',');
-            try list_builder.writer(self.allocator).print(
+            const event_json = try std.fmt.allocPrint(
+                self.allocator,
                 "{{\"ts_ms\":{},\"event\":\"{s}\",\"detail\":\"{s}\"}}",
                 .{ event.ts_ms, event.event.slice(), event.detail.slice() },
             );
+            defer self.allocator.free(event_json);
+            try list_builder.appendSlice(self.allocator, event_json);
         }
         if (!std.mem.eql(u8, self.runtime.trace_last_ai.slice(), "none")) {
-            try list_builder.writer(self.allocator).print(
+            const footer = try std.fmt.allocPrint(
+                self.allocator,
                 "],\"last_ai\":{{\"summary\":\"{s}\"}}}}\n",
                 .{self.runtime.trace_last_ai.slice()},
             );
+            defer self.allocator.free(footer);
+            try list_builder.appendSlice(self.allocator, footer);
         } else {
             try list_builder.appendSlice(self.allocator, "]}\n");
         }
@@ -641,7 +650,8 @@ const ChessEngine = struct {
         var list_builder = std.ArrayList(u8).empty;
         errdefer list_builder.deinit(self.allocator);
 
-        try list_builder.writer(self.allocator).print(
+        const header = try std.fmt.allocPrint(
+            self.allocator,
             "{{\"format\":\"tgac.chrome_trace.v1\",\"engine\":\"zig\",\"generated_at_ms\":{},\"enabled\":{s},\"level\":\"{s}\",\"command_count\":{},\"event_count\":{},\"display_time_unit\":\"ms\",\"events\":[",
             .{
                 currentTimestampMs(),
@@ -651,22 +661,27 @@ const ChessEngine = struct {
                 self.trace_events.items.len,
             },
         );
+        defer self.allocator.free(header);
+        try list_builder.appendSlice(self.allocator, header);
         for (self.trace_events.items, 0..) |event, index| {
             if (index > 0) try list_builder.append(self.allocator, ',');
-            try list_builder.writer(self.allocator).print(
+            const event_json = try std.fmt.allocPrint(
+                self.allocator,
                 "{{\"name\":\"{s}\",\"cat\":\"engine.trace\",\"ph\":\"i\",\"ts\":{},\"pid\":1,\"tid\":1,\"args\":{{\"detail\":\"{s}\",\"level\":\"{s}\",\"ts_ms\":{}}}}}",
                 .{ event.event.slice(), event.ts_ms, event.detail.slice(), self.runtime.trace_level.slice(), event.ts_ms },
             );
+            defer self.allocator.free(event_json);
+            try list_builder.appendSlice(self.allocator, event_json);
         }
         try list_builder.appendSlice(self.allocator, "]}\n");
         return try list_builder.toOwnedSlice(self.allocator);
     }
 
     fn writeTracePayload(self: *ChessEngine, target: []const u8, payload: []const u8) !void {
-        _ = self;
-        const file = try std.fs.cwd().createFile(target, .{ .truncate = true });
-        defer file.close();
-        try file.writeAll(payload);
+        var threaded = std.Io.Threaded.init(self.allocator, .{});
+        defer threaded.deinit();
+        const io_ctx = threaded.io();
+        try std.Io.Dir.cwd().writeFile(io_ctx, .{ .sub_path = target, .data = payload });
     }
 
     fn pgnMovesText(self: *ChessEngine) ![]u8 {
@@ -865,7 +880,9 @@ fn boundedDepth(movetime: i32) u8 {
 }
 
 fn currentTimestampMs() u64 {
-    return @as(u64, @intCast(std.time.milliTimestamp()));
+    var threaded = std.Io.Threaded.init_single_threaded;
+    const now = std.Io.Timestamp.now(threaded.io(), .real);
+    return @as(u64, @intCast(@divFloor(now.nanoseconds, std.time.ns_per_ms)));
 }
 
 fn boolText(value: bool) []const u8 {

@@ -131,14 +131,14 @@ trace_event_json(event::TraceEvent) = "{\"ts_ms\":$(event.ts_ms),\"event\":\"$(j
 function build_trace_export_payload(engine::ChessEngine)
     events_json = join(trace_event_json.(engine.trace_events), ",")
     last_ai_json = engine.trace_last_ai == "none" ? "" : ",\"last_ai\":{\"summary\":\"$(json_escape(engine.trace_last_ai))\"}"
-    return "{\"format\":\"tgac.trace.v1\",\"engine\":\"julia\",\"generated_at_ms\":$(round(Int, time() * 1000)),\"enabled\":$(bool_text(engine.trace_enabled)),\"level\":\"$(json_escape(engine.trace_level))\",\"command_count\":$(engine.trace_command_count),\"event_count\":$(length(engine.trace_events)),\"events\":[${events_json}]${last_ai_json}}\n"
+    return "{\"format\":\"tgac.trace.v1\",\"engine\":\"julia\",\"generated_at_ms\":$(round(Int, time() * 1000)),\"enabled\":$(bool_text(engine.trace_enabled)),\"level\":\"$(json_escape(engine.trace_level))\",\"command_count\":$(engine.trace_command_count),\"event_count\":$(length(engine.trace_events)),\"events\":[$(events_json)]$(last_ai_json)}\n"
 end
 
 function build_trace_chrome_payload(engine::ChessEngine)
     events_json = join(map(engine.trace_events) do event
         "{\"name\":\"$(json_escape(event.event))\",\"cat\":\"engine.trace\",\"ph\":\"i\",\"ts\":$(event.ts_ms),\"pid\":1,\"tid\":1,\"args\":{\"detail\":\"$(json_escape(event.detail))\",\"level\":\"$(json_escape(engine.trace_level))\",\"ts_ms\":$(event.ts_ms)}}"
     end, ",")
-    return "{\"format\":\"tgac.chrome_trace.v1\",\"engine\":\"julia\",\"generated_at_ms\":$(round(Int, time() * 1000)),\"enabled\":$(bool_text(engine.trace_enabled)),\"level\":\"$(json_escape(engine.trace_level))\",\"command_count\":$(engine.trace_command_count),\"event_count\":$(length(engine.trace_events)),\"display_time_unit\":\"ms\",\"events\":[${events_json}]}\n"
+    return "{\"format\":\"tgac.chrome_trace.v1\",\"engine\":\"julia\",\"generated_at_ms\":$(round(Int, time() * 1000)),\"enabled\":$(bool_text(engine.trace_enabled)),\"level\":\"$(json_escape(engine.trace_level))\",\"command_count\":$(engine.trace_command_count),\"event_count\":$(length(engine.trace_events)),\"display_time_unit\":\"ms\",\"events\":[$(events_json)]}\n"
 end
 
 function write_trace_payload(path::String, payload::String)
