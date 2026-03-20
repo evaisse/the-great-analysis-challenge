@@ -497,12 +497,23 @@ fn piece_attacks_square(
 ) -> Bool {
   case piece.piece_type {
     Pawn -> pawn_attacks_square(from, piece.color, target)
-    Knight -> offset_piece_attacks_square(from, target, [-17, -15, -10, -6, 6, 10, 15, 17], 2)
-    Bishop -> sliding_piece_attacks_square(game_state, from, target, [-9, -7, 7, 9])
-    Rook -> sliding_piece_attacks_square(game_state, from, target, [-8, -1, 1, 8])
+    Knight ->
+      offset_piece_attacks_square(
+        from,
+        target,
+        [-17, -15, -10, -6, 6, 10, 15, 17],
+        2,
+      )
+    Bishop ->
+      sliding_piece_attacks_square(game_state, from, target, [-9, -7, 7, 9])
+    Rook ->
+      sliding_piece_attacks_square(game_state, from, target, [-8, -1, 1, 8])
     Queen ->
-      sliding_piece_attacks_square(game_state, from, target, [-9, -8, -7, -1, 1, 7, 8, 9])
-    King -> offset_piece_attacks_square(from, target, [-9, -8, -7, -1, 1, 7, 8, 9], 1)
+      sliding_piece_attacks_square(game_state, from, target, [
+        -9, -8, -7, -1, 1, 7, 8, 9,
+      ])
+    King ->
+      offset_piece_attacks_square(from, target, [-9, -8, -7, -1, 1, 7, 8, 9], 1)
   }
 }
 
@@ -573,7 +584,8 @@ fn attacks_along_direction(
             True -> True
             False ->
               case get_piece(game_state, next) {
-                None -> attacks_along_direction(game_state, next, target, direction)
+                None ->
+                  attacks_along_direction(game_state, next, target, direction)
                 Some(_) -> False
               }
           }

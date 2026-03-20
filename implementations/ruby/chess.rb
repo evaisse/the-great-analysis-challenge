@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'json'
+
 require_relative 'lib/types'
 require_relative 'lib/board'
 require_relative 'lib/move_generator'
@@ -26,34 +28,48 @@ module Chess
       @book_hits = 0
       @chess960_id = 0
       @trace_enabled = false
-      @trace_events = 0
-      @trace_last_ai = 'none'
+      @trace_level = 'info'
+      @trace_events = []
+      @trace_command_count = 0
+      @trace_export_count = 0
+      @trace_last_export_target = nil
+      @trace_last_export_events = 0
+      @trace_last_export_bytes = 0
+      @trace_chrome_count = 0
+      @trace_last_chrome_target = nil
+      @trace_last_chrome_events = 0
+      @trace_last_chrome_bytes = 0
+      @trace_last_ai = nil
     end
-    
+
     def start
       puts @board.display
       flush_output
-      
+
       loop do
         print "\n> " if $stdin.tty?
         flush_output
         input = gets&.strip
         break if input.nil? || input.empty?
-        
+
         process_command(input)
       end
     end
-    
+
     private
-    
+
     def flush_output
       $stdout.flush
     end
-    
+
     def process_command(command)
       parts = command.split
       cmd = parts[0]&.downcase
-      
+      if cmd && cmd != 'trace'
+        @trace_command_count += 1
+        record_trace('command', command)
+      end
+
       case cmd
       when 'move'
         handle_move(parts[1])
@@ -113,29 +129,27 @@ module Chess
       puts "ERROR: #{e.message}"
       flush_output
     end
-    
+
     def handle_move(move_str)
       unless move_str
         puts 'ERROR: Invalid move format'
         flush_output
         return
       end
-      
+
       move = Move.from_algebraic(move_str)
       unless move
         puts 'ERROR: Invalid move format'
         flush_output
         return
       end
-      
+
       # Auto-promote to Queen if not specified and moving to promotion rank
       piece = @board.piece_at(move.from_row, move.from_col)
-      if piece&.type == :pawn && move.promotion.nil?
-        if (piece.color == :white && move.to_row == 0) || (piece.color == :black && move.to_row == 7)
-          move.promotion = :queen
-        end
+      if piece&.type == :pawn && move.promotion.nil? && ((piece.color == :white && move.to_row == 0) || (piece.color == :black && move.to_row == 7))
+        move.promotion = :queen
       end
-      
+
       # Validate move is legal
       legal_moves = @move_generator.generate_legal_moves
       legal_move = legal_moves.find do |legal|
@@ -145,40 +159,40 @@ module Chess
           legal.to_col == move.to_col &&
           legal.promotion == move.promotion
       end
-      
+
       unless legal_move
         puts 'ERROR: Illegal move'
         flush_output
         return
       end
-      
+
       # Make the move
       @move_history << legal_move
       @board.make_move(legal_move)
-      
+
       puts "OK: #{move_str}"
       puts @board.display
       flush_output
-      
+
       # Check for game end
       check_game_end
     end
-    
+
     def handle_undo
       if @move_history.empty?
         puts 'ERROR: No moves to undo'
         flush_output
         return
       end
-      
+
       last_move = @move_history.pop
       @board.undo_move(last_move)
-      
+
       puts 'OK: Move undone'
       puts @board.display
       flush_output
     end
-    
+
     def handle_new_game
       @board = Board.new
       @move_generator = MoveGenerator.new(@board)
@@ -194,12 +208,12 @@ module Chess
       @book_lookups = 0
       @book_hits = 0
       @chess960_id = 0
-      
+
       puts 'OK: New game started'
       puts @board.display
       flush_output
     end
-    
+
     def handle_ai_move(depth)
       unless depth.between?(1, 5)
         puts 'ERROR: AI depth must be 1-5'
@@ -210,40 +224,50 @@ module Chess
       if @book_enabled
         @book_lookups += 1
         @book_hits += 1
-        @trace_last_ai = 'book:e2e4'
-        @trace_events += 1 if @trace_enabled
+        record_trace_ai('book', 'e2e4', 0, 0, 0, false, 0, 0, 0, 0, 0)
         puts 'AI: e2e4 (book)'
         flush_output
         return
       end
-      
+
       result = @ai.find_best_move(depth)
       unless result
         puts 'ERROR: No legal moves available'
         flush_output
         return
       end
-      
+
       move = result[:move]
-      @trace_last_ai = "search:#{move.to_algebraic}"
-      @trace_events += 1 if @trace_enabled
+      record_trace_ai(
+        'search',
+        move.to_algebraic,
+        result[:depth],
+        result[:score],
+        result[:time_ms],
+        false,
+        result[:nodes],
+        result[:eval_calls],
+        0,
+        0,
+        result[:beta_cutoffs]
+      )
       @move_history << move
       @board.make_move(move)
-      
+
       puts "AI: #{move.to_algebraic} (depth=#{result[:depth]}, eval=#{result[:score]}, time=#{result[:time_ms]}ms)"
       puts @board.display
       flush_output
-      
+
       check_game_end
     end
-    
+
     def handle_fen(fen_string)
       unless fen_string
         puts 'ERROR: Invalid FEN string'
         flush_output
         return
       end
-      
+
       if @fen_parser.parse(fen_string)
         @move_history.clear
         @pgn_source = nil
@@ -256,13 +280,13 @@ module Chess
         flush_output
       end
     end
-    
+
     def handle_export
       fen = @fen_parser.export
       puts "FEN: #{fen}"
       flush_output
     end
-    
+
     def handle_eval
       # Simple evaluation display
       material_balance = calculate_material_balance
@@ -292,13 +316,14 @@ module Chess
     end
 
     def handle_history
-      puts "HISTORY: count=#{@board.position_history.length + 1}; current=#{@board.zobrist_hash.to_s(16).rjust(16, '0')}"
+      puts "HISTORY: count=#{@board.position_history.length + 1}; current=#{@board.zobrist_hash.to_s(16).rjust(16,
+                                                                                                               '0')}"
       flush_output
     end
 
     def handle_status
       current_color = @board.current_turn
-      
+
       if @move_generator.in_checkmate?(current_color)
         winner = current_color == :white ? 'Black' : 'White'
         puts "CHECKMATE: #{winner} wins"
@@ -307,27 +332,27 @@ module Chess
       else
         require_relative 'lib/draw_detection'
         if DrawDetection.draw?(@board)
-          reason = DrawDetection.draw_by_repetition?(@board) ? "repetition" : "50-move rule"
+          reason = DrawDetection.draw_by_repetition?(@board) ? 'repetition' : '50-move rule'
           puts "DRAW: by #{reason}"
         else
-          puts "OK: ongoing"
+          puts 'OK: ongoing'
         end
       end
       flush_output
     end
-    
+
     def handle_perft(depth)
       unless depth.between?(1, 6)
         puts 'ERROR: Perft depth must be 1-6'
         flush_output
         return
       end
-      
+
       result = @perft.calculate(depth)
       puts "Perft #{depth}: #{result[:nodes]} nodes in #{result[:time_ms]}ms"
       flush_output
     end
-    
+
     def handle_help
       puts <<~HELP
         Available commands:
@@ -346,7 +371,7 @@ module Chess
         book load|stats            - Opening book command surface
         uci / isready              - UCI handshake
         new960 [id] / position960  - Chess960 metadata
-        trace on|off|report        - Trace command surface
+        trace on|off|level|report|reset|export|chrome - Trace diagnostics
         concurrency quick|full     - Deterministic concurrency fixture
         perft <depth>             - Performance test (move count)
         help                       - Display this help message
@@ -354,10 +379,10 @@ module Chess
       HELP
       flush_output
     end
-    
+
     def check_game_end
       current_color = @board.current_turn
-      
+
       if @move_generator.in_checkmate?(current_color)
         winner = current_color == :white ? 'Black' : 'White'
         puts "CHECKMATE: #{winner} wins"
@@ -368,22 +393,22 @@ module Chess
       else
         require_relative 'lib/draw_detection'
         if DrawDetection.draw?(@board)
-          reason = DrawDetection.draw_by_repetition?(@board) ? "repetition" : "50-move rule"
+          reason = DrawDetection.draw_by_repetition?(@board) ? 'repetition' : '50-move rule'
           puts "DRAW: by #{reason}"
           flush_output
         end
       end
     end
-    
+
     def calculate_material_balance
       white_material = 0
       black_material = 0
-      
+
       (0..7).each do |row|
         (0..7).each do |col|
           piece = @board.piece_at(row, col)
           next unless piece
-          
+
           if piece.color == :white
             white_material += piece.value
           else
@@ -391,7 +416,7 @@ module Chess
           end
         end
       end
-      
+
       white_material - black_material
     end
 
@@ -506,21 +531,192 @@ module Chess
     end
 
     def handle_trace(args)
-      action = (args[0] || 'report').downcase
+      if args.empty?
+        puts 'ERROR: trace requires subcommand'
+        flush_output
+        return
+      end
+
+      action = args[0].downcase
       case action
       when 'on'
         @trace_enabled = true
-        @trace_events += 1
-        puts 'TRACE: enabled=true'
+        record_trace('trace', 'enabled')
+        puts "TRACE: enabled=true; level=#{@trace_level}; events=#{@trace_events.length}"
       when 'off'
+        record_trace('trace', 'disabled')
         @trace_enabled = false
-        puts 'TRACE: enabled=false'
+        puts "TRACE: enabled=false; level=#{@trace_level}; events=#{@trace_events.length}"
+      when 'level'
+        if args[1].nil? || args[1].strip.empty?
+          puts 'ERROR: trace level requires a value'
+        else
+          @trace_level = args[1].strip.downcase
+          record_trace('trace', "level=#{@trace_level}")
+          puts "TRACE: level=#{@trace_level}"
+        end
       when 'report'
-        puts "TRACE: enabled=#{@trace_enabled}; events=#{@trace_events}; last_ai=#{@trace_last_ai}"
+        report = "TRACE: enabled=#{@trace_enabled}; level=#{@trace_level}; events=#{@trace_events.length}; commands=#{@trace_command_count}; exports=#{@trace_export_count}; last_export=#{format_trace_transfer_summary(
+          @trace_export_count, @trace_last_export_target, @trace_last_export_events, @trace_last_export_bytes
+        )}; chrome_exports=#{@trace_chrome_count}; last_chrome=#{format_trace_transfer_summary(
+          @trace_chrome_count, @trace_last_chrome_target, @trace_last_chrome_events, @trace_last_chrome_bytes
+        )}; last_ai=#{format_trace_ai_summary}"
+        search_metrics = format_trace_search_metrics
+        report += "; search_metrics=#{search_metrics}" if search_metrics
+        puts report
+      when 'reset'
+        @trace_events = []
+        @trace_command_count = 0
+        @trace_export_count = 0
+        @trace_last_export_target = nil
+        @trace_last_export_events = 0
+        @trace_last_export_bytes = 0
+        @trace_chrome_count = 0
+        @trace_last_chrome_target = nil
+        @trace_last_chrome_events = 0
+        @trace_last_chrome_bytes = 0
+        reset_trace_search_state
+        puts 'TRACE: reset'
+      when 'export'
+        target = args.length > 1 ? args[1..].join(' ').strip : '(memory)'
+        target = '(memory)' if target.empty?
+        payload = build_trace_export_payload
+        byte_count = write_trace_payload(target, payload)
+        @trace_export_count += 1
+        @trace_last_export_target = target
+        @trace_last_export_events = @trace_events.length
+        @trace_last_export_bytes = byte_count
+        puts "TRACE: export=#{target}; events=#{@trace_events.length}; bytes=#{byte_count}"
+      when 'chrome'
+        target = args.length > 1 ? args[1..].join(' ').strip : '(memory)'
+        target = '(memory)' if target.empty?
+        payload = build_trace_chrome_payload
+        byte_count = write_trace_payload(target, payload)
+        @trace_chrome_count += 1
+        @trace_last_chrome_target = target
+        @trace_last_chrome_events = @trace_events.length
+        @trace_last_chrome_bytes = byte_count
+        puts "TRACE: chrome=#{target}; events=#{@trace_events.length}; bytes=#{byte_count}"
       else
         puts 'ERROR: Unsupported trace command'
       end
       flush_output
+    end
+
+    def record_trace(event, detail)
+      return unless @trace_enabled
+
+      @trace_events << {
+        event: event,
+        detail: detail,
+        ts_ms: Process.clock_gettime(Process::CLOCK_REALTIME, :millisecond)
+      }
+      @trace_events = @trace_events.last(256) if @trace_events.length > 256
+    end
+
+    def format_trace_transfer_summary(count, target, events, bytes)
+      return 'none' if count.zero?
+
+      "#{target || '(memory)'}@#{events}e/#{bytes}b/#{count}x"
+    end
+
+    def reset_trace_search_state
+      @trace_last_ai = nil
+    end
+
+    def format_trace_ai_summary
+      return 'none' unless @trace_last_ai
+
+      @trace_last_ai[:summary]
+    end
+
+    def format_trace_search_metrics
+      return nil unless @trace_last_ai && @trace_last_ai[:source].include?('search')
+
+      "nodes=#{@trace_last_ai[:nodes]},eval_calls=#{@trace_last_ai[:eval_calls]},tt_hits=#{@trace_last_ai[:tt_hits]},tt_misses=#{@trace_last_ai[:tt_misses]},beta_cutoffs=#{@trace_last_ai[:beta_cutoffs]},nps=#{@trace_last_ai[:nps]}"
+    end
+
+    def record_trace_ai(source, move, depth, score_cp, elapsed_ms, timed_out, nodes, eval_calls, tt_hits, tt_misses,
+                        beta_cutoffs)
+      divisor = elapsed_ms.to_i.positive? ? elapsed_ms.to_i : 1
+      nps = nodes.to_i.positive? ? ((nodes.to_i * 1000) / divisor) : 0
+
+      summary = "#{source}:#{move}"
+      if source.include?('search')
+        summary += "@d#{depth}/#{score_cp}cp/#{elapsed_ms}ms/n#{nodes}/e#{eval_calls}/nps#{nps}"
+        summary += '/timeout' if timed_out
+      elsif source.include?('endgame')
+        summary += "/#{score_cp}cp"
+      end
+
+      @trace_last_ai = {
+        source: source,
+        move: move,
+        depth: depth,
+        score_cp: score_cp,
+        elapsed_ms: elapsed_ms,
+        timed_out: timed_out,
+        nodes: nodes,
+        eval_calls: eval_calls,
+        nps: nps,
+        tt_hits: tt_hits,
+        tt_misses: tt_misses,
+        beta_cutoffs: beta_cutoffs,
+        summary: summary
+      }
+      record_trace('ai', summary)
+    end
+
+    def build_trace_export_payload
+      payload = {
+        format: 'tgac.trace.v1',
+        engine: 'ruby',
+        generated_at_ms: Process.clock_gettime(Process::CLOCK_REALTIME, :millisecond).to_i,
+        enabled: @trace_enabled,
+        level: @trace_level,
+        command_count: @trace_command_count,
+        event_count: @trace_events.length,
+        events: @trace_events
+      }
+      payload[:last_ai] = @trace_last_ai if @trace_last_ai
+      JSON.generate(payload) + "\n"
+    end
+
+    def build_trace_chrome_payload
+      JSON.generate(
+        {
+          format: 'tgac.chrome_trace.v1',
+          engine: 'ruby',
+          generated_at_ms: Process.clock_gettime(Process::CLOCK_REALTIME, :millisecond).to_i,
+          enabled: @trace_enabled,
+          level: @trace_level,
+          command_count: @trace_command_count,
+          event_count: @trace_events.length,
+          display_time_unit: 'ms',
+          events: @trace_events.map do |event|
+            {
+              name: event[:event],
+              cat: 'engine.trace',
+              ph: 'i',
+              s: 'p',
+              ts: event[:ts_ms] * 1000,
+              pid: 1,
+              tid: 1,
+              args: {
+                detail: event[:detail],
+                level: @trace_level,
+                ts_ms: event[:ts_ms]
+              }
+            }
+          end
+        }
+      ) + "\n"
+    end
+
+    def write_trace_payload(target, payload)
+      byte_count = payload.bytesize
+      File.write(target, payload) unless target == '(memory)'
+      byte_count
     end
 
     def handle_concurrency(args)
@@ -542,6 +738,4 @@ module Chess
 end
 
 # Start the chess engine if this file is run directly
-if __FILE__ == $PROGRAM_NAME
-  Chess::ChessEngine.new.start
-end
+Chess::ChessEngine.new.start if __FILE__ == $PROGRAM_NAME

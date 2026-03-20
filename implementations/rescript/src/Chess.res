@@ -1,5 +1,17 @@
 open Types
 
+type traceEvent = {
+  ts_ms: int,
+  event: string,
+  detail: string,
+}
+
+type traceAi = {
+  source: string,
+  move: string,
+  summary: string,
+}
+
 type gameEngine = {
   mutable state: gameState,
   mutable history: array<gameState>,
@@ -12,9 +24,14 @@ type gameEngine = {
   mutable bookHits: int,
   mutable chess960Id: int,
   mutable traceEnabled: bool,
-  mutable traceEvents: int,
-  mutable traceLastAi: string,
+  mutable traceLevel: string,
+  mutable traceEvents: array<traceEvent>,
+  mutable traceCommandCount: int,
+  mutable traceLastAi: option<traceAi>,
 }
+
+@module("node:fs")
+external writeFileSync: (string, string, string) => unit = "writeFileSync"
 
 let createEngine = (): gameEngine => {
   {
@@ -29,8 +46,10 @@ let createEngine = (): gameEngine => {
     bookHits: 0,
     chess960Id: 0,
     traceEnabled: false,
-    traceEvents: 0,
-    traceLastAi: "none",
+    traceLevel: "info",
+    traceEvents: [],
+    traceCommandCount: 0,
+    traceLastAi: None,
   }
 }
 
@@ -55,6 +74,117 @@ let formatHash = (hash: bigint): string =>
 
 let formatChecksum = (value: int): string =>
   %raw(`((n) => n.toString(16).padStart(8, "0"))`)(value)
+
+let nowMs = (): int => Belt.Int.fromFloat(Js.Date.now())
+
+let byteLengthUtf8 = (payload: string): int =>
+  %raw(`((value) => Buffer.byteLength(value, "utf8"))`)(payload)
+
+let recordTrace = (engine: gameEngine, event: string, detail: string): unit => {
+  if engine.traceEnabled {
+    let nextEvents = Belt.Array.concat(engine.traceEvents, [{ts_ms: nowMs(), event, detail}])
+    let nextLength = Belt.Array.length(nextEvents)
+    engine.traceEvents = if nextLength > 256 {
+      Belt.Array.slice(nextEvents, ~offset=nextLength - 256, ~len=256)
+    } else {
+      nextEvents
+    }
+  }
+}
+
+let setTraceLastAi = (engine: gameEngine, source: string, move: string): unit => {
+  let normalizedMove = Js.String.toLowerCase(move)
+  let summary = source ++ ":" ++ normalizedMove
+  engine.traceLastAi = Some({source, move: normalizedMove, summary})
+  recordTrace(engine, "ai", summary)
+}
+
+let resetTraceState = (engine: gameEngine): unit => {
+  engine.traceEvents = []
+  engine.traceCommandCount = 0
+  engine.traceLastAi = None
+}
+
+let formatTraceReport = (engine: gameEngine): string => {
+  let lastAi = switch engine.traceLastAi {
+  | Some(value) => value.summary
+  | None => "none"
+  }
+
+  "TRACE: enabled=" ++ boolToString(engine.traceEnabled) ++
+  "; level=" ++ engine.traceLevel ++
+  "; events=" ++ Belt.Int.toString(Belt.Array.length(engine.traceEvents)) ++
+  "; commands=" ++ Belt.Int.toString(engine.traceCommandCount) ++
+  "; last_ai=" ++ lastAi
+}
+
+let buildTraceExportPayload = (engine: gameEngine): string =>
+  %raw(`((events, lastAi, enabled, level, commandCount) => {
+    const payload = {
+      format: "tgac.trace.v1",
+      engine: "rescript",
+      generated_at_ms: Date.now(),
+      enabled,
+      level,
+      command_count: commandCount,
+      event_count: events.length,
+      events: events.map((event) => ({
+        ts_ms: event.ts_ms,
+        event: event.event,
+        detail: event.detail,
+      })),
+    };
+    if (lastAi !== undefined) {
+      payload.last_ai = {
+        source: lastAi.source,
+        move: lastAi.move,
+        summary: lastAi.summary,
+      };
+    }
+    return JSON.stringify(payload) + "\\n";
+  })`)(
+    engine.traceEvents,
+    engine.traceLastAi,
+    engine.traceEnabled,
+    engine.traceLevel,
+    engine.traceCommandCount,
+  )
+
+let buildTraceChromePayload = (engine: gameEngine): string =>
+  %raw(`((events, enabled, level, commandCount) => JSON.stringify({
+    format: "tgac.chrome_trace.v1",
+    engine: "rescript",
+    generated_at_ms: Date.now(),
+    enabled,
+    level,
+    command_count: commandCount,
+    event_count: events.length,
+    display_time_unit: "ms",
+    events: events.map((event) => ({
+      name: event.event,
+      cat: "engine.trace",
+      ph: "i",
+      ts: event.ts_ms,
+      pid: 1,
+      tid: 1,
+      args: {
+        detail: event.detail,
+        level,
+        ts_ms: event.ts_ms,
+      },
+    })),
+  }) + "\\n")`)(
+    engine.traceEvents,
+    engine.traceEnabled,
+    engine.traceLevel,
+    engine.traceCommandCount,
+  )
+
+let writeTracePayload = (target: string, payload: string): int => {
+  let byteCount = byteLengthUtf8(payload)
+  writeFileSync(target, payload, "utf8")
+  byteCount
+}
 
 let repetitionCount = (state: gameState): int => {
   let currentHash = state.zobristHash
@@ -205,10 +335,7 @@ let handleAI = (engine: gameEngine, depthStr: string): unit => {
   } else if engine.bookEnabled {
     engine.bookLookups = engine.bookLookups + 1
     engine.bookHits = engine.bookHits + 1
-    engine.traceLastAi = "book:e2e4"
-    if engine.traceEnabled {
-      engine.traceEvents = engine.traceEvents + 1
-    }
+    setTraceLastAi(engine, "book", "e2e4")
     Js.log("AI: e2e4 (book)")
   } else {
     let startTime = Js.Date.now()
@@ -227,10 +354,7 @@ let handleAI = (engine: gameEngine, depthStr: string): unit => {
 
       engine.history = Belt.Array.concat(engine.history, [engine.state])
       engine.state = MoveGenerator.makeMove(engine.state, move)
-      engine.traceLastAi = "search:" ++ moveStrWithPromo
-      if engine.traceEnabled {
-        engine.traceEvents = engine.traceEvents + 1
-      }
+      setTraceLastAi(engine, "search", moveStrWithPromo)
 
       let endTime = Js.Date.now()
       let timeMs = Belt.Int.fromFloat(endTime -. startTime)
@@ -390,17 +514,64 @@ let handleTrace = (engine: gameEngine, args: array<string>): unit => {
   switch action {
   | "on" =>
     engine.traceEnabled = true
-    engine.traceEvents = engine.traceEvents + 1
     Js.log("TRACE: enabled=true")
+    recordTrace(engine, "trace", "enabled")
   | "off" =>
+    recordTrace(engine, "trace", "disabled")
     engine.traceEnabled = false
     Js.log("TRACE: enabled=false")
+  | "level" =>
+    if Belt.Array.length(args) < 2 || Js.String.trim(Belt.Array.getExn(args, 1)) == "" {
+      Js.log("ERROR: trace level requires a value")
+    } else {
+      let level = Js.String.toLowerCase(Js.String.trim(Belt.Array.getExn(args, 1)))
+      engine.traceLevel = level
+      recordTrace(engine, "trace", "level=" ++ level)
+      Js.log("TRACE: level=" ++ level)
+    }
   | "report" =>
-    Js.log(
-      "TRACE: enabled=" ++ boolToString(engine.traceEnabled) ++
-      "; events=" ++ Belt.Int.toString(engine.traceEvents) ++
-      "; last_ai=" ++ engine.traceLastAi,
-    )
+    Js.log(formatTraceReport(engine))
+  | "reset" =>
+    resetTraceState(engine)
+    Js.log("TRACE: reset")
+  | "export" =>
+    if Belt.Array.length(args) < 2 {
+      Js.log("ERROR: trace export requires a file path")
+    } else {
+      let target = joinWithSpaces(Belt.Array.sliceToEnd(args, 1))
+      try {
+        let payload = buildTraceExportPayload(engine)
+        let byteCount = writeTracePayload(target, payload)
+        Js.log(
+          "TRACE: export=" ++ target ++
+          "; events=" ++ Belt.Int.toString(Belt.Array.length(engine.traceEvents)) ++
+          "; bytes=" ++ Belt.Int.toString(byteCount),
+        )
+      } catch {
+      | Js.Exn.Error(error) =>
+        Js.log("ERROR: trace export failed: " ++ Js.Exn.message(error)->Belt.Option.getWithDefault("unknown error"))
+      | _ => Js.log("ERROR: trace export failed: unknown error")
+      }
+    }
+  | "chrome" =>
+    if Belt.Array.length(args) < 2 {
+      Js.log("ERROR: trace chrome requires a file path")
+    } else {
+      let target = joinWithSpaces(Belt.Array.sliceToEnd(args, 1))
+      try {
+        let payload = buildTraceChromePayload(engine)
+        let byteCount = writeTracePayload(target, payload)
+        Js.log(
+          "TRACE: chrome=" ++ target ++
+          "; events=" ++ Belt.Int.toString(Belt.Array.length(engine.traceEvents)) ++
+          "; bytes=" ++ Belt.Int.toString(byteCount),
+        )
+      } catch {
+      | Js.Exn.Error(error) =>
+        Js.log("ERROR: trace chrome failed: " ++ Js.Exn.message(error)->Belt.Option.getWithDefault("unknown error"))
+      | _ => Js.log("ERROR: trace chrome failed: unknown error")
+      }
+    }
   | _ => Js.log("ERROR: Unsupported trace command")
   }
 }
@@ -475,6 +646,11 @@ let processCommand = (engine: gameEngine, input: string): unit => {
   } else {
     let command = Js.String.toLowerCase(parts[0])
     let args = Belt.Array.sliceToEnd(parts, 1)
+
+    if command != "trace" {
+      engine.traceCommandCount = engine.traceCommandCount + 1
+      recordTrace(engine, "command", trimmedInput)
+    }
 
     switch command {
     | "move" =>
@@ -629,7 +805,7 @@ let processCommand = (engine: gameEngine, input: string): unit => {
       Js.log("  book load|stats - Opening book command surface")
       Js.log("  uci / isready - UCI handshake")
       Js.log("  new960 / position960 - Chess960 metadata")
-      Js.log("  trace on|off|report - Trace command surface")
+      Js.log("  trace on|off|level|report|reset|export|chrome - Trace command surface")
       Js.log("  concurrency quick|full - Deterministic concurrency fixture")
       Js.log("  eval - Display position evaluation")
       Js.log("  perft <depth> - Run performance test")

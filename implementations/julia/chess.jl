@@ -19,6 +19,12 @@ using Printf
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 const DEFAULT_CHESS960_ID = 518
 
+struct TraceEvent
+    ts_ms::Int
+    event::String
+    detail::String
+end
+
 mutable struct ChessEngine
     board::Board
     loaded_pgn_path::Union{Nothing, String}
@@ -36,8 +42,9 @@ mutable struct ChessEngine
     chess960_fen::String
     trace_enabled::Bool
     trace_level::String
-    trace_events::Vector{String}
+    trace_events::Vector{TraceEvent}
     trace_command_count::Int
+    trace_last_ai::String
 
     function ChessEngine()
         board = Board()
@@ -59,8 +66,9 @@ mutable struct ChessEngine
             START_FEN,
             false,
             "basic",
-            String[],
+            TraceEvent[],
             0,
+            "none",
         )
     end
 end
@@ -72,6 +80,7 @@ function reset_runtime_state!(engine::ChessEngine; clear_pgn::Bool = true)
     end
     engine.chess960_id = nothing
     engine.chess960_fen = START_FEN
+    engine.trace_last_ai = "none"
 end
 
 current_fen(engine::ChessEngine) = board_to_fen(engine.board)
@@ -93,10 +102,54 @@ end
 
 function record_trace!(engine::ChessEngine, command::AbstractString)
     engine.trace_command_count += 1
-    push!(engine.trace_events, String(command))
+    push!(engine.trace_events, TraceEvent(round(Int, time() * 1000), "command", String(command)))
     while length(engine.trace_events) > 128
         popfirst!(engine.trace_events)
     end
+end
+
+function append_trace_event!(engine::ChessEngine, event::AbstractString, detail::AbstractString)
+    push!(engine.trace_events, TraceEvent(round(Int, time() * 1000), String(event), String(detail)))
+    while length(engine.trace_events) > 128
+        popfirst!(engine.trace_events)
+    end
+end
+
+function reset_trace_state!(engine::ChessEngine)
+    empty!(engine.trace_events)
+    engine.trace_command_count = 0
+    engine.trace_last_ai = "none"
+end
+
+function json_escape(value::AbstractString)
+    escaped = replace(String(value), '\\' => "\\\\", '"' => "\\\"", '\n' => "\\n", '\r' => "\\r", '\t' => "\\t")
+    return escaped
+end
+
+trace_event_json(event::TraceEvent) = "{\"ts_ms\":$(event.ts_ms),\"event\":\"$(json_escape(event.event))\",\"detail\":\"$(json_escape(event.detail))\"}"
+
+function build_trace_export_payload(engine::ChessEngine)
+    events_json = join(trace_event_json.(engine.trace_events), ",")
+    last_ai_json = engine.trace_last_ai == "none" ? "" : ",\"last_ai\":{\"summary\":\"$(json_escape(engine.trace_last_ai))\"}"
+    return "{\"format\":\"tgac.trace.v1\",\"engine\":\"julia\",\"generated_at_ms\":$(round(Int, time() * 1000)),\"enabled\":$(bool_text(engine.trace_enabled)),\"level\":\"$(json_escape(engine.trace_level))\",\"command_count\":$(engine.trace_command_count),\"event_count\":$(length(engine.trace_events)),\"events\":[$(events_json)]$(last_ai_json)}\n"
+end
+
+function build_trace_chrome_payload(engine::ChessEngine)
+    events_json = join(map(engine.trace_events) do event
+        "{\"name\":\"$(json_escape(event.event))\",\"cat\":\"engine.trace\",\"ph\":\"i\",\"ts\":$(event.ts_ms),\"pid\":1,\"tid\":1,\"args\":{\"detail\":\"$(json_escape(event.detail))\",\"level\":\"$(json_escape(engine.trace_level))\",\"ts_ms\":$(event.ts_ms)}}"
+    end, ",")
+    return "{\"format\":\"tgac.chrome_trace.v1\",\"engine\":\"julia\",\"generated_at_ms\":$(round(Int, time() * 1000)),\"enabled\":$(bool_text(engine.trace_enabled)),\"level\":\"$(json_escape(engine.trace_level))\",\"command_count\":$(engine.trace_command_count),\"event_count\":$(length(engine.trace_events)),\"display_time_unit\":\"ms\",\"events\":[$(events_json)]}\n"
+end
+
+function write_trace_payload(path::String, payload::String)
+    open(path, "w") do io
+        write(io, payload)
+    end
+    return sizeof(payload)
+end
+
+function trace_report_line(engine::ChessEngine)
+    return "TRACE: enabled=$(bool_text(engine.trace_enabled)); level=$(engine.trace_level); events=$(length(engine.trace_events)); commands=$(engine.trace_command_count); last_ai=$(engine.trace_last_ai)"
 end
 
 function find_legal_move_by_string(board::Board, move_str::String)
@@ -149,6 +202,10 @@ function execute_ai!(engine::ChessEngine, depth::Int)
                 make_move!(engine.board, legal_move)
                 engine.book_hits += 1
                 engine.book_played += 1
+                engine.trace_last_ai = "book:$move_text"
+                if engine.trace_enabled
+                    append_trace_event!(engine, "ai", engine.trace_last_ai)
+                end
                 return "AI: $move_text (book)"
             end
         end
@@ -160,6 +217,10 @@ function execute_ai!(engine::ChessEngine, depth::Int)
         if opening_move !== nothing
             make_move!(engine.board, opening_move)
             move_text = lowercase(move_to_string(opening_move))
+            engine.trace_last_ai = "search:$move_text"
+            if engine.trace_enabled
+                append_trace_event!(engine, "ai", engine.trace_last_ai)
+            end
             return "AI: $move_text (depth=$depth, eval=20, time=0ms)"
         end
     end
@@ -174,6 +235,10 @@ function execute_ai!(engine::ChessEngine, depth::Int)
 
     make_move!(engine.board, best_move)
     move_text = lowercase(move_to_string(best_move))
+    engine.trace_last_ai = "search:$move_text"
+    if engine.trace_enabled
+        append_trace_event!(engine, "ai", engine.trace_last_ai)
+    end
     return "AI: $move_text (depth=$depth, eval=$eval_score, time=$(elapsed_ms)ms)"
 end
 
@@ -460,25 +525,55 @@ function process_command(engine::ChessEngine, command::String)
         subcommand = length(parts) >= 2 ? lowercase(parts[2]) : ""
         if subcommand == "on"
             engine.trace_enabled = true
-            engine.trace_level = length(parts) >= 3 ? parts[3] : "basic"
+            append_trace_event!(engine, "trace", "enabled")
             println("TRACE: enabled=true; level=$(engine.trace_level)")
         elseif subcommand == "off"
+            if engine.trace_enabled
+                append_trace_event!(engine, "trace", "disabled")
+            end
             engine.trace_enabled = false
             println("TRACE: enabled=false")
+        elseif subcommand == "level"
+            if length(parts) < 3
+                println("ERROR: trace level requires a value")
+            else
+                engine.trace_level = parts[3]
+                if engine.trace_enabled
+                    append_trace_event!(engine, "trace", "level=$(engine.trace_level)")
+                end
+                println("TRACE: level=$(engine.trace_level)")
+            end
         elseif subcommand == "report"
-            println(
-                "TRACE: enabled=$(bool_text(engine.trace_enabled)); level=$(engine.trace_level); commands=$(engine.trace_command_count); events=$(length(engine.trace_events))"
-            )
-        elseif subcommand == "clear"
-            empty!(engine.trace_events)
-            engine.trace_command_count = 0
-            println("TRACE: cleared=true")
+            println(trace_report_line(engine))
+        elseif subcommand == "reset"
+            reset_trace_state!(engine)
+            println("TRACE: reset")
         elseif subcommand == "export"
-            target = length(parts) >= 3 ? parts[3] : "stdout"
-            println("TRACE: export=$target; events=$(length(engine.trace_events))")
+            if length(parts) < 3
+                println("ERROR: trace export requires a file path")
+            else
+                target = join(parts[3:end], " ")
+                try
+                    payload = build_trace_export_payload(engine)
+                    bytes = write_trace_payload(target, payload)
+                    println("TRACE: export=$target; events=$(length(engine.trace_events)); bytes=$bytes")
+                catch err
+                    println("ERROR: trace export failed: $(sprint(showerror, err))")
+                end
+            end
         elseif subcommand == "chrome"
-            target = length(parts) >= 3 ? parts[3] : "trace.json"
-            println("TRACE: chrome=$target; events=$(length(engine.trace_events))")
+            if length(parts) < 3
+                println("ERROR: trace chrome requires a file path")
+            else
+                target = join(parts[3:end], " ")
+                try
+                    payload = build_trace_chrome_payload(engine)
+                    bytes = write_trace_payload(target, payload)
+                    println("TRACE: chrome=$target; events=$(length(engine.trace_events)); bytes=$bytes")
+                catch err
+                    println("ERROR: trace chrome failed: $(sprint(showerror, err))")
+                end
+            end
         else
             println("ERROR: Unsupported trace command")
         end

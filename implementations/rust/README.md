@@ -59,6 +59,14 @@ docker-compose up --build chess-engine
 
 ## Commands
 
+- `status`, `hash`, `draws`, `history` - State/introspection surfaces
+- `go movetime <ms>` - Time-managed search
+- `pgn load|show|moves` - PGN command surface
+- `book load|stats` - Opening book command surface
+- `uci`, `isready`, `ucinewgame` - UCI handshake surface
+- `new960 [id]`, `position960` - Chess960 metadata
+- `trace on|off|level|report|reset|export|chrome` - Trace diagnostics
+- `concurrency quick|full` - Deterministic concurrency fixture
 - `move <from><to>[promotion]` - Make a move (e.g., e2e4, e7e8Q)
 - `undo` - Undo the last move
 - `new` - Start a new game  

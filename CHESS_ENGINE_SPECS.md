@@ -151,6 +151,83 @@ Required invariants for passing system stress checks:
 - `deadlocks = 0`
 - `timeouts = 0`
 
+#### Trace Export JSON Contract (v2)
+
+`trace export <file>` must write a UTF-8 JSON object with this minimum shape:
+
+```json
+{
+  "format": "tgac.trace.v1",
+  "engine": "python",
+  "generated_at_ms": 1234567890,
+  "enabled": true,
+  "level": "debug",
+  "command_count": 3,
+  "event_count": 2,
+  "events": [
+    {
+      "ts_ms": 1234567890,
+      "event": "trace",
+      "detail": "enabled"
+    }
+  ],
+  "last_ai": {
+    "source": "search",
+    "move": "e2e4",
+    "summary": "search:e2e4"
+  }
+}
+```
+
+Requirements:
+- top-level value must be a JSON object, not an array and not JSON-lines
+- `format` must be `tgac.trace.v1`
+- `engine`, `generated_at_ms`, `enabled`, `level`, `command_count`, `event_count`, and `events` are required
+- `events` must be an array and `event_count` must match its length
+- each event entry must be an object with `ts_ms`, `event`, and `detail`
+- `last_ai` is optional, but when present it must be an object
+
+#### Trace Chrome JSON Contract (v2)
+
+`trace chrome <file>` must write a UTF-8 JSON object with this minimum shape:
+
+```json
+{
+  "format": "tgac.chrome_trace.v1",
+  "engine": "python",
+  "generated_at_ms": 1234567890,
+  "enabled": true,
+  "level": "debug",
+  "command_count": 3,
+  "event_count": 2,
+  "display_time_unit": "ms",
+  "events": [
+    {
+      "name": "trace",
+      "cat": "engine.trace",
+      "ph": "i",
+      "ts": 0,
+      "pid": 1,
+      "tid": 1,
+      "args": {
+        "detail": "enabled",
+        "level": "debug",
+        "ts_ms": 1234567890
+      }
+    }
+  ]
+}
+```
+
+Requirements:
+- top-level value must be a JSON object, not an array
+- `format` must be `tgac.chrome_trace.v1`
+- `engine`, `generated_at_ms`, `enabled`, `level`, `command_count`, `event_count`, `display_time_unit`, and `events` are required
+- `display_time_unit` must be `ms`
+- `events` must be an array and `event_count` must match its length
+- each event entry must be an object with `name`, `cat`, `ph`, `ts`, `pid`, `tid`, and `args`
+- each `args` object must include `detail`, `level`, and `ts_ms`
+
 ## 2. Chess Rules Implementation
 
 ### 2.1 Standard Moves

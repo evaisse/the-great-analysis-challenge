@@ -193,6 +193,9 @@ Future<void> main() async {
         .toList(growable: false);
     final payload = <String, dynamic>{
       'format': 'tgac.trace.v1',
+      'engine': 'dart',
+      'generated_at_ms': DateTime.now().millisecondsSinceEpoch,
+      'enabled': traceEnabled,
       'level': traceLevel,
       'command_count': traceCommandCount,
       'event_count': snapshot.length,
@@ -226,7 +229,7 @@ Future<void> main() async {
         })
         .toList(growable: false);
 
-    return '${jsonEncode({'displayTimeUnit': 'ms', 'traceEvents': chromeEvents})}\n';
+    return '${jsonEncode({'format': 'tgac.chrome_trace.v1', 'engine': 'dart', 'generated_at_ms': DateTime.now().millisecondsSinceEpoch, 'enabled': traceEnabled, 'level': traceLevel, 'command_count': traceCommandCount, 'event_count': chromeEvents.length, 'display_time_unit': 'ms', 'events': chromeEvents})}\n';
   }
 
   Future<int> writeTracePayload(String target, String content) async {

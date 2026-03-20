@@ -48,6 +48,7 @@ docker run --network none -it chess-gleam
 - `pgn load|show|moves` - PGN command family
 - `uci` / `isready` - UCI handshake commands
 - `new960 [id]` / `position960` - Chess960 command surface
+- `trace on|off|level|report|reset|export|chrome` - Structured tracing command surface
 - `help` - Show available commands
 - `quit` - Exit the program
 
