@@ -1249,16 +1249,15 @@ class ChessEngine:
             })
 
         payload = {
-            'traceEvents': trace_events,
-            'displayTimeUnit': 'ms',
-            'otherData': {
-                'format': 'tgac.chrome_trace.v1',
-                'engine': 'python',
-                'generated_at_ms': int(time.time() * 1000),
-                'level': self._trace_level,
-                'command_count': self._trace_command_count,
-                'event_count': len(self._trace_events),
-            },
+            'format': 'tgac.chrome_trace.v1',
+            'engine': 'python',
+            'generated_at_ms': int(time.time() * 1000),
+            'enabled': self._trace_enabled,
+            'level': self._trace_level,
+            'command_count': self._trace_command_count,
+            'event_count': len(self._trace_events),
+            'display_time_unit': 'ms',
+            'events': trace_events,
         }
         return (json.dumps(payload, separators=(',', ':'), ensure_ascii=True) + '\n').encode('utf-8')
 

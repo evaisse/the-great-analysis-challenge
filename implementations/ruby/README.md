@@ -58,12 +58,26 @@ The engine supports all commands from the Chess Engine Specification:
 > new                    # Start new game
 > move e2e4             # Make a move
 > ai 3                   # AI move at depth 3
+> trace on               # Enable trace collection
+> trace report           # Show trace diagnostics
+> trace export           # Build JSON export in memory
 > fen <fen_string>      # Load position
 > export                 # Export current position
 > perft 4               # Performance test
 > help                   # Show all commands
 > quit                   # Exit
 ```
+
+Additional protocol surfaces:
+
+- `status`, `hash`, `draws`, `history`
+- `go movetime <ms>`
+- `pgn load|show|moves`
+- `book load|stats`
+- `uci`, `isready`, `ucinewgame`
+- `new960 [id]`, `position960`
+- `trace on|off|level|report|reset|export|chrome`
+- `concurrency quick|full`
 
 ## 🔍 **Static Analysis**
 

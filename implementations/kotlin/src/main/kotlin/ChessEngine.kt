@@ -1,3 +1,5 @@
+import java.io.File
+
 // Main chess engine with CLI interface
 
 class ChessEngine {
@@ -15,8 +17,12 @@ class ChessEngine {
     private var bookHits = 0
     private var chess960Id = 0
     private var traceEnabled = false
-    private var traceEvents = 0
+    private var traceLevel = "info"
+    private var traceCommandCount = 0
+    private val traceEvents = mutableListOf<TraceEvent>()
     private var traceLastAi = "none"
+
+    private data class TraceEvent(val tsMs: Long, val event: String, val detail: String)
     
     fun run() {
         // println(board) // Removed to avoid duplicate display when 'new' is received
@@ -37,7 +43,12 @@ class ChessEngine {
         if (parts.isEmpty() || parts[0].isEmpty()) return true
         
         val cmd = parts[0].toUpperCase()
-        
+
+        if (cmd != "TRACE") {
+            traceCommandCount += 1
+            recordTraceEvent("command", command.trim())
+        }
+         
         when (cmd) {
             "MOVE" -> {
                 if (parts.size > 1) {
@@ -190,7 +201,7 @@ class ChessEngine {
             bookLookups += 1
             bookHits += 1
             traceLastAi = "book:e2e4"
-            if (traceEnabled) traceEvents += 1
+            recordTraceEvent("ai", traceLastAi)
             println("AI: e2e4 (book)")
             return
         }
@@ -201,6 +212,8 @@ class ChessEngine {
         if (result.bestMove != null) {
             val moveStr = result.bestMove.toString().toLowerCase()
             board.makeMove(result.bestMove)
+            traceLastAi = "search:$moveStr"
+            recordTraceEvent("ai", traceLastAi)
             
             val nextTurn = board.getTurn()
             val nextLegalMoves = moveGenerator.getLegalMoves(board.getGameState(), nextTurn)
@@ -212,8 +225,6 @@ class ChessEngine {
                     println("AI: $moveStr (STALEMATE)")
                 }
             } else {
-                traceLastAi = "search:$moveStr"
-                if (traceEnabled) traceEvents += 1
                 println("AI: $moveStr (depth=$depth, eval=${result.evaluation}, time=${result.timeMs})")
             }
             println(board)
@@ -313,7 +324,7 @@ class ChessEngine {
         println("  book load|stats - Opening book command surface")
         println("  uci / isready - UCI handshake")
         println("  new960 [id] / position960 - Chess960 metadata")
-        println("  trace on|off|report - Trace command surface")
+        println("  trace on|off|level|report|reset|export|chrome - Trace command surface")
         println("  concurrency quick|full - Deterministic concurrency fixture")
         println("  perft <depth> - Run performance test")
         println("  help - Show this help message")
@@ -424,20 +435,169 @@ class ChessEngine {
     }
 
     private fun handleTrace(args: List<String>) {
-        val action = args.firstOrNull()?.toLowerCase() ?: "report"
+        if (args.isEmpty()) {
+            println("ERROR: trace requires subcommand")
+            return
+        }
+
+        val action = args.first().toLowerCase()
         when (action) {
             "on" -> {
                 traceEnabled = true
-                traceEvents += 1
-                println("TRACE: enabled=true")
+                recordTraceEvent("trace", "enabled")
+                println("TRACE: enabled=true; level=$traceLevel; events=${traceEvents.size}")
             }
             "off" -> {
+                recordTraceEvent("trace", "disabled")
                 traceEnabled = false
-                println("TRACE: enabled=false")
+                println("TRACE: enabled=false; level=$traceLevel; events=${traceEvents.size}")
             }
-            "report" -> println("TRACE: enabled=$traceEnabled; events=$traceEvents; last_ai=$traceLastAi")
+            "level" -> {
+                val level = args.getOrNull(1)?.trim().orEmpty()
+                if (level.isEmpty()) {
+                    println("ERROR: trace level requires a value")
+                    return
+                }
+                traceLevel = level.toLowerCase()
+                recordTraceEvent("trace", "level=$traceLevel")
+                println("TRACE: level=$traceLevel")
+            }
+            "report" -> println(buildTraceReport())
+            "reset" -> {
+                resetTraceState()
+                println("TRACE: reset")
+            }
+            "export" -> {
+                val target = args.drop(1).joinToString(" ").trim()
+                if (target.isEmpty()) {
+                    println("ERROR: trace export requires a file path")
+                    return
+                }
+                try {
+                    val payload = buildTraceExportPayload()
+                    val bytes = writeTracePayload(target, payload)
+                    println("TRACE: export=$target; events=${traceEvents.size}; bytes=$bytes")
+                } catch (error: Exception) {
+                    println("ERROR: trace export failed: ${error.message ?: error.javaClass.simpleName}")
+                }
+            }
+            "chrome" -> {
+                val target = args.drop(1).joinToString(" ").trim()
+                if (target.isEmpty()) {
+                    println("ERROR: trace chrome requires a file path")
+                    return
+                }
+                try {
+                    val payload = buildTraceChromePayload()
+                    val bytes = writeTracePayload(target, payload)
+                    println("TRACE: chrome=$target; events=${traceEvents.size}; bytes=$bytes")
+                } catch (error: Exception) {
+                    println("ERROR: trace chrome failed: ${error.message ?: error.javaClass.simpleName}")
+                }
+            }
             else -> println("ERROR: Unsupported trace command")
         }
+    }
+
+    private fun recordTraceEvent(event: String, detail: String) {
+        if (!traceEnabled) {
+            return
+        }
+
+        traceEvents.add(TraceEvent(System.currentTimeMillis(), event, detail))
+        if (traceEvents.size > 256) {
+            traceEvents.removeAt(0)
+        }
+    }
+
+    private fun resetTraceState() {
+        traceEvents.clear()
+        traceCommandCount = 0
+        traceLastAi = "none"
+    }
+
+    private fun buildTraceReport(): String {
+        return "TRACE: enabled=$traceEnabled; level=$traceLevel; events=${traceEvents.size}; commands=$traceCommandCount; last_ai=$traceLastAi"
+    }
+
+    private fun buildTraceExportPayload(): String {
+        val builder = StringBuilder()
+        builder.append("{")
+        builder.append("\"format\":\"tgac.trace.v1\",")
+        builder.append("\"engine\":\"kotlin\",")
+        builder.append("\"generated_at_ms\":${System.currentTimeMillis()},")
+        builder.append("\"enabled\":$traceEnabled,")
+        builder.append("\"level\":\"")
+        builder.append(escapeJson(traceLevel))
+        builder.append("\",")
+        builder.append("\"command_count\":$traceCommandCount,")
+        builder.append("\"event_count\":${traceEvents.size},")
+        builder.append("\"events\":[")
+        builder.append(traceEvents.joinToString(",") { traceEventToJson(it) })
+        builder.append("]")
+        if (traceLastAi != "none") {
+            builder.append(",\"last_ai\":{\"summary\":\"")
+            builder.append(escapeJson(traceLastAi))
+            builder.append("\"}")
+        }
+        builder.append("}\n")
+        return builder.toString()
+    }
+
+    private fun buildTraceChromePayload(): String {
+        val builder = StringBuilder()
+        builder.append("{")
+        builder.append("\"format\":\"tgac.chrome_trace.v1\",")
+        builder.append("\"engine\":\"kotlin\",")
+        builder.append("\"generated_at_ms\":${System.currentTimeMillis()},")
+        builder.append("\"enabled\":$traceEnabled,")
+        builder.append("\"level\":\"")
+        builder.append(escapeJson(traceLevel))
+        builder.append("\",")
+        builder.append("\"command_count\":$traceCommandCount,")
+        builder.append("\"event_count\":${traceEvents.size},")
+        builder.append("\"display_time_unit\":\"ms\",")
+        builder.append("\"events\":[")
+        builder.append(traceEvents.joinToString(",") { traceChromeEventToJson(it) })
+        builder.append("]}\n")
+        return builder.toString()
+    }
+
+    private fun traceEventToJson(traceEvent: TraceEvent): String {
+        return "{\"ts_ms\":${traceEvent.tsMs},\"event\":\"${escapeJson(traceEvent.event)}\",\"detail\":\"${escapeJson(traceEvent.detail)}\"}"
+    }
+
+    private fun traceChromeEventToJson(traceEvent: TraceEvent): String {
+        return "{\"name\":\"${escapeJson(traceEvent.event)}\",\"cat\":\"engine.trace\",\"ph\":\"i\",\"ts\":${traceEvent.tsMs * 1000},\"pid\":1,\"tid\":1,\"args\":{\"detail\":\"${escapeJson(traceEvent.detail)}\",\"level\":\"${escapeJson(traceLevel)}\",\"ts_ms\":${traceEvent.tsMs}}}"
+    }
+
+    private fun writeTracePayload(target: String, payload: String): Int {
+        val bytes = payload.toByteArray(Charsets.UTF_8)
+        File(target).writeText(payload, Charsets.UTF_8)
+        return bytes.size
+    }
+
+    private fun escapeJson(value: String): String {
+        val builder = StringBuilder()
+        for (char in value) {
+            when (char) {
+                '\\' -> builder.append("\\\\")
+                '"' -> builder.append("\\\"")
+                '\b' -> builder.append("\\b")
+                '\u000C' -> builder.append("\\f")
+                '\n' -> builder.append("\\n")
+                '\r' -> builder.append("\\r")
+                '\t' -> builder.append("\\t")
+                else -> {
+                    if (char < ' ') {
+                        builder.append(String.format("\\u%04x", char.toInt()))
+                    } else {
+                        builder.append(char)
+                    }
+                }
+            }
+        }
+        return builder.toString()
     }
 
     private fun handleConcurrency(args: List<String>) {

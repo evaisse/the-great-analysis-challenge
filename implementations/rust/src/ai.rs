@@ -6,6 +6,8 @@ use std::time::Instant;
 pub struct AI {
     move_generator: MoveGenerator,
     nodes_evaluated: u64,
+    eval_calls: u64,
+    beta_cutoffs: u64,
 }
 
 #[derive(Debug)]
@@ -13,6 +15,8 @@ pub struct SearchResult {
     pub best_move: Option<Move>,
     pub evaluation: i32,
     pub nodes: u64,
+    pub eval_calls: u64,
+    pub beta_cutoffs: u64,
     pub time_ms: u128,
 }
 
@@ -21,12 +25,16 @@ impl AI {
         Self {
             move_generator: MoveGenerator::new(),
             nodes_evaluated: 0,
+            eval_calls: 0,
+            beta_cutoffs: 0,
         }
     }
 
     pub fn find_best_move(&mut self, board: &mut Board, depth: u8) -> SearchResult {
         let start_time = Instant::now();
         self.nodes_evaluated = 0;
+        self.eval_calls = 0;
+        self.beta_cutoffs = 0;
         
         let color = board.get_turn();
         let moves = self.move_generator.get_legal_moves(board, color);
@@ -36,6 +44,8 @@ impl AI {
                 best_move: None,
                 evaluation: 0,
                 nodes: 0,
+                eval_calls: 0,
+                beta_cutoffs: 0,
                 time_ms: 0,
             };
         }
@@ -60,6 +70,8 @@ impl AI {
             best_move: Some(best_move),
             evaluation: best_eval,
             nodes: self.nodes_evaluated,
+            eval_calls: self.eval_calls,
+            beta_cutoffs: self.beta_cutoffs,
             time_ms: elapsed.as_millis(),
         }
     }
@@ -97,6 +109,7 @@ impl AI {
                 current_alpha = current_alpha.max(evaluation);
                 
                 if beta <= current_alpha {
+                    self.beta_cutoffs += 1;
                     break; // Beta cutoff
                 }
             }
@@ -115,6 +128,7 @@ impl AI {
                 current_beta = current_beta.min(evaluation);
                 
                 if current_beta <= alpha {
+                    self.beta_cutoffs += 1;
                     break; // Alpha cutoff
                 }
             }
@@ -123,7 +137,8 @@ impl AI {
         }
     }
 
-    fn evaluate(&self, board: &Board) -> i32 {
+    fn evaluate(&mut self, board: &Board) -> i32 {
+        self.eval_calls += 1;
         let mut score = 0;
 
         for square in 0..64 {

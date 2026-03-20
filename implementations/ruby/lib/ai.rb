@@ -10,11 +10,17 @@ module Chess
     def initialize(board, move_generator)
       @board = board
       @move_generator = move_generator
+      @nodes_evaluated = 0
+      @eval_calls = 0
+      @beta_cutoffs = 0
     end
     
     def find_best_move(depth, color = nil)
       color ||= @board.current_turn
       start_time = Time.now
+      @nodes_evaluated = 0
+      @eval_calls = 0
+      @beta_cutoffs = 0
       
       legal_moves = @move_generator.generate_legal_moves(color)
       return nil if legal_moves.empty?
@@ -44,6 +50,9 @@ module Chess
         move: best_move,
         score: best_score,
         depth: depth,
+        nodes: @nodes_evaluated,
+        eval_calls: @eval_calls,
+        beta_cutoffs: @beta_cutoffs,
         time_ms: time_ms
       }
     end
@@ -51,6 +60,8 @@ module Chess
     private
     
     def minimax(depth, alpha, beta, maximizing_player, color)
+      @nodes_evaluated += 1
+
       # Check for game end conditions
       if @move_generator.in_checkmate?(color)
         return maximizing_player ? -CHECKMATE_VALUE : CHECKMATE_VALUE
@@ -79,7 +90,10 @@ module Chess
           @board.undo_move(move)
           restore_board_state(original_state)
           
-          break if beta <= alpha # Alpha-beta pruning
+          if beta <= alpha
+            @beta_cutoffs += 1
+            break
+          end
         end
         
         max_eval
@@ -97,7 +111,10 @@ module Chess
           @board.undo_move(move)
           restore_board_state(original_state)
           
-          break if beta <= alpha # Alpha-beta pruning
+          if beta <= alpha
+            @beta_cutoffs += 1
+            break
+          end
         end
         
         min_eval
@@ -105,6 +122,7 @@ module Chess
     end
     
     def evaluate_position(perspective_color)
+      @eval_calls += 1
       score = 0
       
       # Material evaluation

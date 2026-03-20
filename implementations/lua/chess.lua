@@ -1741,26 +1741,26 @@ local function build_trace_last_ai_json()
 end
 
 local function build_trace_export_payload()
-    local lines = {}
-    lines[#lines + 1] = string.format(
-        "{\"type\":\"session\",\"format\":\"tgac.trace.v1\",\"level\":\"%s\",\"command_count\":%d,\"event_count\":%d,\"last_ai\":%s}",
-        json_escape(trace_level),
-        trace_command_count,
-        #trace_events,
-        build_trace_last_ai_json()
-    )
-
+    local event_entries = {}
     for index, event in ipairs(trace_events) do
-        lines[#lines + 1] = string.format(
-            "{\"type\":\"event\",\"index\":%d,\"ts_ms\":%d,\"event\":\"%s\",\"detail\":\"%s\"}",
-            index - 1,
+        event_entries[#event_entries + 1] = string.format(
+            "{\"ts_ms\":%d,\"event\":\"%s\",\"detail\":\"%s\"}",
             event.ts_ms or 0,
             json_escape(event.event),
             json_escape(event.detail)
         )
     end
 
-    return table.concat(lines, "\n") .. "\n"
+    return string.format(
+        "{\"format\":\"tgac.trace.v1\",\"engine\":\"lua\",\"generated_at_ms\":%d,\"enabled\":%s,\"level\":\"%s\",\"command_count\":%d,\"event_count\":%d,\"events\":[%s],\"last_ai\":%s}\n",
+        math.floor(os.time() * 1000),
+        trace_enabled and "true" or "false",
+        json_escape(trace_level),
+        trace_command_count,
+        #trace_events,
+        table.concat(event_entries, ","),
+        build_trace_last_ai_json()
+    )
 end
 
 local function build_trace_chrome_payload()
@@ -1770,16 +1770,22 @@ local function build_trace_chrome_payload()
     for index, event in ipairs(trace_events) do
         local ts_us = ((event.ts_ms or 0) - base_ts) * 1000
         chrome_events[#chrome_events + 1] = string.format(
-            "{\"name\":\"%s\",\"cat\":\"trace\",\"ph\":\"i\",\"s\":\"t\",\"pid\":1,\"tid\":1,\"ts\":%d,\"args\":{\"detail\":\"%s\",\"index\":%d}}",
+            "{\"name\":\"%s\",\"cat\":\"engine.trace\",\"ph\":\"i\",\"pid\":1,\"tid\":1,\"ts\":%d,\"args\":{\"detail\":\"%s\",\"level\":\"%s\",\"ts_ms\":%d}}",
             json_escape(event.event),
             ts_us,
             json_escape(event.detail),
-            index - 1
+            json_escape(trace_level),
+            event.ts_ms or 0
         )
     end
 
     return string.format(
-        "{\"displayTimeUnit\":\"ms\",\"traceEvents\":[%s]}",
+        "{\"format\":\"tgac.chrome_trace.v1\",\"engine\":\"lua\",\"generated_at_ms\":%d,\"enabled\":%s,\"level\":\"%s\",\"command_count\":%d,\"event_count\":%d,\"display_time_unit\":\"ms\",\"events\":[%s]}\n",
+        math.floor(os.time() * 1000),
+        trace_enabled and "true" or "false",
+        json_escape(trace_level),
+        trace_command_count,
+        #trace_events,
         table.concat(chrome_events, ",")
     )
 end

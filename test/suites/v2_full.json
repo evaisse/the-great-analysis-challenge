@@ -264,6 +264,17 @@
       "required": true,
       "tests": [
         {
+          "id": "trace_level",
+          "name": "Trace Level",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "trace level debug"},
+            {"cmd": "trace report"}
+          ],
+          "expected_patterns": ["TRACE: enabled=true", "TRACE: level=debug", "level=debug"],
+          "timeout": 8000
+        },
+        {
           "id": "trace_report",
           "name": "Trace Report",
           "commands": [
@@ -273,6 +284,49 @@
             {"cmd": "trace report"}
           ],
           "expected_patterns": ["TRACE"],
+          "timeout": 8000
+        },
+        {
+          "id": "trace_export_file",
+          "name": "Trace Export File",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "new"},
+            {"cmd": "ai 1"},
+            {"cmd": "trace export {trace_export_path}"}
+          ],
+          "expected_patterns": ["TRACE: export=", "events=", "bytes="],
+          "expected_artifacts": [
+            {"placeholder": "trace_export_path", "format": "trace"}
+          ],
+          "timeout": 12000
+        },
+        {
+          "id": "trace_chrome_file",
+          "name": "Trace Chrome File",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "new"},
+            {"cmd": "ai 1"},
+            {"cmd": "trace chrome {trace_chrome_path}"}
+          ],
+          "expected_patterns": ["TRACE: chrome=", "events=", "bytes="],
+          "expected_artifacts": [
+            {"placeholder": "trace_chrome_path", "format": "chrome"}
+          ],
+          "timeout": 12000
+        },
+        {
+          "id": "trace_reset",
+          "name": "Trace Reset",
+          "commands": [
+            {"cmd": "trace on"},
+            {"cmd": "new"},
+            {"cmd": "ai 1"},
+            {"cmd": "trace reset"},
+            {"cmd": "trace report"}
+          ],
+          "expected_patterns": ["TRACE: reset", "events=0", "last_ai=none"],
           "timeout": 8000
         }
       ]

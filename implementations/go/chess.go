@@ -19,44 +19,44 @@ func main() {
 }
 
 type ChessEngine struct {
-	gameState             *GameState
-	ai                    *AI
-	pgnPath               string
-	pgnMoves              []string
-	bookPath              string
-	bookEnabled           bool
-	bookEntries           map[string][]BookEntry
-	bookEntryCount        int
-	bookLookups           int
-	bookHits              int
-	bookMisses            int
-	bookPlayed            int
-	uciHashMB             int
-	uciThreads            int
-	chess960ID            int
-	traceEnabled          bool
-	traceLevel            string
-	traceEvents           []TraceEvent
-	traceCommandCount     int
-	traceExportCount      int
-	traceLastExportTarget string
-	traceLastExportEvents int
-	traceLastExportBytes  int
-	traceChromeCount      int
-	traceLastChromeTarget string
-	traceLastChromeEvents int
-	traceLastChromeBytes  int
-	traceLastAISource     string
-	traceLastAIMove       string
-	traceLastAIDepth      int
-	traceLastAIScoreCP    int
-	traceLastAIElapsedMS  int64
-	traceLastAITimedOut   bool
-	traceLastAINodes      int
-	traceLastAIEvalCalls  int
-	traceLastAINPS        int64
-	traceLastAITTHits     int
-	traceLastAITTMisses   int
+	gameState              *GameState
+	ai                     *AI
+	pgnPath                string
+	pgnMoves               []string
+	bookPath               string
+	bookEnabled            bool
+	bookEntries            map[string][]BookEntry
+	bookEntryCount         int
+	bookLookups            int
+	bookHits               int
+	bookMisses             int
+	bookPlayed             int
+	uciHashMB              int
+	uciThreads             int
+	chess960ID             int
+	traceEnabled           bool
+	traceLevel             string
+	traceEvents            []TraceEvent
+	traceCommandCount      int
+	traceExportCount       int
+	traceLastExportTarget  string
+	traceLastExportEvents  int
+	traceLastExportBytes   int
+	traceChromeCount       int
+	traceLastChromeTarget  string
+	traceLastChromeEvents  int
+	traceLastChromeBytes   int
+	traceLastAISource      string
+	traceLastAIMove        string
+	traceLastAIDepth       int
+	traceLastAIScoreCP     int
+	traceLastAIElapsedMS   int64
+	traceLastAITimedOut    bool
+	traceLastAINodes       int
+	traceLastAIEvalCalls   int
+	traceLastAINPS         int64
+	traceLastAITTHits      int
+	traceLastAITTMisses    int
 	traceLastAIBetaCutoffs int
 }
 
@@ -475,7 +475,7 @@ func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 
 	if bookMove, ok := engine.chooseBookMove(legalMoves); ok {
 		moveStr := moveToString(bookMove)
-	engine.recordTraceAI("uci-book", moveStr, 0, 0, 0, false, 0, 0, 0, 0, 0)
+		engine.recordTraceAI("uci-book", moveStr, 0, 0, 0, false, 0, 0, 0, 0, 0)
 		fmt.Printf("info string bookmove %s\n", moveStr)
 		fmt.Printf("bestmove %s\n", moveStr)
 		return
@@ -499,8 +499,8 @@ func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 
 func deriveMovetimeFromClockArgs(args []string, active Color) (int, error) {
 	values := map[string]int{
-		"winc":     0,
-		"binc":     0,
+		"winc":      0,
+		"binc":      0,
 		"movestogo": 30,
 	}
 
@@ -1548,19 +1548,19 @@ func (engine *ChessEngine) traceLastAIPayload() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"source":     engine.traceLastAISource,
-		"move":       engine.traceLastAIMove,
-		"depth":      engine.traceLastAIDepth,
-		"score_cp":   engine.traceLastAIScoreCP,
-		"elapsed_ms": engine.traceLastAIElapsedMS,
-		"timed_out":  engine.traceLastAITimedOut,
-		"nodes":      engine.traceLastAINodes,
-		"eval_calls": engine.traceLastAIEvalCalls,
-		"nps":        engine.traceLastAINPS,
-		"tt_hits":    engine.traceLastAITTHits,
-		"tt_misses":  engine.traceLastAITTMisses,
+		"source":       engine.traceLastAISource,
+		"move":         engine.traceLastAIMove,
+		"depth":        engine.traceLastAIDepth,
+		"score_cp":     engine.traceLastAIScoreCP,
+		"elapsed_ms":   engine.traceLastAIElapsedMS,
+		"timed_out":    engine.traceLastAITimedOut,
+		"nodes":        engine.traceLastAINodes,
+		"eval_calls":   engine.traceLastAIEvalCalls,
+		"nps":          engine.traceLastAINPS,
+		"tt_hits":      engine.traceLastAITTHits,
+		"tt_misses":    engine.traceLastAITTMisses,
 		"beta_cutoffs": engine.traceLastAIBetaCutoffs,
-		"summary":    engine.formatTraceAISummary(),
+		"summary":      engine.formatTraceAISummary(),
 	}
 }
 
@@ -1592,11 +1592,14 @@ func (engine *ChessEngine) exportTracePayload(
 func (engine *ChessEngine) buildStructuredTracePayload() ([]byte, error) {
 	snapshot := append([]TraceEvent(nil), engine.traceEvents...)
 	payload := map[string]interface{}{
-		"format":        "tgac.trace.v1",
-		"level":         engine.traceLevel,
-		"command_count": engine.traceCommandCount,
-		"event_count":   len(snapshot),
-		"events":        snapshot,
+		"format":          "tgac.trace.v1",
+		"engine":          "go",
+		"generated_at_ms": time.Now().UnixMilli(),
+		"enabled":         engine.traceEnabled,
+		"level":           engine.traceLevel,
+		"command_count":   engine.traceCommandCount,
+		"event_count":     len(snapshot),
+		"events":          snapshot,
 	}
 	if lastAI := engine.traceLastAIPayload(); lastAI != nil {
 		payload["last_ai"] = lastAI
@@ -1630,8 +1633,15 @@ func (engine *ChessEngine) buildChromeTracePayload() ([]byte, error) {
 	}
 
 	payload := map[string]interface{}{
-		"displayTimeUnit": "ms",
-		"traceEvents":     chromeEvents,
+		"format":            "tgac.chrome_trace.v1",
+		"engine":            "go",
+		"generated_at_ms":   time.Now().UnixMilli(),
+		"enabled":           engine.traceEnabled,
+		"level":             engine.traceLevel,
+		"command_count":     engine.traceCommandCount,
+		"event_count":       len(chromeEvents),
+		"display_time_unit": "ms",
+		"events":            chromeEvents,
 	}
 
 	data, err := json.Marshal(payload)
