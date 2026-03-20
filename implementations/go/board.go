@@ -223,11 +223,11 @@ func (gs *GameState) IsInCheck(color Color) bool {
 func (gs *GameState) Clone() *GameState {
 	clone := &GameState{
 		Board:           gs.Board,
-		ActiveColor:    gs.ActiveColor,
-		CastlingRights: gs.CastlingRights,
-		HalfmoveClock:  gs.HalfmoveClock,
-		FullmoveNumber: gs.FullmoveNumber,
-		MoveHistory:    make([]Move, len(gs.MoveHistory)),
+		ActiveColor:     gs.ActiveColor,
+		CastlingRights:  gs.CastlingRights,
+		HalfmoveClock:   gs.HalfmoveClock,
+		FullmoveNumber:  gs.FullmoveNumber,
+		MoveHistory:     make([]Move, len(gs.MoveHistory)),
 		ZobristHash:     gs.ZobristHash,
 		PositionHistory: make([]uint64, len(gs.PositionHistory)),
 	}
@@ -244,9 +244,14 @@ func (gs *GameState) Clone() *GameState {
 }
 
 func (gs *GameState) IsDrawByRepetition() bool {
+	start := len(gs.PositionHistory) - gs.HalfmoveClock
+	if start < 0 {
+		start = 0
+	}
+
 	count := 1
-	for _, h := range gs.PositionHistory {
-		if h == gs.ZobristHash {
+	for i := len(gs.PositionHistory) - 1; i >= start; i-- {
+		if gs.PositionHistory[i] == gs.ZobristHash {
 			count++
 			if count >= 3 {
 				return true

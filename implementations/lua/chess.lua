@@ -926,6 +926,10 @@ local function negamax(depth, alpha, beta)
     end
     search_nodes_visited = search_nodes_visited + 1
 
+    if is_draw() then
+        return 0, nil, true
+    end
+
     local original_alpha = alpha
     local key = string.format("%u", zobrist_hash)
     local best_from_tt = nil

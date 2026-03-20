@@ -5,6 +5,7 @@ import time
 from typing import Dict, Tuple, Optional, List
 from lib.types import Move, Piece, PieceType, Color
 from lib.board import Board
+from lib.draw_detection import is_draw
 from lib.move_generator import MoveGenerator
 
 MATE_VALUE = 100000
@@ -219,6 +220,9 @@ class AI:
         if self._time_exceeded():
             return 0, None, False
         self._nodes_visited += 1
+
+        if is_draw(self.board):
+            return 0, None, True
 
         original_alpha = alpha
         key = self.board.zobrist_hash
