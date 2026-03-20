@@ -1402,16 +1402,15 @@ class ChessEngine {
         }
 
         $payload = [
-            'traceEvents' => $trace_events,
-            'displayTimeUnit' => 'ms',
-            'otherData' => [
-                'format' => 'tgac.chrome_trace.v1',
-                'engine' => 'php',
-                'generated_at_ms' => (int) round(microtime(true) * 1000),
-                'level' => $this->trace_level,
-                'command_count' => $this->trace_command_count,
-                'event_count' => count($this->trace_events),
-            ],
+            'format' => 'tgac.chrome_trace.v1',
+            'engine' => 'php',
+            'generated_at_ms' => (int) round(microtime(true) * 1000),
+            'enabled' => $this->trace_enabled,
+            'level' => $this->trace_level,
+            'command_count' => $this->trace_command_count,
+            'event_count' => count($this->trace_events),
+            'display_time_unit' => 'ms',
+            'events' => $trace_events,
         ];
         $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
         if ($json === false) {

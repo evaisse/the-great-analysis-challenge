@@ -47,7 +47,7 @@ echo -e "new\nmove e2e4\nmove e7e5\nai 3\nquit" | docker run --network none -i c
 - `book load|stats` - Opening-book command surface
 - `uci` / `isready` / `ucinewgame` - UCI protocol surface
 - `new960 [id]` / `position960` - Chess960 metadata surface
-- `trace on|off|report` - Trace command surface
+- `trace on|off|level|report|reset|export|chrome` - Trace command surface
 - `concurrency quick|full` - Deterministic concurrency fixture
 - `status` - Show current game status
 - `perft <depth>` - Run performance test

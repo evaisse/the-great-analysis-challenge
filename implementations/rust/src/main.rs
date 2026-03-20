@@ -1,16 +1,16 @@
-mod types;
-mod board;
-mod move_generator;
-mod fen;
 mod ai;
-mod perft;
-mod zobrist;
+mod board;
 mod draw_detection;
+mod fen;
+mod move_generator;
+mod perft;
+mod types;
+mod zobrist;
 
-use crate::board::Board;
-use crate::move_generator::MoveGenerator;
-use crate::fen::FenParser;
 use crate::ai::AI;
+use crate::board::Board;
+use crate::fen::FenParser;
+use crate::move_generator::MoveGenerator;
 use crate::perft::Perft;
 use crate::types::*;
 use std::io::{self, Write};
@@ -102,21 +102,21 @@ impl ChessEngine {
 
     fn run(&mut self) {
         println!("{}", self.board);
-        
+
         loop {
             print!("");
             io::stdout().flush().unwrap();
-            
+
             let mut input = String::new();
             if io::stdin().read_line(&mut input).is_err() {
                 break;
             }
-            
+
             let command = input.trim();
             if command.is_empty() {
                 continue;
             }
-            
+
             if !self.process_command(command) {
                 break;
             }
@@ -142,7 +142,7 @@ impl ChessEngine {
                 } else {
                     println!("ERROR: Invalid move format");
                 }
-            },
+            }
             "undo" => self.handle_undo(),
             "new" => self.handle_new(),
             "status" => self.handle_status(),
@@ -152,7 +152,7 @@ impl ChessEngine {
                 } else {
                     println!("ERROR: AI depth must be 1-5");
                 }
-            },
+            }
             "fen" => {
                 if parts.len() > 1 {
                     let fen_string = parts[1..].join(" ");
@@ -160,7 +160,7 @@ impl ChessEngine {
                 } else {
                     println!("ERROR: Invalid FEN string");
                 }
-            },
+            }
             "export" => self.handle_export(),
             "eval" => self.handle_eval(),
             "hash" => self.handle_hash(),
@@ -182,14 +182,14 @@ impl ChessEngine {
                 } else {
                     println!("ERROR: Invalid perft depth");
                 }
-            },
+            }
             "divide" => {
                 if parts.len() > 1 {
                     self.handle_divide(parts[1]);
                 } else {
                     println!("ERROR: Invalid perft depth");
                 }
-            },
+            }
             "help" => self.handle_help(),
             "quit" => return false,
             _ => println!("ERROR: Invalid command"),
@@ -206,10 +206,10 @@ impl ChessEngine {
 
         let from_str = &move_str[0..2];
         let to_str = &move_str[2..4];
-        let promotion_str = if move_str.len() > 4 { 
-            Some(&move_str[4..5]) 
-        } else { 
-            None 
+        let promotion_str = if move_str.len() > 4 {
+            Some(&move_str[4..5])
+        } else {
+            None
         };
 
         let from_square = match algebraic_to_square(from_str) {
@@ -249,7 +249,9 @@ impl ChessEngine {
             if chess_move.from == from_square && chess_move.to == to_square {
                 if let Some(promotion) = chess_move.promotion {
                     if let Some(promo_str) = promotion_str {
-                        if let Some(promo_type) = PieceType::from_char(promo_str.chars().next().unwrap_or(' ')) {
+                        if let Some(promo_type) =
+                            PieceType::from_char(promo_str.chars().next().unwrap_or(' '))
+                        {
                             if promotion == promo_type {
                                 matching_move = Some(chess_move.clone());
                                 break;
@@ -273,9 +275,12 @@ impl ChessEngine {
                 println!("OK: {}", move_str);
                 println!("{}", self.board);
                 self.check_game_end();
-            },
+            }
             None => {
-                if self.move_generator.is_in_check(&self.board, self.board.get_turn()) {
+                if self
+                    .move_generator
+                    .is_in_check(&self.board, self.board.get_turn())
+                {
                     println!("ERROR: King would be in check");
                 } else {
                     println!("ERROR: Illegal move");
@@ -289,7 +294,7 @@ impl ChessEngine {
             Some(_) => {
                 println!("OK: undo");
                 println!("{}", self.board);
-            },
+            }
             None => println!("ERROR: No moves to undo"),
         }
     }
@@ -311,10 +316,14 @@ impl ChessEngine {
     fn handle_status(&mut self) {
         let color = self.board.get_turn();
         let legal_moves = self.move_generator.get_legal_moves(&mut self.board, color);
-        
+
         if legal_moves.is_empty() {
             if self.move_generator.is_in_check(&self.board, color) {
-                let winner = if color == Color::White { "Black" } else { "White" };
+                let winner = if color == Color::White {
+                    "Black"
+                } else {
+                    "White"
+                };
                 println!("CHECKMATE: {} wins", winner);
             } else {
                 println!("STALEMATE: Draw");
@@ -344,15 +353,18 @@ impl ChessEngine {
         }
 
         let result = self.ai.find_best_move(&mut self.board, depth);
-        
+
         match result.best_move {
             Some(chess_move) => {
-                let move_str = format!("{}{}{}", 
+                let move_str = format!(
+                    "{}{}{}",
                     square_to_algebraic(chess_move.from),
                     square_to_algebraic(chess_move.to),
-                    chess_move.promotion.map_or(String::new(), |p| p.to_string())
+                    chess_move
+                        .promotion
+                        .map_or(String::new(), |p| p.to_string())
                 );
-                
+
                 self.board.make_move(&chess_move);
                 self.record_trace_ai(
                     "search",
@@ -365,13 +377,15 @@ impl ChessEngine {
                     result.eval_calls,
                     0,
                     0,
-                    result.beta_cutoffs
+                    result.beta_cutoffs,
                 );
-                println!("AI: {} (depth={}, eval={}, time={}ms)", 
-                    move_str, depth, result.evaluation, result.time_ms);
+                println!(
+                    "AI: {} (depth={}, eval={}, time={}ms)",
+                    move_str, depth, result.evaluation, result.time_ms
+                );
                 println!("{}", self.board);
                 self.check_game_end();
-            },
+            }
             None => println!("ERROR: No legal moves available"),
         }
     }
@@ -383,7 +397,7 @@ impl ChessEngine {
                 self.pgn_moves.clear();
                 println!("OK: FEN loaded");
                 println!("{}", self.board);
-            },
+            }
             Err(err) => println!("{}", err),
         }
     }
@@ -405,7 +419,11 @@ impl ChessEngine {
 
     fn handle_draws(&self) {
         let state = self.board.get_state();
-        let repetition = if crate::draw_detection::is_draw_by_repetition(state) { 3 } else { 1 };
+        let repetition = if crate::draw_detection::is_draw_by_repetition(state) {
+            3
+        } else {
+            1
+        };
         let fifty_moves = crate::draw_detection::is_draw_by_fifty_moves(state);
         let reason = if fifty_moves {
             "fifty_moves"
@@ -445,8 +463,13 @@ impl ChessEngine {
         let start_time = Instant::now();
         let nodes = self.perft.perft(&mut self.board, depth);
         let elapsed = start_time.elapsed();
-        
-        println!("Perft({}): {} nodes ({}ms)", depth, nodes, elapsed.as_millis());
+
+        println!(
+            "Perft({}): {} nodes ({}ms)",
+            depth,
+            nodes,
+            elapsed.as_millis()
+        );
     }
 
     fn handle_divide(&mut self, depth_str: &str) {
@@ -542,7 +565,10 @@ impl ChessEngine {
                 println!("PGN: loaded source={}", path);
             }
             "show" => {
-                let source = self.pgn_source.clone().unwrap_or_else(|| "game://current".to_string());
+                let source = self
+                    .pgn_source
+                    .clone()
+                    .unwrap_or_else(|| "game://current".to_string());
                 let moves = if self.pgn_moves.is_empty() {
                     "(none)".to_string()
                 } else {
@@ -586,7 +612,9 @@ impl ChessEngine {
                 println!(
                     "BOOK: enabled={}; source={}; entries={}; lookups={}; hits={}",
                     if self.book_enabled { "true" } else { "false" },
-                    self.book_source.clone().unwrap_or_else(|| "none".to_string()),
+                    self.book_source
+                        .clone()
+                        .unwrap_or_else(|| "none".to_string()),
                     self.book_entries,
                     self.book_lookups,
                     self.book_hits
@@ -608,7 +636,10 @@ impl ChessEngine {
 
     fn handle_new960(&mut self, args: &[&str]) {
         self.board.reset();
-        self.chess960_id = args.first().and_then(|value| value.parse::<i32>().ok()).unwrap_or(0);
+        self.chess960_id = args
+            .first()
+            .and_then(|value| value.parse::<i32>().ok())
+            .unwrap_or(0);
         println!("960: id={}; mode=chess960", self.chess960_id);
     }
 
@@ -889,6 +920,10 @@ impl ChessEngine {
     }
 
     fn build_trace_export_payload(&self) -> String {
+        let generated_at_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_millis())
+            .unwrap_or(0);
         let events = self
             .trace_events
             .iter()
@@ -908,7 +943,9 @@ impl ChessEngine {
             .unwrap_or_default();
 
         format!(
-            "{{\"format\":\"tgac.trace.v1\",\"level\":\"{}\",\"command_count\":{},\"event_count\":{},\"events\":[{}]{} }}\n",
+            "{{\"format\":\"tgac.trace.v1\",\"engine\":\"rust\",\"generated_at_ms\":{},\"enabled\":{},\"level\":\"{}\",\"command_count\":{},\"event_count\":{},\"events\":[{}]{} }}\n",
+            generated_at_ms,
+            if self.trace_enabled { "true" } else { "false" },
             json_escape(&self.trace_level),
             self.trace_command_count,
             self.trace_events.len(),
@@ -918,6 +955,10 @@ impl ChessEngine {
     }
 
     fn build_trace_chrome_payload(&self) -> String {
+        let generated_at_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_millis())
+            .unwrap_or(0);
         let events = self
             .trace_events
             .iter()
@@ -935,7 +976,12 @@ impl ChessEngine {
             .join(",");
 
         format!(
-            "{{\"displayTimeUnit\":\"ms\",\"traceEvents\":[{}]}}\n",
+            "{{\"format\":\"tgac.chrome_trace.v1\",\"engine\":\"rust\",\"generated_at_ms\":{},\"enabled\":{},\"level\":\"{}\",\"command_count\":{},\"event_count\":{},\"display_time_unit\":\"ms\",\"events\":[{}]}}\n",
+            generated_at_ms,
+            if self.trace_enabled { "true" } else { "false" },
+            json_escape(&self.trace_level),
+            self.trace_command_count,
+            self.trace_events.len(),
             events
         )
     }
@@ -972,10 +1018,14 @@ impl ChessEngine {
     fn check_game_end(&mut self) {
         let color = self.board.get_turn();
         let legal_moves = self.move_generator.get_legal_moves(&mut self.board, color);
-        
+
         if legal_moves.is_empty() {
             if self.move_generator.is_in_check(&self.board, color) {
-                let winner = if color == Color::White { "Black" } else { "White" };
+                let winner = if color == Color::White {
+                    "Black"
+                } else {
+                    "White"
+                };
                 println!("CHECKMATE: {} wins", winner);
             } else {
                 println!("STALEMATE: Draw");

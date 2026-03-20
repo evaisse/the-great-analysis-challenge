@@ -21,7 +21,7 @@ make build DIR=typescript
 make analyze DIR=typescript
 make test DIR=typescript
 make test-chess-engine DIR=typescript
-make test-chess-engine DIR=typescript TRACK=v2-system-extended
+make test-chess-engine DIR=typescript TRACK=v2-system
 ```
 
 For local work inside the implementation directory:

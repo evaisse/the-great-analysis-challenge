@@ -703,6 +703,9 @@ export class ChessEngine {
   private buildTraceExportPayload(): string {
     return `${JSON.stringify({
       format: "tgac.trace.v1",
+      engine: "typescript",
+      generated_at_ms: Date.now(),
+      enabled: this.traceEnabled,
       level: this.traceLevel,
       command_count: this.traceCommandCount,
       event_count: this.traceEvents.length,
@@ -713,8 +716,15 @@ export class ChessEngine {
 
   private buildTraceChromePayload(): string {
     return `${JSON.stringify({
-      displayTimeUnit: "ms",
-      traceEvents: this.traceEvents.map((event) => ({
+      format: "tgac.chrome_trace.v1",
+      engine: "typescript",
+      generated_at_ms: Date.now(),
+      enabled: this.traceEnabled,
+      level: this.traceLevel,
+      command_count: this.traceCommandCount,
+      event_count: this.traceEvents.length,
+      display_time_unit: "ms",
+      events: this.traceEvents.map((event) => ({
         name: event.event,
         cat: "engine.trace",
         ph: "i",

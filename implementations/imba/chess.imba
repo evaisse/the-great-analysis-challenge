@@ -902,6 +902,9 @@ def trace-report-line
 def build-trace-export-payload
 	const payload = {
 		format: 'tgac.trace.v1'
+		engine: 'imba'
+		generated_at_ms: Date.now!
+		enabled: traceEnabled
 		level: traceLevel
 		command_count: traceCommandCount
 		event_count: traceEvents.length
@@ -927,8 +930,15 @@ def build-trace-chrome-payload
 			}
 		}
 	const payload = {
-		displayTimeUnit: 'ms'
-		traceEvents: chromeEvents
+		format: 'tgac.chrome_trace.v1'
+		engine: 'imba'
+		generated_at_ms: Date.now!
+		enabled: traceEnabled
+		level: traceLevel
+		command_count: traceCommandCount
+		event_count: chromeEvents.length
+		display_time_unit: 'ms'
+		events: chromeEvents
 	}
 	return JSON.stringify(payload) + "\n"
 

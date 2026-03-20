@@ -1,3 +1,4 @@
+require "json"
 require "./types"
 require "./board"
 require "./move_generator"
@@ -25,7 +26,9 @@ class ChessEngine
   @book_misses : Int32
   @book_played : Int32
   @trace_enabled : Bool
-  @trace_events : Int32
+  @trace_level : String
+  @trace_command_count : Int32
+  @trace_events : Array(NamedTuple(ts_ms: Int64, event: String, detail: String))
   @trace_last_ai : String
 
   def initialize
@@ -45,7 +48,9 @@ class ChessEngine
     @book_misses = 0
     @book_played = 0
     @trace_enabled = false
-    @trace_events = 0
+    @trace_level = "info"
+    @trace_command_count = 0
+    @trace_events = [] of NamedTuple(ts_ms: Int64, event: String, detail: String)
     @trace_last_ai = "none"
   end
 
@@ -59,6 +64,11 @@ class ChessEngine
 
       parts = line.split(/\s+/)
       command = parts[0].downcase
+
+      if command != "trace"
+        @trace_command_count += 1
+        record_trace("command", line)
+      end
 
       case command
       when "new"
@@ -321,15 +331,149 @@ class ChessEngine
     case action
     when "on"
       @trace_enabled = true
-      @trace_events += 1
-      puts "TRACE: enabled=true"
+      record_trace("trace", "enabled")
+      puts "TRACE: enabled=true; level=#{@trace_level}; events=#{@trace_events.size}"
     when "off"
+      record_trace("trace", "disabled")
       @trace_enabled = false
-      puts "TRACE: enabled=false"
+      puts "TRACE: enabled=false; level=#{@trace_level}; events=#{@trace_events.size}"
+    when "level"
+      if args.size < 2 || args[1].strip.empty?
+        puts "ERROR: trace level requires a value"
+        return
+      end
+
+      @trace_level = args[1].strip.downcase
+      record_trace("trace", "level=#{@trace_level}")
+      puts "TRACE: level=#{@trace_level}"
     when "report"
-      puts "TRACE: enabled=#{@trace_enabled ? "true" : "false"}; events=#{@trace_events}; last_ai=#{@trace_last_ai}"
+      puts trace_report
+    when "reset"
+      reset_trace_state
+      puts "TRACE: reset"
+    when "export"
+      path = trace_target(args)
+      if path.empty?
+        puts "ERROR: trace export requires a file path"
+        return
+      end
+
+      begin
+        payload = build_trace_export_payload
+        File.write(path, payload)
+        puts "TRACE: export=#{path}; events=#{@trace_events.size}; bytes=#{payload.bytesize}"
+      rescue ex
+        puts "ERROR: trace export failed: #{ex.message}"
+      end
+    when "chrome"
+      path = trace_target(args)
+      if path.empty?
+        puts "ERROR: trace chrome requires a file path"
+        return
+      end
+
+      begin
+        payload = build_trace_chrome_payload
+        File.write(path, payload)
+        puts "TRACE: chrome=#{path}; events=#{@trace_events.size}; bytes=#{payload.bytesize}"
+      rescue ex
+        puts "ERROR: trace chrome failed: #{ex.message}"
+      end
     else
       puts "ERROR: Unsupported trace command"
+    end
+  end
+
+  private def record_trace(event : String, detail : String)
+    return unless @trace_enabled
+
+    @trace_events << {
+      ts_ms: Time.utc.to_unix_ms,
+      event: event,
+      detail: detail,
+    }
+  end
+
+  private def reset_trace_state
+    @trace_command_count = 0
+    @trace_events.clear
+    @trace_last_ai = "none"
+  end
+
+  private def trace_report : String
+    "TRACE: enabled=#{@trace_enabled ? "true" : "false"}; level=#{@trace_level}; events=#{@trace_events.size}; commands=#{@trace_command_count}; last_ai=#{@trace_last_ai}"
+  end
+
+  private def trace_target(args : Array(String)) : String
+    return "" if args.size < 2
+    args[1..-1].join(" ").strip
+  end
+
+  private def build_trace_export_payload : String
+    JSON.build do |json|
+      json.object do
+        json.field "format", "tgac.trace.v1"
+        json.field "engine", "crystal"
+        json.field "generated_at_ms", Time.utc.to_unix_ms
+        json.field "enabled", @trace_enabled
+        json.field "level", @trace_level
+        json.field "command_count", @trace_command_count
+        json.field "event_count", @trace_events.size
+        json.field "events" do
+          json.array do
+            @trace_events.each do |trace_event|
+              json.object do
+                json.field "ts_ms", trace_event[:ts_ms]
+                json.field "event", trace_event[:event]
+                json.field "detail", trace_event[:detail]
+              end
+            end
+          end
+        end
+        unless @trace_last_ai == "none"
+          json.field "last_ai" do
+            json.object do
+              json.field "summary", @trace_last_ai
+            end
+          end
+        end
+      end
+    end
+  end
+
+  private def build_trace_chrome_payload : String
+    JSON.build do |json|
+      json.object do
+        json.field "format", "tgac.chrome_trace.v1"
+        json.field "engine", "crystal"
+        json.field "generated_at_ms", Time.utc.to_unix_ms
+        json.field "enabled", @trace_enabled
+        json.field "level", @trace_level
+        json.field "command_count", @trace_command_count
+        json.field "event_count", @trace_events.size
+        json.field "display_time_unit", "ms"
+        json.field "events" do
+          json.array do
+            @trace_events.each do |trace_event|
+              json.object do
+                json.field "name", trace_event[:event]
+                json.field "cat", "engine.trace"
+                json.field "ph", "i"
+                json.field "ts", trace_event[:ts_ms] * 1000
+                json.field "pid", 1
+                json.field "tid", 1
+                json.field "args" do
+                  json.object do
+                    json.field "detail", trace_event[:detail]
+                    json.field "level", @trace_level
+                    json.field "ts_ms", trace_event[:ts_ms]
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
     end
   end
 
@@ -400,7 +544,7 @@ class ChessEngine
     legal_moves = @move_generator.get_legal_moves(@game_state, @game_state.turn)
     if book_move = choose_book_move(legal_moves)
       @trace_last_ai = "book:#{book_move}"
-      @trace_events += 1 if @trace_enabled
+      record_trace("ai", @trace_last_ai)
       apply_ai_move(book_move, "AI: #{book_move} (book)")
       @book_played += 1
       return
@@ -410,7 +554,7 @@ class ChessEngine
 
     if best_move = result.best_move
       @trace_last_ai = "search:#{best_move}"
-      @trace_events += 1 if @trace_enabled
+      record_trace("ai", @trace_last_ai)
       apply_ai_move(best_move, "AI: #{best_move} (depth=#{depth}, eval=#{result.evaluation}, time=#{result.time_ms})")
     else
       puts "ERROR: No legal moves"
@@ -599,7 +743,7 @@ new960 [id] - Start Chess960 position (0-959)
 position960 - Show current Chess960 metadata
 pgn load|show|moves - PGN command family
 book load|on|off|stats - Opening book command family
-trace on|off|report - Trace command surface
+trace on|off|level|report|reset|export|chrome - Trace command surface
 concurrency quick|full - Emit deterministic concurrency fixture report
 display - Display the board
 quit - Exit program
