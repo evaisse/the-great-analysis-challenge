@@ -45,6 +45,7 @@ type
     enPassantTarget*: int  # -1 if none, otherwise 0-63
     halfmoveClock*: int
     fullmoveNumber*: int
+    zobristHash*: uint64
     whiteKingPos*: Square
     blackKingPos*: Square
 
@@ -52,6 +53,12 @@ type
     board*: Board
     moveHistory*: seq[Move]
     boardHistory*: seq[Board]
+
+  ZobristKeys = object
+    pieces: array[12, array[64, uint64]]
+    sideToMove: uint64
+    castling: array[4, uint64]
+    enPassant: array[8, uint64]
 
   TraceEvent = object
     tsMs: int64
@@ -75,6 +82,8 @@ const
   
   # Piece values for evaluation
   PieceValues*: array[PieceType, int] = [0, 100, 320, 330, 500, 900, 20000]
+
+  ZobristSeed = 0x123456789ABCDEF0'u64
 
   # Piece-Square Tables (from AI Specification)
   PawnTable: array[64, int] = [
@@ -157,6 +166,8 @@ var
   gTraceCommandCount = 0
   gTraceEvents: seq[TraceEvent] = @[]
   gTraceLastAi = "none"
+  gZobristKeys: ZobristKeys
+  gZobristInitialized = false
 
 # ================================
 # Utility Functions
@@ -170,6 +181,75 @@ proc getFile*(sq: Square): int =
 
 proc getRank*(sq: Square): int =
   sq div 8
+
+proc xorshift64(state: var uint64): uint64 =
+  state = state xor (state shl 13)
+  state = state xor (state shr 7)
+  state = state xor (state shl 17)
+  result = state
+
+proc initZobristKeys() =
+  if gZobristInitialized:
+    return
+
+  var state = ZobristSeed
+  for pieceIdx in 0..11:
+    for sq in 0..63:
+      gZobristKeys.pieces[pieceIdx][sq] = xorshift64(state)
+  gZobristKeys.sideToMove = xorshift64(state)
+  for idx in 0..3:
+    gZobristKeys.castling[idx] = xorshift64(state)
+  for idx in 0..7:
+    gZobristKeys.enPassant[idx] = xorshift64(state)
+
+  gZobristInitialized = true
+
+proc pieceIndex(piece: Piece): int =
+  if piece.pieceType == ptNone:
+    return -1
+
+  let colorOffset = if piece.color == cWhite: 0 else: 6
+  colorOffset + piece.pieceType.ord - 1
+
+proc nibbleToHex(nibble: uint64): char =
+  if nibble < 10'u64:
+    char('0'.ord + int(nibble))
+  else:
+    char('a'.ord + int(nibble - 10'u64))
+
+proc hashToHex*(value: uint64): string =
+  result = newStringOfCap(16)
+  for idx in countdown(15, 0):
+    let nibble = (value shr (idx * 4)) and 0xF'u64
+    result.add(nibbleToHex(nibble))
+
+proc positionHash*(board: Board): uint64 =
+  initZobristKeys()
+
+  result = 0'u64
+  for sq in 0..63:
+    let piece = board.squares[sq]
+    let idx = pieceIndex(piece)
+    if idx >= 0:
+      result = result xor gZobristKeys.pieces[idx][sq]
+
+  if board.activeColor == cBlack:
+    result = result xor gZobristKeys.sideToMove
+
+  if board.castlingRights.whiteKingside:
+    result = result xor gZobristKeys.castling[0]
+  if board.castlingRights.whiteQueenside:
+    result = result xor gZobristKeys.castling[1]
+  if board.castlingRights.blackKingside:
+    result = result xor gZobristKeys.castling[2]
+  if board.castlingRights.blackQueenside:
+    result = result xor gZobristKeys.castling[3]
+
+  if board.enPassantTarget >= 0:
+    result = result xor gZobristKeys.enPassant[getFile(Square(board.enPassantTarget))]
+
+proc refreshPositionHash*(board: var Board) =
+  board.zobristHash = positionHash(board)
 
 proc makeSquare*(file, rank: int): Square =
   if file in 0..7 and rank in 0..7:
@@ -234,6 +314,7 @@ proc clearBoard*(board: var Board) =
   board.enPassantTarget = -1
   board.halfmoveClock = 0
   board.fullmoveNumber = 1
+  board.zobristHash = 0'u64
   board.whiteKingPos = Square(4)
   board.blackKingPos = Square(60)
 
@@ -310,6 +391,7 @@ proc parseFEN*(fen: string): Board =
   # Parse move clocks
   result.halfmoveClock = parseInt(parts[4])
   result.fullmoveNumber = parseInt(parts[5])
+  result.refreshPositionHash()
 
 proc toFEN*(board: Board): string =
   result = ""
@@ -622,6 +704,7 @@ proc generateKingMoves*(board: Board, sq: Square, moves: var seq[Move]) =
 
 proc makeMove*(board: var Board, move: Move): bool =
   let piece = board.getPiece(move.fromSquare)
+  let capturedPiece = if move.isEnPassant: EmptyPiece else: board.getPiece(move.toSquare)
   if piece.pieceType == ptNone or piece.color != board.activeColor:
     return false
   
@@ -674,6 +757,12 @@ proc makeMove*(board: var Board, move: Move): bool =
     elif move.fromSquare == 7: board.castlingRights.whiteKingside = false
     elif move.fromSquare == 56: board.castlingRights.blackQueenside = false
     elif move.fromSquare == 63: board.castlingRights.blackKingside = false
+
+  if capturedPiece.pieceType == ptRook:
+    if move.toSquare == 0: board.castlingRights.whiteQueenside = false
+    elif move.toSquare == 7: board.castlingRights.whiteKingside = false
+    elif move.toSquare == 56: board.castlingRights.blackQueenside = false
+    elif move.toSquare == 63: board.castlingRights.blackKingside = false
   
   # Update move clocks
   if piece.pieceType == ptPawn or move.isCapture:
@@ -686,6 +775,7 @@ proc makeMove*(board: var Board, move: Move): bool =
   
   # Switch active color
   board.activeColor = opposite(board.activeColor)
+  board.refreshPositionHash()
   
   return true
 
@@ -901,12 +991,13 @@ proc isMoveLegal*(board: Board, move: Move): bool =
   return false
 
 proc repetitionCount*(game: GameState): int =
+  let currentHash = game.board.zobristHash
+  let historyLen = game.boardHistory.len
+  let startIdx = max(0, historyLen - game.board.halfmoveClock)
+
   result = 1
-  for b in game.boardHistory:
-    if b.squares == game.board.squares and
-       b.activeColor == game.board.activeColor and
-       b.castlingRights == game.board.castlingRights and
-       b.enPassantTarget == game.board.enPassantTarget:
+  for idx in startIdx..<historyLen:
+    if game.boardHistory[idx].zobristHash == currentHash:
       result.inc
 
 proc drawsResponse*(game: GameState): string =
@@ -924,6 +1015,15 @@ proc drawsResponse*(game: GameState): string =
     "; halfmove=" & $halfmove &
     "; draw=" & (if isDraw: "true" else: "false") &
     "; reason=" & reason
+
+proc historyResponse*(game: GameState): string =
+  let currentHash = game.board.zobristHash
+  result = "HISTORY: count=" & $(game.boardHistory.len + 1) &
+    "; current=" & hashToHex(currentHash)
+
+  for idx, board in game.boardHistory:
+    result.add("\n  " & $idx & ": " & hashToHex(board.zobristHash))
+  result.add("\n  " & $game.boardHistory.len & ": " & hashToHex(currentHash) & " (current)")
 
 proc findLegalMove*(board: Board, candidate: Move): tuple[found: bool, move: Move] =
   let legalMoves = generateLegalMoves(board)
@@ -1193,11 +1293,13 @@ proc processCommand*(game: var GameState, command: string): string =
       return "OK: ONGOING"
 
   of "hash":
-    # Simple dummy hash since we don't have Zobrist implemented yet
-    return "HASH: " & $game.board.squares.hash()
+    return "HASH: " & hashToHex(game.board.zobristHash)
 
   of "draws":
     return drawsResponse(game)
+
+  of "history":
+    return historyResponse(game)
 
   of "pgn":
     if parts.len < 2:
@@ -1412,6 +1514,7 @@ concurrency <quick|full> - Deterministic concurrency fixture
 status - Show game status
 hash - Show position hash
 draws - Show draw counters and status
+history - Show position hash history
 uci - Print the UCI handshake
 isready - Report UCI readiness
 display - Display the board
