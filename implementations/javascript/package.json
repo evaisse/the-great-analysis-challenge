@@ -8,6 +8,7 @@
     "start": "bun run chess.js",
     "build": "bun build chess.js --outdir dist --target bun",
     "test": "bun test",
+    "lint": "bun run analyze",
     "analyze": "bun build chess.js --outdir /tmp/tgac-javascript-check --target bun"
   }
 }
