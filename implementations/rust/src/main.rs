@@ -1,4 +1,5 @@
 mod ai;
+mod attack_tables;
 mod board;
 mod draw_detection;
 mod fen;
@@ -8,6 +9,7 @@ mod types;
 mod zobrist;
 
 use crate::ai::AI;
+use crate::attack_tables::{chebyshev_distance, manhattan_distance};
 use crate::board::Board;
 use crate::fen::FenParser;
 use crate::move_generator::MoveGenerator;
@@ -410,7 +412,18 @@ impl ChessEngine {
     fn handle_eval(&mut self) {
         let mut ai_copy = AI::new();
         let evaluation = ai_copy.find_best_move(&mut self.board, 1).evaluation;
-        println!("EVALUATION: {}", evaluation);
+        let white_king = find_king_square(&self.board, Color::White);
+        let black_king = find_king_square(&self.board, Color::Black);
+        let king_distance = if let (Some(white), Some(black)) = (white_king, black_king) {
+            format!(
+                " (king_md={}, king_cd={})",
+                manhattan_distance(white, black),
+                chebyshev_distance(white, black)
+            )
+        } else {
+            String::new()
+        };
+        println!("EVALUATION: {}{}", evaluation, king_distance);
     }
 
     fn handle_hash(&self) {
@@ -1034,6 +1047,17 @@ impl ChessEngine {
             println!("DRAW: {}", self.board.get_draw_info());
         }
     }
+}
+
+fn find_king_square(board: &Board, color: Color) -> Option<Square> {
+    for square in 0..64 {
+        if let Some(piece) = board.get_piece(square) {
+            if piece.color == color && piece.piece_type == PieceType::King {
+                return Some(square);
+            }
+        }
+    }
+    None
 }
 
 fn current_trace_timestamp_ms() -> u128 {
