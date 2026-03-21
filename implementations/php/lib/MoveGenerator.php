@@ -3,6 +3,7 @@
 namespace Chess;
 
 require_once __DIR__ . '/Types.php';
+require_once __DIR__ . '/AttackTables.php';
 require_once __DIR__ . '/Board.php';
 
 /**
@@ -10,9 +11,11 @@ require_once __DIR__ . '/Board.php';
  */
 class MoveGenerator {
     private Board $board;
+    private AttackTables $attackTables;
     
     public function __construct(Board $board) {
         $this->board = $board;
+        $this->attackTables = AttackTables::getInstance();
     }
     
     public function generate_moves(): array {
@@ -107,16 +110,10 @@ class MoveGenerator {
     
     private function generate_knight_moves(int $row, int $col): array {
         $moves = [];
-        $deltas = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
-        
-        foreach ($deltas as [$drow, $dcol]) {
-            $new_row = $row + $drow;
-            $new_col = $col + $dcol;
-            if ($new_row >= 0 && $new_row < 8 && $new_col >= 0 && $new_col < 8) {
-                [$target_piece, $target_color] = $this->board->get_piece($new_row, $new_col);
-                if ($target_piece === CHESS_EMPTY || $target_color !== $this->board->current_player) {
-                    $moves[] = new Move($row, $col, $new_row, $new_col);
-                }
+        foreach ($this->attackTables->knightAttacks($row, $col) as [$new_row, $new_col]) {
+            [$target_piece, $target_color] = $this->board->get_piece($new_row, $new_col);
+            if ($target_piece === CHESS_EMPTY || $target_color !== $this->board->current_player) {
+                $moves[] = new Move($row, $col, $new_row, $new_col);
             }
         }
         
@@ -127,10 +124,7 @@ class MoveGenerator {
         $moves = [];
         
         foreach ($directions as [$drow, $dcol]) {
-            $new_row = $row + $drow;
-            $new_col = $col + $dcol;
-            
-            while ($new_row >= 0 && $new_row < 8 && $new_col >= 0 && $new_col < 8) {
+            foreach ($this->attackTables->rayAttacks($row, $col, $drow, $dcol) as [$new_row, $new_col]) {
                 [$target_piece, $target_color] = $this->board->get_piece($new_row, $new_col);
                 
                 if ($target_piece === CHESS_EMPTY) {
@@ -141,9 +135,6 @@ class MoveGenerator {
                     }
                     break;
                 }
-                
-                $new_row += $drow;
-                $new_col += $dcol;
             }
         }
         
@@ -167,16 +158,10 @@ class MoveGenerator {
     
     private function generate_king_moves(int $row, int $col): array {
         $moves = [];
-        $deltas = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
-        
-        foreach ($deltas as [$drow, $dcol]) {
-            $new_row = $row + $drow;
-            $new_col = $col + $dcol;
-            if ($new_row >= 0 && $new_row < 8 && $new_col >= 0 && $new_col < 8) {
-                [$target_piece, $target_color] = $this->board->get_piece($new_row, $new_col);
-                if ($target_piece === CHESS_EMPTY || $target_color !== $this->board->current_player) {
-                    $moves[] = new Move($row, $col, $new_row, $new_col);
-                }
+        foreach ($this->attackTables->kingAttacks($row, $col) as [$new_row, $new_col]) {
+            [$target_piece, $target_color] = $this->board->get_piece($new_row, $new_col);
+            if ($target_piece === CHESS_EMPTY || $target_color !== $this->board->current_player) {
+                $moves[] = new Move($row, $col, $new_row, $new_col);
             }
         }
         
@@ -220,77 +205,70 @@ class MoveGenerator {
     }
     
     public function is_square_attacked(int $row, int $col, int $by_color): bool {
-        // Check if square is attacked by any piece of given color
-        for ($r = 0; $r < 8; $r++) {
-            for ($c = 0; $c < 8; $c++) {
-                [$piece, $piece_color] = $this->board->get_piece($r, $c);
-                if ($piece !== CHESS_EMPTY && $piece_color === $by_color) {
-                    if ($this->can_piece_attack($r, $c, $piece, $row, $col)) {
+        $pawnDirection = $by_color === CHESS_WHITE ? 1 : -1;
+        foreach ([$col - 1, $col + 1] as $pawnCol) {
+            $pawnRow = $row - $pawnDirection;
+            [$piece, $pieceColor] = $this->board->get_piece($pawnRow, $pawnCol);
+            if ($piece === CHESS_PAWN && $pieceColor === $by_color) {
+                return true;
+            }
+        }
+
+        foreach ($this->attackTables->knightAttacks($row, $col) as [$attackRow, $attackCol]) {
+            [$piece, $pieceColor] = $this->board->get_piece($attackRow, $attackCol);
+            if ($piece === CHESS_KNIGHT && $pieceColor === $by_color) {
+                return true;
+            }
+        }
+
+        foreach ([[-1, -1], [-1, 1], [1, -1], [1, 1]] as [$drow, $dcol]) {
+            foreach ($this->attackTables->rayAttacks($row, $col, $drow, $dcol) as [$attackRow, $attackCol]) {
+                [$piece, $pieceColor] = $this->board->get_piece($attackRow, $attackCol);
+                if ($piece !== CHESS_EMPTY) {
+                    if ($pieceColor === $by_color && ($piece === CHESS_BISHOP || $piece === CHESS_QUEEN)) {
                         return true;
                     }
+                    break;
                 }
             }
         }
+
+        foreach ([[-1, 0], [1, 0], [0, -1], [0, 1]] as [$drow, $dcol]) {
+            foreach ($this->attackTables->rayAttacks($row, $col, $drow, $dcol) as [$attackRow, $attackCol]) {
+                [$piece, $pieceColor] = $this->board->get_piece($attackRow, $attackCol);
+                if ($piece !== CHESS_EMPTY) {
+                    if ($pieceColor === $by_color && ($piece === CHESS_ROOK || $piece === CHESS_QUEEN)) {
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+
+        foreach ($this->attackTables->kingAttacks($row, $col) as [$attackRow, $attackCol]) {
+            [$piece, $pieceColor] = $this->board->get_piece($attackRow, $attackCol);
+            if ($piece === CHESS_KING && $pieceColor === $by_color) {
+                return true;
+            }
+        }
+
         return false;
-    }
-    
-    private function can_piece_attack(int $from_row, int $from_col, int $piece, int $to_row, int $to_col): bool {
-        $drow = $to_row - $from_row;
-        $dcol = $to_col - $from_col;
-        
-        if ($piece === CHESS_PAWN) {
-            $direction = $this->board->get_piece($from_row, $from_col)[1] === CHESS_WHITE ? -1 : 1;
-            return $drow === $direction && abs($dcol) === 1;
-        } elseif ($piece === CHESS_KNIGHT) {
-            return (abs($drow) === 2 && abs($dcol) === 1) || (abs($drow) === 1 && abs($dcol) === 2);
-        } elseif ($piece === CHESS_KING) {
-            return abs($drow) <= 1 && abs($dcol) <= 1;
-        }
-        
-        // Sliding pieces
-        if ($piece === CHESS_BISHOP || $piece === CHESS_QUEEN) {
-            if (abs($drow) === abs($dcol) && $drow !== 0) {
-                return $this->is_path_clear($from_row, $from_col, $to_row, $to_col);
-            }
-        }
-        
-        if ($piece === CHESS_ROOK || $piece === CHESS_QUEEN) {
-            if (($drow === 0 && $dcol !== 0) || ($drow !== 0 && $dcol === 0)) {
-                return $this->is_path_clear($from_row, $from_col, $to_row, $to_col);
-            }
-        }
-        
-        return false;
-    }
-    
-    private function is_path_clear(int $from_row, int $from_col, int $to_row, int $to_col): bool {
-        $drow = $to_row <=> $from_row;
-        $dcol = $to_col <=> $from_col;
-        
-        $row = $from_row + $drow;
-        $col = $from_col + $dcol;
-        
-        while ($row !== $to_row || $col !== $to_col) {
-            [$piece, $_] = $this->board->get_piece($row, $col);
-            if ($piece !== CHESS_EMPTY) {
-                return false;
-            }
-            $row += $drow;
-            $col += $dcol;
-        }
-        
-        return true;
     }
     
     private function is_legal(Move $move): bool {
+        $moving_piece = $this->board->get_piece($move->from_row, $move->from_col);
+        if ($moving_piece[0] === CHESS_PAWN && ($move->to_row === 0 || $move->to_row === 7) && $move->promotion === null) {
+            $move->promotion = CHESS_QUEEN;
+        }
+
         // Make the move temporarily
         $this->board->make_move($move);
-        
-        // Find king position (of the player who just moved)
+
+        // If the move removed the moving side's king from the board, it is invalid.
+        // This can happen in malformed FEN inputs used by tests and must not crash.
         $king_color = 1 - $this->board->current_player;
         $king_row = -1;
         $king_col = -1;
-        
         for ($row = 0; $row < 8; $row++) {
             for ($col = 0; $col < 8; $col++) {
                 [$piece, $color] = $this->board->get_piece($row, $col);
@@ -301,7 +279,15 @@ class MoveGenerator {
                 }
             }
         }
-        
+        if ($king_row === -1 || $king_col === -1) {
+            if ($moving_piece[0] === CHESS_KING) {
+                $this->board->undo_move();
+                return false;
+            }
+            $this->board->undo_move();
+            return true;
+        }
+
         // Check if king is in check
         $is_legal = !$this->is_square_attacked($king_row, $king_col, $this->board->current_player);
         
