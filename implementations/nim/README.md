@@ -19,6 +19,7 @@ This directory contains a complete chess engine implementation in Nim, rewritten
 - ✅ **Game State Management**: Full move history and undo functionality
 - ✅ **Deterministic Position Hashing**: Full-state 64-bit hash including side-to-move, castling rights, and en passant state
 - ✅ **Draw State Commands**: `hash`, `draws`, and `history` command surface for `v2-foundation`
+- ✅ **Precomputed Attack Tables**: Knight, king, ray, and distance lookup tables drive move generation and evaluation hot paths
 
 ## Building and Running
 
@@ -93,7 +94,7 @@ The new implementation features a clean, modular design organized into logical s
 - **Type Safety**: Strong typing prevents common chess programming errors
 - **Efficient Representation**: 64-square array with 0x88-style utilities
 - **Complete Move Generation**: All legal moves including special cases
-- **Attack Detection**: Fast square attack checking for check validation
+- **Attack Detection**: Precomputed attack and ray tables speed up check validation
 - **Game Management**: Full game state with undo/redo functionality
 - **AI Integration**: Minimax search with alpha-beta pruning
 - **Performance Testing**: Perft implementation for move generation verification

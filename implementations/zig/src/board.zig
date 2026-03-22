@@ -1,4 +1,5 @@
 const std = @import("std");
+const attack_tables = @import("attack_tables.zig");
 
 pub const PieceType = enum(u8) {
     Pawn = 1,
@@ -351,15 +352,12 @@ pub const Board = struct {
     }
 
     fn canPieceAttackSquare(self: *Board, piece: Piece, from: u8, to: u8) bool {
-        const from_file = from % 8;
-        const from_rank = from / 8;
-        const to_file = to % 8;
-        const to_rank = to / 8;
-        const file_diff = @as(i8, @intCast(to_file)) - @as(i8, @intCast(from_file));
-        const rank_diff = @as(i8, @intCast(to_rank)) - @as(i8, @intCast(from_rank));
-
         switch (piece.piece_type) {
             .Pawn => {
+                const from_file = from % 8;
+                const from_rank = from / 8;
+                const to_file = to % 8;
+                const to_rank = to / 8;
                 const direction: i8 = if (piece.color == .White) 1 else -1;
                 const attack_rank = @as(i8, @intCast(from_rank)) + direction;
 
@@ -370,84 +368,40 @@ pub const Board = struct {
                 return false;
             },
             .Knight => {
-                return (file_diff == 2 and (rank_diff == 1 or rank_diff == -1)) or
-                    (file_diff == -2 and (rank_diff == 1 or rank_diff == -1)) or
-                    (rank_diff == 2 and (file_diff == 1 or file_diff == -1)) or
-                    (rank_diff == -2 and (file_diff == 1 or file_diff == -1));
+                for (attack_tables.knight_attacks[from].slice()) |square| {
+                    if (square == to) return true;
+                }
+                return false;
             },
             .King => {
-                return (file_diff >= -1 and file_diff <= 1) and
-                    (rank_diff >= -1 and rank_diff <= 1) and
-                    (file_diff != 0 or rank_diff != 0);
+                for (attack_tables.king_attacks[from].slice()) |square| {
+                    if (square == to) return true;
+                }
+                return false;
             },
             .Bishop => {
-                const abs_file_diff: i8 = if (file_diff < 0) -file_diff else file_diff;
-                const abs_rank_diff: i8 = if (rank_diff < 0) -rank_diff else rank_diff;
-                if (abs_file_diff == 0 or abs_file_diff != abs_rank_diff) return false;
-
-                return self.hasClearRay(
-                    from,
-                    to,
-                    if (rank_diff > 0) 1 else -1,
-                    if (file_diff > 0) 1 else -1,
-                );
+                return self.rayContainsAttack(from, to, &[_]i8{ -9, -7, 7, 9 });
             },
             .Rook => {
-                if (file_diff != 0 and rank_diff != 0) return false;
-                if (file_diff == 0 and rank_diff == 0) return false;
-
-                return self.hasClearRay(
-                    from,
-                    to,
-                    if (rank_diff == 0) 0 else if (rank_diff > 0) 1 else -1,
-                    if (file_diff == 0) 0 else if (file_diff > 0) 1 else -1,
-                );
+                return self.rayContainsAttack(from, to, &[_]i8{ -8, -1, 1, 8 });
             },
             .Queen => {
-                const abs_file_diff: i8 = if (file_diff < 0) -file_diff else file_diff;
-                const abs_rank_diff: i8 = if (rank_diff < 0) -rank_diff else rank_diff;
-
-                if (file_diff == 0 and rank_diff == 0) return false;
-                if (file_diff == 0 or rank_diff == 0) {
-                    return self.hasClearRay(
-                        from,
-                        to,
-                        if (rank_diff == 0) 0 else if (rank_diff > 0) 1 else -1,
-                        if (file_diff == 0) 0 else if (file_diff > 0) 1 else -1,
-                    );
-                }
-                if (abs_file_diff != abs_rank_diff) return false;
-
-                return self.hasClearRay(
-                    from,
-                    to,
-                    if (rank_diff > 0) 1 else -1,
-                    if (file_diff > 0) 1 else -1,
-                );
+                return self.rayContainsAttack(from, to, &[_]i8{ -9, -8, -7, -1, 1, 7, 8, 9 });
             },
         }
     }
 
-    fn hasClearRay(self: *Board, from: u8, to: u8, rank_step: i8, file_step: i8) bool {
-        var rank = @as(i8, @intCast(from / 8)) + rank_step;
-        var file = @as(i8, @intCast(from % 8)) + file_step;
-        const target_rank = @as(i8, @intCast(to / 8));
-        const target_file = @as(i8, @intCast(to % 8));
-
-        while (rank >= 0 and rank < 8 and file >= 0 and file < 8) {
-            if (rank == target_rank and file == target_file) {
-                return true;
+    fn rayContainsAttack(self: *Board, from: u8, to: u8, directions: []const i8) bool {
+        for (directions) |direction| {
+            for (attack_tables.rayTable(direction).*[from].slice()) |square| {
+                if (square == to) {
+                    return true;
+                }
+                if (self.squares[square] != null) {
+                    break;
+                }
             }
-
-            const square = @as(u8, @intCast(rank)) * 8 + @as(u8, @intCast(file));
-            if (self.squares[square] != null) {
-                return false;
-            }
-
-            rank += rank_step;
-            file += file_step;
         }
-
         return false;
     }
 
