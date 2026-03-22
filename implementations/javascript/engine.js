@@ -1,8 +1,15 @@
 /** @import { GameState, Move, Piece, Color, PieceType } from './types.js' */
 
+import { KING_ATTACKS, KNIGHT_ATTACKS, SLIDING_RAYS } from './attackTables.js';
+
 export const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 /** @type {PieceType[]} */
 const PROMOTION_PIECES = ['q', 'r', 'b', 'n'];
+
+const SLIDING_ATTACKERS = {
+    b: ['b', 'q'],
+    r: ['r', 'q'],
+};
 
 export class ChessEngine {
     constructor() {
@@ -228,21 +235,19 @@ export class ChessEngine {
                 }
             });
         } else if (piece.type === 'n') {
-            [[-1, -2], [-2, -1], [-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2]].forEach(([dr, dc]) => {
-                const tr = r + dr, tc = c + dc;
-                if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
-                    const target = this.state.board[tr * 8 + tc];
-                    if (!target || target.color !== piece.color) addMove(tr, tc);
+            for (const targetIndex of KNIGHT_ATTACKS[index]) {
+                const target = this.state.board[targetIndex];
+                if (!target || target.color !== piece.color) {
+                    addMove(Math.floor(targetIndex / 8), targetIndex % 8);
                 }
-            });
+            }
         } else if (piece.type === 'k') {
-            [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dr, dc]) => {
-                const tr = r + dr, tc = c + dc;
-                if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
-                    const target = this.state.board[tr * 8 + tc];
-                    if (!target || target.color !== piece.color) addMove(tr, tc);
+            for (const targetIndex of KING_ATTACKS[index]) {
+                const target = this.state.board[targetIndex];
+                if (!target || target.color !== piece.color) {
+                    addMove(Math.floor(targetIndex / 8), targetIndex % 8);
                 }
-            });
+            }
             // Castling
             if (piece.color === 'w') {
                 if (this.state.castling.wK && !this.state.board[61] && !this.state.board[62] && !this.isSquareAttacked(60, 'b') && !this.isSquareAttacked(61, 'b')) addMove(7, 6);
@@ -252,22 +257,19 @@ export class ChessEngine {
                 if (this.state.castling.bQ && !this.state.board[3] && !this.state.board[2] && !this.state.board[1] && !this.isSquareAttacked(4, 'w') && !this.isSquareAttacked(3, 'w')) addMove(0, 2);
             }
         } else {
-            const dirs = piece.type === 'b' ? [[-1, -1], [-1, 1], [1, -1], [1, 1]] :
-                         piece.type === 'r' ? [[-1, 0], [1, 0], [0, -1], [0, 1]] :
-                         [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]];
-            dirs.forEach(([dr, dc]) => {
-                for (let dist = 1; dist < 8; dist++) {
-                    const tr = r + dr * dist, tc = c + dc * dist;
-                    if (tr < 0 || tr >= 8 || tc < 0 || tc >= 8) break;
-                    const target = this.state.board[tr * 8 + tc];
+            for (const ray of SLIDING_RAYS[piece.type][index]) {
+                for (const targetIndex of ray) {
+                    const target = this.state.board[targetIndex];
                     if (!target) {
-                        addMove(tr, tc);
+                        addMove(Math.floor(targetIndex / 8), targetIndex % 8);
                     } else {
-                        if (target.color !== piece.color) addMove(tr, tc);
+                        if (target.color !== piece.color) {
+                            addMove(Math.floor(targetIndex / 8), targetIndex % 8);
+                        }
                         break;
                     }
                 }
-            });
+            }
         }
     }
 
@@ -277,46 +279,29 @@ export class ChessEngine {
      * @returns {boolean}
      */
     isSquareAttacked(index, attackerColor) {
-        const r = Math.floor(index / 8), c = index % 8;
-        
-        // Knight
-        for (const [dr, dc] of [[-1, -2], [-2, -1], [-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2]]) {
-            const tr = r + dr, tc = c + dc;
-            if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
-                const p = this.state.board[tr * 8 + tc];
-                if (p && p.type === 'n' && p.color === attackerColor) return true;
-            }
+        for (const attackerIndex of KNIGHT_ATTACKS[index]) {
+            const piece = this.state.board[attackerIndex];
+            if (piece && piece.type === 'n' && piece.color === attackerColor) return true;
         }
 
-        // King
-        for (const [dr, dc] of [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]) {
-            const tr = r + dr, tc = c + dc;
-            if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
-                const p = this.state.board[tr * 8 + tc];
-                if (p && p.type === 'k' && p.color === attackerColor) return true;
-            }
+        for (const attackerIndex of KING_ATTACKS[index]) {
+            const piece = this.state.board[attackerIndex];
+            if (piece && piece.type === 'k' && piece.color === attackerColor) return true;
         }
 
-        // Sliding pieces (Rook, Bishop, Queen)
-        const sliding = [
-            { type: ['r', 'q'], dirs: [[-1, 0], [1, 0], [0, -1], [0, 1]] },
-            { type: ['b', 'q'], dirs: [[-1, -1], [-1, 1], [1, -1], [1, 1]] }
-        ];
-        for (const { type, dirs } of sliding) {
-            for (const [dr, dc] of dirs) {
-                for (let d = 1; d < 8; d++) {
-                    const tr = r + dr * d, tc = c + dc * d;
-                    if (tr < 0 || tr >= 8 || tc < 0 || tc >= 8) break;
-                    const p = this.state.board[tr * 8 + tc];
-                    if (p) {
-                        if (p.color === attackerColor && type.includes(p.type)) return true;
+        for (const rayType of ['b', 'r']) {
+            for (const ray of SLIDING_RAYS[rayType][index]) {
+                for (const attackerIndex of ray) {
+                    const piece = this.state.board[attackerIndex];
+                    if (piece) {
+                        if (piece.color === attackerColor && SLIDING_ATTACKERS[rayType].includes(piece.type)) return true;
                         break;
                     }
                 }
             }
         }
 
-        // Pawn
+        const r = Math.floor(index / 8), c = index % 8;
         const pDir = attackerColor === 'w' ? 1 : -1;
         for (const dc of [-1, 1]) {
             const tr = r + pDir, tc = c + dc;

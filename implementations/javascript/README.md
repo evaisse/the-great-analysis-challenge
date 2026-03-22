@@ -6,6 +6,7 @@ Pure JavaScript implementation of the shared chess engine specification.
 - Full move generation with castling, en passant, and promotion
 - FEN import/export
 - Deterministic minimax AI
+- Precomputed knight, king, sliding-ray, and Manhattan distance lookup tables
 - `v2-full` protocol surface for `hash`, `draws`, `history`, `go`, `pgn`, `book`, `uci`, `new960`, `trace`, and `concurrency`
 - Standard Docker-based build, test, and analysis workflow
 

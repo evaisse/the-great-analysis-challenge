@@ -6,6 +6,7 @@ A high-performance chess engine implementation in **Imba 2**, compiling to Node.
 - Polyglot-compliant CLI protocol
 - Full move generation (castling, en passant, promotion)
 - Minimax AI with Alpha-Beta pruning
+- Precomputed knight, king, sliding-ray, and Manhattan distance lookup tables
 - Fast perft implementation
 - PGN commands, UCI handshake, and Chess960 command surface
 
