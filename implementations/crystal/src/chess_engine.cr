@@ -16,7 +16,9 @@ class ChessEngine
   @chess960_id : Int32
   @chess960_mode : Bool
   @pgn_source : String?
-  @pgn_moves : Array(String)
+  @pgn_game : PGN::Game?
+  @pgn_variation_path : Array(PGN::VariationRef)
+  @pgn_live_root_state : GameState
   @book_path : String?
   @book_entries : Hash(String, Array(Book::Entry))
   @book_entry_count : Int32
@@ -38,7 +40,9 @@ class ChessEngine
     @chess960_id = 0
     @chess960_mode = false
     @pgn_source = nil
-    @pgn_moves = Array(String).new
+    @pgn_game = nil
+    @pgn_variation_path = [] of PGN::VariationRef
+    @pgn_live_root_state = @game_state
     @book_path = nil
     @book_entries = Hash(String, Array(Book::Entry)).new
     @book_entry_count = 0
@@ -161,6 +165,7 @@ class ChessEngine
         new_state = Board.make_move(new_state, m)
       end
       @game_state = new_state
+      clear_live_pgn_snapshot
       puts "OK: undo"
     end
   end
@@ -170,6 +175,7 @@ class ChessEngine
       @game_state = new_state
       @chess960_id = 0
       @chess960_mode = false
+      @pgn_live_root_state = new_state
       reset_pgn_state
       puts "OK: FEN loaded"
     else
@@ -181,6 +187,7 @@ class ChessEngine
     @game_state = FEN.starting_position
     @chess960_id = 0
     @chess960_mode = false
+    @pgn_live_root_state = @game_state
     reset_pgn_state
   end
 
@@ -204,6 +211,7 @@ class ChessEngine
     @game_state = Chess960.starting_position(requested_id)
     @chess960_id = requested_id
     @chess960_mode = true
+    @pgn_live_root_state = @game_state
     reset_pgn_state
     puts "960: new game id=#{@chess960_id}; fen=#{FEN.export(@game_state)}"
   end
@@ -215,7 +223,7 @@ class ChessEngine
 
   private def handle_pgn(args : Array(String))
     if args.empty?
-      puts "ERROR: pgn requires subcommand (load|show|moves)"
+      puts "ERROR: pgn requires subcommand (load|save|show|moves|variation|comment)"
       return
     end
 
@@ -228,17 +236,39 @@ class ChessEngine
 
       path = args[1..-1].join(" ")
       @pgn_source = path
-      @pgn_moves = Array(String).new
+      @pgn_variation_path.clear
 
       begin
-        @pgn_moves = PGN.extract_moves(File.read(path))
-        puts "PGN: loaded path=\"#{path}\"; moves=#{@pgn_moves.size}"
-      rescue
-        puts "PGN: loaded path=\"#{path}\"; moves=0; note=file-unavailable"
+        game = PGN.parse_game(File.read(path))
+        game.source_path = path
+        @pgn_game = game
+        puts "PGN: loaded path=\"#{path}\"; moves=#{game.mainline_san_moves.size}"
+      rescue ex
+        @pgn_source = nil
+        @pgn_game = nil
+        @pgn_variation_path.clear
+        puts "ERROR: pgn load failed: #{ex.message}"
+      end
+    when "save"
+      if args.size < 2
+        puts "ERROR: pgn save requires a file path"
+        return
+      end
+
+      path = args[1..-1].join(" ")
+
+      begin
+        game = current_pgn_game
+        File.write(path, PGN.serialize(game))
+        puts "PGN: saved path=\"#{path}\"; moves=#{game.mainline_san_moves.size}"
+      rescue ex
+        puts "ERROR: pgn save failed: #{ex.message}"
       end
     when "show"
       source = @pgn_source || "current-game"
-      puts "PGN: source=#{source}; moves=#{current_pgn_moves.size}"
+      game = current_pgn_game
+      puts "PGN: source=#{source}; moves=#{game.mainline_san_moves.size}"
+      render_pgn_output(PGN.serialize(game))
     when "moves"
       moves = current_pgn_moves
       if moves.empty?
@@ -246,14 +276,111 @@ class ChessEngine
       else
         puts "PGN: moves #{moves.join(" ")}"
       end
+    when "variation"
+      handle_pgn_variation(args[1..-1])
+    when "comment"
+      if args.size < 2
+        puts "ERROR: pgn comment requires text"
+        return
+      end
+
+      text = args[1..-1].join(" ").strip
+      text = text.gsub(/^"/, "").gsub(/"$/, "")
+      if text.empty?
+        puts "ERROR: pgn comment requires text"
+        return
+      end
+
+      game = editable_pgn_game
+      variation = current_pgn_variation(game)
+      if move = variation.moves.last?
+        move.comments << text
+      else
+        variation.comments << text
+      end
+      puts "PGN: comment added"
     else
       puts "ERROR: Unsupported pgn command"
     end
   end
 
+  private def handle_pgn_variation(args : Array(String))
+    if args.empty?
+      puts "ERROR: pgn variation requires subcommand (enter|exit)"
+      return
+    end
+
+    game = editable_pgn_game
+    case args[0].downcase
+    when "enter"
+      variation = current_pgn_variation(game)
+      ref = nil
+      (variation.moves.size - 1).downto(0) do |index|
+        move = variation.moves[index]
+        unless move.variations.empty?
+          ref = PGN::VariationRef.new(index.to_i32, 0)
+          break
+        end
+      end
+
+      unless ref
+        puts "ERROR: No variation to enter"
+        return
+      end
+
+      @pgn_variation_path << ref
+      entered = current_pgn_variation(game)
+      puts "PGN: variation depth=#{@pgn_variation_path.size}; moves=#{entered.moves.size}"
+    when "exit"
+      if @pgn_variation_path.empty?
+        puts "ERROR: Already at main variation"
+        return
+      end
+
+      @pgn_variation_path.pop
+      puts "PGN: variation depth=#{@pgn_variation_path.size}"
+    else
+      puts "ERROR: Unsupported pgn variation command"
+    end
+  end
+
   private def current_pgn_moves : Array(String)
-    return @pgn_moves unless @pgn_source.nil?
-    @game_state.move_history.map(&.to_s)
+    if game = @pgn_game
+      game.mainline_san_moves
+    else
+      @game_state.move_history.map(&.to_s)
+    end
+  end
+
+  private def current_pgn_game : PGN::Game
+    if game = @pgn_game
+      game
+    else
+      PGN.build_live_game(@pgn_live_root_state, @game_state.move_history)
+    end
+  end
+
+  private def editable_pgn_game : PGN::Game
+    @pgn_game ||= PGN.build_live_game(@pgn_live_root_state, @game_state.move_history)
+    @pgn_game.not_nil!
+  end
+
+  private def current_pgn_variation(game : PGN::Game) : PGN::Variation
+    PGN.find_variation(game, @pgn_variation_path)
+  end
+
+  private def render_pgn_output(content : String)
+    content.each_line do |line|
+      stripped = line.rstrip
+      puts stripped.empty? ? "PGN:" : "PGN: #{stripped}"
+    end
+  end
+
+  private def clear_live_pgn_snapshot
+    if @pgn_source.nil?
+      @pgn_game = nil
+      @pgn_variation_path.clear
+    end
   end
 
   private def handle_book(args : Array(String))
@@ -301,7 +428,8 @@ class ChessEngine
 
   private def reset_pgn_state
     @pgn_source = nil
-    @pgn_moves = Array(String).new
+    @pgn_game = nil
+    @pgn_variation_path.clear
   end
 
   private def handle_concurrency(args : Array(String))
@@ -518,6 +646,7 @@ class ChessEngine
 
     if chosen_move
       @game_state = Board.make_move(@game_state, chosen_move)
+      clear_live_pgn_snapshot
 
       # Check for game end
       over, message = Board.is_game_over(@game_state)
@@ -625,6 +754,7 @@ class ChessEngine
   private def apply_ai_move(best_move : Move, success_message : String)
     move_str = best_move.to_s
     @game_state = Board.make_move(@game_state, best_move)
+    clear_live_pgn_snapshot
 
     over, message = Board.is_game_over(@game_state)
     if over
@@ -741,7 +871,7 @@ hash - Show position hash
 draws - Show draw status
 new960 [id] - Start Chess960 position (0-959)
 position960 - Show current Chess960 metadata
-pgn load|show|moves - PGN command family
+pgn load|save|show|moves|variation|comment - PGN command family
 book load|on|off|stats - Opening book command family
 trace on|off|level|report|reset|export|chrome - Trace command surface
 concurrency quick|full - Emit deterministic concurrency fixture report

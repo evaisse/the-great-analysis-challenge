@@ -59,6 +59,9 @@ The engine provides an interactive command-line interface:
 > ai            # Let AI make a move
 > demo          # Watch AI vs AI game
 > perft 4       # Run performance test
+> pgn load game.pgn
+> pgn show      # Display normalized PGN
+> pgn save out.pgn
 > fen           # Show current FEN
 > quit          # Exit engine
 ```
