@@ -405,7 +405,7 @@ module PGN
       String.build do |io|
         write_tags(io, game.tags)
         if game.tags.any?
-          io << '\n'
+          io << "\n"
         end
         write_variation(io, game.mainline)
         io << ' '
@@ -444,7 +444,7 @@ module PGN
           io << ' ' << '{' << sanitize_comment(comment) << '}'
         end
         move.variations.each do |nested|
-          io << ' ' << '(' 
+          io << " ("
           write_variation(io, nested)
           io << ')'
         end
@@ -492,7 +492,7 @@ module PGN
       state = Board.make_move(state, move)
     end
 
-    result = existing ? existing.not_nil!.result : "*"
+    result = existing.try(&.result) || "*"
     game = Game.new(tags, variation, result, existing.try(&.source_path))
 
     if tags.empty?

@@ -285,7 +285,7 @@ class ChessEngine
       end
 
       text = args[1..-1].join(" ").strip
-      text = text.gsub(/^"/, "").gsub(/"$/, "")
+      text = text.gsub(/^"|"$/, "")
       if text.empty?
         puts "ERROR: pgn comment requires text"
         return
@@ -318,7 +318,7 @@ class ChessEngine
       (variation.moves.size - 1).downto(0) do |index|
         move = variation.moves[index]
         unless move.variations.empty?
-          ref = PGN::VariationRef.new(index.to_i32, 0)
+          ref = PGN::VariationRef.new(index, 0)
           break
         end
       end
@@ -362,7 +362,6 @@ class ChessEngine
 
   private def editable_pgn_game : PGN::Game
     @pgn_game ||= PGN.build_live_game(@pgn_live_root_state, @game_state.move_history)
-    @pgn_game.not_nil!
   end
 
   private def current_pgn_variation(game : PGN::Game) : PGN::Variation
