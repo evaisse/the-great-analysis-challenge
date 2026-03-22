@@ -3,6 +3,7 @@ export 'src/game.dart';
 export 'src/move.dart';
 export 'src/piece.dart';
 export 'src/ai.dart';
+export 'src/attack_tables.dart';
 export 'src/game_state.dart';
 export 'src/draw_detection.dart';
 export 'src/perft.dart';
