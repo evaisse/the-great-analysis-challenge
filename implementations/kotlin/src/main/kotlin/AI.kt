@@ -95,6 +95,8 @@ class AI {
     
     private fun evaluate(gameState: GameState): Int {
         var score = 0
+        var whiteKingSquare: Square? = null
+        var blackKingSquare: Square? = null
         
         for (square in 0..63) {
             val piece = gameState.board[square]
@@ -102,9 +104,21 @@ class AI {
                 val value = piece.type.value
                 val positionBonus = getPositionBonus(square, piece.type, piece.color, gameState)
                 val totalValue = value + positionBonus
+
+                if (piece.type == PieceType.KING) {
+                    if (piece.color == Color.WHITE) {
+                        whiteKingSquare = square
+                    } else {
+                        blackKingSquare = square
+                    }
+                }
                 
                 score += if (piece.color == Color.WHITE) totalValue else -totalValue
             }
+        }
+
+        if (isEndgame(gameState) && whiteKingSquare != null && blackKingSquare != null) {
+            score += 14 - AttackTables.manhattanDistance(whiteKingSquare, blackKingSquare)
         }
         
         return score

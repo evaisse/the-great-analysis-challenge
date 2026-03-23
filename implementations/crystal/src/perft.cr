@@ -137,10 +137,10 @@ class Perft
           next
         end
 
-        start_time = Time.monotonic
+        start_time = Time.instant
         perft = Perft.new
         actual = perft.perft(game_state, depth)
-        time_taken = Time.monotonic - start_time
+        time_taken = start_time.elapsed
 
         if actual == expected
           puts "PASSED (#{actual} nodes, #{time_taken.total_milliseconds.round(1)}ms)"
@@ -171,11 +171,11 @@ class Perft
       next unless game_state
 
       perft = Perft.new
-      start_time = Time.monotonic
+      start_time = Time.instant
 
       nodes = perft.perft(game_state, depth)
 
-      time_taken = Time.monotonic - start_time
+      time_taken = start_time.elapsed
       nps = (nodes / time_taken.total_seconds).to_i64
 
       puts "Depth #{depth}: #{nodes} nodes"

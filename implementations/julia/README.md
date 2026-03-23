@@ -43,3 +43,10 @@ docker run --network none -it chess-julia
 - **Paradigm**: High-performance dynamic programming
 - **Key Features**: Multiple dispatch, metaprogramming, scientific computing optimizations
 - **Build Time**: ~0-2 seconds (interpreted/JIT compiled)
+
+## Attack Table Strategy
+
+This implementation precomputes knight attacks, king attacks, sliding rays, and
+Chebyshev/Manhattan distance tables at startup. Move generation, attack
+detection, and endgame king evaluation reuse those lookups rather than
+rebuilding offsets every time.

@@ -28,6 +28,7 @@ This implementation demonstrates PHP's object-oriented programming capabilities 
 ✅ **Performance Testing**
 - Perft (performance test) for move generation verification
 - Accurately counts positions at various depths
+- Precomputed knight, king, ray, and distance lookup tables back the hot move-generation paths
 
 ## Requirements
 
@@ -82,6 +83,7 @@ php/
 ├── chess.php           # Main entry point
 ├── lib/
 │   ├── Types.php       # Constants and Move class
+│   ├── AttackTables.php # Precomputed attack and distance lookup tables
 │   ├── Board.php       # Board representation and state management
 │   ├── MoveGenerator.php  # Move generation and validation
 │   ├── FenParser.php   # FEN import/export

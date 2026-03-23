@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { readFileSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
+import { MANHATTAN_DISTANCE } from './attackTables.js';
 import { ChessEngine, INITIAL_FEN } from './engine.js';
 
 /** @import { Move } from './types.js' */
@@ -300,6 +301,10 @@ function printBoard() {
 function evaluate() {
     let score = 0;
     const values = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+    let whiteKing = -1;
+    let blackKing = -1;
+    let minorMajorCount = 0;
+    let queenCount = 0;
     for (let i = 0; i < 64; i++) {
         const piece = engine.state.board[i];
         if (piece) {
@@ -310,9 +315,26 @@ function evaluate() {
                 const c = i % 8;
                 pst = piece.color === 'w' ? PAWN_PST[r][c] : PAWN_PST[7 - r][c];
             }
+            if (piece.type === 'k') {
+                if (piece.color === 'w') {
+                    whiteKing = i;
+                } else {
+                    blackKing = i;
+                }
+            } else if (piece.type !== 'p') {
+                minorMajorCount++;
+                if (piece.type === 'q') {
+                    queenCount++;
+                }
+            }
             score += (piece.color === 'w' ? 1 : -1) * (val + pst);
         }
     }
+
+    if ((minorMajorCount <= 4 || (minorMajorCount <= 6 && queenCount === 0)) && whiteKing !== -1 && blackKing !== -1) {
+        score += 14 - MANHATTAN_DISTANCE[whiteKing][blackKing];
+    }
+
     return score;
 }
 

@@ -120,64 +120,44 @@ func (gs *GameState) IsSquareAttacked(square Square, byColor Color) bool {
 	}
 
 	// Check for knight attacks
-	knightMoves := [][]int{
-		{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
-		{1, -2}, {1, 2}, {2, -1}, {2, 1},
-	}
-
-	for _, move := range knightMoves {
-		attackSquare := Square{square.File + move[0], square.Rank + move[1]}
-		if attackSquare.IsValid() {
-			piece := gs.GetPiece(attackSquare)
-			if piece.Type == Knight && piece.Color == byColor {
-				return true
-			}
+	for _, attackSquare := range knightAttacks(square) {
+		piece := gs.GetPiece(attackSquare)
+		if piece.Type == Knight && piece.Color == byColor {
+			return true
 		}
 	}
 
 	// Check for king attacks
-	kingMoves := [][]int{
-		{-1, -1}, {-1, 0}, {-1, 1},
-		{0, -1}, {0, 1},
-		{1, -1}, {1, 0}, {1, 1},
-	}
-
-	for _, move := range kingMoves {
-		attackSquare := Square{square.File + move[0], square.Rank + move[1]}
-		if attackSquare.IsValid() {
-			piece := gs.GetPiece(attackSquare)
-			if piece.Type == King && piece.Color == byColor {
-				return true
-			}
+	for _, attackSquare := range kingAttacks(square) {
+		piece := gs.GetPiece(attackSquare)
+		if piece.Type == King && piece.Color == byColor {
+			return true
 		}
 	}
 
 	// Check for sliding piece attacks (bishop, rook, queen)
-	directions := [][]int{
-		{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
-		{0, 1}, {1, -1}, {1, 0}, {1, 1},
+	directions := []struct {
+		fileDelta  int
+		rankDelta  int
+		isDiagonal bool
+	}{
+		{-1, -1, true},
+		{-1, 0, false},
+		{-1, 1, true},
+		{0, -1, false},
+		{0, 1, false},
+		{1, -1, true},
+		{1, 0, false},
+		{1, 1, true},
 	}
 
-	for i, direction := range directions {
-		for distance := 1; distance < 8; distance++ {
-			attackSquare := Square{
-				square.File + direction[0]*distance,
-				square.Rank + direction[1]*distance,
-			}
-
-			if !attackSquare.IsValid() {
-				break
-			}
-
+	for _, direction := range directions {
+		for _, attackSquare := range rayAttacks(directionToEnum(direction.fileDelta, direction.rankDelta), square) {
 			piece := gs.GetPiece(attackSquare)
 			if !piece.IsEmpty() {
 				if piece.Color == byColor {
-					// Check if this piece can attack in this direction
-					isDiagonal := i == 0 || i == 2 || i == 5 || i == 7
-					isOrthogonal := i == 1 || i == 3 || i == 4 || i == 6
-
-					if (isDiagonal && (piece.Type == Bishop || piece.Type == Queen)) ||
-						(isOrthogonal && (piece.Type == Rook || piece.Type == Queen)) {
+					if (direction.isDiagonal && (piece.Type == Bishop || piece.Type == Queen)) ||
+						(!direction.isDiagonal && (piece.Type == Rook || piece.Type == Queen)) {
 						return true
 					}
 				}
