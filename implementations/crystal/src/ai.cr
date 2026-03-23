@@ -1,6 +1,7 @@
 # Chess AI following Standard AI Algorithm Specification v1.0
 
 require "./types"
+require "./attack_tables"
 require "./board"
 require "./move_generator"
 
@@ -174,6 +175,10 @@ class ChessAI
 
   private def evaluate(game_state : GameState) : Int32
     score = 0
+    white_king_square : Square? = nil
+    black_king_square : Square? = nil
+    minor_major_count = 0
+    queen_count = 0
 
     game_state.board.each_with_index do |piece, square|
       next unless piece
@@ -197,11 +202,26 @@ class ChessAI
 
       total_value = piece_value + position_bonus
 
+      if piece.type.king?
+        if piece.color.white?
+          white_king_square = square
+        else
+          black_king_square = square
+        end
+      elsif !piece.type.pawn?
+        minor_major_count += 1
+        queen_count += 1 if piece.type.queen?
+      end
+
       if piece.color.white?
         score += total_value
       else
         score -= total_value
       end
+    end
+
+    if (minor_major_count <= 4 || (minor_major_count <= 6 && queen_count == 0)) && white_king_square && black_king_square
+      score += 14 - AttackTables.manhattan_distance(white_king_square.not_nil!, black_king_square.not_nil!)
     end
 
     score

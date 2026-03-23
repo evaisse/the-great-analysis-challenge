@@ -83,6 +83,10 @@ const KING_TABLE = [
 
 function evaluate_position(board::Board)
     score = 0
+    white_king_square = -1
+    black_king_square = -1
+    minor_major_count = 0
+    queen_count = 0
 
     for square in 0:63
         piece = get_piece(board, square)
@@ -108,7 +112,24 @@ function evaluate_position(board::Board)
 
             value = PIECE_VALUES[piece.type] + position_bonus
             score += piece.color == WHITE ? value : -value
+
+            if piece.type == KING
+                if piece.color == WHITE
+                    white_king_square = square
+                else
+                    black_king_square = square
+                end
+            elseif piece.type != PAWN
+                minor_major_count += 1
+                if piece.type == QUEEN
+                    queen_count += 1
+                end
+            end
         end
+    end
+
+    if (minor_major_count <= 4 || (minor_major_count <= 6 && queen_count == 0)) && white_king_square != -1 && black_king_square != -1
+        score += 14 - manhattan_distance(white_king_square, black_king_square)
     end
 
     return score

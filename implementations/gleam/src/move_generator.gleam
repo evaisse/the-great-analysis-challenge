@@ -1,5 +1,6 @@
 // Move generation and validation
 
+import attack_tables
 import board.{get_piece, make_move}
 import gleam/int
 import gleam/list
@@ -205,116 +206,96 @@ fn generate_knight_moves(
   from: Square,
   color: Color,
 ) -> List(Move) {
-  let offsets = [-17, -15, -10, -6, 6, 10, 15, 17]
-  let file = from % 8
+  generate_knight_target_moves(
+    game_state,
+    from,
+    color,
+    attack_tables.knight_attacks(from),
+  )
+}
 
-  offsets
-  |> list.filter_map(fn(offset) {
-    let to = from + offset
-    let to_file = to % 8
-    case is_valid_square(to) && int.absolute_value(to_file - file) <= 2 {
-      True -> {
-        case get_piece(game_state, to) {
-          None -> Ok(Move(from, to, Knight, None, None, False, False))
-          Some(target) ->
-            case target.color != color {
-              True ->
-                Ok(Move(
-                  from,
-                  to,
-                  Knight,
-                  Some(target.piece_type),
-                  None,
-                  False,
-                  False,
-                ))
-              False -> Error(Nil)
-            }
-        }
+fn knight_target_move(
+  game_state: GameState,
+  from: Square,
+  color: Color,
+  to: Square,
+) -> Result(Move, Nil) {
+  case get_piece(game_state, to) {
+    None -> Ok(Move(from, to, Knight, None, None, False, False))
+    Some(target) ->
+      case target.color != color {
+        True ->
+          Ok(Move(from, to, Knight, Some(target.piece_type), None, False, False))
+        False -> Error(Nil)
       }
-      False -> Error(Nil)
+  }
+}
+
+fn generate_knight_target_moves(
+  game_state: GameState,
+  from: Square,
+  color: Color,
+  targets: List(Int),
+) -> List(Move) {
+  case targets {
+    [] -> []
+    [to, ..rest] -> {
+      let rest_moves =
+        generate_knight_target_moves(game_state, from, color, rest)
+      case knight_target_move(game_state, from, color, to) {
+        Ok(move) -> [move, ..rest_moves]
+        Error(_) -> rest_moves
+      }
     }
-  })
+  }
+}
+
+fn generate_ray_moves(
+  game_state: GameState,
+  from: Square,
+  color: Color,
+  piece_type: PieceType,
+  ray: List(Int),
+) -> List(Move) {
+  case ray {
+    [] -> []
+    [to, ..rest] -> {
+      case get_piece(game_state, to) {
+        None -> [
+          Move(from, to, piece_type, None, None, False, False),
+          ..generate_ray_moves(game_state, from, color, piece_type, rest)
+        ]
+        Some(target) ->
+          case target.color != color {
+            True -> [
+              Move(
+                from,
+                to,
+                piece_type,
+                Some(target.piece_type),
+                None,
+                False,
+                False,
+              ),
+            ]
+            False -> []
+          }
+      }
+    }
+  }
 }
 
 fn generate_sliding_moves(
   game_state: GameState,
   from: Square,
   color: Color,
-  directions: List(Int),
+  rays: List(List(Int)),
   piece_type: PieceType,
 ) -> List(Move) {
-  directions
-  |> list.flat_map(fn(direction) {
-    generate_direction_moves(
-      game_state,
-      from,
-      from,
-      color,
-      direction,
-      piece_type,
-      [],
-    )
+  rays
+  |> list.flat_map(fn(ray) {
+    generate_ray_moves(game_state, from, color, piece_type, ray)
   })
-}
-
-fn generate_direction_moves(
-  game_state: GameState,
-  origin: Square,
-  current: Square,
-  color: Color,
-  direction: Int,
-  piece_type: PieceType,
-  acc: List(Move),
-) -> List(Move) {
-  let to = current + direction
-  let from_file = current % 8
-  let to_file = to % 8
-
-  case is_valid_square(to) {
-    False -> acc
-    True -> {
-      // Check for wrapping on horizontal/diagonal moves
-      let file_diff = int.absolute_value(to_file - from_file)
-      case file_diff > 1 {
-        True -> acc
-        False -> {
-          case get_piece(game_state, to) {
-            None -> {
-              let new_move =
-                Move(origin, to, piece_type, None, None, False, False)
-              generate_direction_moves(
-                game_state,
-                origin,
-                to,
-                color,
-                direction,
-                piece_type,
-                [new_move, ..acc],
-              )
-            }
-            Some(target) ->
-              case target.color != color {
-                True -> {
-                  let capture_move =
-                    Move(
-                      origin,
-                      to,
-                      piece_type,
-                      Some(target.piece_type),
-                      None,
-                      False,
-                      False,
-                    )
-                  [capture_move, ..acc]
-                }
-                False -> acc
-              }
-          }
-        }
-      }
-    }
-  }
 }
 
 fn generate_bishop_moves(
@@ -322,7 +303,13 @@ fn generate_bishop_moves(
   from: Square,
   color: Color,
 ) -> List(Move) {
-  generate_sliding_moves(game_state, from, color, [-9, -7, 7, 9], Bishop)
+  generate_sliding_moves(
+    game_state,
+    from,
+    color,
+    attack_tables.bishop_rays(from),
+    Bishop,
+  )
 }
 
 fn generate_rook_moves(
@@ -330,7 +317,13 @@ fn generate_rook_moves(
   from: Square,
   color: Color,
 ) -> List(Move) {
-  generate_sliding_moves(game_state, from, color, [-8, -1, 1, 8], Rook)
+  generate_sliding_moves(
+    game_state,
+    from,
+    color,
+    attack_tables.rook_rays(from),
+    Rook,
+  )
 }
 
 fn generate_queen_moves(
@@ -342,9 +335,36 @@ fn generate_queen_moves(
     game_state,
     from,
     color,
-    [-9, -8, -7, -1, 1, 7, 8, 9],
+    attack_tables.queen_rays(from),
     Queen,
   )
+}
+
+fn king_target_move(
+  game_state: GameState,
+  from: Square,
+  color: Color,
+  to: Square,
+) -> Result(Move, Nil) {
+  knight_target_move(game_state, from, color, to)
+}
+
+fn generate_king_target_moves(
+  game_state: GameState,
+  from: Square,
+  color: Color,
+  targets: List(Int),
+) -> List(Move) {
+  case targets {
+    [] -> []
+    [to, ..rest] -> {
+      let rest_moves = generate_king_target_moves(game_state, from, color, rest)
+      case king_target_move(game_state, from, color, to) {
+        Ok(move) -> [move, ..rest_moves]
+        Error(_) -> rest_moves
+      }
+    }
+  }
 }
 
 fn generate_king_moves(
@@ -352,37 +372,13 @@ fn generate_king_moves(
   from: Square,
   color: Color,
 ) -> List(Move) {
-  let offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
-  let file = from % 8
-
   let normal_moves =
-    offsets
-    |> list.filter_map(fn(offset) {
-      let to = from + offset
-      let to_file = to % 8
-      case is_valid_square(to) && int.absolute_value(to_file - file) <= 1 {
-        True -> {
-          case get_piece(game_state, to) {
-            None -> Ok(Move(from, to, King, None, None, False, False))
-            Some(target) ->
-              case target.color != color {
-                True ->
-                  Ok(Move(
-                    from,
-                    to,
-                    King,
-                    Some(target.piece_type),
-                    None,
-                    False,
-                    False,
-                  ))
-                False -> Error(Nil)
-              }
-          }
-        }
-        False -> Error(Nil)
-      }
-    })
+    generate_king_target_moves(
+      game_state,
+      from,
+      color,
+      attack_tables.king_attacks(from),
+    )
 
   // Add castling moves
   let castling_moves = generate_castling_moves(game_state, from, color)
@@ -498,22 +494,29 @@ fn piece_attacks_square(
   case piece.piece_type {
     Pawn -> pawn_attacks_square(from, piece.color, target)
     Knight ->
-      offset_piece_attacks_square(
-        from,
-        target,
-        [-17, -15, -10, -6, 6, 10, 15, 17],
-        2,
-      )
+      list.any(attack_tables.knight_attacks(from), fn(square) {
+        square == target
+      })
     Bishop ->
-      sliding_piece_attacks_square(game_state, from, target, [-9, -7, 7, 9])
+      sliding_piece_attacks_square(
+        game_state,
+        attack_tables.bishop_rays(from),
+        target,
+      )
     Rook ->
-      sliding_piece_attacks_square(game_state, from, target, [-8, -1, 1, 8])
+      sliding_piece_attacks_square(
+        game_state,
+        attack_tables.rook_rays(from),
+        target,
+      )
     Queen ->
-      sliding_piece_attacks_square(game_state, from, target, [
-        -9, -8, -7, -1, 1, 7, 8, 9,
-      ])
+      sliding_piece_attacks_square(
+        game_state,
+        attack_tables.queen_rays(from),
+        target,
+      )
     King ->
-      offset_piece_attacks_square(from, target, [-9, -8, -7, -1, 1, 7, 8, 9], 1)
+      list.any(attack_tables.king_attacks(from), fn(square) { square == target })
   }
 }
 
@@ -532,65 +535,31 @@ fn pawn_attacks_square(from: Square, color: Color, target: Square) -> Bool {
   }
 }
 
-fn offset_piece_attacks_square(
-  from: Square,
-  target: Square,
-  offsets: List(Int),
-  max_file_delta: Int,
-) -> Bool {
-  let from_file = from % 8
-
-  offsets
-  |> list.any(fn(offset) {
-    let to = from + offset
-    let to_file = to % 8
-
-    is_valid_square(to)
-    && int.absolute_value(to_file - from_file) <= max_file_delta
-    && to == target
-  })
-}
-
 fn sliding_piece_attacks_square(
   game_state: GameState,
-  from: Square,
+  rays: List(List(Int)),
   target: Square,
-  directions: List(Int),
 ) -> Bool {
-  directions
-  |> list.any(fn(direction) {
-    attacks_along_direction(game_state, from, target, direction)
-  })
+  rays
+  |> list.any(fn(ray) { ray_reaches_target(game_state, ray, target) })
 }
 
-fn attacks_along_direction(
+fn ray_reaches_target(
   game_state: GameState,
-  current: Square,
+  ray: List(Int),
   target: Square,
-  direction: Int,
 ) -> Bool {
-  let next = current + direction
-  let current_file = current % 8
-  let next_file = next % 8
-
-  case is_valid_square(next) {
-    False -> False
-    True -> {
-      let file_diff = int.absolute_value(next_file - current_file)
-      case file_diff > 1 {
-        True -> False
+  case ray {
+    [] -> False
+    [square, ..rest] ->
+      case square == target {
+        True -> True
         False ->
-          case next == target {
-            True -> True
-            False ->
-              case get_piece(game_state, next) {
-                None ->
-                  attacks_along_direction(game_state, next, target, direction)
-                Some(_) -> False
-              }
+          case get_piece(game_state, square) {
+            Some(_) -> False
+            None -> ray_reaches_target(game_state, rest, target)
           }
       }
-    }
   }
 }
 

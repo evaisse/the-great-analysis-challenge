@@ -1,6 +1,7 @@
 # Move generation and validation
 
 require "./types"
+require "./attack_tables"
 
 class MoveGenerator
   def generate_moves(game_state : GameState, color : Color) : Array(Move)
@@ -101,41 +102,24 @@ class MoveGenerator
 
   private def generate_knight_moves(game_state : GameState, from : Square, color : Color) : Array(Move)
     moves = Array(Move).new
-    offsets = [-17, -15, -10, -6, 6, 10, 15, 17]
-    file = from % 8
 
-    offsets.each do |offset|
-      to = from + offset
-      to_file = to % 8
-
-      if valid_square?(to) && (to_file - file).abs <= 2
-        target = game_state.board[to]
-        if !target
-          moves << Move.new(from, to, PieceType::Knight)
-        elsif target.color != color
-          moves << Move.new(from, to, PieceType::Knight, target.type)
-        end
+    AttackTables.knight_attacks(from).each do |to|
+      target = game_state.board[to]
+      if !target
+        moves << Move.new(from, to, PieceType::Knight)
+      elsif target.color != color
+        moves << Move.new(from, to, PieceType::Knight, target.type)
       end
     end
 
     moves
   end
 
-  private def generate_sliding_moves(game_state : GameState, from : Square, color : Color, directions : Array(Int32), piece_type : PieceType) : Array(Move)
+  private def generate_sliding_moves(game_state : GameState, from : Square, color : Color, rays : Array(Array(Square)), piece_type : PieceType) : Array(Move)
     moves = Array(Move).new
 
-    directions.each do |direction|
-      to = from + direction
-      prev_file = from % 8
-
-      while valid_square?(to)
-        to_file = to % 8
-
-        # Check for wrapping
-        if direction % 8 != 0
-          break if (to_file - prev_file).abs != 1
-        end
-
+    rays.each do |ray|
+      ray.each do |to|
         target = game_state.board[to]
         if !target
           moves << Move.new(from, to, piece_type)
@@ -145,9 +129,6 @@ class MoveGenerator
           end
           break
         end
-
-        prev_file = to_file
-        to += direction
       end
     end
 
@@ -155,33 +136,26 @@ class MoveGenerator
   end
 
   private def generate_bishop_moves(game_state : GameState, from : Square, color : Color) : Array(Move)
-    generate_sliding_moves(game_state, from, color, [-9, -7, 7, 9], PieceType::Bishop)
+    generate_sliding_moves(game_state, from, color, AttackTables.bishop_rays(from), PieceType::Bishop)
   end
 
   private def generate_rook_moves(game_state : GameState, from : Square, color : Color) : Array(Move)
-    generate_sliding_moves(game_state, from, color, [-8, -1, 1, 8], PieceType::Rook)
+    generate_sliding_moves(game_state, from, color, AttackTables.rook_rays(from), PieceType::Rook)
   end
 
   private def generate_queen_moves(game_state : GameState, from : Square, color : Color) : Array(Move)
-    generate_sliding_moves(game_state, from, color, [-9, -8, -7, -1, 1, 7, 8, 9], PieceType::Queen)
+    generate_sliding_moves(game_state, from, color, AttackTables.queen_rays(from), PieceType::Queen)
   end
 
   private def generate_king_moves(game_state : GameState, from : Square, color : Color) : Array(Move)
     moves = Array(Move).new
-    offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
-    file = from % 8
 
-    offsets.each do |offset|
-      to = from + offset
-      to_file = to % 8
-
-      if valid_square?(to) && (to_file - file).abs <= 1
-        target = game_state.board[to]
-        if !target
-          moves << Move.new(from, to, PieceType::King)
-        elsif target.color != color
-          moves << Move.new(from, to, PieceType::King, target.type)
-        end
+    AttackTables.king_attacks(from).each do |to|
+      target = game_state.board[to]
+      if !target
+        moves << Move.new(from, to, PieceType::King)
+      elsif target.color != color
+        moves << Move.new(from, to, PieceType::King, target.type)
       end
     end
 
@@ -253,50 +227,70 @@ class MoveGenerator
   end
 
   def square_attacked?(game_state : GameState, square : Square, by_color : Color) : Bool
-    64.times do |from_square|
-      piece = game_state.board[from_square]
-      if piece && piece.color == by_color
-        moves = case piece.type
-                when PieceType::Pawn
-                  generate_pawn_moves(game_state, from_square, piece.color)
-                when PieceType::Knight
-                  generate_knight_moves(game_state, from_square, piece.color)
-                when PieceType::Bishop
-                  generate_bishop_moves(game_state, from_square, piece.color)
-                when PieceType::Rook
-                  generate_rook_moves(game_state, from_square, piece.color)
-                when PieceType::Queen
-                  generate_queen_moves(game_state, from_square, piece.color)
-                when PieceType::King
-                  generate_basic_king_moves(game_state, from_square, piece.color)
-                else
-                  Array(Move).new
-                end
-        return true if moves.any? { |move| move.to == square }
-      end
-    end
-    false
+    pawn_attacks_square?(game_state, square, by_color) ||
+      AttackTables.knight_attacks(square).any? { |from| enemy_piece_at?(game_state, from, by_color, PieceType::Knight) } ||
+      sliding_attacks_square?(game_state, square, by_color, AttackTables.bishop_rays(square), PieceType::Bishop) ||
+      sliding_attacks_square?(game_state, square, by_color, AttackTables.rook_rays(square), PieceType::Rook) ||
+      AttackTables.king_attacks(square).any? { |from| enemy_piece_at?(game_state, from, by_color, PieceType::King) }
   end
 
   private def generate_basic_king_moves(game_state : GameState, from : Square, color : Color) : Array(Move)
     moves = Array(Move).new
-    offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
-    file = from % 8
 
-    offsets.each do |offset|
-      to = from + offset
-      to_file = to % 8
-
-      if valid_square?(to) && (to_file - file).abs <= 1
-        target = game_state.board[to]
-        if !target
-          moves << Move.new(from, to, PieceType::King)
-        elsif target.color != color
-          moves << Move.new(from, to, PieceType::King, target.type)
-        end
+    AttackTables.king_attacks(from).each do |to|
+      target = game_state.board[to]
+      if !target
+        moves << Move.new(from, to, PieceType::King)
+      elsif target.color != color
+        moves << Move.new(from, to, PieceType::King, target.type)
       end
     end
     moves
+  end
+
+  private def pawn_attacks_square?(game_state : GameState, square : Square, by_color : Color) : Bool
+    file = square % 8
+    source_offsets = by_color.white? ? [-9, -7] : [7, 9]
+
+    source_offsets.any? do |offset|
+      from = square + offset
+      valid_square?(from) && ((from % 8) - file).abs == 1 && enemy_piece_at?(game_state, from, by_color, PieceType::Pawn)
+    end
+  end
+
+  private def sliding_attacks_square?(
+    game_state : GameState,
+    square : Square,
+    by_color : Color,
+    rays : Array(Array(Square)),
+    attacker : PieceType,
+  ) : Bool
+    rays.any? do |ray|
+      attacked = false
+      ray.each do |from|
+        piece = game_state.board[from]
+        next unless piece
+        attacked = piece.color == by_color && sliding_attacker_matches?(piece.type, attacker)
+        break
+      end
+      attacked
+    end
+  end
+
+  private def sliding_attacker_matches?(piece_type : PieceType, attacker : PieceType) : Bool
+    case attacker
+    when PieceType::Bishop
+      piece_type.bishop? || piece_type.queen?
+    when PieceType::Rook
+      piece_type.rook? || piece_type.queen?
+    else
+      piece_type == attacker
+    end
+  end
+
+  private def enemy_piece_at?(game_state : GameState, square : Square, color : Color, piece_type : PieceType) : Bool
+    piece = game_state.board[square]
+    !!piece && piece.not_nil!.color == color && piece.not_nil!.type == piece_type
   end
 
   def in_check?(game_state : GameState, color : Color) : Bool
