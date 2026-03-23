@@ -39,3 +39,9 @@ Extended protocol surface:
 - The Node runner keeps the `v2-full` protocol surface deterministic for the shared harness.
 - The Docker image vendors the exact Elm package cache required by `elm.json`, so fresh builds stay reproducible even when `package.elm-lang.org` is unavailable.
 - The image builds the Elm program with `--optimize` to avoid dev-mode runtime noise.
+
+## Attack Table Strategy
+
+- `src/AttackTables.elm` precomputes knight attacks, king attacks, sliding rays, and Chebyshev/Manhattan distance tables at startup.
+- `src/MoveGenerator.elm` uses those lookup tables for move generation and attack detection instead of recalculating offsets on each query.
+- `src/Evaluation.elm` uses the Manhattan king-distance table for simplified endgame scoring.

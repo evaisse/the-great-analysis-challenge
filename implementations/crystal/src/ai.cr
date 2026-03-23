@@ -80,12 +80,12 @@ class ChessAI
   end
 
   def search(game_state : GameState, depth : Int32, maximize : Bool = true) : SearchResult
-    start_time = Time.monotonic
+    start_time = Time.instant
     nodes = 0
 
     best_move, evaluation = minimax_root(game_state, depth, Int32::MIN + 1, Int32::MAX - 1, pointerof(nodes))
 
-    time_ms = (Time.monotonic - start_time).total_milliseconds.to_i64
+    time_ms = start_time.elapsed.total_milliseconds.to_i64
 
     SearchResult.new(best_move, evaluation, nodes, time_ms)
   end
