@@ -9,7 +9,7 @@ import re
 import json
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from typing import Optional, List
 from lib.attack_tables import manhattan_distance
 from lib.board import Board
 from lib.move_generator import MoveGenerator
@@ -59,6 +59,11 @@ CONCURRENCY_PROFILES = {
 
 class ChessEngine:
     """Main chess engine class that handles user commands and game flow."""
+
+    _CHESS960_KNIGHT_TABLE = (
+        (0, 1), (0, 2), (0, 3), (0, 4), (1, 2),
+        (1, 3), (1, 4), (2, 3), (2, 4), (3, 4),
+    )
     
     def __init__(self):
         self.board = Board()
@@ -791,12 +796,73 @@ class ChessEngine:
             return
 
         self._chess960_id = chess960_id
-        self.handle_new_game()
-        print(f'960: new game id={self._chess960_id}')
+        fen = self._build_chess960_fen(self._chess960_id)
+
+        self.board = Board()
+        self.move_generator = MoveGenerator(self.board)
+        self.fen_parser = FenParser(self.board)
+        self.ai = AI(self.board, self.move_generator)
+        self.perft = Perft(self.board, self.move_generator)
+        self.move_history = []
+        self.fen_parser.parse(fen)
+
+        print('OK: New game started')
+        print(self.board.display())
+        print(
+            f'960: new game id={self._chess960_id}; '
+            f'backrank={self._chess960_backrank(self._chess960_id)}'
+        )
 
     def handle_position960(self):
         """Handle position960 command."""
-        print(f'960: id={self._chess960_id}; mode=chess960')
+        print(
+            f'960: id={self._chess960_id}; mode=chess960; '
+            f'backrank={self._chess960_backrank(self._chess960_id)}; '
+            f'fen={self._build_chess960_fen(self._chess960_id)}'
+        )
+
+    @classmethod
+    def _decode_chess960_backrank(cls, chess960_id: int):
+        pieces: List[Optional[str]] = [None] * 8
+        n = chess960_id
+
+        remainder = n % 4
+        n //= 4
+        pieces[2 * remainder + 1] = 'b'
+
+        remainder = n % 4
+        n //= 4
+        pieces[2 * remainder] = 'b'
+
+        remainder = n % 6
+        n //= 6
+        empty = [index for index, piece in enumerate(pieces) if piece is None]
+        pieces[empty[remainder]] = 'q'
+
+        knight_a, knight_b = cls._CHESS960_KNIGHT_TABLE[n]
+        empty = [index for index, piece in enumerate(pieces) if piece is None]
+        pieces[empty[knight_a]] = 'n'
+        pieces[empty[knight_b]] = 'n'
+
+        empty = [index for index, piece in enumerate(pieces) if piece is None]
+        pieces[empty[0]] = 'r'
+        pieces[empty[1]] = 'k'
+        pieces[empty[2]] = 'r'
+
+        return ''.join(piece or '' for piece in pieces)
+
+    @classmethod
+    def _chess960_backrank(cls, chess960_id: int) -> str:
+        return cls._decode_chess960_backrank(chess960_id)
+
+    @classmethod
+    def _build_chess960_fen(cls, chess960_id: int) -> str:
+        white_backrank = cls._decode_chess960_backrank(chess960_id).upper()
+        black_backrank = white_backrank.lower()
+        return (
+            f'{black_backrank}/pppppppp/8/8/8/8/PPPPPPPP/{white_backrank} '
+            'w - - 0 1'
+        )
 
     def handle_trace(self, args):
         """Handle trace command family."""

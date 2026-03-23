@@ -19,6 +19,11 @@ require_once __DIR__ . '/lib/Perft.php';
  * Main chess engine class
  */
 class ChessEngine {
+    private const CHESS960_KNIGHT_TABLE = [
+        [0, 1], [0, 2], [0, 3], [0, 4], [1, 2],
+        [1, 3], [1, 4], [2, 3], [2, 4], [3, 4],
+    ];
+
     private Board $board;
     private MoveGenerator $move_gen;
     private FenParser $fen_parser;
@@ -881,12 +886,75 @@ class ChessEngine {
         }
 
         $this->chess960_id = $id;
-        $this->handle_new_game();
-        echo "960: new game id={$this->chess960_id}\n";
+        $fen = $this->build_chess960_fen($this->chess960_id);
+
+        $this->board->reset();
+        $this->move_gen = new MoveGenerator($this->board);
+        $this->fen_parser = new FenParser($this->board);
+        $this->ai = new AI($this->board, $this->move_gen);
+        $this->perft = new Perft($this->board, $this->move_gen);
+        $this->fen_parser->load_fen($fen);
+
+        echo "OK: New game started\n";
+        echo $this->board->display();
+        echo "960: new game id={$this->chess960_id}; backrank=" . $this->decode_chess960_backrank($this->chess960_id) . "\n";
     }
 
     private function handle_position960(): void {
-        echo "960: id={$this->chess960_id}; mode=chess960\n";
+        echo "960: id={$this->chess960_id}; mode=chess960; backrank=" .
+            $this->decode_chess960_backrank($this->chess960_id) .
+            "; fen=" . $this->build_chess960_fen($this->chess960_id) . "\n";
+    }
+
+    private function decode_chess960_backrank(int $id): string {
+        $pieces = array_fill(0, 8, null);
+        $n = $id;
+
+        $remainder = $n % 4;
+        $n = intdiv($n, 4);
+        $pieces[2 * $remainder + 1] = 'b';
+
+        $remainder = $n % 4;
+        $n = intdiv($n, 4);
+        $pieces[2 * $remainder] = 'b';
+
+        $remainder = $n % 6;
+        $n = intdiv($n, 6);
+        $empty = [];
+        foreach ($pieces as $index => $piece) {
+            if ($piece === null) {
+                $empty[] = $index;
+            }
+        }
+        $pieces[$empty[$remainder]] = 'q';
+
+        [$knightA, $knightB] = self::CHESS960_KNIGHT_TABLE[$n];
+        $empty = [];
+        foreach ($pieces as $index => $piece) {
+            if ($piece === null) {
+                $empty[] = $index;
+            }
+        }
+        $pieces[$empty[$knightA]] = 'n';
+        $pieces[$empty[$knightB]] = 'n';
+
+        $empty = [];
+        foreach ($pieces as $index => $piece) {
+            if ($piece === null) {
+                $empty[] = $index;
+            }
+        }
+        $pieces[$empty[0]] = 'r';
+        $pieces[$empty[1]] = 'k';
+        $pieces[$empty[2]] = 'r';
+
+        return implode('', $pieces);
+    }
+
+    private function build_chess960_fen(int $id): string {
+        $white = strtoupper($this->decode_chess960_backrank($id));
+        $black = strtolower($white);
+        return "{$black}/pppppppp/8/8/8/8/PPPPPPPP/{$white} w - - 0 1";
     }
 
     private function handle_trace(array $args): void {
