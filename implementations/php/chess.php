@@ -8,6 +8,7 @@
 namespace Chess;
 
 require_once __DIR__ . '/lib/Types.php';
+require_once __DIR__ . '/lib/AttackTables.php';
 require_once __DIR__ . '/lib/Board.php';
 require_once __DIR__ . '/lib/MoveGenerator.php';
 require_once __DIR__ . '/lib/FenParser.php';
@@ -1410,6 +1411,10 @@ class ChessEngine {
         }
     }
 
+    private function attack_tables(): AttackTables {
+        return AttackTables::getInstance();
+    }
+
     private function reset_trace_export_state(): void {
         $this->trace_export_count = 0;
         $this->trace_export_last_target = null;
@@ -1837,10 +1842,6 @@ class ChessEngine {
         return chr(ord('a') + $sq[1]) . (8 - $sq[0]);
     }
 
-    private function manhattan(array $a, array $b): int {
-        return abs($a[0] - $b[0]) + abs($a[1] - $b[1]);
-    }
-
     private function non_king_material(array $counts, int $color): int {
         return ($counts[$color][CHESS_PAWN] ?? 0) +
             ($counts[$color][CHESS_KNIGHT] ?? 0) +
@@ -1891,7 +1892,7 @@ class ChessEngine {
             $weak_king = $kings[CHESS_BLACK];
             $strong_king = $kings[CHESS_WHITE];
             $edge = min($weak_king[0], 7 - $weak_king[0], $weak_king[1], 7 - $weak_king[1]);
-            $king_distance = $this->manhattan($strong_king, $weak_king);
+            $king_distance = $this->attack_tables()->manhattanDistance($strong_king, $weak_king);
             $score = 900 + (14 - $king_distance) * 6 + (3 - $edge) * 20;
             return [
                 'type' => 'KQK',
@@ -1905,7 +1906,7 @@ class ChessEngine {
             $weak_king = $kings[CHESS_WHITE];
             $strong_king = $kings[CHESS_BLACK];
             $edge = min($weak_king[0], 7 - $weak_king[0], $weak_king[1], 7 - $weak_king[1]);
-            $king_distance = $this->manhattan($strong_king, $weak_king);
+            $king_distance = $this->attack_tables()->manhattanDistance($strong_king, $weak_king);
             $score = 900 + (14 - $king_distance) * 6 + (3 - $edge) * 20;
             return [
                 'type' => 'KQK',
@@ -1923,7 +1924,7 @@ class ChessEngine {
             $weak_king = $kings[CHESS_BLACK];
             $promotion = [0, $pawn[1]];
             $pawn_steps = $pawn[0];
-            $score = 120 + (6 - $pawn_steps) * 35 + $this->manhattan($weak_king, $promotion) * 6 - $this->manhattan($strong_king, $pawn) * 8;
+            $score = 120 + (6 - $pawn_steps) * 35 + $this->attack_tables()->manhattanDistance($weak_king, $promotion) * 6 - $this->attack_tables()->manhattanDistance($strong_king, $pawn) * 8;
             if ($pawn_steps <= 1) {
                 $score += 80;
             }
@@ -1944,7 +1945,7 @@ class ChessEngine {
             $weak_king = $kings[CHESS_WHITE];
             $promotion = [7, $pawn[1]];
             $pawn_steps = 7 - $pawn[0];
-            $score = 120 + (6 - $pawn_steps) * 35 + $this->manhattan($weak_king, $promotion) * 6 - $this->manhattan($strong_king, $pawn) * 8;
+            $score = 120 + (6 - $pawn_steps) * 35 + $this->attack_tables()->manhattanDistance($weak_king, $promotion) * 6 - $this->attack_tables()->manhattanDistance($strong_king, $pawn) * 8;
             if ($pawn_steps <= 1) {
                 $score += 80;
             }
@@ -1967,7 +1968,7 @@ class ChessEngine {
             $weak_king = $kings[CHESS_BLACK];
             $weak_pawn = $pawns[CHESS_BLACK];
             $pawn_steps = 7 - $weak_pawn[0];
-            $score = 380 - $pawn_steps * 25 + ($this->manhattan($weak_king, $weak_pawn) - $this->manhattan($strong_king, $weak_pawn)) * 12;
+            $score = 380 - $pawn_steps * 25 + ($this->attack_tables()->manhattanDistance($weak_king, $weak_pawn) - $this->attack_tables()->manhattanDistance($strong_king, $weak_pawn)) * 12;
             if ($score < 50) {
                 $score = 50;
             }
@@ -1985,7 +1986,7 @@ class ChessEngine {
             $weak_king = $kings[CHESS_WHITE];
             $weak_pawn = $pawns[CHESS_WHITE];
             $pawn_steps = $weak_pawn[0];
-            $score = 380 - $pawn_steps * 25 + ($this->manhattan($weak_king, $weak_pawn) - $this->manhattan($strong_king, $weak_pawn)) * 12;
+            $score = 380 - $pawn_steps * 25 + ($this->attack_tables()->manhattanDistance($weak_king, $weak_pawn) - $this->attack_tables()->manhattanDistance($strong_king, $weak_pawn)) * 12;
             if ($score < 50) {
                 $score = 50;
             }

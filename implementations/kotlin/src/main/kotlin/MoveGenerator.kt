@@ -95,20 +95,12 @@ class MoveGenerator {
     
     private fun generateKnightMoves(gameState: GameState, from: Square, color: Color): List<Move> {
         val moves = mutableListOf<Move>()
-        val offsets = listOf(-17, -15, -10, -6, 6, 10, 15, 17)
-        val file = from % 8
-        
-        for (offset in offsets) {
-            val to = from + offset
-            val toFile = to % 8
-            
-            if (isValidSquare(to) && kotlin.math.abs(toFile - file) <= 2) {
-                val target = gameState.board[to]
-                if (target == null) {
-                    moves.add(Move(from, to, PieceType.KNIGHT))
-                } else if (target.color != color) {
-                    moves.add(Move(from, to, PieceType.KNIGHT, target.type))
-                }
+        for (to in AttackTables.knightAttacks(from)) {
+            val target = gameState.board[to]
+            if (target == null) {
+                moves.add(Move(from, to, PieceType.KNIGHT))
+            } else if (target.color != color) {
+                moves.add(Move(from, to, PieceType.KNIGHT, target.type))
             }
         }
         
@@ -119,21 +111,7 @@ class MoveGenerator {
         val moves = mutableListOf<Move>()
         
         for (direction in directions) {
-            var to = from + direction
-            var prevFile = from % 8
-            
-            while (isValidSquare(to)) {
-                val toFile = to % 8
-                val fileDiff = kotlin.math.abs(toFile - prevFile)
-                
-                if (kotlin.math.abs(direction) % 8 == 0) {
-                    // Vertical moves
-                    if (fileDiff != 0) break
-                } else {
-                    // Horizontal or diagonal moves
-                    if (fileDiff != 1) break
-                }
-                
+            for (to in AttackTables.rayAttacks(from, direction)) {
                 val target = gameState.board[to]
                 if (target == null) {
                     moves.add(Move(from, to, pieceType))
@@ -143,9 +121,6 @@ class MoveGenerator {
                     }
                     break
                 }
-                
-                prevFile = toFile
-                to += direction
             }
         }
         
@@ -166,20 +141,12 @@ class MoveGenerator {
     
     private fun generateKingMoves(gameState: GameState, from: Square, color: Color, includeCastling: Boolean = true): List<Move> {
         val moves = mutableListOf<Move>()
-        val offsets = listOf(-9, -8, -7, -1, 1, 7, 8, 9)
-        val file = from % 8
-        
-        for (offset in offsets) {
-            val to = from + offset
-            val toFile = to % 8
-            
-            if (isValidSquare(to) && kotlin.math.abs(toFile - file) <= 1) {
-                val target = gameState.board[to]
-                if (target == null) {
-                    moves.add(Move(from, to, PieceType.KING))
-                } else if (target.color != color) {
-                    moves.add(Move(from, to, PieceType.KING, target.type))
-                }
+        for (to in AttackTables.kingAttacks(from)) {
+            val target = gameState.board[to]
+            if (target == null) {
+                moves.add(Move(from, to, PieceType.KING))
+            } else if (target.color != color) {
+                moves.add(Move(from, to, PieceType.KING, target.type))
             }
         }
         
@@ -254,25 +221,49 @@ class MoveGenerator {
     }
     
     fun isSquareAttacked(gameState: GameState, square: Square, byColor: Color): Boolean {
-        val squareRank = square / 8
         val squareFile = square % 8
         
         for (fromSquare in 0..63) {
             val piece = gameState.board[fromSquare]
             if (piece != null && piece.color == byColor) {
-                if (piece.type == PieceType.PAWN) {
-                    val direction = if (byColor == Color.WHITE) 8 else -8
-                    val fromFile = fromSquare % 8
-                    
-                    if (square == fromSquare + direction - 1 && kotlin.math.abs(squareFile - fromFile) == 1) return true
-                    if (square == fromSquare + direction + 1 && kotlin.math.abs(squareFile - fromFile) == 1) return true
-                    continue
+                when (piece.type) {
+                    PieceType.PAWN -> {
+                        val direction = if (byColor == Color.WHITE) 8 else -8
+                        val fromFile = fromSquare % 8
+
+                        if (square == fromSquare + direction - 1 && kotlin.math.abs(squareFile - fromFile) == 1) return true
+                        if (square == fromSquare + direction + 1 && kotlin.math.abs(squareFile - fromFile) == 1) return true
+                    }
+                    PieceType.KNIGHT -> {
+                        if (square in AttackTables.knightAttacks(fromSquare)) return true
+                    }
+                    PieceType.KING -> {
+                        if (square in AttackTables.kingAttacks(fromSquare)) return true
+                    }
+                    PieceType.BISHOP -> {
+                        if (isSquareOnRay(gameState, fromSquare, square, listOf(-9, -7, 7, 9))) return true
+                    }
+                    PieceType.ROOK -> {
+                        if (isSquareOnRay(gameState, fromSquare, square, listOf(-8, -1, 1, 8))) return true
+                    }
+                    PieceType.QUEEN -> {
+                        if (isSquareOnRay(gameState, fromSquare, square, listOf(-9, -8, -7, -1, 1, 7, 8, 9))) return true
+                    }
                 }
-                
-                // IMPORTANT: When checking for attacks, we must NOT include castling to avoid infinite recursion
-                val moves = generatePieceMoves(gameState, fromSquare, piece, false)
-                if (moves.any { it.to == square }) {
+            }
+        }
+        return false
+    }
+
+    private fun isSquareOnRay(gameState: GameState, from: Square, targetSquare: Square, directions: List<Int>): Boolean {
+        for (direction in directions) {
+            for (to in AttackTables.rayAttacks(from, direction)) {
+                val piece = gameState.board[to]
+                if (to == targetSquare) {
                     return true
+                }
+                if (piece != null) {
+                    break
                 }
             }
         }

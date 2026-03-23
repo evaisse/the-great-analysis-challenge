@@ -1,6 +1,14 @@
 open Types
 open Utils
 
+let slidingAttackerMatches = (target: pieceType, pieceType: pieceType): bool =>
+  switch target {
+  | Bishop => pieceType == Bishop || pieceType == Queen
+  | Rook => pieceType == Rook || pieceType == Queen
+  | Queen => pieceType == Queen
+  | _ => false
+  }
+
 let isValidSquare = (square: square): bool => square >= 0 && square < 64
 
 let getPiece = (state: gameState, square: square): option<piece> => {
@@ -140,39 +148,31 @@ let generatePawnMoves = (state: gameState, from: square, piece: piece): array<mo
 
 let generateKnightMoves = (state: gameState, from: square, piece: piece): array<move> => {
   let moves: array<move> = []
-  let offsets: array<int> = [-17, -15, -10, -6, 6, 10, 15, 17]
-  let file = modInt(from, 8)
+  Belt.Array.forEach(Belt.Array.getExn(AttackTables.knightAttacks, from), to => {
+    switch getPiece(state, to) {
+    | None =>
+      Belt.Array.push(moves, {
+        from,
+        to,
+        piece: Knight,
+        captured: None,
+        promotion: None,
+        castling: None,
+        enPassant: false,
+      })
 
-  Belt.Array.forEach(offsets, offset => {
-    let to = from + offset
-    let toFile = modInt(to, 8)
+    | Some(target) if target.color != piece.color =>
+      Belt.Array.push(moves, {
+        from,
+        to,
+        piece: Knight,
+        captured: Some(target.pieceType),
+        promotion: None,
+        castling: None,
+        enPassant: false,
+      })
 
-    if isValidSquare(to) && absInt(toFile - file) <= 2 {
-      switch getPiece(state, to) {
-      | None =>
-        Belt.Array.push(moves, {
-          from,
-          to,
-          piece: Knight,
-          captured: None,
-          promotion: None,
-          castling: None,
-          enPassant: false,
-        })
-
-      | Some(target) if target.color != piece.color =>
-        Belt.Array.push(moves, {
-          from,
-          to,
-          piece: Knight,
-          captured: Some(target.pieceType),
-          promotion: None,
-          castling: None,
-          enPassant: false,
-        })
-
-      | _ => ()
-      }
+    | _ => ()
     }
   })
 
@@ -183,37 +183,20 @@ let generateSlidingMoves = (
   state: gameState,
   from: square,
   piece: piece,
-  directions: array<int>,
-  isDiagonal: option<bool>,
+  rays: array<array<array<square>>>,
 ): array<move> => {
   let moves: array<move> = []
-  let file = modInt(from, 8)
 
-  Belt.Array.forEach(directions, direction => {
-    let to = ref(from + direction)
-    let prevFile = ref(file)
-    let running = ref(true)
+  Belt.Array.forEach(Belt.Array.getExn(rays, from), ray => {
+    let blocked = ref(false)
 
-    while running.contents && isValidSquare(to.contents) {
-      let toFile = modInt(to.contents, 8)
-
-      switch isDiagonal {
-      | Some(true) =>
-        if absInt(toFile - prevFile.contents) != 1 {
-          running := false
-        }
-      | _ =>
-        if (direction == -1 || direction == 1) && absInt(toFile - prevFile.contents) != 1 {
-          running := false
-        }
-      }
-
-      if running.contents {
-        switch getPiece(state, to.contents) {
+    Belt.Array.forEach(ray, to => {
+      if !blocked.contents {
+        switch getPiece(state, to) {
         | None =>
           Belt.Array.push(moves, {
             from,
-            to: to.contents,
+            to,
             piece: piece.pieceType,
             captured: None,
             promotion: None,
@@ -224,7 +207,7 @@ let generateSlidingMoves = (
         | Some(target) if target.color != piece.color =>
           Belt.Array.push(moves, {
             from,
-            to: to.contents,
+            to,
             piece: piece.pieceType,
             captured: Some(target.pieceType),
             promotion: None,
@@ -232,16 +215,11 @@ let generateSlidingMoves = (
             enPassant: false,
           })
 
-          running := false
-        | Some(_) => running := false
-        }
-
-        if running.contents {
-          prevFile := toFile
-          to := to.contents + direction
+          blocked := true
+        | Some(_) => blocked := true
         }
       }
-    }
+    })
   })
 
   moves
@@ -254,39 +232,32 @@ let rec generateKingMoves = (
   includeCastling: bool,
 ): array<move> => {
   let moves: array<move> = []
-  let offsets: array<int> = [-9, -8, -7, -1, 1, 7, 8, 9]
-  let file = modInt(from, 8)
 
-  Belt.Array.forEach(offsets, offset => {
-    let to = from + offset
-    let toFile = modInt(to, 8)
+  Belt.Array.forEach(Belt.Array.getExn(AttackTables.kingAttacks, from), to => {
+    switch getPiece(state, to) {
+    | None =>
+      Belt.Array.push(moves, {
+        from,
+        to,
+        piece: King,
+        captured: None,
+        promotion: None,
+        castling: None,
+        enPassant: false,
+      })
 
-    if isValidSquare(to) && absInt(toFile - file) <= 1 {
-      switch getPiece(state, to) {
-      | None =>
-        Belt.Array.push(moves, {
-          from,
-          to,
-          piece: King,
-          captured: None,
-          promotion: None,
-          castling: None,
-          enPassant: false,
-        })
+    | Some(target) if target.color != piece.color =>
+      Belt.Array.push(moves, {
+        from,
+        to,
+        piece: King,
+        captured: Some(target.pieceType),
+        promotion: None,
+        castling: None,
+        enPassant: false,
+      })
 
-      | Some(target) if target.color != piece.color =>
-        Belt.Array.push(moves, {
-          from,
-          to,
-          piece: King,
-          captured: Some(target.pieceType),
-          promotion: None,
-          castling: None,
-          enPassant: false,
-        })
-
-      | _ => ()
-      }
+    | _ => ()
     }
   })
 
@@ -377,25 +348,68 @@ let rec generateKingMoves = (
 and isSquareAttacked = (state: gameState, targetSquare: square, byColor: color): bool => {
   let attacked = ref(false)
 
-  for square in 0 to 63 {
+  Belt.Array.forEach(Belt.Array.getExn(AttackTables.knightAttacks, targetSquare), attackerSquare => {
     if !attacked.contents {
-      switch getPiece(state, square) {
-      | Some(piece) if piece.color == byColor =>
-        let moves =
-          switch piece.pieceType {
-          | King => generateKingMoves(state, square, piece, false)
-          | Pawn => generatePawnMoves(state, square, piece)
-          | Knight => generateKnightMoves(state, square, piece)
-          | Bishop => generateSlidingMoves(state, square, piece, [-9, -7, 7, 9], Some(true))
-          | Rook => generateSlidingMoves(state, square, piece, [-8, -1, 1, 8], Some(false))
-          | Queen => generateSlidingMoves(state, square, piece, [-9, -8, -7, -1, 1, 7, 8, 9], None)
-          }
-        if Belt.Array.some(moves, move => move.to == targetSquare) {
-          attacked := true
-        }
+      switch getPiece(state, attackerSquare) {
+      | Some(piece) if piece.color == byColor && piece.pieceType == Knight => attacked := true
       | _ => ()
       }
     }
+  })
+
+  Belt.Array.forEach(Belt.Array.getExn(AttackTables.kingAttacks, targetSquare), attackerSquare => {
+    if !attacked.contents {
+      switch getPiece(state, attackerSquare) {
+      | Some(piece) if piece.color == byColor && piece.pieceType == King => attacked := true
+      | _ => ()
+      }
+    }
+  })
+
+  let checkSlidingAttacks = (rays: array<array<array<square>>>, pieceType: pieceType): unit => {
+    Belt.Array.forEach(Belt.Array.getExn(rays, targetSquare), ray => {
+      if !attacked.contents {
+        let blocked = ref(false)
+    Belt.Array.forEach(ray, attackerSquare => {
+      if !blocked.contents && !attacked.contents {
+        switch getPiece(state, attackerSquare) {
+        | Some(piece) =>
+          if piece.color == byColor && slidingAttackerMatches(pieceType, piece.pieceType) {
+            attacked := true
+          }
+          blocked := true
+        | None => ()
+        }
+      }
+    })
+      }
+    })
+  }
+
+  if !attacked.contents {
+    checkSlidingAttacks(AttackTables.bishopRays, Bishop)
+  }
+  if !attacked.contents {
+    checkSlidingAttacks(AttackTables.rookRays, Rook)
+  }
+
+  if !attacked.contents {
+    let rank = targetSquare / 8
+    let file = modInt(targetSquare, 8)
+    let pawnRank = if byColor == White { rank - 1 } else { rank + 1 }
+
+    Belt.Array.forEach([-1, 1], fileOffset => {
+      if !attacked.contents {
+        let pawnFile = file + fileOffset
+        if pawnRank >= 0 && pawnRank < 8 && pawnFile >= 0 && pawnFile < 8 {
+          let pawnSquare = pawnRank * 8 + pawnFile
+          switch getPiece(state, pawnSquare) {
+          | Some(piece) if piece.color == byColor && piece.pieceType == Pawn => attacked := true
+          | _ => ()
+          }
+        }
+      }
+    })
   }
 
   attacked.contents
@@ -405,9 +419,9 @@ let generatePieceMoves = (state: gameState, from: square, piece: piece): array<m
   switch piece.pieceType {
   | Pawn => generatePawnMoves(state, from, piece)
   | Knight => generateKnightMoves(state, from, piece)
-  | Bishop => generateSlidingMoves(state, from, piece, [-9, -7, 7, 9], Some(true))
-  | Rook => generateSlidingMoves(state, from, piece, [-8, -1, 1, 8], Some(false))
-  | Queen => generateSlidingMoves(state, from, piece, [-9, -8, -7, -1, 1, 7, 8, 9], None)
+  | Bishop => generateSlidingMoves(state, from, piece, AttackTables.bishopRays)
+  | Rook => generateSlidingMoves(state, from, piece, AttackTables.rookRays)
+  | Queen => generateSlidingMoves(state, from, piece, AttackTables.queenRays)
   | King => generateKingMoves(state, from, piece, true)
   }
 

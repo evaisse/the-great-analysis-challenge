@@ -1,10 +1,12 @@
-import std/[strutils, sequtils, tables, strformat, hashes, times, algorithm, json]
+import std/[strutils, sequtils, times, algorithm, json]
 
 # ================================
 # Type Definitions
 # ================================
 
 type
+  Offset2D = tuple[df, dr: int]
+
   PieceType* = enum
     ptNone = 0
     ptPawn = 1
@@ -65,6 +67,9 @@ type
     event: string
     detail: string
 
+  AttackTable = array[64, seq[Square]]
+  DistanceTable = array[64, array[64, uint8]]
+
 # ================================
 # Constants
 # ================================
@@ -74,9 +79,20 @@ const
   
   EmptyPiece* = Piece(pieceType: ptNone, color: cWhite)
   
+  KnightDeltas: array[8, Offset2D] = [
+    (df: -1, dr: -2), (df: 1, dr: -2),
+    (df: -2, dr: -1), (df: 2, dr: -1),
+    (df: -2, dr: 1), (df: 2, dr: 1),
+    (df: -1, dr: 2), (df: 1, dr: 2)
+  ]
+
+  KingDeltas: array[8, Offset2D] = [
+    (df: -1, dr: -1), (df: 0, dr: -1), (df: 1, dr: -1),
+    (df: -1, dr: 0),                      (df: 1, dr: 0),
+    (df: -1, dr: 1),  (df: 0, dr: 1),  (df: 1, dr: 1)
+  ]
+
   # Direction offsets for move generation
-  KnightMoves* = @[17, 15, 10, 6, -6, -10, -15, -17]
-  KingMoves* = @[8, -8, 1, -1, 9, -9, 7, -7]
   RookDirections* = @[8, -8, 1, -1]
   BishopDirections* = @[9, -9, 7, -7]
   
@@ -168,6 +184,19 @@ var
   gTraceLastAi = "none"
   gZobristKeys: ZobristKeys
   gZobristInitialized = false
+  gAttackTablesInitialized = false
+  gKnightAttacks: AttackTable
+  gKingAttacks: AttackTable
+  gSouthwestRays: AttackTable
+  gSouthRays: AttackTable
+  gSoutheastRays: AttackTable
+  gWestRays: AttackTable
+  gEastRays: AttackTable
+  gNorthwestRays: AttackTable
+  gNorthRays: AttackTable
+  gNortheastRays: AttackTable
+  gChebyshevDistance: DistanceTable
+  gManhattanDistance: DistanceTable
 
 # ================================
 # Utility Functions
@@ -181,6 +210,90 @@ proc getFile*(sq: Square): int =
 
 proc getRank*(sq: Square): int =
   sq div 8
+
+proc buildAttackTable(deltas: openArray[Offset2D]): AttackTable =
+  for sq in 0..63:
+    let source = Square(sq)
+    let file = getFile(source)
+    let rank = getRank(source)
+    result[sq] = @[]
+    for delta in deltas:
+      let targetFile = file + delta.df
+      let targetRank = rank + delta.dr
+      if targetFile in 0..7 and targetRank in 0..7:
+        result[sq].add(Square(targetRank * 8 + targetFile))
+
+proc buildRayTable(delta: Offset2D): AttackTable =
+  for sq in 0..63:
+    let source = Square(sq)
+    var targetFile = getFile(source) + delta.df
+    var targetRank = getRank(source) + delta.dr
+    result[sq] = @[]
+    while targetFile in 0..7 and targetRank in 0..7:
+      result[sq].add(Square(targetRank * 8 + targetFile))
+      targetFile += delta.df
+      targetRank += delta.dr
+
+proc buildDistanceTable(metric: proc(fileDistance, rankDistance: int): uint8 {.nimcall.}): DistanceTable =
+  for fromSq in 0..63:
+    let fromFile = fromSq mod 8
+    let fromRank = fromSq div 8
+    for toSq in 0..63:
+      let toFile = toSq mod 8
+      let toRank = toSq div 8
+      result[fromSq][toSq] = metric(abs(fromFile - toFile), abs(fromRank - toRank))
+
+proc initAttackTables() =
+  if gAttackTablesInitialized:
+    return
+
+  gKnightAttacks = buildAttackTable(KnightDeltas)
+  gKingAttacks = buildAttackTable(KingDeltas)
+  gSouthwestRays = buildRayTable((df: -1, dr: -1))
+  gSouthRays = buildRayTable((df: 0, dr: -1))
+  gSoutheastRays = buildRayTable((df: 1, dr: -1))
+  gWestRays = buildRayTable((df: -1, dr: 0))
+  gEastRays = buildRayTable((df: 1, dr: 0))
+  gNorthwestRays = buildRayTable((df: -1, dr: 1))
+  gNorthRays = buildRayTable((df: 0, dr: 1))
+  gNortheastRays = buildRayTable((df: 1, dr: 1))
+  gChebyshevDistance = buildDistanceTable(proc(fileDistance, rankDistance: int): uint8 =
+    uint8(max(fileDistance, rankDistance))
+  )
+  gManhattanDistance = buildDistanceTable(proc(fileDistance, rankDistance: int): uint8 =
+    uint8(fileDistance + rankDistance)
+  )
+
+  gAttackTablesInitialized = true
+
+proc knightAttacks*(sq: Square): seq[Square] =
+  initAttackTables()
+  gKnightAttacks[sq]
+
+proc kingAttacks*(sq: Square): seq[Square] =
+  initAttackTables()
+  gKingAttacks[sq]
+
+proc rayAttacks*(sq: Square, direction: int): seq[Square] =
+  initAttackTables()
+  case direction
+  of -9: gSouthwestRays[sq]
+  of -8: gSouthRays[sq]
+  of -7: gSoutheastRays[sq]
+  of -1: gWestRays[sq]
+  of 1: gEastRays[sq]
+  of 7: gNorthwestRays[sq]
+  of 8: gNorthRays[sq]
+  of 9: gNortheastRays[sq]
+  else: @[]
+
+proc chebyshevDistance*(fromSq, toSq: Square): int =
+  initAttackTables()
+  int(gChebyshevDistance[fromSq][toSq])
+
+proc manhattanDistance*(fromSq, toSq: Square): int =
+  initAttackTables()
+  int(gManhattanDistance[fromSq][toSq])
 
 proc xorshift64(state: var uint64): uint64 =
   state = state xor (state shl 13)
@@ -345,6 +458,7 @@ proc isFriendly*(board: Board, sq: Square, color: Color): bool =
 # ================================
 
 proc parseFEN*(fen: string): Board =
+  initAttackTables()
   result.clearBoard()
   
   let parts = fen.split(' ')
@@ -495,66 +609,35 @@ proc isSquareAttacked*(board: Board, sq: Square, byColor: Color): bool =
         return true
   
   # Check knight attacks
-  for delta in KnightMoves:
-    let targetSq = sq.int + delta
-    if targetSq >= 0 and targetSq <= 63:
-      let targetFile = targetSq mod 8
-      let targetRank = targetSq div 8
-      let fileDiff = abs(targetFile - getFile(sq))
-      let rankDiff = abs(targetRank - getRank(sq))
-      
-      if (fileDiff == 2 and rankDiff == 1) or (fileDiff == 1 and rankDiff == 2):
-        let p = board.getPiece(Square(targetSq))
-        if p.pieceType == ptKnight and p.color == byColor:
-          return true
-  
+  for targetSq in knightAttacks(sq):
+    let p = board.getPiece(targetSq)
+    if p.pieceType == ptKnight and p.color == byColor:
+      return true
+
   # Check king attacks
-  for delta in KingMoves:
-    let targetSq = sq.int + delta
-    if targetSq >= 0 and targetSq <= 63:
-      let targetFile = targetSq mod 8
-      let targetRank = targetSq div 8
-      if abs(targetFile - getFile(sq)) <= 1 and abs(targetRank - getRank(sq)) <= 1:
-        let p = board.getPiece(Square(targetSq))
-        if p.pieceType == ptKing and p.color == byColor:
-          return true
-  
+  for targetSq in kingAttacks(sq):
+    let p = board.getPiece(targetSq)
+    if p.pieceType == ptKing and p.color == byColor:
+      return true
+
   # Check sliding pieces
   for dir in RookDirections:
-    var currentSq = sq.int + dir
-    var prevFile = getFile(sq)
-    
-    while currentSq >= 0 and currentSq <= 63:
-      let currentFile = currentSq mod 8
-      if abs(currentFile - prevFile) > 1:
-        break
-      
-      let p = board.getPiece(Square(currentSq))
-      if p.pieceType != ptNone:
-        if p.color == byColor and p.pieceType in [ptRook, ptQueen]:
-          return true
-        break
-      
-      prevFile = currentFile
-      currentSq += dir
-  
+    for targetSq in rayAttacks(sq, dir):
+      let p = board.getPiece(targetSq)
+      if p.pieceType == ptNone:
+        continue
+      if p.color == byColor and p.pieceType in [ptRook, ptQueen]:
+        return true
+      break
+
   for dir in BishopDirections:
-    var currentSq = sq.int + dir
-    var prevFile = getFile(sq)
-    
-    while currentSq >= 0 and currentSq <= 63:
-      let currentFile = currentSq mod 8
-      if abs(currentFile - prevFile) != 1:
-        break
-      
-      let p = board.getPiece(Square(currentSq))
-      if p.pieceType != ptNone:
-        if p.color == byColor and p.pieceType in [ptBishop, ptQueen]:
-          return true
-        break
-      
-      prevFile = currentFile
-      currentSq += dir
+    for targetSq in rayAttacks(sq, dir):
+      let p = board.getPiece(targetSq)
+      if p.pieceType == ptNone:
+        continue
+      if p.color == byColor and p.pieceType in [ptBishop, ptQueen]:
+        return true
+      break
   
   return false
 
@@ -610,66 +693,33 @@ proc generatePawnMoves*(board: Board, sq: Square, moves: var seq[Move]) =
 
 proc generateKnightMoves*(board: Board, sq: Square, moves: var seq[Move]) =
   let piece = board.getPiece(sq)
-  
-  for delta in KnightMoves:
-    let targetSq = sq.int + delta
-    if targetSq >= 0 and targetSq <= 63:
-      let targetFile = targetSq mod 8
-      let targetRank = targetSq div 8
-      let sourceFile = getFile(sq)
-      let sourceRank = getRank(sq)
-      
-      let fileDiff = abs(targetFile - sourceFile)
-      let rankDiff = abs(targetRank - sourceRank)
-      
-      if (fileDiff == 2 and rankDiff == 1) or (fileDiff == 1 and rankDiff == 2):
-        if not board.isFriendly(Square(targetSq), piece.color):
-          let isCapture = board.isEnemy(Square(targetSq), piece.color)
-          moves.add(Move(fromSquare: sq, toSquare: Square(targetSq), isCapture: isCapture))
+
+  for targetSq in knightAttacks(sq):
+    if not board.isFriendly(targetSq, piece.color):
+      let isCapture = board.isEnemy(targetSq, piece.color)
+      moves.add(Move(fromSquare: sq, toSquare: targetSq, isCapture: isCapture))
 
 proc generateSlidingMoves*(board: Board, sq: Square, directions: seq[int], moves: var seq[Move]) =
   let piece = board.getPiece(sq)
-  
+
   for dir in directions:
-    var currentSq = sq.int + dir
-    var prevFile = getFile(sq)
-    
-    while currentSq >= 0 and currentSq <= 63:
-      let currentFile = currentSq mod 8
-      
-      # Check for wrapping
-      if dir in [-1, 1]:  # Horizontal
-        if abs(currentFile - prevFile) != 1:
-          break
-      elif dir in [-9, -7, 7, 9]:  # Diagonal
-        if abs(currentFile - prevFile) != 1:
-          break
-      
-      if board.isFriendly(Square(currentSq), piece.color):
+    for targetSq in rayAttacks(sq, dir):
+      if board.isFriendly(targetSq, piece.color):
         break
-      
-      let isCapture = board.isEnemy(Square(currentSq), piece.color)
-      moves.add(Move(fromSquare: sq, toSquare: Square(currentSq), isCapture: isCapture))
-      
+
+      let isCapture = board.isEnemy(targetSq, piece.color)
+      moves.add(Move(fromSquare: sq, toSquare: targetSq, isCapture: isCapture))
+
       if isCapture:
         break
-      
-      prevFile = currentFile
-      currentSq += dir
 
 proc generateKingMoves*(board: Board, sq: Square, moves: var seq[Move]) =
   let piece = board.getPiece(sq)
-  
-  for delta in KingMoves:
-    let targetSq = sq.int + delta
-    if targetSq >= 0 and targetSq <= 63:
-      let targetFile = targetSq mod 8
-      let targetRank = targetSq div 8
-      
-      if abs(targetFile - getFile(sq)) <= 1 and abs(targetRank - getRank(sq)) <= 1:
-        if not board.isFriendly(Square(targetSq), piece.color):
-          let isCapture = board.isEnemy(Square(targetSq), piece.color)
-          moves.add(Move(fromSquare: sq, toSquare: Square(targetSq), isCapture: isCapture))
+
+  for targetSq in kingAttacks(sq):
+    if not board.isFriendly(targetSq, piece.color):
+      let isCapture = board.isEnemy(targetSq, piece.color)
+      moves.add(Move(fromSquare: sq, toSquare: targetSq, isCapture: isCapture))
   
   # Castling
   if not board.isInCheck(piece.color):
@@ -814,11 +864,25 @@ proc generateLegalMoves*(board: Board): seq[Move] =
 
 proc evaluatePosition*(board: Board): int =
   result = 0
+  var whiteKingSq = board.whiteKingPos
+  var blackKingSq = board.blackKingPos
+  var minorMajorCount = 0
+  var queenCount = 0
   
   for sq in 0..63:
     let piece = board.getPiece(Square(sq))
     if piece.pieceType != ptNone:
       let pieceValue = PieceValues[piece.pieceType]
+
+      if piece.pieceType == ptKing:
+        if piece.color == cWhite:
+          whiteKingSq = Square(sq)
+        else:
+          blackKingSq = Square(sq)
+      elif piece.pieceType != ptPawn:
+        minorMajorCount.inc
+        if piece.pieceType == ptQueen:
+          queenCount.inc
       
       # Get position bonus from piece-square table
       let row = sq div 8
@@ -841,6 +905,10 @@ proc evaluatePosition*(board: Board): int =
         result += totalValue
       else:
         result -= totalValue
+
+  let isEndgame = minorMajorCount <= 4 or (minorMajorCount <= 6 and queenCount == 0)
+  if isEndgame:
+    result += 14 - manhattanDistance(whiteKingSq, blackKingSq)
   
   # Return from perspective of side to move
   if board.activeColor == cBlack:
@@ -939,8 +1007,8 @@ proc minimax*(board: Board, depth: int, alpha: int, beta: int, maximizing: bool)
     return (score: minEval, move: bestMove)
 
 proc findBestMove*(board: Board, depth: int): Move =
-  let result = minimax(board, depth, -1000000, 1000000, true)
-  return result.move
+  let searchResult = minimax(board, depth, -1000000, 1000000, true)
+  return searchResult.move
 
 # ================================
 # Game Management

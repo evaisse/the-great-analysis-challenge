@@ -154,30 +154,22 @@ func (gs *GameState) GenerateKnightMoves(square Square) []Move {
 	moves := make([]Move, 0, 8)
 	piece := gs.GetPiece(square)
 
-	knightMoves := [][]int{
-		{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
-		{1, -2}, {1, 2}, {2, -1}, {2, 1},
-	}
-
-	for _, move := range knightMoves {
-		toSquare := Square{square.File + move[0], square.Rank + move[1]}
-		if toSquare.IsValid() {
-			target := gs.GetPiece(toSquare)
-			if target.IsEmpty() {
-				moves = append(moves, Move{
-					From:  square,
-					To:    toSquare,
-					Piece: piece,
-				})
-			} else if target.Color != piece.Color {
-				moves = append(moves, Move{
-					From:      square,
-					To:        toSquare,
-					Piece:     piece,
-					Captured:  &target,
-					IsCapture: true,
-				})
-			}
+	for _, toSquare := range knightAttacks(square) {
+		target := gs.GetPiece(toSquare)
+		if target.IsEmpty() {
+			moves = append(moves, Move{
+				From:  square,
+				To:    toSquare,
+				Piece: piece,
+			})
+		} else if target.Color != piece.Color {
+			moves = append(moves, Move{
+				From:      square,
+				To:        toSquare,
+				Piece:     piece,
+				Captured:  &target,
+				IsCapture: true,
+			})
 		}
 	}
 
@@ -189,16 +181,8 @@ func (gs *GameState) GenerateSlidingMoves(square Square, directions [][]int) []M
 	piece := gs.GetPiece(square)
 
 	for _, direction := range directions {
-		for distance := 1; distance < 8; distance++ {
-			toSquare := Square{
-				square.File + direction[0]*distance,
-				square.Rank + direction[1]*distance,
-			}
-
-			if !toSquare.IsValid() {
-				break
-			}
-
+		toSquareList := rayAttacks(directionToEnum(direction[0], direction[1]), square)
+		for _, toSquare := range toSquareList {
 			target := gs.GetPiece(toSquare)
 			if target.IsEmpty() {
 				moves = append(moves, Move{
@@ -251,32 +235,22 @@ func (gs *GameState) GenerateKingMoves(square Square) []Move {
 	moves := make([]Move, 0, 10)
 	piece := gs.GetPiece(square)
 
-	// Regular king moves
-	kingMoves := [][]int{
-		{-1, -1}, {-1, 0}, {-1, 1},
-		{0, -1}, {0, 1},
-		{1, -1}, {1, 0}, {1, 1},
-	}
-
-	for _, move := range kingMoves {
-		toSquare := Square{square.File + move[0], square.Rank + move[1]}
-		if toSquare.IsValid() {
-			target := gs.GetPiece(toSquare)
-			if target.IsEmpty() {
-				moves = append(moves, Move{
-					From:  square,
-					To:    toSquare,
-					Piece: piece,
-				})
-			} else if target.Color != piece.Color {
-				moves = append(moves, Move{
-					From:      square,
-					To:        toSquare,
-					Piece:     piece,
-					Captured:  &target,
-					IsCapture: true,
-				})
-			}
+	for _, toSquare := range kingAttacks(square) {
+		target := gs.GetPiece(toSquare)
+		if target.IsEmpty() {
+			moves = append(moves, Move{
+				From:  square,
+				To:    toSquare,
+				Piece: piece,
+			})
+		} else if target.Color != piece.Color {
+			moves = append(moves, Move{
+				From:      square,
+				To:        toSquare,
+				Piece:     piece,
+				Captured:  &target,
+				IsCapture: true,
+			})
 		}
 	}
 
@@ -317,6 +291,29 @@ func (gs *GameState) GenerateKingMoves(square Square) []Move {
 	}
 
 	return moves
+}
+
+func directionToEnum(fileDelta, rankDelta int) Direction {
+	switch {
+	case fileDelta == -1 && rankDelta == -1:
+		return DirectionSouthWest
+	case fileDelta == 0 && rankDelta == -1:
+		return DirectionSouth
+	case fileDelta == 1 && rankDelta == -1:
+		return DirectionSouthEast
+	case fileDelta == -1 && rankDelta == 0:
+		return DirectionWest
+	case fileDelta == 1 && rankDelta == 0:
+		return DirectionEast
+	case fileDelta == -1 && rankDelta == 1:
+		return DirectionNorthWest
+	case fileDelta == 0 && rankDelta == 1:
+		return DirectionNorth
+	case fileDelta == 1 && rankDelta == 1:
+		return DirectionNorthEast
+	default:
+		panic(fmt.Sprintf("unsupported direction: %d,%d", fileDelta, rankDelta))
+	}
 }
 
 func (gs *GameState) IsLegalMove(move Move) bool {
