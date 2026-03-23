@@ -1,4 +1,4 @@
-import { GameState, Piece, Square } from "./types";
+import { GameState, Piece } from "./types";
 
 export class ZobristKeys {
   pieces: bigint[][];

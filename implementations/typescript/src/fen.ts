@@ -1,5 +1,12 @@
 import { Board } from "./board";
-import { Piece, CastlingRights, Square, GameState } from "./types";
+import {
+  Piece,
+  CastlingRights,
+  Square,
+  GameState,
+  SideToMove,
+  SQUARES,
+} from "./types";
 import { zobrist } from "./zobrist";
 
 export class FenParser {
@@ -34,7 +41,7 @@ export class FenParser {
       }
     }
 
-    const color = turn === "w" ? "white" : "black";
+    const color: SideToMove = turn === "w" ? "white" : "black";
 
     const rights: CastlingRights = {
       whiteKingside: castling.includes("K"),
@@ -57,7 +64,7 @@ export class FenParser {
     const halfmoveClock = parseInt(halfmove, 10) || 0;
     const fullmoveNumber = parseInt(fullmove, 10) || 1;
 
-    const newState: GameState = {
+    const newState: GameState<SideToMove> = {
       board: boardState,
       turn: color,
       castlingRights: rights,
@@ -91,7 +98,7 @@ export class FenParser {
       let emptyCount = 0;
 
       for (let file = 0; file < 8; file++) {
-        const square = rank * 8 + file;
+        const square = SQUARES[rank * 8 + file];
         const piece = this.board.getPiece(square);
 
         if (piece) {

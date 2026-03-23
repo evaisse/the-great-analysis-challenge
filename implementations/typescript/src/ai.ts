@@ -1,6 +1,6 @@
 import { Board } from "./board";
 import { MoveGenerator } from "./moveGenerator";
-import { Move, PIECE_VALUES } from "./types";
+import { LegalMove, PIECE_VALUES, SQUARES } from "./types";
 
 export class AI {
   private board: Board;
@@ -81,7 +81,7 @@ export class AI {
   }
 
   public findBestMove(depth: number): {
-    move: Move | null;
+    move: LegalMove | null;
     eval: number;
     nodes: number;
     evalCalls: number;
@@ -103,7 +103,7 @@ export class AI {
     const orderedMoves = this.orderMoves(moves);
     const maximizing = color === "white";
 
-    let bestMove: Move | null = null;
+    let bestMove: LegalMove | null = null;
     let bestEval = maximizing ? -Infinity : Infinity;
 
     let alpha = -Infinity;
@@ -217,11 +217,11 @@ export class AI {
     this.evalCalls += 1;
     let score = 0;
 
-    for (let square = 0; square < 64; square++) {
+    for (const square of SQUARES) {
       const piece = this.board.getPiece(square);
       if (piece) {
-        const row = Math.floor(square / 8);
-        const col = square % 8;
+        const row = Math.floor(Number(square) / 8);
+        const col = Number(square) % 8;
         const evalRow = piece.color === "white" ? row : 7 - row;
         const tableIdx = evalRow * 8 + col;
 
@@ -255,7 +255,7 @@ export class AI {
     return score;
   }
 
-  private orderMoves(moves: Move[]): Move[] {
+  private orderMoves(moves: LegalMove[]): LegalMove[] {
     const scored = moves.map((move) => ({
       move,
       score: this.scoreMove(move),
@@ -278,7 +278,7 @@ export class AI {
     return scored.map((entry) => entry.move);
   }
 
-  private scoreMove(move: Move): number {
+  private scoreMove(move: LegalMove): number {
     let score = 0;
 
     const attacker = this.board.getPiece(move.from);
@@ -307,7 +307,7 @@ export class AI {
     return score;
   }
 
-  private moveToNotation(move: Move): string {
+  private moveToNotation(move: LegalMove): string {
     const from = this.board.squareToAlgebraic(move.from);
     const to = this.board.squareToAlgebraic(move.to);
     const promotion = move.promotion ? move.promotion.toLowerCase() : "";
