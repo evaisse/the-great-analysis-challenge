@@ -8,6 +8,8 @@
 -- "." = empty square
 
 -- Global state
+local START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 local board = {}
 local white_to_move = true
 local castling_rights = {white_king = true, white_queen = true, black_king = true, black_queen = true}
@@ -19,7 +21,8 @@ local zobrist_hash = 0
 local position_history = {}
 local irreversible_history = {}
 local pgn_path = nil
-local pgn_moves = {}
+local pgn_game = nil
+local pgn_variation_stack = {}
 local book_path = nil
 local book_enabled = false
 local book_entries = {}
@@ -58,6 +61,16 @@ local search_deadline = nil
 local search_timed_out = false
 local search_stop_requested = false
 local record_trace_ai
+local reset_pgn_state
+local current_pgn_game
+local current_pgn_moves
+local current_pgn_sequence
+local current_pgn_sequence_ref
+local sync_runtime_to_pgn_cursor
+local record_pgn_move
+local build_game_from_history
+local snapshot_engine_state
+local restore_engine_state
 local search_nodes_visited = 0
 local search_eval_calls = 0
 local search_tt_hits = 0
@@ -157,6 +170,7 @@ local function new_game()
     zobrist_hash = compute_hash()
     position_history = {}
     irreversible_history = {}
+    reset_pgn_state(START_FEN, "current-game")
 end
 
 -- Display board
@@ -645,7 +659,8 @@ local function is_legal_move(from_rank, from_file, to_rank, to_file, promotion)
 end
 
 -- Execute a move
-local function execute_move(move_str)
+local function execute_move(move_str, options)
+    options = options or {}
     if #move_str < 4 then
         return false, "ERROR: Invalid move format"
     end
@@ -681,8 +696,13 @@ local function execute_move(move_str)
     if not legal then
         return false, "ERROR: " .. msg
     end
-    
-    make_move_internal(from_rank, from_file, to_rank, to_file, promotion_piece)
+
+    local resolved = {from_rank, from_file, to_rank, to_file, promotion_piece}
+    if options.record_pgn == false then
+        make_move_internal(from_rank, from_file, to_rank, to_file, promotion_piece)
+    else
+        record_pgn_move(resolved)
+    end
     return true, "OK: " .. move_str
 end
 
@@ -805,6 +825,9 @@ local function import_fen(fen_str)
     fullmove_number = tonumber(parts[6]) or 1
     
     move_history = {}
+    position_history = {}
+    irreversible_history = {}
+    zobrist_hash = compute_hash()
     return true, "OK"
 end
 
@@ -1128,8 +1151,8 @@ local function ai_move(max_depth, movetime_ms)
     if best_move[5] then
         move_str = move_str .. best_move[5]
     end
-    
-    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+
+    record_pgn_move(best_move)
     record_trace_ai("search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
     
     return true, string.format("AI: %s (depth=%d, eval=%d, time=%d)", move_str, depth_used, eval, elapsed)
@@ -1320,7 +1343,7 @@ local function apply_book_move(best_move, move_str)
         return false
     end
 
-    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    record_pgn_move(best_move)
     book_played = book_played + 1
     record_trace_ai("book", move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
     print("AI: " .. move_str .. " (book)")
@@ -1562,7 +1585,7 @@ local function apply_endgame_move(best_move, info, move_str)
         return false
     end
 
-    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    record_pgn_move(best_move)
     record_trace_ai("endgame", move_str, 0, info.score_white, 0, false, 0, 0, 0, 0, 0)
     print(string.format("AI: %s (endgame %s, score=%d)", move_str, info.type, info.score_white))
     display_board()
@@ -1582,40 +1605,625 @@ local function apply_endgame_move(best_move, info, move_str)
     return true
 end
 
-local function load_pgn(path)
-    pgn_path = path
-    pgn_moves = {}
+local function trim(value)
+    return tostring(value or ""):gsub("^%s*(.-)%s*$", "%1")
+end
 
+local function copy_move_array(move)
+    return {move[1], move[2], move[3], move[4], move[5]}
+end
+
+local function moves_equal(a, b)
+    return a[1] == b[1] and a[2] == b[2] and a[3] == b[3] and a[4] == b[4] and a[5] == b[5]
+end
+
+local function is_move_castling(move)
+    local piece = board[move[1]][move[2]]
+    return (piece == "K" or piece == "k") and math.abs(move[4] - move[2]) == 2
+end
+
+local function is_move_en_passant(move)
+    local piece = board[move[1]][move[2]]
+    return en_passant_target ~= nil and
+        (piece == "P" or piece == "p") and
+        move[3] == en_passant_target[1] and
+        move[4] == en_passant_target[2] and
+        board[move[3]][move[4]] == "." and
+        move[2] ~= move[4]
+end
+
+local function pgn_piece_letter(piece)
+    local upper = tostring(piece or ""):upper()
+    if upper == "P" then
+        return ""
+    end
+    return upper
+end
+
+local function normalize_san(token)
+    local cleaned = trim(token)
+    cleaned = cleaned:gsub("^(%d+)%.%.%.", "")
+    cleaned = cleaned:gsub("^(%d+)%.", "")
+    cleaned = cleaned:gsub("[!?]+$", "")
+    cleaned = cleaned:gsub("[+#]+$", "")
+    cleaned = cleaned:gsub("0%-0%-0", "O-O-O")
+    cleaned = cleaned:gsub("0%-0", "O-O")
+    cleaned = cleaned:gsub("e%.p%.", "")
+    cleaned = cleaned:gsub("ep", "")
+    return trim(cleaned)
+end
+
+local function move_disambiguation(move)
+    local piece = board[move[1]][move[2]]
+    local clash_found = false
+    local same_file = false
+    local same_rank = false
+
+    for _, candidate in ipairs(generate_legal_moves()) do
+        if not moves_equal(candidate, move) then
+            local candidate_piece = board[candidate[1]][candidate[2]]
+            if candidate_piece == piece and candidate[3] == move[3] and candidate[4] == move[4] then
+                clash_found = true
+                if candidate[2] == move[2] then
+                    same_file = true
+                end
+                if candidate[1] == move[1] then
+                    same_rank = true
+                end
+            end
+        end
+    end
+
+    if not clash_found then
+        return ""
+    end
+    if not same_file then
+        return string.char(string.byte("a") + move[2] - 1)
+    end
+    if not same_rank then
+        return tostring(move[1])
+    end
+    return string.char(string.byte("a") + move[2] - 1) .. tostring(move[1])
+end
+
+local function move_to_san(move)
+    local piece = board[move[1]][move[2]]
+    if piece == "." then
+        error("missing moving piece for SAN serialization")
+    end
+
+    local san
+    local capture = board[move[3]][move[4]] ~= "." or is_move_en_passant(move)
+    if is_move_castling(move) then
+        san = move[4] == 7 and "O-O" or "O-O-O"
+    else
+        local destination = indices_to_algebraic(move[3], move[4])
+        local promotion = move[5] and ("=" .. pgn_piece_letter(move[5])) or ""
+        if piece:upper() == "P" then
+            if capture then
+                san = string.char(string.byte("a") + move[2] - 1) .. "x" .. destination .. promotion
+            else
+                san = destination .. promotion
+            end
+        else
+            local prefix = pgn_piece_letter(piece) .. move_disambiguation(move)
+            if capture then
+                prefix = prefix .. "x"
+            end
+            san = prefix .. destination .. promotion
+        end
+    end
+
+    make_move_internal(move[1], move[2], move[3], move[4], move[5])
+    local replies = generate_legal_moves()
+    if is_in_check(white_to_move) then
+        san = san .. ((#replies == 0) and "#" or "+")
+    end
+    undo_move()
+
+    return san
+end
+
+local function san_to_move(san)
+    local normalized = normalize_san(san)
+    for _, move in ipairs(generate_legal_moves()) do
+        if normalize_san(move_to_san(move)) == normalized then
+            return copy_move_array(move)
+        end
+    end
+    error("unresolved SAN move: " .. tostring(san))
+end
+
+local function starting_ply_from_fen(fen)
+    local parts = {}
+    for token in tostring(fen or ""):gmatch("%S+") do
+        table.insert(parts, token)
+    end
+
+    local move_number = tonumber(parts[6]) or 1
+    local side = (parts[2] == "b") and "black" or "white"
+    return math.max(1, move_number), side
+end
+
+local function serialize_sequence(sequence, move_number, side)
+    local parts = {}
+    local current_number = move_number
+    local current_side = side
+
+    for _, node in ipairs(sequence) do
+        if current_side == "white" then
+            table.insert(parts, tostring(current_number) .. ". " .. node.san)
+        else
+            local last = parts[#parts]
+            if not last or not last:match("^" .. tostring(current_number) .. "%.%s") then
+                table.insert(parts, tostring(current_number) .. "... " .. node.san)
+            else
+                table.insert(parts, node.san)
+            end
+        end
+
+        for _, nag in ipairs(node.nags) do
+            table.insert(parts, nag)
+        end
+        for _, comment in ipairs(node.comments) do
+            table.insert(parts, "{" .. comment .. "}")
+        end
+        for _, variation in ipairs(node.variations) do
+            table.insert(parts, "(" .. serialize_sequence(variation, current_number, current_side) .. ")")
+        end
+
+        if current_side == "black" then
+            current_number = current_number + 1
+            current_side = "white"
+        else
+            current_side = "black"
+        end
+    end
+
+    return trim(table.concat(parts, " "))
+end
+
+local function serialize_game(game)
+    local lines = {}
+    for _, tag in ipairs(game.tag_order) do
+        local value = tostring(game.tags[tag] or ""):gsub('"', '\\"')
+        table.insert(lines, string.format("[%s \"%s\"]", tag, value))
+    end
+    if #lines > 0 then
+        table.insert(lines, "")
+    end
+
+    local move_number, side = starting_ply_from_fen(game.initial_fen)
+    local move_text = serialize_sequence(game.moves, move_number, side)
+    if #game.initial_comments > 0 then
+        local comments = {}
+        for _, comment in ipairs(game.initial_comments) do
+            table.insert(comments, "{" .. comment .. "}")
+        end
+        move_text = trim(table.concat(comments, " ") .. " " .. move_text)
+    end
+    if game.result and game.result ~= "" then
+        move_text = trim(move_text .. " " .. game.result)
+    end
+    table.insert(lines, move_text ~= "" and move_text or (game.result or "*"))
+
+    return trim(table.concat(lines, "\n")) .. "\n"
+end
+
+local function tokenize_pgn(content)
+    local tokens = {}
+    local length = #content
+    local index = 1
+    local result_tokens = {
+        ["1-0"] = true,
+        ["0-1"] = true,
+        ["1/2-1/2"] = true,
+        ["*"] = true,
+    }
+
+    while index <= length do
+        local char = content:sub(index, index)
+        if char:match("%s") then
+            index = index + 1
+        elseif char == "[" then
+            local end_index = content:find("]", index, true)
+            if not end_index then
+                error("unterminated PGN tag")
+            end
+            local raw = trim(content:sub(index + 1, end_index - 1))
+            local name, value = raw:match('^([A-Za-z0-9_]+)%s+"(.*)"$')
+            if not name then
+                error("invalid PGN tag: [" .. raw .. "]")
+            end
+            value = value:gsub('\\"', '"')
+            table.insert(tokens, {kind = "TAG", name = name, value = value})
+            index = end_index + 1
+        elseif char == "{" then
+            local end_index = content:find("}", index, true)
+            if not end_index then
+                error("unterminated PGN comment")
+            end
+            table.insert(tokens, {kind = "COMMENT", value = trim(content:sub(index + 1, end_index - 1))})
+            index = end_index + 1
+        elseif char == ";" then
+            local end_index = content:find("\n", index, true) or (length + 1)
+            table.insert(tokens, {kind = "COMMENT", value = trim(content:sub(index + 1, end_index - 1))})
+            index = end_index
+        elseif char == "(" then
+            table.insert(tokens, {kind = "LPAREN", value = "("})
+            index = index + 1
+        elseif char == ")" then
+            table.insert(tokens, {kind = "RPAREN", value = ")"})
+            index = index + 1
+        elseif char == "$" then
+            local start_index = index
+            index = index + 1
+            while index <= length and content:sub(index, index):match("%d") do
+                index = index + 1
+            end
+            table.insert(tokens, {kind = "NAG", value = content:sub(start_index, index - 1)})
+        else
+            local start_index = index
+            while index <= length do
+                local current = content:sub(index, index)
+                if current:match("%s") or current == "[" or current == "]" or current == "{" or current == "}" or current == "(" or current == ")" or current == ";" then
+                    break
+                end
+                index = index + 1
+            end
+            local value = content:sub(start_index, index - 1)
+            if result_tokens[value] then
+                table.insert(tokens, {kind = "RESULT", value = value})
+            elseif value:match("^%d+%.%.%.$") or value:match("^%d+%.$") then
+                table.insert(tokens, {kind = "MOVE_NO", value = value})
+            else
+                table.insert(tokens, {kind = "SAN", value = value})
+            end
+        end
+    end
+
+    return tokens
+end
+
+local parse_pgn_sequence
+
+parse_pgn_sequence = function(tokens, index)
+    local moves = {}
+    local trailing_comments = {}
+    local result = "*"
+
+    while index <= #tokens do
+        local token = tokens[index]
+        if token.kind == "RPAREN" then
+            break
+        elseif token.kind == "RESULT" then
+            result = token.value
+            index = index + 1
+            break
+        elseif token.kind == "MOVE_NO" then
+            index = index + 1
+        elseif token.kind == "COMMENT" then
+            if #moves > 0 then
+                table.insert(moves[#moves].comments, token.value)
+            else
+                table.insert(trailing_comments, token.value)
+            end
+            index = index + 1
+        elseif token.kind == "NAG" then
+            if #moves == 0 then
+                error("NAG without move")
+            end
+            table.insert(moves[#moves].nags, token.value)
+            index = index + 1
+        elseif token.kind == "LPAREN" then
+            if #moves == 0 then
+                error("variation without anchor move")
+            end
+            index = index + 1
+            local anchor = moves[#moves]
+            local snapshot = snapshot_engine_state()
+            local ok, variation_moves, variation_result, pending, next_index = pcall(function()
+                local success, msg = import_fen(anchor.fen_before)
+                if not success then
+                    error(msg)
+                end
+                local parsed_moves, parsed_result, parsed_pending, parsed_index = parse_pgn_sequence(tokens, index)
+                return parsed_moves, parsed_result, parsed_pending, parsed_index
+            end)
+            restore_engine_state(snapshot)
+            if not ok then
+                error(variation_moves)
+            end
+            index = next_index
+            if index > #tokens or tokens[index].kind ~= "RPAREN" then
+                error("unterminated PGN variation")
+            end
+            index = index + 1
+            if #pending > 0 and #variation_moves > 0 then
+                for _, comment in ipairs(pending) do
+                    table.insert(variation_moves[#variation_moves].comments, comment)
+                end
+            end
+            if variation_result ~= "*" and #variation_moves > 0 then
+                table.insert(variation_moves[#variation_moves].comments, "result " .. variation_result)
+            end
+            table.insert(anchor.variations, variation_moves)
+        elseif token.kind == "SAN" then
+            local fen_before = export_fen()
+            local move = san_to_move(token.value)
+            local canonical = move_to_san(move)
+            make_move_internal(move[1], move[2], move[3], move[4], move[5])
+            local fen_after = export_fen()
+            table.insert(moves, {
+                san = canonical,
+                move = copy_move_array(move),
+                fen_before = fen_before,
+                fen_after = fen_after,
+                nags = {},
+                comments = {},
+                variations = {},
+            })
+            index = index + 1
+        else
+            error("unexpected PGN token: " .. tostring(token.kind))
+        end
+    end
+
+    return moves, result, trailing_comments, index
+end
+
+local function parse_pgn(content, source)
+    local tokens = tokenize_pgn(content)
+    local index = 1
+    local tags = {}
+    local tag_order = {}
+
+    while index <= #tokens and tokens[index].kind == "TAG" do
+        local token = tokens[index]
+        tags[token.name] = token.value
+        table.insert(tag_order, token.name)
+        index = index + 1
+    end
+
+    local initial_fen = tags.FEN or START_FEN
+    local snapshot = snapshot_engine_state()
+    local ok, moves, result, initial_comments = pcall(function()
+        local success, msg = import_fen(initial_fen)
+        if not success then
+            error(msg)
+        end
+        local parsed_moves, parsed_result, parsed_comments = parse_pgn_sequence(tokens, index)
+        return parsed_moves, parsed_result, parsed_comments
+    end)
+    restore_engine_state(snapshot)
+    if not ok then
+        error(moves)
+    end
+
+    if result == "*" and tags.Result then
+        result = tags.Result
+    end
+    if not tags.Result then
+        tags.Result = result
+        table.insert(tag_order, "Result")
+    end
+
+    return {
+        tags = tags,
+        tag_order = tag_order,
+        moves = moves,
+        result = result,
+        source = source or "current-game",
+        initial_fen = initial_fen,
+        initial_comments = initial_comments,
+    }
+end
+
+build_game_from_history = function(history, start_fen, source)
+    local snapshot = snapshot_engine_state()
+    local ok, moves = pcall(function()
+        local success, msg = import_fen(start_fen or START_FEN)
+        if not success then
+            error(msg)
+        end
+
+        local built = {}
+        for _, raw_move in ipairs(history or {}) do
+            local move = raw_move[1] and copy_move_array(raw_move) or {
+                raw_move.from_rank,
+                raw_move.from_file,
+                raw_move.to_rank,
+                raw_move.to_file,
+                raw_move.promotion,
+            }
+            local fen_before = export_fen()
+            local san = move_to_san(move)
+            make_move_internal(move[1], move[2], move[3], move[4], move[5])
+            local fen_after = export_fen()
+            table.insert(built, {
+                san = san,
+                move = copy_move_array(move),
+                fen_before = fen_before,
+                fen_after = fen_after,
+                nags = {},
+                comments = {},
+                variations = {},
+            })
+        end
+        return built
+    end)
+    restore_engine_state(snapshot)
+    if not ok then
+        error(moves)
+    end
+
+    local effective_start_fen = start_fen or START_FEN
+    local tags = {
+        Event = "CLI Game",
+        Site = "Local",
+        Result = "*",
+    }
+    local tag_order = {"Event", "Site", "Result"}
+    if effective_start_fen ~= START_FEN then
+        tags.SetUp = "1"
+        tags.FEN = effective_start_fen
+        table.insert(tag_order, "SetUp")
+        table.insert(tag_order, "FEN")
+    end
+
+    return {
+        tags = tags,
+        tag_order = tag_order,
+        moves = moves,
+        result = "*",
+        source = source or "current-game",
+        initial_fen = effective_start_fen,
+        initial_comments = {},
+    }
+end
+
+reset_pgn_state = function(start_fen, source)
+    pgn_path = nil
+    pgn_game = build_game_from_history({}, start_fen or START_FEN, source or "current-game")
+    pgn_variation_stack = {}
+end
+
+current_pgn_game = function()
+    return pgn_game
+end
+
+current_pgn_sequence_ref = function()
+    local sequence = pgn_game.moves
+    for _, frame in ipairs(pgn_variation_stack) do
+        local anchor = sequence[frame[1]]
+        if not anchor or not anchor.variations[frame[2]] then
+            return pgn_game.moves
+        end
+        sequence = anchor.variations[frame[2]]
+    end
+    return sequence
+end
+
+current_pgn_sequence = function()
+    return current_pgn_sequence_ref()
+end
+
+current_pgn_moves = function()
+    local moves = {}
+    for _, node in ipairs(current_pgn_sequence()) do
+        table.insert(moves, node.san)
+    end
+    return moves
+end
+
+local function active_line_nodes()
+    local nodes = {}
+    local sequence = pgn_game.moves
+    for _, frame in ipairs(pgn_variation_stack) do
+        local anchor_index = frame[1]
+        local variation_index = frame[2]
+        for index = 1, anchor_index - 1 do
+            if sequence[index] then
+                table.insert(nodes, sequence[index])
+            end
+        end
+        local anchor = sequence[anchor_index]
+        if not anchor or not anchor.variations[variation_index] then
+            break
+        end
+        sequence = anchor.variations[variation_index]
+    end
+    for _, node in ipairs(sequence) do
+        table.insert(nodes, node)
+    end
+    return nodes
+end
+
+local function apply_move_object_silent(move)
+    local legal = generate_legal_moves()
+    for _, candidate in ipairs(legal) do
+        if moves_equal(candidate, move) then
+            make_move_internal(candidate[1], candidate[2], candidate[3], candidate[4], candidate[5])
+            return nil
+        end
+    end
+    return "Illegal move"
+end
+
+local function apply_move_silent(move_str)
+    if #move_str < 4 then
+        return "Invalid move format"
+    end
+    local from_rank, from_file = algebraic_to_indices(move_str:sub(1, 2))
+    local to_rank, to_file = algebraic_to_indices(move_str:sub(3, 4))
+    if not from_rank or not from_file or not to_rank or not to_file then
+        return "Invalid move format"
+    end
+    local promotion = (#move_str >= 5) and move_str:sub(5, 5) or nil
+    if promotion and promotion ~= "" then
+        promotion = white_to_move and promotion:upper() or promotion:lower()
+    else
+        promotion = nil
+    end
+    local requested = {from_rank, from_file, to_rank, to_file, promotion}
+    return apply_move_object_silent(requested)
+end
+
+sync_runtime_to_pgn_cursor = function()
+    local success, msg = import_fen(pgn_game.initial_fen)
+    if not success then
+        error("failed to load PGN base position: " .. tostring(msg))
+    end
+    for _, node in ipairs(active_line_nodes()) do
+        local err = apply_move_object_silent(node.move)
+        if err ~= nil then
+            error("failed to replay PGN move " .. node.san .. ": " .. tostring(err))
+        end
+    end
+end
+
+record_pgn_move = function(move)
+    local san = move_to_san(move)
+    local fen_before = export_fen()
+    make_move_internal(move[1], move[2], move[3], move[4], move[5])
+    local fen_after = export_fen()
+    table.insert(current_pgn_sequence_ref(), {
+        san = san,
+        move = copy_move_array(move),
+        fen_before = fen_before,
+        fen_after = fen_after,
+        nags = {},
+        comments = {},
+        variations = {},
+    })
+end
+
+local function load_pgn(path)
     local file = io.open(path, "r")
     if not file then
-        return true, string.format("PGN: loaded path=\"%s\"; moves=0; note=file-unavailable", path)
+        return false, "ERROR: pgn load failed: file not found: " .. tostring(path)
     end
 
     local content = file:read("*a")
     file:close()
 
-    local move_text = {}
-    for line in content:gmatch("[^\r\n]+") do
-        local trimmed = line:gsub("^%s*(.-)%s*$", "%1")
-        if trimmed ~= "" and not trimmed:match("^%[") then
-            table.insert(move_text, trimmed)
-        end
+    local ok, game = pcall(function()
+        return parse_pgn(content, path)
+    end)
+    if not ok then
+        return false, "ERROR: pgn load failed: " .. tostring(game)
     end
 
-    local text = table.concat(move_text, " ")
-    text = text:gsub("%b{}", " ")
-    text = text:gsub("%b()", " ")
-    text = text:gsub(";%s*[^%c]*", " ")
-
-    for token in text:gmatch("%S+") do
-        if not token:match("^%d+%.%.%.$") and
-           not token:match("^%d+%.$") and
-           token ~= "1-0" and token ~= "0-1" and token ~= "1/2-1/2" and token ~= "*" then
-            table.insert(pgn_moves, token)
-        end
+    local sync_ok, sync_err = pcall(function()
+        pgn_game = game
+        pgn_path = path
+        pgn_variation_stack = {}
+        sync_runtime_to_pgn_cursor()
+    end)
+    if not sync_ok then
+        return false, "ERROR: pgn load failed: " .. tostring(sync_err)
     end
-
-    return true, string.format("PGN: loaded path=\"%s\"; moves=%d", path, #pgn_moves)
+    return true, "PGN: loaded source=" .. tostring(path)
 end
 
 local function trace_event(event, detail)
@@ -1897,7 +2505,7 @@ local function clone_irreversible_history(source)
     return copy
 end
 
-local function snapshot_engine_state()
+snapshot_engine_state = function()
     local history_copy = {}
     for i, hash in ipairs(position_history) do
         history_copy[i] = hash
@@ -1917,7 +2525,7 @@ local function snapshot_engine_state()
     }
 end
 
-local function restore_engine_state(state)
+restore_engine_state = function(state)
     board = clone_board_state(state.board)
     white_to_move = state.white_to_move
     castling_rights = clone_castling_state(state.castling_rights)
@@ -2329,7 +2937,10 @@ local function main()
                 print("ERROR: Move requires argument (e.g., 'move e2e4')")
             end
         elseif cmd == "undo" then
-            if undo_move() then
+            local sequence = current_pgn_sequence()
+            if #sequence > 0 then
+                table.remove(sequence)
+                sync_runtime_to_pgn_cursor()
                 print("OK: undo")
                 display_board()
             else
@@ -2532,17 +3143,78 @@ local function main()
                 if not subarg or subarg == "" then
                     print("ERROR: pgn load requires a file path")
                 else
-                    local _, msg = load_pgn(subarg)
+                    local _, msg = load_pgn(trim(subarg))
                     print(msg)
                 end
+            elseif subcmd == "save" then
+                local path = trim(subarg)
+                if path == "" then
+                    print("ERROR: pgn save requires a file path")
+                else
+                    local file = io.open(path, "w")
+                    if not file then
+                        print("ERROR: pgn save failed: unable to write file")
+                    else
+                        file:write(serialize_game(current_pgn_game()))
+                        file:close()
+                        pgn_path = path
+                        current_pgn_game().source = path
+                        print(string.format("PGN: saved path=\"%s\"", path))
+                    end
+                end
             elseif subcmd == "show" then
-                local source = pgn_path or "current-game"
-                print(string.format("PGN: source=%s; moves=%d", source, #pgn_moves))
+                local game = current_pgn_game()
+                local source = game.source ~= "" and game.source or "current-game"
+                print(string.format("PGN: source=%s; moves=%d", source, #current_pgn_moves()))
+                io.write(serialize_game(game):gsub("\n$", "") .. "\n")
             elseif subcmd == "moves" then
-                if #pgn_moves > 0 then
-                    print("PGN: moves " .. table.concat(pgn_moves, " "))
+                local moves = current_pgn_moves()
+                if #moves > 0 then
+                    print("PGN: moves " .. table.concat(moves, " "))
                 else
                     print("PGN: moves (none)")
+                end
+            elseif subcmd == "variation" then
+                local action = trim(subarg):match("^(%S+)")
+                action = action and action:lower() or ""
+                if action == "enter" then
+                    local sequence = current_pgn_sequence_ref()
+                    if #sequence == 0 then
+                        print("ERROR: No variation available")
+                    else
+                        local anchor_index = #sequence
+                        local target = sequence[anchor_index]
+                        if #target.variations == 0 then
+                            table.insert(target.variations, {})
+                        end
+                        table.insert(pgn_variation_stack, {anchor_index, #target.variations})
+                        sync_runtime_to_pgn_cursor()
+                        print("PGN: variation depth=" .. tostring(#pgn_variation_stack))
+                    end
+                elseif action == "exit" then
+                    if #pgn_variation_stack == 0 then
+                        print("ERROR: Not inside a variation")
+                    else
+                        table.remove(pgn_variation_stack)
+                        sync_runtime_to_pgn_cursor()
+                        print("PGN: variation depth=" .. tostring(#pgn_variation_stack))
+                    end
+                else
+                    print("ERROR: pgn variation requires enter or exit")
+                end
+            elseif subcmd == "comment" then
+                local text = trim(subarg)
+                text = text:gsub('^"(.*)"$', '%1')
+                if text == "" then
+                    print("ERROR: pgn comment requires text")
+                else
+                    local sequence = current_pgn_sequence_ref()
+                    if #sequence == 0 then
+                        table.insert(current_pgn_game().initial_comments, text)
+                    else
+                        table.insert(sequence[#sequence].comments, text)
+                    end
+                    print("PGN: comment added")
                 end
             else
                 print("ERROR: Unsupported pgn command")
@@ -2684,6 +3356,7 @@ local function main()
             else
                 local idx = 1
                 local keyword = tokens[1]:lower()
+                local start_fen = START_FEN
                 if keyword == "startpos" then
                     new_game()
                     tt = {}
@@ -2699,7 +3372,8 @@ local function main()
                         print("ERROR: position fen requires a FEN string")
                         goto continue
                     end
-                    local success, msg = import_fen(table.concat(fen_parts, " "))
+                    start_fen = table.concat(fen_parts, " ")
+                    local success, msg = import_fen(start_fen)
                     if not success then
                         print(msg)
                         goto continue
@@ -2713,7 +3387,7 @@ local function main()
                     idx = idx + 1
                     while idx <= #tokens do
                         local move_str = tokens[idx]
-                        local success, msg = execute_move(move_str)
+                        local success, msg = execute_move(move_str, {record_pgn = false})
                         if not success then
                             print("ERROR: position move " .. move_str .. " failed: " .. msg)
                             break
@@ -2721,6 +3395,11 @@ local function main()
                         idx = idx + 1
                     end
                 end
+
+                pgn_path = nil
+                pgn_variation_stack = {}
+                local current_start_fen = (#move_history == 0) and export_fen() or start_fen
+                pgn_game = build_game_from_history(move_history, current_start_fen, "current-game")
             end
         elseif cmd == "new960" then
             local id = tonumber(arg) or 0
@@ -2804,6 +3483,8 @@ local function main()
             if arg and arg ~= "" then
                 local success, msg = import_fen(arg)
                 if success then
+                    local start_fen = export_fen()
+                    reset_pgn_state(start_fen, "current-game")
                     print("OK: FEN loaded")
                     display_board()
                 else
@@ -2865,7 +3546,9 @@ local function main()
             print("  go depth <n>     - UCI-style depth search (prints info/bestmove)")
             print("  go infinite      - Start bounded long search mode")
             print("  stop             - Stop infinite search mode")
-            print("  pgn load|show|moves - PGN command family")
+            print("  pgn load|save|show|moves - PGN command family")
+            print("  pgn variation enter|exit - Enter or exit current variation")
+            print("  pgn comment \"text\" - Add comment to current PGN node")
             print("  book load|on|off|stats - Native opening book controls")
             print("  endgame          - Detect specialized endgame and best move hint")
             print("  uci              - Enter/respond to UCI handshake")

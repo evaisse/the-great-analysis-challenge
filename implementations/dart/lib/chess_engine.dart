@@ -7,3 +7,4 @@ export 'src/game_state.dart';
 export 'src/draw_detection.dart';
 export 'src/perft.dart';
 export 'src/move_generator.dart';
+export 'src/pgn.dart';
