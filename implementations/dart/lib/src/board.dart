@@ -1,4 +1,5 @@
 import 'package:chess_engine/chess_engine.dart';
+import 'attack_tables.dart';
 import 'zobrist.dart';
 
 class IrreversibleState {
@@ -542,24 +543,10 @@ class Board {
     PieceColor color,
     List<Move> moves,
   ) {
-    final offsets = [
-      [-2, -1],
-      [-2, 1],
-      [-1, -2],
-      [-1, 2],
-      [1, -2],
-      [1, 2],
-      [2, -1],
-      [2, 1],
-    ];
-    for (final offset in offsets) {
-      final newRow = row + offset[0];
-      final newCol = col + offset[1];
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final dest = squares[newRow][newCol];
-        if (dest == null || dest.color != color) {
-          moves.add(Move(row, col, newRow, newCol));
-        }
+    for (final square in knightAttacks(row, col)) {
+      final dest = squares[square.row][square.col];
+      if (dest == null || dest.color != color) {
+        moves.add(Move(row, col, square.row, square.col));
       }
     }
   }
@@ -572,20 +559,14 @@ class Board {
     List<List<int>> directions,
   ) {
     for (final dir in directions) {
-      for (int i = 1; i < 8; i++) {
-        final newRow = row + i * dir[0];
-        final newCol = col + i * dir[1];
-        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-          final dest = squares[newRow][newCol];
-          if (dest == null) {
-            moves.add(Move(row, col, newRow, newCol));
-          } else {
-            if (dest.color != color) {
-              moves.add(Move(row, col, newRow, newCol));
-            }
-            break;
-          }
+      for (final square in rayAttacks(row, col, dir[0], dir[1])) {
+        final dest = squares[square.row][square.col];
+        if (dest == null) {
+          moves.add(Move(row, col, square.row, square.col));
         } else {
+          if (dest.color != color) {
+            moves.add(Move(row, col, square.row, square.col));
+          }
           break;
         }
       }
@@ -598,24 +579,10 @@ class Board {
     PieceColor color,
     List<Move> moves,
   ) {
-    final offsets = [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
-    ];
-    for (final offset in offsets) {
-      final newRow = row + offset[0];
-      final newCol = col + offset[1];
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final dest = squares[newRow][newCol];
-        if (dest == null || dest.color != color) {
-          moves.add(Move(row, col, newRow, newCol));
-        }
+    for (final square in kingAttacks(row, col)) {
+      final dest = squares[square.row][square.col];
+      if (dest == null || dest.color != color) {
+        moves.add(Move(row, col, square.row, square.col));
       }
     }
 
@@ -693,26 +660,12 @@ class Board {
     }
 
     // Check for knight attacks
-    final knightOffsets = [
-      [-2, -1],
-      [-2, 1],
-      [-1, -2],
-      [-1, 2],
-      [1, -2],
-      [1, 2],
-      [2, -1],
-      [2, 1],
-    ];
-    for (final offset in knightOffsets) {
-      final newRow = row + offset[0];
-      final newCol = col + offset[1];
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final piece = squares[newRow][newCol];
-        if (piece != null &&
-            piece.color == attackerColor &&
-            piece.type == PieceType.knight) {
-          return true;
-        }
+    for (final square in knightAttacks(row, col)) {
+      final piece = squares[square.row][square.col];
+      if (piece != null &&
+          piece.color == attackerColor &&
+          piece.type == PieceType.knight) {
+        return true;
       }
     }
 
@@ -744,19 +697,13 @@ class Board {
 
     for (final pieceType in slidingDirections.keys) {
       for (final dir in slidingDirections[pieceType]!) {
-        for (int i = 1; i < 8; i++) {
-          final newRow = row + i * dir[0];
-          final newCol = col + i * dir[1];
-          if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-            final piece = squares[newRow][newCol];
-            if (piece != null) {
-              if (piece.color == attackerColor &&
-                  (piece.type == pieceType || piece.type == PieceType.queen)) {
-                return true;
-              }
-              break;
+        for (final square in rayAttacks(row, col, dir[0], dir[1])) {
+          final piece = squares[square.row][square.col];
+          if (piece != null) {
+            if (piece.color == attackerColor &&
+                (piece.type == pieceType || piece.type == PieceType.queen)) {
+              return true;
             }
-          } else {
             break;
           }
         }
@@ -764,26 +711,12 @@ class Board {
     }
 
     // Check for king attacks
-    final kingOffsets = [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
-    ];
-    for (final offset in kingOffsets) {
-      final newRow = row + offset[0];
-      final newCol = col + offset[1];
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        final piece = squares[newRow][newCol];
-        if (piece != null &&
-            piece.color == attackerColor &&
-            piece.type == PieceType.king) {
-          return true;
-        }
+    for (final square in kingAttacks(row, col)) {
+      final piece = squares[square.row][square.col];
+      if (piece != null &&
+          piece.color == attackerColor &&
+          piece.type == PieceType.king) {
+        return true;
       }
     }
 

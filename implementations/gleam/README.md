@@ -55,6 +55,7 @@ docker run --network none -it chess-gleam
 ## Architecture
 
 - `src/types.gleam` - Core type definitions and constants
+- `src/attack_tables.gleam` - Precomputed knight, king, sliding ray, and distance tables
 - `src/board.gleam` - Board representation and game state
 - `src/move_generator.gleam` - Move generation and validation  
 - `src/fen.gleam` - FEN parsing and serialization
@@ -91,3 +92,10 @@ The Gleam chess engine demonstrates functional programming principles:
 - Type safety ensures invalid game states cannot be represented
 - Recursive algorithms for move generation and AI search
 - Immutable data structures prevent accidental state mutations
+
+## Attack Table Strategy
+
+This implementation ships a generated `src/attack_tables.gleam` module with
+precomputed knight attacks, king attacks, sliding rays, and Chebyshev/
+Manhattan distance tables. Move generation, attack checks, and endgame king
+evaluation reuse those tables directly.

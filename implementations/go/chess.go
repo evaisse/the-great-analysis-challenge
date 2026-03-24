@@ -81,6 +81,11 @@ type EndgameInfo struct {
 	Detail     string
 }
 
+var chess960KnightTable = [10][2]int{
+	{0, 1}, {0, 2}, {0, 3}, {0, 4}, {1, 2},
+	{1, 3}, {1, 4}, {2, 3}, {2, 4}, {3, 4},
+}
+
 func NewChessEngine() *ChessEngine {
 	return &ChessEngine{
 		gameState:         NewGameState(),
@@ -931,13 +936,6 @@ func colorName(color Color) string {
 	return "black"
 }
 
-func absInt(value int) int {
-	if value < 0 {
-		return -value
-	}
-	return value
-}
-
 func minInt(values ...int) int {
 	if len(values) == 0 {
 		return 0
@@ -949,10 +947,6 @@ func minInt(values ...int) int {
 		}
 	}
 	return result
-}
-
-func manhattanDistance(a, b Square) int {
-	return absInt(a.File-b.File) + absInt(a.Rank-b.Rank)
 }
 
 func nonKingMaterialCount(counts [2][7]int, color Color) int {
@@ -1018,7 +1012,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[Black]
 		strongKing := kingSquares[White]
 		edgeDistance := minInt(weakKing.File, 7-weakKing.File, weakKing.Rank, 7-weakKing.Rank)
-		kingDistance := manhattanDistance(strongKing, weakKing)
+		kingDistance := attackTableManhattanDistance(strongKing, weakKing)
 		score := 900 + (14-kingDistance)*6 + (3-edgeDistance)*20
 		return EndgameInfo{
 			Kind:       "KQK",
@@ -1032,7 +1026,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[White]
 		strongKing := kingSquares[Black]
 		edgeDistance := minInt(weakKing.File, 7-weakKing.File, weakKing.Rank, 7-weakKing.Rank)
-		kingDistance := manhattanDistance(strongKing, weakKing)
+		kingDistance := attackTableManhattanDistance(strongKing, weakKing)
 		score := 900 + (14-kingDistance)*6 + (3-edgeDistance)*20
 		return EndgameInfo{
 			Kind:       "KQK",
@@ -1050,7 +1044,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[Black]
 		promotion := Square{File: pawn.File, Rank: 7}
 		pawnSteps := 7 - pawn.Rank
-		score := 120 + (6-pawnSteps)*35 + manhattanDistance(weakKing, promotion)*6 - manhattanDistance(strongKing, pawn)*8
+		score := 120 + (6-pawnSteps)*35 + attackTableManhattanDistance(weakKing, promotion)*6 - attackTableManhattanDistance(strongKing, pawn)*8
 		if pawnSteps <= 1 {
 			score += 80
 		}
@@ -1071,7 +1065,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[White]
 		promotion := Square{File: pawn.File, Rank: 0}
 		pawnSteps := pawn.Rank
-		score := 120 + (6-pawnSteps)*35 + manhattanDistance(weakKing, promotion)*6 - manhattanDistance(strongKing, pawn)*8
+		score := 120 + (6-pawnSteps)*35 + attackTableManhattanDistance(weakKing, promotion)*6 - attackTableManhattanDistance(strongKing, pawn)*8
 		if pawnSteps <= 1 {
 			score += 80
 		}
@@ -1093,7 +1087,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[Black]
 		weakPawn := pawnSquares[Black]
 		pawnSteps := weakPawn.Rank
-		score := 380 - pawnSteps*25 + (manhattanDistance(weakKing, weakPawn)-manhattanDistance(strongKing, weakPawn))*12
+		score := 380 - pawnSteps*25 + (attackTableManhattanDistance(weakKing, weakPawn)-attackTableManhattanDistance(strongKing, weakPawn))*12
 		if score < 50 {
 			score = 50
 		}
@@ -1110,7 +1104,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[White]
 		weakPawn := pawnSquares[White]
 		pawnSteps := 7 - weakPawn.Rank
-		score := 380 - pawnSteps*25 + (manhattanDistance(weakKing, weakPawn)-manhattanDistance(strongKing, weakPawn))*12
+		score := 380 - pawnSteps*25 + (attackTableManhattanDistance(weakKing, weakPawn)-attackTableManhattanDistance(strongKing, weakPawn))*12
 		if score < 50 {
 			score = 50
 		}
@@ -1458,12 +1452,78 @@ func (engine *ChessEngine) handleNew960(args []string) {
 	}
 
 	engine.chess960ID = id
-	engine.handleNew()
-	fmt.Printf("960: new game id=%d\n", engine.chess960ID)
+	fen := buildChess960FEN(engine.chess960ID)
+	engine.gameState = NewGameState()
+	if err := engine.gameState.FromFEN(fen); err != nil {
+		fmt.Printf("ERROR: Invalid Chess960 FEN: %s\n", err.Error())
+		return
+	}
+	fmt.Println("OK: New game started")
+	fmt.Print(engine.gameState.Display())
+	fmt.Printf("960: new game id=%d; backrank=%s\n", engine.chess960ID, decodeChess960Backrank(engine.chess960ID))
 }
 
 func (engine *ChessEngine) handlePosition960() {
-	fmt.Printf("960: id=%d; mode=chess960\n", engine.chess960ID)
+	fmt.Printf(
+		"960: id=%d; mode=chess960; backrank=%s; fen=%s\n",
+		engine.chess960ID,
+		decodeChess960Backrank(engine.chess960ID),
+		buildChess960FEN(engine.chess960ID),
+	)
+}
+
+func decodeChess960Backrank(id int) string {
+	pieces := make([]rune, 8)
+	for i := range pieces {
+		pieces[i] = '_'
+	}
+
+	n := id
+	remainder := n % 4
+	n /= 4
+	pieces[2*remainder+1] = 'b'
+
+	remainder = n % 4
+	n /= 4
+	pieces[2*remainder] = 'b'
+
+	remainder = n % 6
+	n /= 6
+	empty := make([]int, 0, 8)
+	for i, piece := range pieces {
+		if piece == '_' {
+			empty = append(empty, i)
+		}
+	}
+	pieces[empty[remainder]] = 'q'
+
+	knights := chess960KnightTable[n]
+	empty = empty[:0]
+	for i, piece := range pieces {
+		if piece == '_' {
+			empty = append(empty, i)
+		}
+	}
+	pieces[empty[knights[0]]] = 'n'
+	pieces[empty[knights[1]]] = 'n'
+
+	empty = empty[:0]
+	for i, piece := range pieces {
+		if piece == '_' {
+			empty = append(empty, i)
+		}
+	}
+	pieces[empty[0]] = 'r'
+	pieces[empty[1]] = 'k'
+	pieces[empty[2]] = 'r'
+
+	return string(pieces)
+}
+
+func buildChess960FEN(id int) string {
+	white := strings.ToUpper(decodeChess960Backrank(id))
+	black := strings.ToLower(white)
+	return fmt.Sprintf("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w - - 0 1", black, white)
 }
 
 func (engine *ChessEngine) handleTrace(args []string) {

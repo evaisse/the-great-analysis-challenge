@@ -206,7 +206,6 @@ class ChessEngine {
             return
         }
         
-        val turn = board.getTurn()
         val result = ai.findBestMove(board, depth)
         
         if (result.bestMove != null) {

@@ -67,57 +67,31 @@ function generate_knight_moves(board::Board, square::Int, moves::Vector{Move})
     piece = get_piece(board, square)
     color = piece.color
     
-    knight_moves = [-17, -15, -10, -6, 6, 10, 15, 17]
-    for move_offset in knight_moves
-        to_square = square + move_offset
-        if is_valid_square(to_square)
-            file_diff = abs((square % 8) - (to_square % 8))
-            rank_diff = abs((square ÷ 8) - (to_square ÷ 8))
-            if (file_diff == 2 && rank_diff == 1) || (file_diff == 1 && rank_diff == 2)
-                if is_empty_square(board, to_square)
-                    push!(moves, Move(square, to_square, piece, EMPTY_PIECE))
-                elseif is_enemy_piece(board, to_square, color)
-                    captured = get_piece(board, to_square)
-                    push!(moves, Move(square, to_square, piece, captured))
-                end
-            end
+    for to_square in knight_attacks(square)
+        if is_empty_square(board, to_square)
+            push!(moves, Move(square, to_square, piece, EMPTY_PIECE))
+        elseif is_enemy_piece(board, to_square, color)
+            captured = get_piece(board, to_square)
+            push!(moves, Move(square, to_square, piece, captured))
         end
     end
 end
 
-function generate_sliding_moves(board::Board, square::Int, moves::Vector{Move}, directions::Vector{Int})
+function generate_sliding_moves(board::Board, square::Int, moves::Vector{Move}, rays::Vector{Vector{Int}})
     piece = get_piece(board, square)
     color = piece.color
     
-    for direction in directions
-        current = square + direction
-        while is_valid_square(current)
-            # Check board boundaries for horizontal moves
-            if direction == -1 || direction == 1
-                if (square ÷ 8) != (current ÷ 8)
-                    break
-                end
-            end
-            
-            # Check diagonal moves
-            if abs(direction) == 7 || abs(direction) == 9
-                file_diff = abs((square % 8) - (current % 8))
-                rank_diff = abs((square ÷ 8) - (current ÷ 8))
-                if file_diff != rank_diff
-                    break
-                end
-            end
-            
-            if is_empty_square(board, current)
-                push!(moves, Move(square, current, piece, EMPTY_PIECE))
+    for ray in rays
+        for to_square in ray
+            if is_empty_square(board, to_square)
+                push!(moves, Move(square, to_square, piece, EMPTY_PIECE))
             else
-                if is_enemy_piece(board, current, color)
-                    captured = get_piece(board, current)
-                    push!(moves, Move(square, current, piece, captured))
+                if is_enemy_piece(board, to_square, color)
+                    captured = get_piece(board, to_square)
+                    push!(moves, Move(square, to_square, piece, captured))
                 end
                 break
             end
-            current += direction
         end
     end
 end
@@ -127,22 +101,12 @@ function generate_king_moves(board::Board, square::Int, moves::Vector{Move})
     color = piece.color
     
     # Regular king moves
-    for dr in -1:1, df in -1:1
-        if dr == 0 && df == 0
-            continue
-        end
-        to_square = square + dr * 8 + df
-        if is_valid_square(to_square)
-            file_diff = abs((square % 8) - (to_square % 8))
-            rank_diff = abs((square ÷ 8) - (to_square ÷ 8))
-            if file_diff <= 1 && rank_diff <= 1
-                if is_empty_square(board, to_square)
-                    push!(moves, Move(square, to_square, piece, EMPTY_PIECE))
-                elseif is_enemy_piece(board, to_square, color)
-                    captured = get_piece(board, to_square)
-                    push!(moves, Move(square, to_square, piece, captured))
-                end
-            end
+    for to_square in king_attacks(square)
+        if is_empty_square(board, to_square)
+            push!(moves, Move(square, to_square, piece, EMPTY_PIECE))
+        elseif is_enemy_piece(board, to_square, color)
+            captured = get_piece(board, to_square)
+            push!(moves, Move(square, to_square, piece, captured))
         end
     end
     
@@ -201,11 +165,11 @@ function generate_moves(board::Board)
         elseif piece.type == KNIGHT
             generate_knight_moves(board, square, moves)
         elseif piece.type == BISHOP
-            generate_sliding_moves(board, square, moves, [-9, -7, 7, 9])
+            generate_sliding_moves(board, square, moves, bishop_rays(square))
         elseif piece.type == ROOK
-            generate_sliding_moves(board, square, moves, [-8, -1, 1, 8])
+            generate_sliding_moves(board, square, moves, rook_rays(square))
         elseif piece.type == QUEEN
-            generate_sliding_moves(board, square, moves, [-9, -8, -7, -1, 1, 7, 8, 9])
+            generate_sliding_moves(board, square, moves, queen_rays(square))
         elseif piece.type == KING
             generate_king_moves(board, square, moves)
         end

@@ -21,6 +21,7 @@ The implementation is modular with clean separation of concerns:
 - `lib/ai.rb` - AI engine with minimax + alpha-beta
 - `lib/perft.rb` - Performance testing utilities
 - `lib/types.rb` - Core data structures (Move, Piece)
+- `lib/attack_tables.rb` - Precomputed attack and distance lookup tables
 
 ## 🔧 **Setup & Installation**
 
@@ -152,3 +153,9 @@ This implementation showcases Ruby's strengths:
 - Compatible with chess specification test harness
 - Easy integration with CI/CD pipelines
 - RuboCop integration for automated quality checks
+
+## Attack Table Strategy
+
+- `lib/attack_tables.rb` precomputes knight attacks, king attacks, bishop/rook/queen rays, and Chebyshev/Manhattan distance tables.
+- `lib/move_generator.rb` uses those static tables for move generation instead of rebuilding offsets and rays on every query.
+- `lib/board.rb` uses the same blocker-aware ray tables for attack detection, and `lib/ai.rb` uses the Manhattan king-distance table for simplified endgame scoring.

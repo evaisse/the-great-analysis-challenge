@@ -1,4 +1,4 @@
-import { Square } from "./types";
+import { Square, squareFromCoords } from "./types";
 
 type Delta = readonly [number, number];
 
@@ -45,7 +45,7 @@ function buildAttackTable(deltas: readonly Delta[]): ReadonlyArray<ReadonlyArray
       const targetFile = file + df;
       const targetRank = rank + dr;
       if (targetFile >= 0 && targetFile < 8 && targetRank >= 0 && targetRank < 8) {
-        attacks.push(targetRank * 8 + targetFile);
+        attacks.push(squareFromCoords(targetFile, targetRank));
       }
     }
 
@@ -62,7 +62,7 @@ function buildRayTable(delta: Delta): ReadonlyArray<ReadonlyArray<Square>> {
     let targetFile = file + delta[0];
     let targetRank = rank + delta[1];
     while (targetFile >= 0 && targetFile < 8 && targetRank >= 0 && targetRank < 8) {
-      ray.push(targetRank * 8 + targetFile);
+      ray.push(squareFromCoords(targetFile, targetRank));
       targetFile += delta[0];
       targetRank += delta[1];
     }

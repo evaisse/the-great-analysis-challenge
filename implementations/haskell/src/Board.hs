@@ -1,5 +1,13 @@
 module Board where
 
+import AttackTables
+  ( bishopRays
+  , chebyshevDistance
+  , kingAttacks
+  , knightAttacks
+  , queenRays
+  , rookRays
+  )
 import Types
 import Data.Array
 import Data.List (intercalate)
@@ -67,10 +75,10 @@ isValidPieceMove :: GameState -> Piece -> Square -> Square -> Bool
 isValidPieceMove gs piece from to =
   case pieceType piece of
     Pawn -> isValidPawnMove gs piece from to
-    Knight -> isValidKnightMove from to
-    Bishop -> isDiagonal from to && isPathClear gs from to
-    Rook -> isStraight from to && isPathClear gs from to
-    Queen -> (isDiagonal from to || isStraight from to) && isPathClear gs from to
+    Knight -> to `elem` knightAttacks from
+    Bishop -> isReachableOnRays gs to (bishopRays from)
+    Rook -> isReachableOnRays gs to (rookRays from)
+    Queen -> isReachableOnRays gs to (queenRays from)
     King -> isValidKingMove gs piece from to
 
 isValidPawnMove :: GameState -> Piece -> Square -> Square -> Bool
@@ -93,38 +101,20 @@ isValidPawnMove gs piece (Square fromCol fromRow) (Square toCol toRow) =
                 Nothing -> enPassantTarget gs == Just (Square toCol toRow))
   in oneStep || twoStep || diagonalCapture
 
-isValidKnightMove :: Square -> Square -> Bool
-isValidKnightMove (Square fromCol fromRow) (Square toCol toRow) =
-  let deltaCol = abs (fromCol - toCol)
-      deltaRow = abs (fromRow - toRow)
-  in (deltaCol == 2 && deltaRow == 1) || (deltaCol == 1 && deltaRow == 2)
-
 isValidKingMove :: GameState -> Piece -> Square -> Square -> Bool
 isValidKingMove gs piece from to =
-  let distance = maxDistance from to
+  let distance = chebyshevDistance from to
   in distance == 1 || isValidCastle gs piece from to
 
-isDiagonal :: Square -> Square -> Bool
-isDiagonal (Square fromCol fromRow) (Square toCol toRow) =
-  abs (fromCol - toCol) == abs (fromRow - toRow) && fromCol /= toCol
+isReachableOnRays :: GameState -> Square -> [[Square]] -> Bool
+isReachableOnRays gs target = any (rayReachesTarget gs target)
 
-isStraight :: Square -> Square -> Bool
-isStraight (Square fromCol fromRow) (Square toCol toRow) =
-  fromCol == toCol || fromRow == toRow
-
-maxDistance :: Square -> Square -> Int
-maxDistance (Square fromCol fromRow) (Square toCol toRow) =
-  max (abs (fromCol - toCol)) (abs (fromRow - toRow))
-
-isPathClear :: GameState -> Square -> Square -> Bool
-isPathClear gs from to = all (isNothing . getPiece gs) (pathSquares from to)
-
-pathSquares :: Square -> Square -> [Square]
-pathSquares (Square fromCol fromRow) (Square toCol toRow) =
-  let deltaCol = signum (toCol - fromCol)
-      deltaRow = signum (toRow - fromRow)
-      steps = max (abs (toCol - fromCol)) (abs (toRow - fromRow)) - 1
-  in [Square (fromCol + i * deltaCol) (fromRow + i * deltaRow) | i <- [1 .. steps]]
+rayReachesTarget :: GameState -> Square -> [Square] -> Bool
+rayReachesTarget _ _ [] = False
+rayReachesTarget gs target (square : rest)
+  | square == target = True
+  | isJust (getPiece gs square) = False
+  | otherwise = rayReachesTarget gs target rest
 
 isValidCastle :: GameState -> Piece -> Square -> Square -> Bool
 isValidCastle gs piece from@(Square fromCol fromRow) to@(Square toCol toRow) =
@@ -186,11 +176,11 @@ pieceAttacksSquare gs piece from@(Square fromCol fromRow) to@(Square toCol toRow
     Pawn ->
       let direction = if pieceColor piece == White then 1 else -1
       in toRow == fromRow + direction && abs (toCol - fromCol) == 1
-    Knight -> isValidKnightMove from to
-    Bishop -> isDiagonal from to && isPathClear gs from to
-    Rook -> isStraight from to && isPathClear gs from to
-    Queen -> (isDiagonal from to || isStraight from to) && isPathClear gs from to
-    King -> maxDistance from to == 1
+    Knight -> to `elem` knightAttacks from
+    Bishop -> isReachableOnRays gs to (bishopRays from)
+    Rook -> isReachableOnRays gs to (rookRays from)
+    Queen -> isReachableOnRays gs to (queenRays from)
+    King -> to `elem` kingAttacks from
 
 wouldBeInCheck :: GameState -> Move -> Bool
 wouldBeInCheck gs move = isInCheck (makeMove gs move) (currentPlayer gs)
@@ -317,15 +307,10 @@ generatePieceMoves :: GameState -> Piece -> Square -> [Square]
 generatePieceMoves gs piece from@(Square col row) =
   case pieceType piece of
     Pawn -> generatePawnMoves gs piece from
-    Knight ->
-      [ Square (col + dc) (row + dr)
-      | (dc, dr) <- knightDeltas
-      , isInBounds (col + dc) (row + dr)
-      , canMoveTo gs (Square (col + dc) (row + dr))
-      ]
-    Bishop -> generateSlidingMoves gs from bishopDirections
-    Rook -> generateSlidingMoves gs from rookDirections
-    Queen -> generateSlidingMoves gs from queenDirections
+    Knight -> [to | to <- knightAttacks from, canMoveTo gs to]
+    Bishop -> generateSlidingMoves gs from (bishopRays from)
+    Rook -> generateSlidingMoves gs from (rookRays from)
+    Queen -> generateSlidingMoves gs from (queenRays from)
     King -> generateKingMoves gs piece from
 
 generatePawnMoves :: GameState -> Piece -> Square -> [Square]
@@ -349,32 +334,26 @@ generatePawnMoves gs piece from@(Square col row) =
         [target | target <- [leftCapture, rightCapture], isInBounds (squareCol target) (squareRow target), canCapture gs target]
   in oneStepMoves ++ twoStepMoves ++ captureMoves
 
-generateSlidingMoves :: GameState -> Square -> [(Int, Int)] -> [Square]
-generateSlidingMoves gs from directions =
-  [to | direction <- directions, to <- generateRayMoves gs from direction]
+generateSlidingMoves :: GameState -> Square -> [[Square]] -> [Square]
+generateSlidingMoves gs from rays =
+  case getPiece gs from of
+    Nothing -> []
+    Just piece -> concatMap (generateRayMoves gs (pieceColor piece)) rays
 
-generateRayMoves :: GameState -> Square -> (Int, Int) -> [Square]
-generateRayMoves gs (Square col row) (dc, dr) = go 1
-  where
-    go step =
-      let square = Square (col + step * dc) (row + step * dr)
-      in if not (isInBounds (squareCol square) (squareRow square))
-           then []
-           else case getPiece gs square of
-             Nothing -> square : go (step + 1)
-             Just piece ->
-               if pieceColor piece /= currentPlayer gs
-                 then [square]
-                 else []
+generateRayMoves :: GameState -> Color -> [Square] -> [Square]
+generateRayMoves _ _ [] = []
+generateRayMoves gs color (square : rest) =
+  case getPiece gs square of
+    Nothing -> square : generateRayMoves gs color rest
+    Just piece ->
+      if pieceColor piece /= color
+        then [square]
+        else []
 
 generateKingMoves :: GameState -> Piece -> Square -> [Square]
 generateKingMoves gs piece from@(Square col row) =
   let normalMoves =
-        [ Square (col + dc) (row + dr)
-        | (dc, dr) <- kingDirections
-        , isInBounds (col + dc) (row + dr)
-        , canMoveTo gs (Square (col + dc) (row + dr))
-        ]
+        [to | to <- kingAttacks from, canMoveTo gs to]
       kingside = Square (col + 2) row
       queenside = Square (col - 2) row
       castleMoves =
@@ -409,19 +388,3 @@ squareCol (Square col _) = col
 
 squareRow :: Square -> Int
 squareRow (Square _ row) = row
-
--- Direction vectors
-knightDeltas :: [(Int, Int)]
-knightDeltas = [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]
-
-bishopDirections :: [(Int, Int)]
-bishopDirections = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
-
-rookDirections :: [(Int, Int)]
-rookDirections = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-
-queenDirections :: [(Int, Int)]
-queenDirections = bishopDirections ++ rookDirections
-
-kingDirections :: [(Int, Int)]
-kingDirections = queenDirections

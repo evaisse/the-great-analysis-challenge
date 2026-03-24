@@ -9,6 +9,7 @@ A complete command-line chess engine implementation in Lua 5.4, featuring AI wit
 - ✅ **FEN Support**: Import and export positions using Forsyth-Edwards Notation
 - ✅ **Performance Testing**: Perft function for move generation validation
 - ✅ **Move Validation**: Full legal move checking with king safety
+- ✅ **Lookup Tables**: Precomputed knight, king, ray, and distance tables for hot paths
 - ✅ **Interactive CLI**: Easy-to-use command-line interface
 
 ## Implementation Details

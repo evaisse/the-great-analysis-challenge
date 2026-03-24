@@ -1,6 +1,5 @@
 import { Board } from "./board";
 import { MoveGenerator } from "./moveGenerator";
-import { Color } from "./types";
 
 export class Perft {
   private board: Board;

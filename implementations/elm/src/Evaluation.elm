@@ -1,5 +1,6 @@
 module Evaluation exposing (..)
 
+import AttackTables
 import Types exposing (..)
 import Utils exposing (..)
 import Board exposing (..)
@@ -68,8 +69,60 @@ evaluatePosition state =
                                 acc
                     )
                     0
+
+        whiteKing =
+            findKing state White
+
+        blackKing =
+            findKing state Black
+
+        nonPawnPieces =
+            List.range 0 63
+                |> List.foldl
+                    (\square acc ->
+                        case getPiece state square of
+                            Just piece ->
+                                if piece.pieceType /= Pawn && piece.pieceType /= King then
+                                    acc + 1
+
+                                else
+                                    acc
+
+                            Nothing ->
+                                acc
+                    )
+                    0
+
+        queenCount =
+            List.range 0 63
+                |> List.foldl
+                    (\square acc ->
+                        case getPiece state square of
+                            Just piece ->
+                                if piece.pieceType == Queen then
+                                    acc + 1
+
+                                else
+                                    acc
+
+                            Nothing ->
+                                acc
+                    )
+                    0
+
+        endgameBonus =
+            if nonPawnPieces <= 4 || (nonPawnPieces <= 6 && queenCount == 0) then
+                case ( whiteKing, blackKing ) of
+                    ( Just whiteKingSquare, Just blackKingSquare ) ->
+                        14 - AttackTables.manhattanDistance whiteKingSquare blackKingSquare
+
+                    _ ->
+                        0
+
+            else
+                0
     in
-    materialScore + centerBonus + pawnBonus
+    materialScore + centerBonus + pawnBonus + endgameBonus
 
 evaluateGameState : GameState -> Int
 evaluateGameState state =

@@ -5,7 +5,12 @@ import { MoveGenerator } from "./moveGenerator";
 import { FenParser } from "./fen";
 import { AI } from "./ai";
 import { Perft } from "./perft";
-import { Move, PieceType } from "./types";
+import {
+  PieceType,
+  UncheckedMove,
+  matchesUncheckedMove,
+  uncheckedMove,
+} from "./types";
 
 interface TraceEvent {
   event: string;
@@ -183,11 +188,16 @@ export class ChessEngine {
 
     const from = moveStr.substring(0, 2);
     const to = moveStr.substring(2, 4);
-    const promotion = moveStr.substring(4, 5).toUpperCase() as PieceType;
 
     try {
+      const promotion = this.parsePromotion(moveStr.substring(4, 5));
       const fromSquare = this.board.algebraicToSquare(from);
       const toSquare = this.board.algebraicToSquare(to);
+      const requestedMove = uncheckedMove({
+        from: fromSquare,
+        to: toSquare,
+        promotion,
+      });
 
       const piece = this.board.getPiece(fromSquare);
       if (!piece) {
@@ -203,12 +213,7 @@ export class ChessEngine {
 
       const legalMoves = this.moveGenerator.getLegalMoves(turn);
       const move = legalMoves.find(
-        (m) =>
-          m.from === fromSquare &&
-          m.to === toSquare &&
-          (!m.promotion ||
-            m.promotion === promotion ||
-            (!promotion && m.promotion === "Q")),
+        (candidate) => matchesUncheckedMove(candidate, requestedMove),
       );
 
       if (!move) {
@@ -219,10 +224,6 @@ export class ChessEngine {
           console.log("ERROR: Illegal move");
         }
         return;
-      }
-
-      if (move.promotion && !promotion) {
-        move.promotion = "Q";
       }
 
       this.board.makeMove(move);
@@ -244,6 +245,19 @@ export class ChessEngine {
     } catch (error) {
       console.log("ERROR: Invalid move format");
     }
+  }
+
+  private parsePromotion(value: string): PieceType | undefined {
+    const normalized = value.trim().toUpperCase();
+    if (normalized === "") {
+      return undefined;
+    }
+
+    if (normalized === "Q" || normalized === "R" || normalized === "B" || normalized === "N") {
+      return normalized;
+    }
+
+    throw new Error("ERROR: Invalid promotion piece");
   }
 
   private handleUndo(): void {

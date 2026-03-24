@@ -10,7 +10,8 @@ import json
 import shlex
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from typing import Optional, List
+from lib.attack_tables import manhattan_distance
 from lib.board import Board
 from lib.move_generator import MoveGenerator
 from lib.fen_parser import FenParser
@@ -68,6 +69,11 @@ CONCURRENCY_PROFILES = {
 
 class ChessEngine:
     """Main chess engine class that handles user commands and game flow."""
+
+    _CHESS960_KNIGHT_TABLE = (
+        (0, 1), (0, 2), (0, 3), (0, 4), (1, 2),
+        (1, 3), (1, 4), (2, 3), (2, 4), (3, 4),
+    )
     
     def __init__(self):
         self.board = Board()
@@ -831,12 +837,73 @@ class ChessEngine:
             return
 
         self._chess960_id = chess960_id
-        self.handle_new_game()
-        print(f'960: new game id={self._chess960_id}')
+        fen = self._build_chess960_fen(self._chess960_id)
+
+        self.board = Board()
+        self.move_generator = MoveGenerator(self.board)
+        self.fen_parser = FenParser(self.board)
+        self.ai = AI(self.board, self.move_generator)
+        self.perft = Perft(self.board, self.move_generator)
+        self.move_history = []
+        self.fen_parser.parse(fen)
+
+        print('OK: New game started')
+        print(self.board.display())
+        print(
+            f'960: new game id={self._chess960_id}; '
+            f'backrank={self._chess960_backrank(self._chess960_id)}'
+        )
 
     def handle_position960(self):
         """Handle position960 command."""
-        print(f'960: id={self._chess960_id}; mode=chess960')
+        print(
+            f'960: id={self._chess960_id}; mode=chess960; '
+            f'backrank={self._chess960_backrank(self._chess960_id)}; '
+            f'fen={self._build_chess960_fen(self._chess960_id)}'
+        )
+
+    @classmethod
+    def _decode_chess960_backrank(cls, chess960_id: int):
+        pieces: List[Optional[str]] = [None] * 8
+        n = chess960_id
+
+        remainder = n % 4
+        n //= 4
+        pieces[2 * remainder + 1] = 'b'
+
+        remainder = n % 4
+        n //= 4
+        pieces[2 * remainder] = 'b'
+
+        remainder = n % 6
+        n //= 6
+        empty = [index for index, piece in enumerate(pieces) if piece is None]
+        pieces[empty[remainder]] = 'q'
+
+        knight_a, knight_b = cls._CHESS960_KNIGHT_TABLE[n]
+        empty = [index for index, piece in enumerate(pieces) if piece is None]
+        pieces[empty[knight_a]] = 'n'
+        pieces[empty[knight_b]] = 'n'
+
+        empty = [index for index, piece in enumerate(pieces) if piece is None]
+        pieces[empty[0]] = 'r'
+        pieces[empty[1]] = 'k'
+        pieces[empty[2]] = 'r'
+
+        return ''.join(piece or '' for piece in pieces)
+
+    @classmethod
+    def _chess960_backrank(cls, chess960_id: int) -> str:
+        return cls._decode_chess960_backrank(chess960_id)
+
+    @classmethod
+    def _build_chess960_fen(cls, chess960_id: int) -> str:
+        white_backrank = cls._decode_chess960_backrank(chess960_id).upper()
+        black_backrank = white_backrank.lower()
+        return (
+            f'{black_backrank}/pppppppp/8/8/8/8/PPPPPPPP/{white_backrank} '
+            'w - - 0 1'
+        )
 
     def handle_trace(self, args):
         """Handle trace command family."""
@@ -1439,9 +1506,6 @@ class ChessEngine:
     def _color_name(self, color: Color) -> str:
         return 'white' if color == Color.WHITE else 'black'
 
-    def _manhattan(self, a, b) -> int:
-        return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
     def _non_king_material(self, counts, color: Color) -> int:
         return (
             counts[color][PieceType.PAWN] +
@@ -1487,7 +1551,7 @@ class ChessEngine:
             weak_king = kings[Color.BLACK]
             strong_king = kings[Color.WHITE]
             edge_distance = min(weak_king[0], 7 - weak_king[0], weak_king[1], 7 - weak_king[1])
-            king_distance = self._manhattan(strong_king, weak_king)
+            king_distance = manhattan_distance(strong_king, weak_king)
             score = 900 + (14 - king_distance) * 6 + (3 - edge_distance) * 20
             return {
                 'type': 'KQK',
@@ -1500,7 +1564,7 @@ class ChessEngine:
             weak_king = kings[Color.WHITE]
             strong_king = kings[Color.BLACK]
             edge_distance = min(weak_king[0], 7 - weak_king[0], weak_king[1], 7 - weak_king[1])
-            king_distance = self._manhattan(strong_king, weak_king)
+            king_distance = manhattan_distance(strong_king, weak_king)
             score = 900 + (14 - king_distance) * 6 + (3 - edge_distance) * 20
             return {
                 'type': 'KQK',
@@ -1517,7 +1581,7 @@ class ChessEngine:
             weak_king = kings[Color.BLACK]
             promotion = (7, pawn[1])
             pawn_steps = 7 - pawn[0]
-            score = 120 + (6 - pawn_steps) * 35 + self._manhattan(weak_king, promotion) * 6 - self._manhattan(strong_king, pawn) * 8
+            score = 120 + (6 - pawn_steps) * 35 + manhattan_distance(weak_king, promotion) * 6 - manhattan_distance(strong_king, pawn) * 8
             if pawn_steps <= 1:
                 score += 80
             if score < 30:
@@ -1535,7 +1599,7 @@ class ChessEngine:
             weak_king = kings[Color.WHITE]
             promotion = (0, pawn[1])
             pawn_steps = pawn[0]
-            score = 120 + (6 - pawn_steps) * 35 + self._manhattan(weak_king, promotion) * 6 - self._manhattan(strong_king, pawn) * 8
+            score = 120 + (6 - pawn_steps) * 35 + manhattan_distance(weak_king, promotion) * 6 - manhattan_distance(strong_king, pawn) * 8
             if pawn_steps <= 1:
                 score += 80
             if score < 30:
@@ -1554,7 +1618,7 @@ class ChessEngine:
             weak_king = kings[Color.BLACK]
             weak_pawn = pawns[Color.BLACK]
             pawn_steps = weak_pawn[0]
-            score = 380 - pawn_steps * 25 + (self._manhattan(weak_king, weak_pawn) - self._manhattan(strong_king, weak_pawn)) * 12
+            score = 380 - pawn_steps * 25 + (manhattan_distance(weak_king, weak_pawn) - manhattan_distance(strong_king, weak_pawn)) * 12
             if score < 50:
                 score = 50
             return {
@@ -1572,7 +1636,7 @@ class ChessEngine:
             weak_king = kings[Color.WHITE]
             weak_pawn = pawns[Color.WHITE]
             pawn_steps = 7 - weak_pawn[0]
-            score = 380 - pawn_steps * 25 + (self._manhattan(weak_king, weak_pawn) - self._manhattan(strong_king, weak_pawn)) * 12
+            score = 380 - pawn_steps * 25 + (manhattan_distance(weak_king, weak_pawn) - manhattan_distance(strong_king, weak_pawn)) * 12
             if score < 50:
                 score = 50
             return {

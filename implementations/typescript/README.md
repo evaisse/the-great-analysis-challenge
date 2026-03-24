@@ -9,7 +9,15 @@ A complete chess engine implementation in TypeScript following the shared chess 
 - FEN import/export support
 - Performance testing with perft
 - Interactive command-line interface
+- Type-safe modeling slice with branded `Square` values and staged move validation
 - All standard chess piece movements and special rules
+
+## Type-Safe Modeling Slice
+
+- `Square` is now a branded domain type constructed via `square()` or `squareFromAlgebraic()` instead of leaking raw board indexes across core APIs.
+- CLI parsing produces `Move<"unchecked">`, while `Board.makeMove()` only accepts `Move<"legal">` values returned by the move generator.
+- `GameState<TTurn>` and `nextTurn<T>()` make side-to-move intent explicit, but the current mutable engine still keeps the final white/black transition check at the runtime state boundary instead of a full `Board<State>` rewrite.
+- `type-tests/type_safety.ts` captures representative compile-time failures and runs as part of `bun run lint`.
 
 ## Development
 
@@ -88,13 +96,19 @@ docker-compose up --build chess-engine
 
 ## Architecture
 
-- `src/types.ts` - Type definitions and constants
+- `src/types.ts` - Branded domain types, `Move<"unchecked" | "legal">`, and chess constants
 - `src/board.ts` - Board representation and game state
 - `src/moveGenerator.ts` - Move generation and validation  
 - `src/fen.ts` - FEN parsing and serialization
 - `src/ai.ts` - AI engine with minimax/alpha-beta
 - `src/perft.ts` - Performance testing utilities
 - `src/chess.ts` - Main engine and command interface
+
+## Validation Notes
+
+- Runtime behavior stays aligned with the shared `v1` engine contract.
+- Compile-time guarantees cover branded `Square` values and legal-vs-unchecked move staging.
+- A full `Board<State>` transition API is intentionally deferred; the current engine architecture is heavily mutable and this slice documents that boundary instead of over-claiming static guarantees.
 
 ## Testing
 

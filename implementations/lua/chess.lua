@@ -56,6 +56,61 @@ local trace_last_ai_nps = 0
 local trace_last_ai_tt_hits = 0
 local trace_last_ai_tt_misses = 0
 local trace_last_ai_beta_cutoffs = 0
+local chess960_knight_table = {
+    {0, 1}, {0, 2}, {0, 3}, {0, 4}, {1, 2},
+    {1, 3}, {1, 4}, {2, 3}, {2, 4}, {3, 4}
+}
+
+local function decode_chess960_backrank(id)
+    local pieces = {nil, nil, nil, nil, nil, nil, nil, nil}
+    local n = id
+
+    local remainder = n % 4
+    n = math.floor(n / 4)
+    pieces[2 * remainder + 2] = "b"
+
+    remainder = n % 4
+    n = math.floor(n / 4)
+    pieces[2 * remainder + 1] = "b"
+
+    local empty = {}
+    for i = 1, 8 do
+        if pieces[i] == nil then
+            empty[#empty + 1] = i
+        end
+    end
+    remainder = n % 6
+    n = math.floor(n / 6)
+    pieces[empty[remainder + 1]] = "q"
+
+    local knight_pair = chess960_knight_table[n + 1]
+    empty = {}
+    for i = 1, 8 do
+        if pieces[i] == nil then
+            empty[#empty + 1] = i
+        end
+    end
+    pieces[empty[knight_pair[1] + 1]] = "n"
+    pieces[empty[knight_pair[2] + 1]] = "n"
+
+    empty = {}
+    for i = 1, 8 do
+        if pieces[i] == nil then
+            empty[#empty + 1] = i
+        end
+    end
+    pieces[empty[1]] = "r"
+    pieces[empty[2]] = "k"
+    pieces[empty[3]] = "r"
+
+    return table.concat(pieces)
+end
+
+local function build_chess960_fen(id)
+    local white = string.upper(decode_chess960_backrank(id))
+    local black = string.lower(white)
+    return string.format("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w - - 0 1", black, white)
+end
 local tt = {}
 local search_deadline = nil
 local search_timed_out = false
@@ -76,6 +131,18 @@ local search_eval_calls = 0
 local search_tt_hits = 0
 local search_tt_misses = 0
 local search_beta_cutoffs = 0
+
+local KNIGHT_DELTAS = {{2,1},{2,-1},{-2,1},{-2,-1},{1,2},{1,-2},{-1,2},{-1,-2}}
+local KING_DELTAS = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}}
+local RAY_DIRECTIONS = {
+    {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+    {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+}
+local KNIGHT_ATTACKS = {}
+local KING_ATTACKS = {}
+local RAY_TABLES = {}
+local CHEBYSHEV_DISTANCE = {}
+local MANHATTAN_DISTANCE = {}
 
 local zobrist_keys = {
     pieces = {},
@@ -204,6 +271,96 @@ local function indices_to_algebraic(rank, file)
     return string.char(string.byte("a") + file - 1) .. tostring(rank)
 end
 
+local function square_index(rank, file)
+    return (rank - 1) * 8 + file
+end
+
+local function build_attack_table(deltas)
+    local table_out = {}
+    for rank = 1, 8 do
+        table_out[rank] = {}
+        for file = 1, 8 do
+            local attacks = {}
+            for _, delta in ipairs(deltas) do
+                local r, f = rank + delta[1], file + delta[2]
+                if r >= 1 and r <= 8 and f >= 1 and f <= 8 then
+                    attacks[#attacks + 1] = {r, f}
+                end
+            end
+            table_out[rank][file] = attacks
+        end
+    end
+    return table_out
+end
+
+local function build_ray_table(drank, dfile)
+    local table_out = {}
+    for rank = 1, 8 do
+        table_out[rank] = {}
+        for file = 1, 8 do
+            local ray = {}
+            local r, f = rank + drank, file + dfile
+            while r >= 1 and r <= 8 and f >= 1 and f <= 8 do
+                ray[#ray + 1] = {r, f}
+                r, f = r + drank, f + dfile
+            end
+            table_out[rank][file] = ray
+        end
+    end
+    return table_out
+end
+
+local function build_distance_table(metric)
+    local table_out = {}
+    for from_rank = 1, 8 do
+        for from_file = 1, 8 do
+            local from_idx = square_index(from_rank, from_file)
+            table_out[from_idx] = {}
+            for to_rank = 1, 8 do
+                for to_file = 1, 8 do
+                    local to_idx = square_index(to_rank, to_file)
+                    local rank_distance = math.abs(from_rank - to_rank)
+                    local file_distance = math.abs(from_file - to_file)
+                    table_out[from_idx][to_idx] = metric(rank_distance, file_distance)
+                end
+            end
+        end
+    end
+    return table_out
+end
+
+local function knight_attacks(rank, file)
+    return KNIGHT_ATTACKS[rank][file]
+end
+
+local function king_attacks(rank, file)
+    return KING_ATTACKS[rank][file]
+end
+
+local function ray_attacks(rank, file, drank, dfile)
+    return RAY_TABLES[drank .. "," .. dfile][rank][file]
+end
+
+local function chebyshev_distance(a_rank, a_file, b_rank, b_file)
+    return CHEBYSHEV_DISTANCE[square_index(a_rank, a_file)][square_index(b_rank, b_file)]
+end
+
+local function manhattan_distance(a_rank, a_file, b_rank, b_file)
+    return MANHATTAN_DISTANCE[square_index(a_rank, a_file)][square_index(b_rank, b_file)]
+end
+
+KNIGHT_ATTACKS = build_attack_table(KNIGHT_DELTAS)
+KING_ATTACKS = build_attack_table(KING_DELTAS)
+for _, dir in ipairs(RAY_DIRECTIONS) do
+    RAY_TABLES[dir[1] .. "," .. dir[2]] = build_ray_table(dir[1], dir[2])
+end
+CHEBYSHEV_DISTANCE = build_distance_table(function(rank_distance, file_distance)
+    return math.max(rank_distance, file_distance)
+end)
+MANHATTAN_DISTANCE = build_distance_table(function(rank_distance, file_distance)
+    return rank_distance + file_distance
+end)
+
 -- Check if a square is attacked by opponent
 local function is_square_attacked(rank, file, by_white)
     -- Check pawn attacks
@@ -216,24 +373,19 @@ local function is_square_attacked(rank, file, by_white)
     
     -- Check knight attacks
     local knight = by_white and "N" or "n"
-    local knight_moves = {{2,1},{2,-1},{-2,1},{-2,-1},{1,2},{1,-2},{-1,2},{-1,-2}}
-    for _, move in ipairs(knight_moves) do
-        local r, f = rank + move[1], file + move[2]
-        if r >= 1 and r <= 8 and f >= 1 and f <= 8 and board[r][f] == knight then
+    for _, square in ipairs(knight_attacks(rank, file)) do
+        local r, f = square[1], square[2]
+        if board[r][f] == knight then
             return true
         end
     end
     
     -- Check king attacks
     local king = by_white and "K" or "k"
-    for dr = -1, 1 do
-        for df = -1, 1 do
-            if dr ~= 0 or df ~= 0 then
-                local r, f = rank + dr, file + df
-                if r >= 1 and r <= 8 and f >= 1 and f <= 8 and board[r][f] == king then
-                    return true
-                end
-            end
+    for _, square in ipairs(king_attacks(rank, file)) do
+        local r, f = square[1], square[2]
+        if board[r][f] == king then
+            return true
         end
     end
     
@@ -244,8 +396,8 @@ local function is_square_attacked(rank, file, by_white)
     }
     
     for _, dir in ipairs(directions) do
-        local r, f = rank + dir[1], file + dir[2]
-        while r >= 1 and r <= 8 and f >= 1 and f <= 8 do
+        for _, square in ipairs(ray_attacks(rank, file, dir[1], dir[2])) do
+            local r, f = square[1], square[2]
             local piece = board[r][f]
             if piece ~= "." then
                 local is_rook_dir = dir[1] == 0 or dir[2] == 0
@@ -264,7 +416,6 @@ local function is_square_attacked(rank, file, by_white)
                 end
                 break
             end
-            r, f = r + dir[1], f + dir[2]
         end
     end
     
@@ -1368,10 +1519,6 @@ local function color_name(is_white)
     return is_white and "white" or "black"
 end
 
-local function manhattan(a_rank, a_file, b_rank, b_file)
-    return math.abs(a_rank - b_rank) + math.abs(a_file - b_file)
-end
-
 local function non_king_material(counts)
     return (counts.P or 0) + (counts.N or 0) + (counts.B or 0) + (counts.R or 0) + (counts.Q or 0)
 end
@@ -1419,7 +1566,7 @@ local function detect_endgame_state()
         local weak_king = kings.black
         local strong_king = kings.white
         local edge = math.min(weak_king[1] - 1, 8 - weak_king[1], weak_king[2] - 1, 8 - weak_king[2])
-        local king_distance = manhattan(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
+        local king_distance = manhattan_distance(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
         local score = 900 + (14 - king_distance) * 6 + (3 - edge) * 20
         return {
             type = "KQK",
@@ -1433,7 +1580,7 @@ local function detect_endgame_state()
         local weak_king = kings.white
         local strong_king = kings.black
         local edge = math.min(weak_king[1] - 1, 8 - weak_king[1], weak_king[2] - 1, 8 - weak_king[2])
-        local king_distance = manhattan(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
+        local king_distance = manhattan_distance(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
         local score = 900 + (14 - king_distance) * 6 + (3 - edge) * 20
         return {
             type = "KQK",
@@ -1452,8 +1599,8 @@ local function detect_endgame_state()
         local promotion_rank, promotion_file = 8, pawn[2]
         local pawn_steps = 8 - pawn[1]
         local score = 120 + (6 - pawn_steps) * 35 +
-            manhattan(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
-            manhattan(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
+            manhattan_distance(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
+            manhattan_distance(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
         if pawn_steps <= 1 then
             score = score + 80
         end
@@ -1475,8 +1622,8 @@ local function detect_endgame_state()
         local promotion_rank, promotion_file = 1, pawn[2]
         local pawn_steps = pawn[1] - 1
         local score = 120 + (6 - pawn_steps) * 35 +
-            manhattan(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
-            manhattan(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
+            manhattan_distance(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
+            manhattan_distance(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
         if pawn_steps <= 1 then
             score = score + 80
         end
@@ -1499,8 +1646,8 @@ local function detect_endgame_state()
         local weak_pawn = pawns.black
         local pawn_steps = weak_pawn[1] - 1
         local score = 380 - pawn_steps * 25 +
-            (manhattan(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
-                manhattan(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
+            (manhattan_distance(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
+                manhattan_distance(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
         if score < 50 then
             score = 50
         end
@@ -1519,8 +1666,8 @@ local function detect_endgame_state()
         local weak_pawn = pawns.white
         local pawn_steps = 8 - weak_pawn[1]
         local score = 380 - pawn_steps * 25 +
-            (manhattan(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
-                manhattan(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
+            (manhattan_distance(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
+                manhattan_distance(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
         if score < 50 then
             score = 50
         end
@@ -3407,13 +3554,23 @@ local function main()
                 print("ERROR: new960 id must be between 0 and 959")
             else
                 chess960_id = math.floor(id)
-                new_game()
+                local fen = build_chess960_fen(chess960_id)
+                local success, msg = import_fen(fen)
+                if not success then
+                    print("ERROR: Invalid Chess960 FEN: " .. msg)
+                    goto continue
+                end
                 print("OK: New game started")
                 display_board()
-                print(string.format("960: new game id=%d", chess960_id))
+                print(string.format("960: new game id=%d; backrank=%s", chess960_id, decode_chess960_backrank(chess960_id)))
             end
         elseif cmd == "position960" then
-            print(string.format("960: id=%d; mode=chess960", chess960_id))
+            print(string.format(
+                "960: id=%d; mode=chess960; backrank=%s; fen=%s",
+                chess960_id,
+                decode_chess960_backrank(chess960_id),
+                build_chess960_fen(chess960_id)
+            ))
         elseif cmd == "trace" then
             local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
             subcmd = subcmd and subcmd:lower() or ""

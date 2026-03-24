@@ -720,7 +720,6 @@ class ChessEngine
 
   private def run_perft(depth : Int32)
     perft = Perft.new
-    start_time = Time.monotonic
     nodes = perft.perft(@game_state, depth)
     puts "Perft #{depth}: #{nodes}"
   end

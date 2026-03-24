@@ -1,5 +1,6 @@
 const std = @import("std");
 const board = @import("board.zig");
+const attack_tables = @import("attack_tables.zig");
 const move_gen = @import("move_generator.zig");
 
 pub const AI = struct {
@@ -122,6 +123,10 @@ pub const AI = struct {
 
     pub fn evaluatePosition(self: *AI) i32 {
         var score: i32 = 0;
+        var white_king_square: ?u8 = null;
+        var black_king_square: ?u8 = null;
+        var minor_major_count: u8 = 0;
+        var queen_count: u8 = 0;
 
         // Material evaluation
         for (self.board_ref.squares, 0..) |piece, i| {
@@ -136,7 +141,26 @@ pub const AI = struct {
                 } else {
                     score -= piece_value;
                 }
+
+                if (p.piece_type == .King) {
+                    if (p.color == .White) {
+                        white_king_square = @intCast(i);
+                    } else {
+                        black_king_square = @intCast(i);
+                    }
+                } else if (p.piece_type != .Pawn) {
+                    minor_major_count += 1;
+                    if (p.piece_type == .Queen) {
+                        queen_count += 1;
+                    }
+                }
             }
+        }
+
+        if ((minor_major_count <= 4 or (minor_major_count <= 6 and queen_count == 0)) and
+            white_king_square != null and black_king_square != null)
+        {
+            score += 14 - attack_tables.manhattan_distance[white_king_square.?][black_king_square.?];
         }
 
         return score;

@@ -1,5 +1,6 @@
 const std = @import("std");
 const board = @import("board.zig");
+const attack_tables = @import("attack_tables.zig");
 
 pub const MoveGenerator = struct {
     board_ref: *board.Board,
@@ -106,25 +107,13 @@ pub const MoveGenerator = struct {
     }
 
     fn generateKnightMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
-        const from_rank = @as(i8, @intCast(from / 8));
-        const from_file = @as(i8, @intCast(from % 8));
-
-        const knight_moves = [_][2]i8{ .{ 2, 1 }, .{ 2, -1 }, .{ -2, 1 }, .{ -2, -1 }, .{ 1, 2 }, .{ 1, -2 }, .{ -1, 2 }, .{ -1, -2 } };
-
-        for (knight_moves) |move| {
-            const to_rank = from_rank + move[0];
-            const to_file = from_file + move[1];
-
-            if (to_rank >= 0 and to_rank < 8 and to_file >= 0 and to_file < 8) {
-                const to_square = @as(u8, @intCast(to_rank)) * 8 + @as(u8, @intCast(to_file));
-
-                if (self.board_ref.squares[to_square]) |target_piece| {
-                    if (target_piece.color != color) {
-                        try moves.append(allocator, board.Move{ .from = from, .to = to_square });
-                    }
-                } else {
+        for (attack_tables.knight_attacks[from].slice()) |to_square| {
+            if (self.board_ref.squares[to_square]) |target_piece| {
+                if (target_piece.color != color) {
                     try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                 }
+            } else {
+                try moves.append(allocator, board.Move{ .from = from, .to = to_square });
             }
         }
     }
@@ -145,16 +134,8 @@ pub const MoveGenerator = struct {
     }
 
     fn generateSlidingMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, directions: []const [2]i8, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
-        const from_rank = @as(i8, @intCast(from / 8));
-        const from_file = @as(i8, @intCast(from % 8));
-
         for (directions) |direction| {
-            var rank = from_rank + direction[0];
-            var file = from_file + direction[1];
-
-            while (rank >= 0 and rank < 8 and file >= 0 and file < 8) {
-                const to_square = @as(u8, @intCast(rank)) * 8 + @as(u8, @intCast(file));
-
+            for (attack_tables.rayTable(directionToOffset(direction)).*[from].slice()) |to_square| {
                 if (self.board_ref.squares[to_square]) |target_piece| {
                     if (target_piece.color != color) {
                         try moves.append(allocator, board.Move{ .from = from, .to = to_square });
@@ -163,33 +144,18 @@ pub const MoveGenerator = struct {
                 } else {
                     try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                 }
-
-                rank += direction[0];
-                file += direction[1];
             }
         }
     }
 
     fn generateKingMoves(self: *MoveGenerator, from: u8, color: board.PieceColor, allocator: std.mem.Allocator, moves: *std.ArrayList(board.Move)) !void {
-        const from_rank = @as(i8, @intCast(from / 8));
-        const from_file = @as(i8, @intCast(from % 8));
-
-        const king_moves = [_][2]i8{ .{ 1, 1 }, .{ 1, -1 }, .{ -1, 1 }, .{ -1, -1 }, .{ 1, 0 }, .{ -1, 0 }, .{ 0, 1 }, .{ 0, -1 } };
-
-        for (king_moves) |move| {
-            const to_rank = from_rank + move[0];
-            const to_file = from_file + move[1];
-
-            if (to_rank >= 0 and to_rank < 8 and to_file >= 0 and to_file < 8) {
-                const to_square = @as(u8, @intCast(to_rank)) * 8 + @as(u8, @intCast(to_file));
-
-                if (self.board_ref.squares[to_square]) |target_piece| {
-                    if (target_piece.color != color) {
-                        try moves.append(allocator, board.Move{ .from = from, .to = to_square });
-                    }
-                } else {
+        for (attack_tables.king_attacks[from].slice()) |to_square| {
+            if (self.board_ref.squares[to_square]) |target_piece| {
+                if (target_piece.color != color) {
                     try moves.append(allocator, board.Move{ .from = from, .to = to_square });
                 }
+            } else {
+                try moves.append(allocator, board.Move{ .from = from, .to = to_square });
             }
         }
 
@@ -281,5 +247,9 @@ pub const MoveGenerator = struct {
         _ = move;
         // Simplified legal move check - would implement full validation
         return true;
+    }
+
+    fn directionToOffset(direction: [2]i8) i8 {
+        return direction[0] * 8 + direction[1];
     }
 };

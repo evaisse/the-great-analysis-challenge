@@ -35,6 +35,7 @@ echo -e "new\nmove e2e4\nexport\nquit" | docker run --network none -i chess-go
 - `pgn comment "text"` - Add a PGN comment to current node
 - `uci` / `isready` - UCI handshake commands
 - `new960 [id]` / `position960` - Chess960 command surface
+- Precomputed knight, king, ray, and distance lookup tables back the hot move-generation paths
 - `quit` - Exit the program
 
 ## Testing

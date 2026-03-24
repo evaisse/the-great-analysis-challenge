@@ -1,59 +1,62 @@
 import {
   Piece,
   Color,
+  SideToMove,
   Square,
-  Move,
+  LegalMove,
   CastlingRights,
   GameState,
-  IrreversibleState,
-  FILES,
-  RANKS,
+  SQUARES,
+  nextTurn,
+  square,
+  squareFromAlgebraic,
+  squareToAlgebraic,
 } from "./types";
 import { zobrist } from "./zobrist";
 import * as drawDetection from "./drawDetection";
 
 export class Board {
-  private state: GameState;
+  private state: GameState<SideToMove>;
 
   constructor() {
     this.state = this.createInitialState();
   }
 
-  private createInitialState(): GameState {
+  private createInitialState(): GameState<"white"> {
     const board: (Piece | null)[] = new Array(64).fill(null);
 
     const pieces: [Square, Piece][] = [
-      [0, { type: "R", color: "white" }],
-      [1, { type: "N", color: "white" }],
-      [2, { type: "B", color: "white" }],
-      [3, { type: "Q", color: "white" }],
-      [4, { type: "K", color: "white" }],
-      [5, { type: "B", color: "white" }],
-      [6, { type: "N", color: "white" }],
-      [7, { type: "R", color: "white" }],
+      [SQUARES[0], { type: "R", color: "white" }],
+      [SQUARES[1], { type: "N", color: "white" }],
+      [SQUARES[2], { type: "B", color: "white" }],
+      [SQUARES[3], { type: "Q", color: "white" }],
+      [SQUARES[4], { type: "K", color: "white" }],
+      [SQUARES[5], { type: "B", color: "white" }],
+      [SQUARES[6], { type: "N", color: "white" }],
+      [SQUARES[7], { type: "R", color: "white" }],
 
-      [56, { type: "R", color: "black" }],
-      [57, { type: "N", color: "black" }],
-      [58, { type: "B", color: "black" }],
-      [59, { type: "Q", color: "black" }],
-      [60, { type: "K", color: "black" }],
-      [61, { type: "B", color: "black" }],
-      [62, { type: "N", color: "black" }],
-      [63, { type: "R", color: "black" }],
+      [SQUARES[56], { type: "R", color: "black" }],
+      [SQUARES[57], { type: "N", color: "black" }],
+      [SQUARES[58], { type: "B", color: "black" }],
+      [SQUARES[59], { type: "Q", color: "black" }],
+      [SQUARES[60], { type: "K", color: "black" }],
+      [SQUARES[61], { type: "B", color: "black" }],
+      [SQUARES[62], { type: "N", color: "black" }],
+      [SQUARES[63], { type: "R", color: "black" }],
     ];
 
     for (let i = 8; i < 16; i++) {
-      pieces.push([i, { type: "P", color: "white" }]);
+      pieces.push([SQUARES[i], { type: "P", color: "white" }]);
     }
     for (let i = 48; i < 56; i++) {
-      pieces.push([i, { type: "P", color: "black" }]);
+      pieces.push([SQUARES[i], { type: "P", color: "black" }]);
     }
 
     for (const [square, piece] of pieces) {
       board[square] = piece;
     }
 
-    const state: GameState = {
+    const state: GameState<"white"> = {
       board,
       turn: "white",
       castlingRights: {
@@ -78,11 +81,11 @@ export class Board {
     this.state = this.createInitialState();
   }
 
-  public getState(): GameState {
+  public getState(): GameState<SideToMove> {
     return { ...this.state };
   }
 
-  public setState(state: GameState): void {
+  public setState(state: GameState<SideToMove>): void {
     this.state = { ...state };
   }
 
@@ -119,11 +122,11 @@ export class Board {
     this.state.board[square] = piece;
   }
 
-  public getTurn(): Color {
+  public getTurn(): SideToMove {
     return this.state.turn;
   }
 
-  public setTurn(color: Color): void {
+  public setTurn(color: SideToMove): void {
     this.state.turn = color;
   }
 
@@ -144,21 +147,14 @@ export class Board {
   }
 
   public squareToAlgebraic(square: Square): string {
-    const file = square % 8;
-    const rank = Math.floor(square / 8);
-    return FILES[file] + RANKS[rank];
+    return squareToAlgebraic(square);
   }
 
   public algebraicToSquare(algebraic: string): Square {
-    const file = FILES.indexOf(algebraic[0]);
-    const rank = RANKS.indexOf(algebraic[1]);
-    if (file === -1 || rank === -1) {
-      throw new Error(`Invalid algebraic notation: ${algebraic}`);
-    }
-    return rank * 8 + file;
+    return squareFromAlgebraic(algebraic);
   }
 
-  public makeMove(move: Move): void {
+  public makeMove(move: LegalMove): void {
     const piece = this.getPiece(move.from);
     if (!piece) return;
 
@@ -181,7 +177,9 @@ export class Board {
       const capturedColor = piece.color === "white" ? "black" : "white";
       const capturedPiece: Piece = { type: move.captured, color: capturedColor };
       if (move.enPassant) {
-        const capturedSq = move.to + (piece.color === "white" ? -8 : 8);
+        const capturedSq = square(
+          Number(move.to) + (piece.color === "white" ? -8 : 8),
+        );
         hash ^=
           zobrist.pieces[zobrist.getPieceIndex(capturedPiece)][capturedSq];
         this.setPiece(capturedSq, null);
@@ -210,13 +208,14 @@ export class Board {
     // 4. Handle castling rook
     if (move.castling) {
       const rank = piece.color === "white" ? 0 : 7;
-      let rookFrom, rookTo;
+      let rookFrom: Square;
+      let rookTo: Square;
       if (move.castling === "K" || move.castling === "k") {
-        rookFrom = rank * 8 + 7;
-        rookTo = rank * 8 + 5;
+        rookFrom = square(rank * 8 + 7);
+        rookTo = square(rank * 8 + 5);
       } else {
-        rookFrom = rank * 8;
-        rookTo = rank * 8 + 3;
+        rookFrom = square(rank * 8);
+        rookTo = square(rank * 8 + 3);
       }
       const rook = this.getPiece(rookFrom);
       if (rook) {
@@ -243,13 +242,13 @@ export class Board {
       }
     }
 
-    if (move.from === 0 || move.to === 0)
+    if (move.from === SQUARES[0] || move.to === SQUARES[0])
       this.state.castlingRights.whiteQueenside = false;
-    if (move.from === 7 || move.to === 7)
+    if (move.from === SQUARES[7] || move.to === SQUARES[7])
       this.state.castlingRights.whiteKingside = false;
-    if (move.from === 56 || move.to === 56)
+    if (move.from === SQUARES[56] || move.to === SQUARES[56])
       this.state.castlingRights.blackQueenside = false;
-    if (move.from === 63 || move.to === 63)
+    if (move.from === SQUARES[63] || move.to === SQUARES[63])
       this.state.castlingRights.blackKingside = false;
 
     if (this.state.castlingRights.whiteKingside) hash ^= zobrist.castling[0];
@@ -263,7 +262,7 @@ export class Board {
     }
 
     if (piece.type === "P" && Math.abs(move.to - move.from) === 16) {
-      const enPassantSquare = (move.from + move.to) / 2;
+      const enPassantSquare = square((Number(move.from) + Number(move.to)) / 2);
       this.state.enPassantTarget = enPassantSquare;
       hash ^= zobrist.enPassant[enPassantSquare % 8];
     } else {
@@ -277,11 +276,11 @@ export class Board {
     }
 
     this.state.zobristHash = hash;
-    this.setTurn(piece.color === "white" ? "black" : "white");
+    this.setTurn(nextTurn(piece.color));
     this.state.moveHistory.push(move);
   }
 
-  public undoMove(): Move | null {
+  public undoMove(): LegalMove | null {
     const move = this.state.moveHistory.pop();
     if (!move) return null;
 
@@ -308,7 +307,9 @@ export class Board {
       const capturedColor = piece.color === "white" ? "black" : "white";
       const capturedPiece: Piece = { type: move.captured, color: capturedColor };
       if (move.enPassant) {
-        const capturedPawnSquare = move.to + (piece.color === "white" ? -8 : 8);
+        const capturedPawnSquare = square(
+          Number(move.to) + (piece.color === "white" ? -8 : 8),
+        );
         this.setPiece(capturedPawnSquare, capturedPiece);
         this.setPiece(move.to, null);
       } else {
@@ -320,13 +321,14 @@ export class Board {
 
     if (move.castling) {
       const rank = piece.color === "white" ? 0 : 7;
-      let rookFrom, rookTo;
+      let rookFrom: Square;
+      let rookTo: Square;
       if (move.castling === "K" || move.castling === "k") {
-        rookFrom = rank * 8 + 5;
-        rookTo = rank * 8 + 7;
+        rookFrom = square(rank * 8 + 5);
+        rookTo = square(rank * 8 + 7);
       } else {
-        rookFrom = rank * 8 + 3;
-        rookTo = rank * 8;
+        rookFrom = square(rank * 8 + 3);
+        rookTo = square(rank * 8);
       }
       const rook = this.getPiece(rookFrom);
       if (rook) {
@@ -349,7 +351,7 @@ export class Board {
     for (let rank = 7; rank >= 0; rank--) {
       output += `${rank + 1} `;
       for (let file = 0; file < 8; file++) {
-        const square = rank * 8 + file;
+        const square = SQUARES[rank * 8 + file];
         const piece = this.getPiece(square);
         if (piece) {
           const char =
