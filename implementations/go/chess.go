@@ -58,6 +58,11 @@ type ChessEngine struct {
 	traceLastAITTHits      int
 	traceLastAITTMisses    int
 	traceLastAIBetaCutoffs int
+	protocolMode           string
+	uciState               string
+	uciAnalyseMode         bool
+	richEvalEnabled        bool
+	uciLastBestMove        string
 }
 
 type TraceEvent struct {
@@ -86,17 +91,19 @@ var chess960KnightTable = [10][2]int{
 
 func NewChessEngine() *ChessEngine {
 	return &ChessEngine{
-		gameState:   NewGameState(),
-		ai:          NewAI(),
-		pgnPath:     "",
-		pgnMoves:    make([]string, 0),
-		bookPath:    "",
-		bookEnabled: false,
-		bookEntries: make(map[string][]BookEntry),
-		uciHashMB:   16,
-		uciThreads:  1,
-		traceLevel:  "info",
-		traceEvents: make([]TraceEvent, 0),
+		gameState:    NewGameState(),
+		ai:           NewAI(),
+		pgnPath:      "",
+		pgnMoves:     make([]string, 0),
+		bookPath:     "",
+		bookEnabled:  false,
+		bookEntries:  make(map[string][]BookEntry),
+		uciHashMB:    16,
+		uciThreads:   1,
+		protocolMode: "boot",
+		uciState:     "boot",
+		traceLevel:   "info",
+		traceEvents:  make([]TraceEvent, 0),
 	}
 }
 
@@ -120,6 +127,7 @@ func (engine *ChessEngine) Run() {
 		}
 
 		command := strings.ToLower(parts[0])
+		engine.selectProtocolMode(command)
 		if command != "trace" {
 			engine.traceCommandCount++
 			engine.trace("command", line)
@@ -166,9 +174,13 @@ func (engine *ChessEngine) Run() {
 			}
 			fmt.Printf("  %d: %016x (current)\n", len(engine.gameState.PositionHistory), engine.gameState.ZobristHash)
 		case "go":
-			engine.handleGo(parts[1:])
+			if engine.protocolMode == "uci" {
+				engine.handleUCIGo(parts[1:])
+			} else {
+				engine.handleGo(parts[1:])
+			}
 		case "stop":
-			fmt.Println("OK: stop")
+			engine.handleStop()
 		case "pgn":
 			engine.handlePGN(parts[1:])
 		case "book":
@@ -233,6 +245,43 @@ func (engine *ChessEngine) Run() {
 		default:
 			fmt.Println("ERROR: Unknown command")
 		}
+	}
+}
+
+func (engine *ChessEngine) selectProtocolMode(command string) {
+	if engine.protocolMode == "boot" {
+		if command == "uci" {
+			engine.protocolMode = "uci"
+		} else {
+			engine.protocolMode = "custom"
+		}
+		return
+	}
+
+	if command == "uci" {
+		engine.protocolMode = "uci"
+	}
+}
+
+func (engine *ChessEngine) setUCIState(state string) {
+	engine.uciState = state
+}
+
+func uciBoolDefault(value bool) string {
+	if value {
+		return "true"
+	}
+	return "false"
+}
+
+func parseUCICheckValue(raw string) (bool, bool) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "true", "1", "on", "yes":
+		return true, true
+	case "false", "0", "off", "no":
+		return false, true
+	default:
+		return false, false
 	}
 }
 
@@ -471,6 +520,100 @@ func (engine *ChessEngine) handleGo(args []string) {
 	}
 }
 
+func (engine *ChessEngine) handleUCIGo(args []string) {
+	if len(args) == 0 {
+		fmt.Println("ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|depth <n>|infinite)")
+		return
+	}
+
+	switch strings.ToLower(args[0]) {
+	case "depth":
+		if len(args) < 2 {
+			fmt.Println("ERROR: go depth requires a value")
+			return
+		}
+		depth, err := strconv.Atoi(args[1])
+		if err != nil {
+			fmt.Println("ERROR: go depth requires an integer value")
+			return
+		}
+		if depth < 1 {
+			depth = 1
+		}
+		if depth > MAX_DEPTH {
+			depth = MAX_DEPTH
+		}
+		engine.handleUCISearch(depth, 0)
+	case "movetime":
+		if len(args) < 2 {
+			fmt.Println("ERROR: go movetime requires a value in milliseconds")
+			return
+		}
+		movetimeMs, err := strconv.Atoi(args[1])
+		if err != nil {
+			fmt.Println("ERROR: go movetime requires an integer value")
+			return
+		}
+		if movetimeMs <= 0 {
+			fmt.Println("ERROR: go movetime must be > 0")
+			return
+		}
+		engine.handleUCISearch(MAX_DEPTH, movetimeMs)
+	case "wtime":
+		movetimeMs, err := deriveMovetimeFromClockArgs(args, engine.gameState.ActiveColor)
+		if err != nil {
+			fmt.Printf("ERROR: %s\n", err.Error())
+			return
+		}
+		engine.handleUCISearch(MAX_DEPTH, movetimeMs)
+	case "infinite":
+		fmt.Println("info string infinite search bounded to 15000 ms in synchronous mode")
+		engine.handleUCISearch(MAX_DEPTH, 15000)
+	default:
+		fmt.Println("ERROR: Unsupported go command")
+	}
+}
+
+func (engine *ChessEngine) handleUCISearch(depth int, movetimeMs int) {
+	engine.setUCIState("searching")
+	legalMoves := engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		engine.uciLastBestMove = "0000"
+		fmt.Println("bestmove 0000")
+		engine.setUCIState("idle")
+		return
+	}
+
+	if bookMove, ok := engine.chooseBookMove(legalMoves); ok {
+		moveStr := moveToString(bookMove)
+		engine.uciLastBestMove = moveStr
+		engine.recordTraceAI("uci-book", moveStr, 0, 0, 0, false, 0, 0, 0, 0, 0)
+		fmt.Printf("info string bookmove %s\n", moveStr)
+		fmt.Printf("bestmove %s\n", moveStr)
+		engine.setUCIState("idle")
+		return
+	}
+
+	if endgameMove, info, ok := engine.chooseEndgameMove(legalMoves); ok {
+		moveStr := moveToString(endgameMove)
+		engine.uciLastBestMove = moveStr
+		engine.recordTraceAI("uci-endgame", moveStr, 0, info.WhiteScore, 0, false, 0, 0, 0, 0, 0)
+		fmt.Printf("info string endgame %s score cp %d\n", info.Kind, info.WhiteScore)
+		fmt.Printf("bestmove %s\n", moveStr)
+		engine.setUCIState("idle")
+		return
+	}
+
+	result := engine.ai.Search(engine.gameState, depth, movetimeMs)
+	bestMove := normalizeBestMove(result.Move, legalMoves)
+	moveStr := moveToString(bestMove)
+	engine.uciLastBestMove = moveStr
+	engine.recordTraceAI("uci-search", moveStr, result.Depth, result.Score, result.ElapsedMS, result.TimedOut, result.Nodes, result.EvalCalls, result.TTHits, result.TTMisses, result.BetaCutoffs)
+	fmt.Printf("info depth %d score cp %d time %d nodes %d\n", result.Depth, result.Score, result.ElapsedMS, result.Nodes)
+	fmt.Printf("bestmove %s\n", moveStr)
+	engine.setUCIState("idle")
+}
+
 func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 	legalMoves := engine.gameState.GenerateLegalMoves()
 	if len(legalMoves) == 0 {
@@ -581,6 +724,23 @@ func (engine *ChessEngine) handleAITimed(maxDepth int, movetimeMs int) {
 
 	result := engine.ai.Search(engine.gameState, maxDepth, movetimeMs)
 	engine.applyAIMove(result, legalMoves, maxDepth)
+}
+
+func (engine *ChessEngine) handleStop() {
+	if engine.protocolMode == "uci" {
+		if engine.uciState == "searching" {
+			bestMove := engine.uciLastBestMove
+			if bestMove == "" {
+				bestMove = "0000"
+			}
+			fmt.Printf("bestmove %s\n", bestMove)
+			engine.setUCIState("idle")
+		} else {
+			fmt.Println("info string stop ignored (no active async search)")
+		}
+		return
+	}
+	fmt.Println("OK: stop")
 }
 
 func (engine *ChessEngine) applyAIMove(result SearchResult, legalMoves []Move, requestedDepth int) {
@@ -1186,10 +1346,21 @@ func (engine *ChessEngine) handlePGN(args []string) {
 }
 
 func (engine *ChessEngine) handleUCI() {
+	engine.protocolMode = "uci"
+	engine.setUCIState("uci_sent")
+	fmt.Println("id name Go Chess Engine")
+	fmt.Println("id author The Great Analysis Challenge")
+	fmt.Printf("option name Hash type spin default %d min 1 max 1024\n", engine.uciHashMB)
+	fmt.Printf("option name Threads type spin default %d min 1 max 64\n", engine.uciThreads)
+	fmt.Printf("option name UCI_AnalyseMode type check default %s\n", uciBoolDefault(engine.uciAnalyseMode))
+	fmt.Printf("option name RichEval type check default %s\n", uciBoolDefault(engine.richEvalEnabled))
 	fmt.Println("uciok")
 }
 
 func (engine *ChessEngine) handleIsReady() {
+	if engine.protocolMode == "uci" && engine.uciState != "searching" {
+		engine.setUCIState("idle")
+	}
 	fmt.Println("readyok")
 }
 
@@ -1212,14 +1383,16 @@ func (engine *ChessEngine) handleSetOption(args []string) {
 	}
 
 	name := strings.ToLower(strings.TrimSpace(strings.Join(args[1:valueIndex], " ")))
-	value, err := strconv.Atoi(args[valueIndex+1])
-	if err != nil {
-		fmt.Println("ERROR: setoption value must be an integer")
-		return
-	}
+	rawName := strings.TrimSpace(strings.Join(args[1:valueIndex], " "))
+	rawValue := strings.TrimSpace(strings.Join(args[valueIndex+1:], " "))
 
 	switch name {
 	case "hash":
+		value, err := strconv.Atoi(rawValue)
+		if err != nil {
+			fmt.Println("ERROR: setoption value must be an integer")
+			return
+		}
 		if value < 1 {
 			value = 1
 		}
@@ -1229,6 +1402,11 @@ func (engine *ChessEngine) handleSetOption(args []string) {
 		engine.uciHashMB = value
 		fmt.Printf("info string option Hash=%d\n", engine.uciHashMB)
 	case "threads":
+		value, err := strconv.Atoi(rawValue)
+		if err != nil {
+			fmt.Println("ERROR: setoption value must be an integer")
+			return
+		}
 		if value < 1 {
 			value = 1
 		}
@@ -1237,14 +1415,34 @@ func (engine *ChessEngine) handleSetOption(args []string) {
 		}
 		engine.uciThreads = value
 		fmt.Printf("info string option Threads=%d\n", engine.uciThreads)
+	case "uci_analysemode":
+		value, ok := parseUCICheckValue(rawValue)
+		if !ok {
+			fmt.Println("ERROR: setoption value must be true/false")
+			return
+		}
+		engine.uciAnalyseMode = value
+		fmt.Printf("info string option UCI_AnalyseMode=%s\n", uciBoolDefault(value))
+	case "richeval":
+		value, ok := parseUCICheckValue(rawValue)
+		if !ok {
+			fmt.Println("ERROR: setoption value must be true/false")
+			return
+		}
+		engine.richEvalEnabled = value
+		fmt.Printf("info string option RichEval=%s\n", uciBoolDefault(value))
 	default:
-		fmt.Printf("info string unsupported option %s\n", strings.TrimSpace(strings.Join(args[1:valueIndex], " ")))
+		fmt.Printf("info string unsupported option %s\n", rawName)
 	}
 }
 
 func (engine *ChessEngine) handleUCINewGame() {
 	engine.gameState = NewGameState()
 	engine.ai = NewAI()
+	engine.uciLastBestMove = ""
+	if engine.protocolMode == "uci" {
+		engine.setUCIState("idle")
+	}
 }
 
 func (engine *ChessEngine) handlePosition(args []string) {
@@ -1287,6 +1485,10 @@ func (engine *ChessEngine) handlePosition(args []string) {
 				return
 			}
 		}
+	}
+
+	if engine.protocolMode == "uci" {
+		engine.setUCIState("idle")
 	}
 }
 
@@ -2119,7 +2321,7 @@ func (engine *ChessEngine) showHelp() {
 	fmt.Println("  endgame      - Detect specialized endgame module and best move hint")
 	fmt.Println("  uci          - Enter/respond to UCI handshake")
 	fmt.Println("  isready      - UCI readiness probe")
-	fmt.Println("  setoption name <Hash|Threads> value <n> - Set UCI option")
+	fmt.Println("  setoption name <Hash|Threads|UCI_AnalyseMode|RichEval> value <x> - Set UCI option")
 	fmt.Println("  ucinewgame   - Reset internal state for UCI game")
 	fmt.Println("  position startpos|fen ... [moves ...] - Load UCI position")
 	fmt.Println("  new960 [id]  - Start Chess960 game by id (0-959)")

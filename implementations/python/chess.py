@@ -85,6 +85,11 @@ class ChessEngine:
         self._book_played = 0
         self._uci_hash_mb = 16
         self._uci_threads = 1
+        self._uci_analyse_mode = False
+        self._rich_eval_enabled = False
+        self._protocol_mode = 'boot'
+        self._uci_state = 'boot'
+        self._uci_last_bestmove: Optional[str] = None
         self._chess960_id = 0
         self._trace_enabled = False
         self._trace_level = 'info'
@@ -95,9 +100,6 @@ class ChessEngine:
     
     def start(self):
         """Start the chess engine and begin accepting commands."""
-        print(self.board.display())
-        sys.stdout.flush()
-        
         while True:
             try:
                 # Don't print prompt in non-interactive mode
@@ -129,6 +131,7 @@ class ChessEngine:
                 return
                 
             cmd = parts[0].lower()
+            self._select_protocol_mode(cmd)
             if cmd != 'trace':
                 self._trace_command_count += 1
                 self._trace('command', command)
@@ -156,7 +159,10 @@ class ChessEngine:
             elif cmd == 'history':
                 self.handle_history()
             elif cmd == 'go':
-                self.handle_go(parts[1:])
+                if self._protocol_mode == 'uci':
+                    self.handle_uci_go(parts[1:])
+                else:
+                    self.handle_go(parts[1:])
             elif cmd == 'stop':
                 self.handle_stop()
             elif cmd == 'pgn':
@@ -191,7 +197,8 @@ class ChessEngine:
             elif cmd == 'help':
                 self.handle_help()
             elif cmd in ('quit', 'exit'):
-                print('Goodbye!')
+                if self._protocol_mode != 'uci':
+                    print('Goodbye!')
                 sys.exit(0)
             else:
                 print('ERROR: Invalid command. Type "help" for available commands.')
@@ -200,6 +207,131 @@ class ChessEngine:
             print('ERROR: Invalid command format')
         except Exception as e:
             print(f'ERROR: {e}')
+
+    def _select_protocol_mode(self, cmd: str):
+        if self._protocol_mode == 'boot':
+            self._protocol_mode = 'uci' if cmd == 'uci' else 'custom'
+        elif cmd == 'uci':
+            self._protocol_mode = 'uci'
+
+    def _set_uci_state(self, state: str):
+        self._uci_state = state
+
+    def _uci_bool_default(self, value: bool) -> str:
+        return 'true' if value else 'false'
+
+    def _parse_uci_check_value(self, raw_value: str) -> Optional[bool]:
+        normalized = raw_value.strip().lower()
+        if normalized in ('true', '1', 'on', 'yes'):
+            return True
+        if normalized in ('false', '0', 'off', 'no'):
+            return False
+        return None
+
+    def _handle_uci_search(self, depth: int, movetime_ms: int):
+        self._set_uci_state('searching')
+        legal_moves = self.move_generator.generate_legal_moves()
+        if not legal_moves:
+            self._uci_last_bestmove = '0000'
+            print('bestmove 0000')
+            self._set_uci_state('idle')
+            return
+
+        book_move = self._choose_book_move(legal_moves)
+        if book_move is not None:
+            move_str = book_move.to_algebraic().lower()
+            self._uci_last_bestmove = move_str
+            self._record_trace_ai('uci-book', move_str, 0, 0, 0, False, 0, 0, 0, 0, 0)
+            print(f'info string bookmove {move_str}')
+            print(f'bestmove {move_str}')
+            self._set_uci_state('idle')
+            return
+
+        endgame_choice = self._choose_endgame_move(legal_moves)
+        if endgame_choice is not None:
+            move, info = endgame_choice
+            move_str = move.to_algebraic().lower()
+            self._uci_last_bestmove = move_str
+            self._record_trace_ai('uci-endgame', move_str, 0, info["score_white"], 0, False, 0, 0, 0, 0, 0)
+            print(f'info string endgame {info["type"]} score cp {info["score_white"]}')
+            print(f'bestmove {move_str}')
+            self._set_uci_state('idle')
+            return
+
+        best_move, eval_score, depth_used, elapsed_ms, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = self.ai.search(depth, movetime_ms)
+        if not best_move:
+            self._uci_last_bestmove = '0000'
+            print('bestmove 0000')
+            self._set_uci_state('idle')
+            return
+
+        move_str = best_move.to_algebraic().lower()
+        self._uci_last_bestmove = move_str
+        self._record_trace_ai(
+            'uci-search',
+            move_str,
+            depth_used,
+            eval_score,
+            elapsed_ms,
+            timed_out,
+            nodes,
+            eval_calls,
+            tt_hits,
+            tt_misses,
+            beta_cutoffs,
+        )
+        print(f'info depth {depth_used} score cp {eval_score} time {elapsed_ms} nodes {nodes}')
+        print(f'bestmove {move_str}')
+        self._set_uci_state('idle')
+
+    def handle_uci_go(self, args):
+        if not args:
+            print('ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|depth <n>|infinite)')
+            return
+
+        subcommand = args[0].lower()
+        if subcommand == 'depth':
+            if len(args) < 2:
+                print('ERROR: go depth requires a value')
+                return
+            try:
+                depth = int(args[1])
+            except ValueError:
+                print('ERROR: go depth requires an integer value')
+                return
+            self._handle_uci_search(max(1, min(5, depth)), 0)
+            return
+
+        if subcommand == 'movetime':
+            if len(args) < 2:
+                print('ERROR: go movetime requires a value in milliseconds')
+                return
+            try:
+                movetime_ms = int(args[1])
+            except ValueError:
+                print('ERROR: go movetime requires an integer value')
+                return
+            if movetime_ms <= 0:
+                print('ERROR: go movetime must be > 0')
+                return
+            self._handle_uci_search(5, movetime_ms)
+            return
+
+        if subcommand == 'wtime':
+            movetime_ms, error = self._derive_movetime_from_clock_args(args)
+            if error is not None:
+                print(f'ERROR: {error}')
+                return
+            self._handle_uci_search(5, movetime_ms)
+            return
+
+        if subcommand == 'infinite':
+            self._go_infinite = True
+            print('info string infinite search bounded to 15000 ms in synchronous mode')
+            self._handle_uci_search(5, 15000)
+            return
+
+        print('ERROR: Unsupported go command')
     
     def handle_move(self, move_str: Optional[str]):
         """Handle move command."""
@@ -504,6 +636,13 @@ class ChessEngine:
         """Handle stop command."""
         self._go_infinite = False
         self.ai.request_stop()
+        if self._protocol_mode == 'uci':
+            if self._uci_state == 'searching':
+                print(f'bestmove {self._uci_last_bestmove or "0000"}')
+                self._set_uci_state('idle')
+            else:
+                print('info string stop ignored (no active async search)')
+            return
         print('OK: stop')
 
     def _derive_movetime_from_clock_args(self, args):
@@ -663,10 +802,20 @@ class ChessEngine:
 
     def handle_uci(self):
         """Handle uci command."""
+        self._protocol_mode = 'uci'
+        self._set_uci_state('uci_sent')
+        print('id name Python Chess Engine')
+        print('id author The Great Analysis Challenge')
+        print(f'option name Hash type spin default {self._uci_hash_mb} min 1 max 1024')
+        print(f'option name Threads type spin default {self._uci_threads} min 1 max 64')
+        print(f'option name UCI_AnalyseMode type check default {self._uci_bool_default(self._uci_analyse_mode)}')
+        print(f'option name RichEval type check default {self._uci_bool_default(self._rich_eval_enabled)}')
         print('uciok')
 
     def handle_isready(self):
         """Handle isready command."""
+        if self._protocol_mode == 'uci' and self._uci_state != 'searching':
+            self._set_uci_state('idle')
         print('readyok')
 
     def handle_setoption(self, args):
@@ -685,24 +834,49 @@ class ChessEngine:
             print("ERROR: setoption requires 'value <n>'")
             return
 
-        name = ' '.join(args[1:value_idx]).strip().lower()
-        try:
-            value = int(args[value_idx + 1])
-        except ValueError:
-            print('ERROR: setoption value must be an integer')
-            return
+        raw_name = ' '.join(args[1:value_idx]).strip()
+        name = raw_name.lower()
+        raw_value = ' '.join(args[value_idx + 1:]).strip()
 
         if name == 'hash':
+            try:
+                value = int(raw_value)
+            except ValueError:
+                print('ERROR: setoption value must be an integer')
+                return
             self._uci_hash_mb = max(1, min(1024, value))
             print(f'info string option Hash={self._uci_hash_mb}')
             return
 
         if name == 'threads':
+            try:
+                value = int(raw_value)
+            except ValueError:
+                print('ERROR: setoption value must be an integer')
+                return
             self._uci_threads = max(1, min(64, value))
             print(f'info string option Threads={self._uci_threads}')
             return
 
-        print(f'info string unsupported option {" ".join(args[1:value_idx]).strip()}')
+        if name == 'uci_analysemode':
+            parsed = self._parse_uci_check_value(raw_value)
+            if parsed is None:
+                print('ERROR: setoption value must be true/false')
+                return
+            self._uci_analyse_mode = parsed
+            print(f'info string option UCI_AnalyseMode={self._uci_bool_default(parsed)}')
+            return
+
+        if name == 'richeval':
+            parsed = self._parse_uci_check_value(raw_value)
+            if parsed is None:
+                print('ERROR: setoption value must be true/false')
+                return
+            self._rich_eval_enabled = parsed
+            print(f'info string option RichEval={self._uci_bool_default(parsed)}')
+            return
+
+        print(f'info string unsupported option {raw_name}')
 
     def handle_ucinewgame(self):
         """Handle UCI ucinewgame command."""
@@ -712,6 +886,9 @@ class ChessEngine:
         self.ai = AI(self.board, self.move_generator)
         self.perft = Perft(self.board, self.move_generator)
         self.move_history = []
+        self._uci_last_bestmove = None
+        if self._protocol_mode == 'uci':
+            self._set_uci_state('idle')
 
     def handle_position(self, args):
         """Handle UCI position command: startpos|fen ... [moves ...]."""
@@ -750,6 +927,9 @@ class ChessEngine:
                 if error is not None:
                     print(f'ERROR: position move {move_str} failed: {error}')
                     return
+
+        if self._protocol_mode == 'uci':
+            self._set_uci_state('idle')
 
     def _apply_move_silent(self, move_str: str) -> Optional[str]:
         """Apply one coordinate move without emitting CLI output."""
@@ -1744,7 +1924,7 @@ Available commands:
   endgame                    - Detect specialized endgame and best move hint
   uci                        - Enter/respond to UCI handshake
   isready                    - UCI readiness probe
-  setoption name <Hash|Threads> value <n> - Set UCI option
+  setoption name <Hash|Threads|UCI_AnalyseMode|RichEval> value <x> - Set UCI option
   ucinewgame                 - Reset internal state for UCI game
   position startpos|fen ... [moves ...] - Load UCI position
   new960 [id]                - Start Chess960 game by id (0-959)
