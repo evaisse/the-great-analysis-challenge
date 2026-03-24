@@ -91,6 +91,7 @@ Future<void> main() async {
   var ai = AI();
   String? pgnPath;
   List<String> pgnMoves = [];
+  var pgnGame = PgnGame.createLiveGame();
   String? bookPath;
   bool bookEnabled = false;
   Map<String, List<BookEntry>> bookEntries = {};
@@ -101,6 +102,11 @@ Future<void> main() async {
   int bookPlayed = 0;
   var uciHashMb = 16;
   var uciThreads = 1;
+  var uciAnalyseMode = false;
+  var richEvalEnabled = false;
+  var protocolMode = 'boot';
+  var uciState = 'boot';
+  String? uciLastBestMove;
   int chess960Id = 0;
   bool traceEnabled = false;
   String traceLevel = 'info';
@@ -171,6 +177,37 @@ Future<void> main() async {
     traceLastAiTtHits = 0;
     traceLastAiTtMisses = 0;
     traceLastAiBetaCutoffs = 0;
+  }
+
+  void selectProtocolMode(String command) {
+    if (protocolMode == 'boot') {
+      protocolMode = command == 'uci' ? 'uci' : 'custom';
+    } else if (command == 'uci') {
+      protocolMode = 'uci';
+    }
+  }
+
+  void setUciState(String state) {
+    uciState = state;
+  }
+
+  String uciBoolDefault(bool value) => value ? 'true' : 'false';
+
+  bool? parseUciCheckValue(String rawValue) {
+    switch (rawValue.trim().toLowerCase()) {
+      case 'true':
+      case '1':
+      case 'on':
+      case 'yes':
+        return true;
+      case 'false':
+      case '0':
+      case 'off':
+      case 'no':
+        return false;
+      default:
+        return null;
+    }
   }
 
   String formatTraceAiSummary() {
@@ -393,6 +430,243 @@ Future<void> main() async {
     return (move: bestMove.toString().toLowerCase(), info: rootInfo);
   }
 
+  void refreshPgnMoveCache() {
+    pgnMoves = pgnGame.mainlineMoves();
+  }
+
+  void resetPgnLiveGame([String? source]) {
+    final resolvedSource = (source ?? pgnPath ?? 'current-game').trim();
+    final effectiveSource = resolvedSource.isEmpty
+        ? 'current-game'
+        : resolvedSource;
+    pgnGame = PgnGame.createLiveGame(effectiveSource, game.board.toFen());
+    pgnPath = effectiveSource == 'current-game' ? null : effectiveSource;
+    refreshPgnMoveCache();
+  }
+
+  void appendPgnMoveRecord(
+    Move move,
+    String san,
+    String beforeFen,
+    int moveNumber,
+    PieceColor color,
+  ) {
+    pgnGame.appendMove(
+      PgnMoveNode(
+        san,
+        move.toString().toLowerCase(),
+        moveNumber,
+        color,
+        beforeFen,
+      ),
+    );
+    refreshPgnMoveCache();
+  }
+
+  void syncPgnResultWithPosition() {
+    final legalMoves = game.board.generateMoves();
+    if (legalMoves.isEmpty) {
+      final playerColor = game.board.turn == 'w'
+          ? PieceColor.white
+          : PieceColor.black;
+      if (game.board.isKingInCheck(playerColor)) {
+        pgnGame.setResult(game.board.turn == 'w' ? '0-1' : '1-0');
+      } else {
+        pgnGame.setResult('1/2-1/2');
+      }
+      return;
+    }
+
+    if (DrawDetection.isDraw(game.board)) {
+      pgnGame.setResult('1/2-1/2');
+      return;
+    }
+
+    pgnGame.setResult('*');
+  }
+
+  void rebuildBoardFromPgnCursor() {
+    final variation = pgnGame.currentVariation();
+    game.loadFen(variation.startFen);
+    for (final node in variation.moves) {
+      game.move(node.uci);
+    }
+    ai = AI();
+    syncPgnResultWithPosition();
+  }
+
+  String? extractPgnCommentText(String commandLine) {
+    final trimmed = commandLine.trim();
+    final quoted = RegExp(
+      r'^pgn\s+comment\s+"((?:\\.|[^"])*)"\s*$',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
+    if (quoted != null) {
+      return quoted.group(1)!.replaceAll(r'\"', '"').replaceAll(r'\\', '\\');
+    }
+    final plain = RegExp(
+      r'^pgn\s+comment\s+(.+)$',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
+    if (plain != null) {
+      final text = plain.group(1)!.trim();
+      if (text.isNotEmpty) {
+        return text;
+      }
+    }
+    return null;
+  }
+
+  void recordMoveForPgn(Move move) {
+    final legalMoves = game.board.generateMoves();
+    final beforeFen = game.board.toFen();
+    final moveNumber = game.board.get_fullmoveNumber_val();
+    final color = game.board.turn == 'w' ? PieceColor.white : PieceColor.black;
+    final san = PgnSanCodec.moveToSan(game.board, move, legalMoves: legalMoves);
+    game.move(move.toString());
+    appendPgnMoveRecord(move, san, beforeFen, moveNumber, color);
+    syncPgnResultWithPosition();
+  }
+
+  resetPgnLiveGame();
+
+  void emitUciSearch(int depth, int movetimeMs) {
+    setUciState('searching');
+    final legalMoves = game.board.generateMoves();
+    if (legalMoves.isEmpty) {
+      uciLastBestMove = '0000';
+      print('bestmove 0000');
+      setUciState('idle');
+      return;
+    }
+
+    final bookMove = chooseBookMove();
+    if (bookMove != null) {
+      uciLastBestMove = bookMove;
+      recordTraceAi('uci-book', bookMove, 0, 0, 0, false, 0, 0, 0, 0, 0);
+      print('info string bookmove $bookMove');
+      print('bestmove $bookMove');
+      setUciState('idle');
+      return;
+    }
+
+    final endgameChoice = chooseEndgameMove();
+    if (endgameChoice != null) {
+      uciLastBestMove = endgameChoice.move;
+      recordTraceAi(
+        'uci-endgame',
+        endgameChoice.move,
+        0,
+        endgameChoice.info.scoreWhite,
+        0,
+        false,
+        0,
+        0,
+        0,
+        0,
+        0,
+      );
+      print(
+        'info string endgame ${endgameChoice.info.type} score cp ${endgameChoice.info.scoreWhite}',
+      );
+      print('bestmove ${endgameChoice.move}');
+      setUciState('idle');
+      return;
+    }
+
+    final result = ai.search(game.board, depth, movetimeMs: movetimeMs);
+    final move = result.move;
+    if (move == null) {
+      uciLastBestMove = '0000';
+      print('bestmove 0000');
+      setUciState('idle');
+      return;
+    }
+
+    final moveString = move.toString().toLowerCase();
+    uciLastBestMove = moveString;
+    recordTraceAi(
+      'uci-search',
+      moveString,
+      result.depth,
+      result.score,
+      result.elapsedMs,
+      result.timedOut,
+      result.nodes,
+      result.evalCalls,
+      result.ttHits,
+      result.ttMisses,
+      result.betaCutoffs,
+    );
+    print(
+      'info depth ${result.depth} score cp ${result.score} time ${result.elapsedMs} nodes ${result.nodes}',
+    );
+    print('bestmove $moveString');
+    setUciState('idle');
+  }
+
+  void handleUciGo(List<String> parts) {
+    if (parts.length < 2) {
+      print(
+        'ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|depth <n>|infinite)',
+      );
+      return;
+    }
+
+    final sub = parts[1].toLowerCase();
+    if (sub == 'depth') {
+      if (parts.length < 3) {
+        print('ERROR: go depth requires a value');
+        return;
+      }
+      final depth = int.tryParse(parts[2]);
+      if (depth == null) {
+        print('ERROR: go depth requires an integer value');
+        return;
+      }
+      emitUciSearch(depth.clamp(1, 5).toInt(), 0);
+      return;
+    }
+
+    if (sub == 'movetime') {
+      if (parts.length < 3) {
+        print('ERROR: go movetime requires a value in milliseconds');
+        return;
+      }
+      final movetime = int.tryParse(parts[2]);
+      if (movetime == null) {
+        print('ERROR: go movetime requires an integer value');
+        return;
+      }
+      if (movetime <= 0) {
+        print('ERROR: go movetime must be > 0');
+        return;
+      }
+      emitUciSearch(5, movetime);
+      return;
+    }
+
+    if (sub == 'wtime') {
+      final parsed = _deriveMovetimeFromClocks(parts.sublist(1), game.board);
+      if (parsed.$2 != null) {
+        print('ERROR: ${parsed.$2}');
+        return;
+      }
+      emitUciSearch(5, parsed.$1);
+      return;
+    }
+
+    if (sub == 'infinite') {
+      print(
+        'info string infinite search bounded to 15000 ms in synchronous mode',
+      );
+      emitUciSearch(5, 15000);
+      return;
+    }
+
+    print('ERROR: Unsupported go command');
+  }
+
   while (true) {
     final line = stdin.readLineSync();
     if (line == null) {
@@ -400,6 +674,7 @@ Future<void> main() async {
     }
     final parts = line.split(' ');
     final command = parts[0].toLowerCase();
+    selectProtocolMode(command);
     if (command != 'trace') {
       traceCommandCount++;
       recordTrace('command', line.trim());
@@ -412,7 +687,8 @@ Future<void> main() async {
         }
         final moveStr = parts[1];
         try {
-          game.move(moveStr);
+          final resolved = game.resolveMove(moveStr);
+          recordMoveForPgn(resolved);
           game.printBoard();
           _checkGameState(game);
         } catch (e) {
@@ -421,11 +697,16 @@ Future<void> main() async {
         break;
       case 'undo':
         game.undo();
+        if (pgnGame.rewindLastMove()) {
+          refreshPgnMoveCache();
+          syncPgnResultWithPosition();
+        }
         game.printBoard();
         break;
       case 'new':
         game.init();
         ai = AI();
+        resetPgnLiveGame();
         print('OK: New game started');
         game.printBoard();
         break;
@@ -444,6 +725,7 @@ Future<void> main() async {
           game,
           ai,
           depth,
+          onMoveApplied: recordMoveForPgn,
           onAiResult: recordTraceAi,
           bookMove: chooseBookMove(),
           onBookPlayed: () => bookPlayed++,
@@ -458,6 +740,7 @@ Future<void> main() async {
         }
         final fen = parts.sublist(1).join(' ');
         game.loadFen(fen);
+        resetPgnLiveGame();
         game.printBoard();
         break;
       case 'export':
@@ -503,6 +786,10 @@ Future<void> main() async {
         );
         break;
       case 'go':
+        if (protocolMode == 'uci') {
+          handleUciGo(parts);
+          break;
+        }
         if (parts.length < 2) {
           print(
             'ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|infinite)',
@@ -596,6 +883,7 @@ Future<void> main() async {
             ai,
             5,
             movetime,
+            onMoveApplied: recordMoveForPgn,
             onAiResult: recordTraceAi,
             bookMove: chooseBookMove(),
             onBookPlayed: () => bookPlayed++,
@@ -619,6 +907,7 @@ Future<void> main() async {
             ai,
             5,
             parsed.$1,
+            onMoveApplied: recordMoveForPgn,
             onAiResult: recordTraceAi,
             bookMove: chooseBookMove(),
             onBookPlayed: () => bookPlayed++,
@@ -635,6 +924,7 @@ Future<void> main() async {
             ai,
             5,
             15000,
+            onMoveApplied: recordMoveForPgn,
             onAiResult: recordTraceAi,
             bookMove: chooseBookMove(),
             onBookPlayed: () => bookPlayed++,
@@ -647,11 +937,22 @@ Future<void> main() async {
         break;
       case 'stop':
         ai.requestStop();
+        if (protocolMode == 'uci') {
+          if (uciState == 'searching') {
+            print('bestmove ${uciLastBestMove ?? '0000'}');
+            setUciState('idle');
+          } else {
+            print('info string stop ignored (no active async search)');
+          }
+          break;
+        }
         print('OK: stop');
         break;
       case 'pgn':
         if (parts.length < 2) {
-          print('ERROR: pgn requires subcommand (load|show|moves)');
+          print(
+            'ERROR: pgn requires subcommand (load|save|show|moves|variation|comment)',
+          );
           break;
         }
         final sub = parts[1].toLowerCase();
@@ -665,16 +966,41 @@ Future<void> main() async {
           pgnMoves = [];
           try {
             final content = File(path).readAsStringSync();
-            pgnMoves = _extractPgnMoves(content);
+            pgnGame = PgnParser().parse(content, path);
+            pgnGame.setSource(path);
+            refreshPgnMoveCache();
+            rebuildBoardFromPgnCursor();
             print('PGN: loaded path="$path"; moves=${pgnMoves.length}');
-          } catch (_) {
+          } on FileSystemException {
+            resetPgnLiveGame(path);
             print('PGN: loaded path="$path"; moves=0; note=file-unavailable');
+          } catch (e) {
+            print('ERROR: pgn load failed: $e');
+          }
+          break;
+        }
+        if (sub == 'save') {
+          if (parts.length < 3) {
+            print('ERROR: pgn save requires a file path');
+            break;
+          }
+          final path = parts.sublist(2).join(' ');
+          try {
+            File(
+              path,
+            ).writeAsStringSync('${pgnGame.serialize()}\n', flush: true);
+            pgnPath = path;
+            pgnGame.setSource(path);
+            print('PGN: saved path="$path"; moves=${pgnMoves.length}');
+          } catch (_) {
+            print('ERROR: pgn save failed: unable to write file');
           }
           break;
         }
         if (sub == 'show') {
           final source = pgnPath ?? 'current-game';
           print('PGN: source=$source; moves=${pgnMoves.length}');
+          print(pgnGame.serialize());
           break;
         }
         if (sub == 'moves') {
@@ -683,6 +1009,42 @@ Future<void> main() async {
           } else {
             print('PGN: moves ${pgnMoves.join(' ')}');
           }
+          break;
+        }
+        if (sub == 'variation') {
+          if (parts.length < 3) {
+            print('ERROR: pgn variation requires enter|exit');
+            break;
+          }
+          final action = parts[2].toLowerCase();
+          if (action == 'enter') {
+            final result = pgnGame.enterVariation();
+            if (result.ok) {
+              rebuildBoardFromPgnCursor();
+            }
+            print(result.message);
+            break;
+          }
+          if (action == 'exit') {
+            final result = pgnGame.exitVariation();
+            if (result.ok) {
+              rebuildBoardFromPgnCursor();
+            }
+            print(result.message);
+            break;
+          }
+          print('ERROR: pgn variation requires enter|exit');
+          break;
+        }
+        if (sub == 'comment') {
+          final text = extractPgnCommentText(line);
+          if (text == null || text.trim().isEmpty) {
+            print('ERROR: pgn comment requires text');
+            break;
+          }
+          pgnGame.addComment(text);
+          final escaped = text.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+          print('PGN: comment added text="$escaped"');
           break;
         }
         print('ERROR: Unsupported pgn command');
@@ -755,9 +1117,24 @@ Future<void> main() async {
         print(output);
         break;
       case 'uci':
+        protocolMode = 'uci';
+        setUciState('uci_sent');
+        print('id name Dart Chess Engine');
+        print('id author The Great Analysis Challenge');
+        print('option name Hash type spin default $uciHashMb min 1 max 1024');
+        print('option name Threads type spin default $uciThreads min 1 max 64');
+        print(
+          'option name UCI_AnalyseMode type check default ${uciBoolDefault(uciAnalyseMode)}',
+        );
+        print(
+          'option name RichEval type check default ${uciBoolDefault(richEvalEnabled)}',
+        );
         print('uciok');
         break;
       case 'isready':
+        if (protocolMode == 'uci' && uciState != 'searching') {
+          setUciState('idle');
+        }
         print('readyok');
         break;
       case 'setoption':
@@ -778,29 +1155,59 @@ Future<void> main() async {
           print("ERROR: setoption requires 'value <n>'");
           break;
         }
-        final optionName = parts.sublist(2, valueIdx).join(' ').toLowerCase();
-        final value = int.tryParse(parts[valueIdx + 1]);
-        if (value == null) {
-          print('ERROR: setoption value must be an integer');
-          break;
-        }
+        final rawOptionName = parts.sublist(2, valueIdx).join(' ');
+        final optionName = rawOptionName.toLowerCase();
+        final rawValue = parts.sublist(valueIdx + 1).join(' ');
         if (optionName == 'hash') {
+          final value = int.tryParse(rawValue);
+          if (value == null) {
+            print('ERROR: setoption value must be an integer');
+            break;
+          }
           uciHashMb = value.clamp(1, 1024).toInt();
           print('info string option Hash=$uciHashMb');
           break;
         }
         if (optionName == 'threads') {
+          final value = int.tryParse(rawValue);
+          if (value == null) {
+            print('ERROR: setoption value must be an integer');
+            break;
+          }
           uciThreads = value.clamp(1, 64).toInt();
           print('info string option Threads=$uciThreads');
           break;
         }
-        print(
-          'info string unsupported option ${parts.sublist(2, valueIdx).join(' ')}',
-        );
+        if (optionName == 'uci_analysemode') {
+          final parsed = parseUciCheckValue(rawValue);
+          if (parsed == null) {
+            print('ERROR: setoption value must be true/false');
+            break;
+          }
+          uciAnalyseMode = parsed;
+          print('info string option UCI_AnalyseMode=${uciBoolDefault(parsed)}');
+          break;
+        }
+        if (optionName == 'richeval') {
+          final parsed = parseUciCheckValue(rawValue);
+          if (parsed == null) {
+            print('ERROR: setoption value must be true/false');
+            break;
+          }
+          richEvalEnabled = parsed;
+          print('info string option RichEval=${uciBoolDefault(parsed)}');
+          break;
+        }
+        print('info string unsupported option $rawOptionName');
         break;
       case 'ucinewgame':
         game.init();
         ai = AI();
+        resetPgnLiveGame();
+        uciLastBestMove = null;
+        if (protocolMode == 'uci') {
+          setUciState('idle');
+        }
         break;
       case 'position':
         if (parts.length < 2) {
@@ -833,16 +1240,25 @@ Future<void> main() async {
           break;
         }
 
+        resetPgnLiveGame();
+
         if (idx < parts.length && parts[idx].toLowerCase() == 'moves') {
           idx++;
           for (int i = idx; i < parts.length; i++) {
             try {
-              _applyMoveSilently(game, parts[i]);
+              _applyMoveSilently(
+                game,
+                parts[i],
+                onMoveApplied: recordMoveForPgn,
+              );
             } catch (e) {
               print('ERROR: position move ${parts[i]} failed: $e');
               break;
             }
           }
+        }
+        if (protocolMode == 'uci') {
+          setUciState('idle');
         }
         break;
       case 'new960':
@@ -861,6 +1277,7 @@ Future<void> main() async {
         }
         chess960Id = id;
         game.loadFen(_buildChess960Fen(chess960Id));
+        resetPgnLiveGame();
         print('OK: New game started');
         game.printBoard();
         print(
@@ -1019,12 +1436,15 @@ go wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]
 go depth <n>
 go infinite
 stop
-pgn load|show|moves
+pgn load|save|show|moves
+pgn save <file>
+pgn variation enter|exit
+pgn comment "text"
 book load|on|off|stats
 endgame
 uci
 isready
-setoption name <Hash|Threads> value <n>
+  setoption name <Hash|Threads|UCI_AnalyseMode|RichEval> value <x>
 ucinewgame
 position startpos|fen ... [moves ...]
 new960 [id]
@@ -1036,6 +1456,9 @@ help
 quit''');
         break;
       case 'quit':
+        if (protocolMode != 'uci') {
+          print('Goodbye!');
+        }
         exit(0);
       default:
         print('ERROR: Invalid command');
@@ -1690,6 +2113,7 @@ void _runAiMove(
   Game game,
   AI ai,
   int depth, {
+  void Function(Move move)? onMoveApplied,
   TraceAiRecorder? onAiResult,
   String? bookMove,
   void Function()? onBookPlayed,
@@ -1701,6 +2125,7 @@ void _runAiMove(
     ai,
     depth,
     0,
+    onMoveApplied: onMoveApplied,
     onAiResult: onAiResult,
     bookMove: bookMove,
     onBookPlayed: onBookPlayed,
@@ -1714,6 +2139,7 @@ void _runAiTimedMove(
   AI ai,
   int maxDepth,
   int movetimeMs, {
+  void Function(Move move)? onMoveApplied,
   TraceAiRecorder? onAiResult,
   String? bookMove,
   void Function()? onBookPlayed,
@@ -1722,7 +2148,12 @@ void _runAiTimedMove(
 }) {
   if (bookMove != null) {
     try {
-      game.move(bookMove);
+      final resolved = game.resolveMove(bookMove);
+      if (onMoveApplied != null) {
+        onMoveApplied(resolved);
+      } else {
+        game.move(bookMove);
+      }
       onBookPlayed?.call();
       onAiResult?.call('book', bookMove, 0, 0, 0, false, 0, 0, 0, 0, 0);
       print('AI: $bookMove (book)');
@@ -1736,7 +2167,12 @@ void _runAiTimedMove(
 
   if (endgameMove != null && endgameInfo != null) {
     try {
-      game.move(endgameMove);
+      final resolved = game.resolveMove(endgameMove);
+      if (onMoveApplied != null) {
+        onMoveApplied(resolved);
+      } else {
+        game.move(endgameMove);
+      }
       onAiResult?.call(
         'endgame',
         endgameMove,
@@ -1767,7 +2203,11 @@ void _runAiTimedMove(
     print('ERROR: No legal moves available');
     return;
   }
-  game.move(move.toString());
+  if (onMoveApplied != null) {
+    onMoveApplied(move);
+  } else {
+    game.move(move.toString());
+  }
   onAiResult?.call(
     'search',
     move.toString(),
@@ -1788,8 +2228,17 @@ void _runAiTimedMove(
   _checkGameState(game);
 }
 
-void _applyMoveSilently(Game game, String moveStr) {
-  game.move(moveStr);
+void _applyMoveSilently(
+  Game game,
+  String moveStr, {
+  void Function(Move move)? onMoveApplied,
+}) {
+  final resolved = game.resolveMove(moveStr);
+  if (onMoveApplied != null) {
+    onMoveApplied(resolved);
+  } else {
+    game.move(moveStr);
+  }
 }
 
 void _checkGameState(Game game) {

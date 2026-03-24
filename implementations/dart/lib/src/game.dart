@@ -20,28 +20,28 @@ class Game {
   }
 
   void move(String moveStr) {
-    final legalMoves = board.generateMoves();
-    final normalized = moveStr.toLowerCase();
-    final candidates = legalMoves.where((m) {
-      final notation = m.toString();
-      if (notation == normalized) {
-        return true;
-      }
-      // Support implicit queen promotion (e.g. "a7a8") for compatibility
-      // with the shared protocol and test harness.
-      return normalized.length == 4 &&
-          m.promotion == PieceType.queen &&
-          notation == '${normalized}q';
-    });
-    final move = candidates.isEmpty ? null : candidates.first;
-
-    if (move == null) {
-      throw Exception('ERROR: Illegal move');
-    }
+    final move = resolveMove(moveStr);
 
     final newBoard = board.clone();
     newBoard.move(move.toString());
     history.add(newBoard);
+  }
+
+  Move resolveMove(String moveStr) {
+    final legalMoves = board.generateMoves();
+    final normalized = moveStr.toLowerCase();
+    for (final move in legalMoves) {
+      final notation = move.toString();
+      if (notation == normalized) {
+        return move;
+      }
+      if (normalized.length == 4 &&
+          move.promotion == PieceType.queen &&
+          notation == '${normalized}q') {
+        return move;
+      }
+    }
+    throw Exception('ERROR: Illegal move');
   }
 
   void undo() {
