@@ -172,44 +172,46 @@ class MoveGenerator:
     def generate_castling_moves(self, row: int, col: int, piece: Piece) -> List[Move]:
         """Generate castling moves."""
         moves = []
-        
-        if piece.color == Color.WHITE and row == 0 and col == 4:
-            # White castling
-            if (self.board.castling_rights.white_kingside and
-                self.board.is_empty(0, 5) and self.board.is_empty(0, 6) and
-                not self.board.is_square_attacked(0, 5, Color.BLACK) and
-                not self.board.is_square_attacked(0, 6, Color.BLACK)):
-                move = Move(0, 4, 0, 6)
-                move.is_castling = True
-                moves.append(move)
-            
-            if (self.board.castling_rights.white_queenside and
-                self.board.is_empty(0, 1) and self.board.is_empty(0, 2) and 
-                self.board.is_empty(0, 3) and
-                not self.board.is_square_attacked(0, 2, Color.BLACK) and
-                not self.board.is_square_attacked(0, 3, Color.BLACK)):
-                move = Move(0, 4, 0, 2)
-                move.is_castling = True
-                moves.append(move)
-        
-        elif piece.color == Color.BLACK and row == 7 and col == 4:
-            # Black castling
-            if (self.board.castling_rights.black_kingside and
-                self.board.is_empty(7, 5) and self.board.is_empty(7, 6) and
-                not self.board.is_square_attacked(7, 5, Color.WHITE) and
-                not self.board.is_square_attacked(7, 6, Color.WHITE)):
-                move = Move(7, 4, 7, 6)
-                move.is_castling = True
-                moves.append(move)
-            
-            if (self.board.castling_rights.black_queenside and
-                self.board.is_empty(7, 1) and self.board.is_empty(7, 2) and 
-                self.board.is_empty(7, 3) and
-                not self.board.is_square_attacked(7, 2, Color.WHITE) and
-                not self.board.is_square_attacked(7, 3, Color.WHITE)):
-                move = Move(7, 4, 7, 2)
-                move.is_castling = True
-                moves.append(move)
+
+        for side, has_right in (
+            ('K', self.board.castling_rights.white_kingside if piece.color == Color.WHITE else self.board.castling_rights.black_kingside),
+            ('Q', self.board.castling_rights.white_queenside if piece.color == Color.WHITE else self.board.castling_rights.black_queenside),
+        ):
+            if not has_right:
+                continue
+
+            king_start, rook_start, king_target, rook_target = self.board.get_castle_details(piece.color, side)
+            if (row, col) != king_start:
+                continue
+
+            rook = self.board.get_piece(*rook_start)
+            if not rook or rook.color != piece.color or rook.type != PieceType.ROOK:
+                continue
+
+            blocker_squares = []
+            seen = set()
+            for square in self.board.line_path(king_start, king_target) + self.board.line_path(rook_start, rook_target):
+                if square not in seen:
+                    blocker_squares.append(square)
+                    seen.add(square)
+
+            if any(
+                square not in (king_start, rook_start) and
+                not self.board.is_empty(square[0], square[1])
+                for square in blocker_squares
+            ):
+                continue
+
+            attack_squares = [king_start] + self.board.line_path(king_start, king_target)
+            if any(
+                self.board.is_square_attacked(square[0], square[1], Color.BLACK if piece.color == Color.WHITE else Color.WHITE)
+                for square in dict.fromkeys(attack_squares)
+            ):
+                continue
+
+            move = Move(row, col, king_target[0], king_target[1])
+            move.is_castling = True
+            moves.append(move)
         
         return moves
     

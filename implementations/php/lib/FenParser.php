@@ -55,6 +55,17 @@ class FenParser {
                 }
             }
         }
+
+        $this->board->castling_config = new CastlingConfig();
+        $this->board->chess960_mode = false;
+        $white_king_col = $this->board->find_home_rank_piece(CHESS_WHITE, CHESS_KING);
+        $black_king_col = $this->board->find_home_rank_piece(CHESS_BLACK, CHESS_KING);
+        if ($white_king_col !== null) {
+            $this->board->castling_config->white_king_col = $white_king_col;
+        }
+        if ($black_king_col !== null) {
+            $this->board->castling_config->black_king_col = $black_king_col;
+        }
         
         // Parse active color
         $this->board->current_player = $parts[1] === 'w' ? CHESS_WHITE : CHESS_BLACK;
@@ -81,6 +92,29 @@ class FenParser {
                         break;
                     case 'q':
                         $rights->black_queenside = true;
+                        break;
+                    default:
+                        if ($char >= 'A' && $char <= 'H' && $white_king_col !== null) {
+                            $rook_col = ord($char) - ord('A');
+                            $this->board->chess960_mode = true;
+                            if ($rook_col > $white_king_col) {
+                                $rights->white_kingside = true;
+                                $this->board->castling_config->white_kingside_rook_col = $rook_col;
+                            } else {
+                                $rights->white_queenside = true;
+                                $this->board->castling_config->white_queenside_rook_col = $rook_col;
+                            }
+                        } elseif ($char >= 'a' && $char <= 'h' && $black_king_col !== null) {
+                            $rook_col = ord($char) - ord('a');
+                            $this->board->chess960_mode = true;
+                            if ($rook_col > $black_king_col) {
+                                $rights->black_kingside = true;
+                                $this->board->castling_config->black_kingside_rook_col = $rook_col;
+                            } else {
+                                $rights->black_queenside = true;
+                                $this->board->castling_config->black_queenside_rook_col = $rook_col;
+                            }
+                        }
                         break;
                 }
             }
@@ -110,6 +144,9 @@ class FenParser {
         } else {
             $this->board->fullmove_number = 1;
         }
+
+        require_once __DIR__ . '/Zobrist.php';
+        $this->board->zobrist_hash = Zobrist::getInstance()->compute_hash($this->board);
         
         return true;
     }
@@ -148,13 +185,10 @@ class FenParser {
         $fen .= ' ' . ($this->board->current_player === CHESS_WHITE ? 'w' : 'b');
         
         // Castling rights
-        $castling = '';
-        $rights = $this->board->castling_rights;
-        if ($rights->white_kingside) $castling .= 'K';
-        if ($rights->white_queenside) $castling .= 'Q';
-        if ($rights->black_kingside) $castling .= 'k';
-        if ($rights->black_queenside) $castling .= 'q';
-        $fen .= ' ' . ($castling === '' ? '-' : $castling);
+        $fen .= ' ' . $this->board->castling_rights->to_fen(
+            $this->board->castling_config,
+            $this->board->chess960_mode
+        );
         
         // En passant target
         if ($this->board->en_passant_target !== null) {

@@ -4,7 +4,7 @@ Chess board representation and manipulation.
 
 from typing import Optional, List, Tuple
 from lib.attack_tables import king_attacks, knight_attacks, ray_attacks
-from lib.types import Piece, PieceType, Color, Move, CastlingRights, GameState
+from lib.types import Piece, PieceType, Color, Move, CastlingRights, CastlingConfig, GameState
 
 
 class Board:
@@ -12,9 +12,11 @@ class Board:
     
     def __init__(self):
         """Initialize board to starting position."""
-        self.board = [[None for _ in range(8)] for _ in range(8)]
+        self.board: List[List[Optional[Piece]]] = [[None for _ in range(8)] for _ in range(8)]
         self.to_move = Color.WHITE
         self.castling_rights = CastlingRights()
+        self.castling_config = CastlingConfig()
+        self.chess960_mode = False
         self.en_passant_target: Optional[Tuple[int, int]] = None
         self.halfmove_clock = 0
         self.fullmove_number = 1
@@ -29,6 +31,14 @@ class Board:
     
     def setup_starting_position(self):
         """Set up the standard chess starting position."""
+        self.board = [[None for _ in range(8)] for _ in range(8)]
+        self.castling_rights = CastlingRights()
+        self.castling_config = CastlingConfig()
+        self.chess960_mode = False
+        self.en_passant_target = None
+        self.halfmove_clock = 0
+        self.fullmove_number = 1
+
         # White pieces
         self.board[0][0] = Piece(PieceType.ROOK, Color.WHITE)
         self.board[0][1] = Piece(PieceType.KNIGHT, Color.WHITE)
@@ -54,6 +64,44 @@ class Board:
         
         for col in range(8):
             self.board[6][col] = Piece(PieceType.PAWN, Color.BLACK)
+
+    def line_path(self, start: Tuple[int, int], target: Tuple[int, int]) -> List[Tuple[int, int]]:
+        """Return squares from start toward target, excluding start and including target."""
+        if start == target:
+            return []
+        start_row, start_col = start
+        target_row, target_col = target
+        row_step = 0 if target_row == start_row else (1 if target_row > start_row else -1)
+        col_step = 0 if target_col == start_col else (1 if target_col > start_col else -1)
+        row = start_row + row_step
+        col = start_col + col_step
+        squares = []
+        while (row, col) != target:
+            squares.append((row, col))
+            row += row_step
+            col += col_step
+        squares.append(target)
+        return squares
+
+    def get_castle_details(self, color: Color, side: str):
+        """Return the generalized castling mapping for a side."""
+        if color == Color.WHITE:
+            king_start = (0, self.castling_config.white_king_col)
+            rook_start = (
+                0,
+                self.castling_config.white_kingside_rook_col if side == 'K' else self.castling_config.white_queenside_rook_col,
+            )
+            king_target = (0, 6 if side == 'K' else 2)
+            rook_target = (0, 5 if side == 'K' else 3)
+        else:
+            king_start = (7, self.castling_config.black_king_col)
+            rook_start = (
+                7,
+                self.castling_config.black_kingside_rook_col if side == 'K' else self.castling_config.black_queenside_rook_col,
+            )
+            king_target = (7, 6 if side == 'K' else 2)
+            rook_target = (7, 5 if side == 'K' else 3)
+        return king_start, rook_start, king_target, rook_target
     
     def get_piece(self, row: int, col: int) -> Optional[Piece]:
         """Get piece at given position."""
@@ -149,6 +197,8 @@ class Board:
         # Save current game state for undo
         game_state = GameState(
             castling_rights=self.castling_rights.copy(),
+            castling_config=self.castling_config.copy(),
+            chess960_mode=self.chess960_mode,
             en_passant_target=self.en_passant_target,
             halfmove_clock=self.halfmove_clock,
             fullmove_number=self.fullmove_number,
@@ -160,6 +210,8 @@ class Board:
         self.game_history.append(game_state)
         self.irreversible_history.append(IrreversibleState(
             castling_rights=self.castling_rights.copy(),
+            castling_config=self.castling_config.copy(),
+            chess960_mode=self.chess960_mode,
             en_passant_target=self.en_passant_target,
             halfmove_clock=self.halfmove_clock,
             zobrist_hash=self.zobrist_hash
@@ -170,6 +222,8 @@ class Board:
         
         # Get the piece being moved
         piece = self.get_piece(move.from_row, move.from_col)
+        if piece is None:
+            return
         target_piece = self.get_piece(move.to_row, move.to_col)
         
         # 1. Remove moving piece from source
@@ -199,21 +253,16 @@ class Board:
 
         # 4. Handle castling rook
         if move.is_castling:
-            if move.to_col == 6:  # Kingside
-                rook = self.get_piece(move.from_row, 7)
-                if rook:
-                    hash_val ^= zobrist.pieces[zobrist.get_piece_index(rook)][move.from_row * 8 + 7]
-                    hash_val ^= zobrist.pieces[zobrist.get_piece_index(rook)][move.from_row * 8 + 5]
-                    self.set_piece(move.from_row, 5, rook)
-                    self.set_piece(move.from_row, 7, None)
-            else:  # Queenside
-                rook = self.get_piece(move.from_row, 0)
-                if rook:
-                    hash_val ^= zobrist.pieces[zobrist.get_piece_index(rook)][move.from_row * 8 + 0]
-                    hash_val ^= zobrist.pieces[zobrist.get_piece_index(rook)][move.from_row * 8 + 3]
-                    self.set_piece(move.from_row, 3, rook)
-                    self.set_piece(move.from_row, 0, None)
-
+            rook_from_col, rook_to_col = self._castling_rook_columns(piece.color, move.to_col)
+            rook = self.get_piece(move.from_row, rook_from_col)
+            if rook:
+                self.set_piece(move.from_row, move.to_col, None)
+                if rook_from_col != move.from_col:
+                    self.set_piece(move.from_row, rook_from_col, None)
+                self.set_piece(move.from_row, move.from_col, None)
+                self.set_piece(move.from_row, move.to_col, final_piece)
+                self.set_piece(move.from_row, rook_to_col, rook)
+        
         # 5. Update castling rights in hash
         rights = self.castling_rights
         if rights.white_kingside: hash_val ^= zobrist.castling[0]
@@ -250,7 +299,63 @@ class Board:
             self.fullmove_number += 1
         
         self.to_move = Color.BLACK if self.to_move == Color.WHITE else Color.WHITE
-        self.zobrist_hash = hash_val
+        if move.is_castling:
+            self.zobrist_hash = zobrist.compute_hash(self)
+        else:
+            self.zobrist_hash = hash_val
+
+    def _castling_rook_columns(self, color: Color, king_target_col: int) -> Tuple[int, int]:
+        if color == Color.WHITE:
+            if king_target_col == 6:
+                return self.castling_config.white_kingside_rook_col, 5
+            return self.castling_config.white_queenside_rook_col, 3
+        if king_target_col == 6:
+            return self.castling_config.black_kingside_rook_col, 5
+        return self.castling_config.black_queenside_rook_col, 3
+
+    def _castling_king_start_col(self, color: Color) -> int:
+        return self.castling_config.white_king_col if color == Color.WHITE else self.castling_config.black_king_col
+
+    def _find_home_rank_piece(self, color: Color, piece_type: PieceType) -> Optional[int]:
+        row = 0 if color == Color.WHITE else 7
+        for col in range(8):
+            piece = self.get_piece(row, col)
+            if piece and piece.color == color and piece.type == piece_type:
+                return col
+        return None
+
+    def configure_chess960(self):
+        white_king_col = self._find_home_rank_piece(Color.WHITE, PieceType.KING)
+        black_king_col = self._find_home_rank_piece(Color.BLACK, PieceType.KING)
+
+        if white_king_col is None or black_king_col is None:
+            self.castling_config = CastlingConfig()
+            self.chess960_mode = False
+            return
+
+        white_rooks = [
+            col for col in range(8)
+            if (piece := self.get_piece(0, col)) and piece.color == Color.WHITE and piece.type == PieceType.ROOK
+        ]
+        black_rooks = [
+            col for col in range(8)
+            if (piece := self.get_piece(7, col)) and piece.color == Color.BLACK and piece.type == PieceType.ROOK
+        ]
+
+        if not white_rooks or not black_rooks:
+            self.castling_config = CastlingConfig()
+            self.chess960_mode = False
+            return
+
+        self.castling_config = CastlingConfig(
+            white_king_col=white_king_col,
+            white_kingside_rook_col=max((col for col in white_rooks if col > white_king_col), default=7),
+            white_queenside_rook_col=min((col for col in white_rooks if col < white_king_col), default=0),
+            black_king_col=black_king_col,
+            black_kingside_rook_col=max((col for col in black_rooks if col > black_king_col), default=7),
+            black_queenside_rook_col=min((col for col in black_rooks if col < black_king_col), default=0),
+        )
+        self.chess960_mode = not self.castling_config.is_classical()
 
     def undo_move(self, move: Move):
         """Undo a move on the board."""
@@ -263,6 +368,8 @@ class Board:
         self.position_history.pop()
         
         self.castling_rights = game_state.castling_rights
+        self.castling_config = game_state.castling_config
+        self.chess960_mode = game_state.chess960_mode
         self.en_passant_target = game_state.en_passant_target
         self.halfmove_clock = game_state.halfmove_clock
         self.fullmove_number = game_state.fullmove_number
@@ -324,20 +431,19 @@ class Board:
     def _undo_castling(self, move: Move):
         """Undo castling move."""
         king = self.get_piece(move.to_row, move.to_col)
+        king_color = king.color if king else (Color.WHITE if move.from_row == 0 else Color.BLACK)
+        rook_from_col, rook_to_col = self._castling_rook_columns(king_color, move.to_col)
         
         # Move king back
         self.set_piece(move.from_row, move.from_col, king)
-        self.set_piece(move.to_row, move.to_col, None)
+        if move.to_col != rook_from_col:
+            self.set_piece(move.to_row, move.to_col, None)
         
         # Move rook back
-        if move.to_col == 6:  # Kingside
-            rook = self.get_piece(move.from_row, 5)
-            self.set_piece(move.from_row, 7, rook)
-            self.set_piece(move.from_row, 5, None)
-        else:  # Queenside
-            rook = self.get_piece(move.from_row, 3)
-            self.set_piece(move.from_row, 0, rook)
-            self.set_piece(move.from_row, 3, None)
+        rook = self.get_piece(move.from_row, rook_to_col)
+        self.set_piece(move.from_row, rook_from_col, rook)
+        if rook_to_col != move.from_col:
+            self.set_piece(move.from_row, rook_to_col, None)
     
     def _undo_en_passant(self, move: Move):
         """Undo en passant capture."""
@@ -370,24 +476,24 @@ class Board:
         # Rook moves
         elif piece.type == PieceType.ROOK:
             if piece.color == Color.WHITE:
-                if move.from_row == 0 and move.from_col == 0:
+                if move.from_row == 0 and move.from_col == self.castling_config.white_queenside_rook_col:
                     self.castling_rights.white_queenside = False
-                elif move.from_row == 0 and move.from_col == 7:
+                elif move.from_row == 0 and move.from_col == self.castling_config.white_kingside_rook_col:
                     self.castling_rights.white_kingside = False
             else:
-                if move.from_row == 7 and move.from_col == 0:
+                if move.from_row == 7 and move.from_col == self.castling_config.black_queenside_rook_col:
                     self.castling_rights.black_queenside = False
-                elif move.from_row == 7 and move.from_col == 7:
+                elif move.from_row == 7 and move.from_col == self.castling_config.black_kingside_rook_col:
                     self.castling_rights.black_kingside = False
         
         # Rook captured
-        if move.to_row == 0 and move.to_col == 0:
+        if move.to_row == 0 and move.to_col == self.castling_config.white_queenside_rook_col:
             self.castling_rights.white_queenside = False
-        elif move.to_row == 0 and move.to_col == 7:
+        elif move.to_row == 0 and move.to_col == self.castling_config.white_kingside_rook_col:
             self.castling_rights.white_kingside = False
-        elif move.to_row == 7 and move.to_col == 0:
+        elif move.to_row == 7 and move.to_col == self.castling_config.black_queenside_rook_col:
             self.castling_rights.black_queenside = False
-        elif move.to_row == 7 and move.to_col == 7:
+        elif move.to_row == 7 and move.to_col == self.castling_config.black_kingside_rook_col:
             self.castling_rights.black_kingside = False
     
     def _update_en_passant_target(self, move: Move, piece: Optional[Piece]):

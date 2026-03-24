@@ -164,43 +164,87 @@ class MoveGenerator {
                 $moves[] = new Move($row, $col, $new_row, $new_col);
             }
         }
-        
-        // Castling
-        $color = $this->board->current_player;
-        $base_row = $color === CHESS_WHITE ? 7 : 0;
-        
-        if ($row === $base_row && $col === 4) {
-            $rights = $this->board->castling_rights;
-            // Kingside castling
-            $can_castle_kingside = $color === CHESS_WHITE ? $rights->white_kingside : $rights->black_kingside;
-            if ($can_castle_kingside) {
-                [$r1, $_] = $this->board->get_piece($base_row, 5);
-                [$r2, $_] = $this->board->get_piece($base_row, 6);
-                if ($r1 === CHESS_EMPTY && $r2 === CHESS_EMPTY) {
-                    if (!$this->is_square_attacked($base_row, 4, 1 - $color) &&
-                        !$this->is_square_attacked($base_row, 5, 1 - $color) &&
-                        !$this->is_square_attacked($base_row, 6, 1 - $color)) {
-                        $moves[] = new Move($row, $col, $base_row, 6, null, true);
-                    }
-                }
-            }
-            
-            // Queenside castling
-            $can_castle_queenside = $color === CHESS_WHITE ? $rights->white_queenside : $rights->black_queenside;
-            if ($can_castle_queenside) {
-                [$r1, $_] = $this->board->get_piece($base_row, 1);
-                [$r2, $_] = $this->board->get_piece($base_row, 2);
-                [$r3, $_] = $this->board->get_piece($base_row, 3);
-                if ($r1 === CHESS_EMPTY && $r2 === CHESS_EMPTY && $r3 === CHESS_EMPTY) {
-                    if (!$this->is_square_attacked($base_row, 4, 1 - $color) &&
-                        !$this->is_square_attacked($base_row, 3, 1 - $color) &&
-                        !$this->is_square_attacked($base_row, 2, 1 - $color)) {
-                        $moves[] = new Move($row, $col, $base_row, 2, null, true);
-                    }
-                }
-            }
+
+        if (!$this->is_square_attacked($row, $col, 1 - $this->board->current_player)) {
+            $moves = array_merge($moves, $this->generate_castling_moves($row, $col));
         }
         
+        return $moves;
+    }
+
+    private function generate_castling_moves(int $row, int $col): array {
+        $moves = [];
+        $color = $this->board->current_player;
+        $rights = $this->board->castling_rights;
+
+        foreach ([
+            ['K', $color === CHESS_WHITE ? $rights->white_kingside : $rights->black_kingside],
+            ['Q', $color === CHESS_WHITE ? $rights->white_queenside : $rights->black_queenside],
+        ] as [$side, $has_right]) {
+            if (!$has_right) {
+                continue;
+            }
+
+            [$king_start, $rook_start, $king_target, $rook_target] = $this->board->get_castle_details($color, $side);
+            if ($row !== $king_start[0] || $col !== $king_start[1]) {
+                continue;
+            }
+
+            [$rook_piece, $rook_color] = $this->board->get_piece($rook_start[0], $rook_start[1]);
+            if ($rook_piece !== CHESS_ROOK || $rook_color !== $color) {
+                continue;
+            }
+
+            $blocker_squares = [];
+            $seen = [];
+            foreach (array_merge(
+                $this->board->line_path($king_start, $king_target),
+                $this->board->line_path($rook_start, $rook_target)
+            ) as $square) {
+                $key = $square[0] . ':' . $square[1];
+                if (!isset($seen[$key])) {
+                    $seen[$key] = true;
+                    $blocker_squares[] = $square;
+                }
+            }
+
+            $blocked = false;
+            foreach ($blocker_squares as [$square_row, $square_col]) {
+                if (($square_row === $king_start[0] && $square_col === $king_start[1]) ||
+                    ($square_row === $rook_start[0] && $square_col === $rook_start[1])) {
+                    continue;
+                }
+                [$target_piece, $_] = $this->board->get_piece($square_row, $square_col);
+                if ($target_piece !== CHESS_EMPTY) {
+                    $blocked = true;
+                    break;
+                }
+            }
+            if ($blocked) {
+                continue;
+            }
+
+            $attack_squares = array_merge([$king_start], $this->board->line_path($king_start, $king_target));
+            $unsafe = false;
+            $seen = [];
+            foreach ($attack_squares as [$square_row, $square_col]) {
+                $key = $square_row . ':' . $square_col;
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+                if ($this->is_square_attacked($square_row, $square_col, 1 - $color)) {
+                    $unsafe = true;
+                    break;
+                }
+            }
+            if ($unsafe) {
+                continue;
+            }
+
+            $moves[] = new Move($row, $col, $king_target[0], $king_target[1], null, true);
+        }
+
         return $moves;
     }
     
@@ -335,7 +379,7 @@ class MoveGenerator {
         
         // Check for castling
         $is_castling = false;
-        if ($piece === CHESS_KING && abs($to_col - $from_col) === 2) {
+        if ($piece === CHESS_KING && ($to_col === 2 || $to_col === 6)) {
             $is_castling = true;
         }
         

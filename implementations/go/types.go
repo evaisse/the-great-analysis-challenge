@@ -40,13 +40,20 @@ type Move struct {
 	PromoteTo   PieceType
 }
 
+type CastlingConfig struct {
+	KingFile [2]int
+	RookFile [2][2]int
+}
+
 type GameState struct {
 	Board           [8][8]Piece
 	ActiveColor     Color
 	CastlingRights  [2][2]bool // [color][side] - true if castling is allowed
-	EnPassantTarget *Square    // Target square for en passant capture
-	HalfmoveClock   int        // Moves since last capture or pawn move
-	FullmoveNumber  int        // Move number (increments after black's move)
+	CastlingConfig  CastlingConfig
+	Chess960Mode    bool
+	EnPassantTarget *Square // Target square for en passant capture
+	HalfmoveClock   int     // Moves since last capture or pawn move
+	FullmoveNumber  int     // Move number (increments after black's move)
 	MoveHistory     []Move
 	StateHistory    []SavedState
 	ZobristHash     uint64
@@ -55,6 +62,8 @@ type GameState struct {
 
 type SavedState struct {
 	CastlingRights  [2][2]bool
+	CastlingConfig  CastlingConfig
+	Chess960Mode    bool
 	EnPassantTarget *Square
 	HalfmoveClock   int
 	ZobristHash     uint64
@@ -64,6 +73,22 @@ const (
 	KingsideCastle  = 0
 	QueensideCastle = 1
 )
+
+func DefaultCastlingConfig() CastlingConfig {
+	return CastlingConfig{
+		KingFile: [2]int{4, 4},
+		RookFile: [2][2]int{{7, 0}, {7, 0}},
+	}
+}
+
+func (cc CastlingConfig) IsClassical() bool {
+	return cc.KingFile[White] == 4 &&
+		cc.KingFile[Black] == 4 &&
+		cc.RookFile[White][KingsideCastle] == 7 &&
+		cc.RookFile[White][QueensideCastle] == 0 &&
+		cc.RookFile[Black][KingsideCastle] == 7 &&
+		cc.RookFile[Black][QueensideCastle] == 0
+}
 
 func NewPiece(pieceType PieceType, color Color) Piece {
 	return Piece{Type: pieceType, Color: color}

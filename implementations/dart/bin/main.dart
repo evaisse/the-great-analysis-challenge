@@ -75,7 +75,15 @@ String _decodeChess960Backrank(int id) {
 String _buildChess960Fen(int id) {
   final white = _decodeChess960Backrank(id).toUpperCase();
   final black = white.toLowerCase();
-  return '$black/pppppppp/8/8/8/8/PPPPPPPP/$white w - - 0 1';
+  final rights = <String>[];
+  for (var i = 0; i < white.length; i++) {
+    if (white[i] == 'R') {
+      rights.add(String.fromCharCode('A'.codeUnitAt(0) + i));
+    }
+  }
+  final castling =
+      rights.join() + rights.map((right) => right.toLowerCase()).join();
+  return '$black/pppppppp/8/8/8/8/PPPPPPPP/$white w $castling - 0 1';
 }
 
 Future<void> main() async {

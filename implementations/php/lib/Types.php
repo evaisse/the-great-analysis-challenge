@@ -67,16 +67,98 @@ class CastlingRights {
         $copy->black_queenside = $this->black_queenside;
         return $copy;
     }
+
+    public function to_fen(?CastlingConfig $config = null, bool $chess960_mode = false): string {
+        if ($chess960_mode && $config !== null) {
+            $white_files = [];
+            $black_files = [];
+
+            if ($this->white_queenside) {
+                $white_files[] = $config->white_queenside_rook_col;
+            }
+            if ($this->white_kingside) {
+                $white_files[] = $config->white_kingside_rook_col;
+            }
+            if ($this->black_queenside) {
+                $black_files[] = $config->black_queenside_rook_col;
+            }
+            if ($this->black_kingside) {
+                $black_files[] = $config->black_kingside_rook_col;
+            }
+
+            sort($white_files);
+            sort($black_files);
+
+            $fen = '';
+            foreach ($white_files as $file) {
+                $fen .= chr(ord('A') + $file);
+            }
+            foreach ($black_files as $file) {
+                $fen .= chr(ord('a') + $file);
+            }
+
+            return $fen !== '' ? $fen : '-';
+        }
+
+        $fen = '';
+        if ($this->white_kingside) {
+            $fen .= 'K';
+        }
+        if ($this->white_queenside) {
+            $fen .= 'Q';
+        }
+        if ($this->black_kingside) {
+            $fen .= 'k';
+        }
+        if ($this->black_queenside) {
+            $fen .= 'q';
+        }
+
+        return $fen !== '' ? $fen : '-';
+    }
+}
+
+class CastlingConfig {
+    public int $white_king_col = 4;
+    public int $white_kingside_rook_col = 7;
+    public int $white_queenside_rook_col = 0;
+    public int $black_king_col = 4;
+    public int $black_kingside_rook_col = 7;
+    public int $black_queenside_rook_col = 0;
+
+    public function copy(): CastlingConfig {
+        $copy = new CastlingConfig();
+        $copy->white_king_col = $this->white_king_col;
+        $copy->white_kingside_rook_col = $this->white_kingside_rook_col;
+        $copy->white_queenside_rook_col = $this->white_queenside_rook_col;
+        $copy->black_king_col = $this->black_king_col;
+        $copy->black_kingside_rook_col = $this->black_kingside_rook_col;
+        $copy->black_queenside_rook_col = $this->black_queenside_rook_col;
+        return $copy;
+    }
+
+    public function is_classical(): bool {
+        return $this->white_king_col === 4 &&
+            $this->white_kingside_rook_col === 7 &&
+            $this->white_queenside_rook_col === 0 &&
+            $this->black_king_col === 4 &&
+            $this->black_kingside_rook_col === 7 &&
+            $this->black_queenside_rook_col === 0;
+    }
 }
 
 class IrreversibleState {
     public CastlingRights $castling_rights;
+    public CastlingConfig $castling_config;
+    public bool $chess960_mode;
     public ?array $en_passant_target;
     public int $halfmove_clock;
     public int $zobrist_hash;
 
-    public function __construct(CastlingRights $cr, ?array $ep, int $hc, int $zh) {
+    public function __construct(CastlingRights $cr, CastlingConfig $cc, bool $chess960_mode, ?array $ep, int $hc, int $zh) {
         $this->castling_rights = $cr;
+        $this->castling_config = $cc;
+        $this->chess960_mode = $chess960_mode;
         $this->en_passant_target = $ep;
         $this->halfmove_clock = $hc;
         $this->zobrist_hash = $zh;
@@ -85,6 +167,8 @@ class IrreversibleState {
 
 class GameState {
     public CastlingRights $castling_rights;
+    public CastlingConfig $castling_config;
+    public bool $chess960_mode;
     public ?array $en_passant_target;
     public int $halfmove_clock;
     public int $fullmove_number;
@@ -92,8 +176,10 @@ class GameState {
     public array $position_history;
     public array $irreversible_history;
 
-    public function __construct(CastlingRights $cr, ?array $ep, int $hc, int $fn, int $zh, array $ph, array $ih) {
+    public function __construct(CastlingRights $cr, CastlingConfig $cc, bool $chess960_mode, ?array $ep, int $hc, int $fn, int $zh, array $ph, array $ih) {
         $this->castling_rights = $cr;
+        $this->castling_config = $cc;
+        $this->chess960_mode = $chess960_mode;
         $this->en_passant_target = $ep;
         $this->halfmove_clock = $hc;
         $this->fullmove_number = $fn;
