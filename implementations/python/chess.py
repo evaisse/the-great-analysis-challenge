@@ -7,6 +7,7 @@ Follows the Chess Engine Specification v1.0
 import sys
 import re
 import json
+import shlex
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List
@@ -16,6 +17,15 @@ from lib.move_generator import MoveGenerator
 from lib.fen_parser import FenParser
 from lib.ai import AI
 from lib.perft import Perft
+from lib.pgn import (
+    START_FEN,
+    PgnMoveNode,
+    build_game_from_history,
+    copy_move,
+    move_to_san,
+    parse_pgn,
+    serialize_game,
+)
 from lib.types import Move, Color, PieceType
 
 CONCURRENCY_SEED = 12345
@@ -74,7 +84,8 @@ class ChessEngine:
         self.move_history = []
         self._go_infinite = False
         self._pgn_path: Optional[str] = None
-        self._pgn_moves = []
+        self._pgn_game = build_game_from_history([], start_fen=START_FEN, source='current-game')
+        self._pgn_variation_stack = []
         self._book_path: Optional[str] = None
         self._book_enabled = False
         self._book_entries = {}
@@ -126,7 +137,7 @@ class ChessEngine:
     def process_command(self, command: str):
         """Process a user command."""
         try:
-            parts = command.split()
+            parts = shlex.split(command)
             if not parts:
                 return
                 
@@ -340,41 +351,17 @@ class ChessEngine:
             return
         
         try:
-            move = Move.from_algebraic(move_str)
-            if not move:
+            requested_move = Move.from_algebraic(move_str)
+            if not requested_move:
                 print('ERROR: Invalid move format')
                 return
-            
-            # Get the piece being moved
-            moving_piece = self.board.get_piece(move.from_row, move.from_col)
-            
-            # Auto-promote to Queen if not specified and moving to promotion rank
-            if (moving_piece and moving_piece.type == PieceType.PAWN and 
-                move.promotion is None):
-                if (moving_piece.color == Color.WHITE and move.to_row == 7) or \
-                   (moving_piece.color == Color.BLACK and move.to_row == 0):
-                    move.promotion = PieceType.QUEEN
-            
-            # Check if move is legal
-            legal_moves = self.move_generator.generate_legal_moves()
-            legal_move = None
-            
-            for legal in legal_moves:
-                if (legal.from_row == move.from_row and
-                    legal.from_col == move.from_col and
-                    legal.to_row == move.to_row and
-                    legal.to_col == move.to_col and
-                    legal.promotion == move.promotion):
-                    legal_move = legal
-                    break
-            
+
+            legal_move = self._resolve_legal_move(requested_move)
             if not legal_move:
                 print('ERROR: Illegal move')
                 return
-            
-            # Make the move
-            self.move_history.append(legal_move)
-            self.board.make_move(legal_move)
+
+            self._record_pgn_move(legal_move)
             
             print(f'OK: {move_str}')
             
@@ -400,23 +387,22 @@ class ChessEngine:
     
     def handle_undo(self):
         """Handle undo command."""
-        if not self.move_history:
+        current_sequence = self._current_pgn_sequence()
+        if not current_sequence:
             print('ERROR: No moves to undo')
             return
-        
-        last_move = self.move_history.pop()
-        self.board.undo_move(last_move)
+
+        current_sequence.pop()
+        self._sync_runtime_to_pgn_cursor()
         print('OK: undo')
         print(self.board.display())
     
     def handle_new_game(self):
         """Handle new game command."""
-        self.board = Board()
-        self.move_generator = MoveGenerator(self.board)
-        self.fen_parser = FenParser(self.board)
-        self.ai = AI(self.board, self.move_generator)
-        self.perft = Perft(self.board, self.move_generator)
-        self.move_history = []
+        self._reset_position(START_FEN)
+        self._pgn_path = None
+        self._pgn_game = build_game_from_history([], start_fen=START_FEN, source='current-game')
+        self._pgn_variation_stack = []
         print('OK: New game started')
         print(self.board.display())
     
@@ -449,8 +435,7 @@ class ChessEngine:
             print('ERROR: No legal moves available')
             return
 
-        self.move_history.append(best_move)
-        self.board.make_move(best_move)
+        self._record_pgn_move(best_move)
 
         move_str = best_move.to_algebraic()
         self._record_trace_ai(
@@ -490,8 +475,11 @@ class ChessEngine:
             return
         
         try:
-            self.fen_parser.parse(fen)
-            self.move_history = []  # Clear move history when loading new position
+            self._reset_position(fen)
+            start_fen = self.fen_parser.export()
+            self._pgn_path = None
+            self._pgn_game = build_game_from_history([], start_fen=start_fen, source='current-game')
+            self._pgn_variation_stack = []
             print(f'OK: Loaded position from FEN')
             print(self.board.display())
         except Exception as e:
@@ -690,7 +678,7 @@ class ChessEngine:
     def handle_pgn(self, args):
         """Handle pgn command family."""
         if not args:
-            print('ERROR: pgn requires subcommand (load|show|moves)')
+            print('ERROR: pgn requires subcommand (load|save|show|moves|variation|comment)')
             return
 
         subcommand = args[0].lower()
@@ -699,31 +687,103 @@ class ChessEngine:
                 print('ERROR: pgn load requires a file path')
                 return
             path = ' '.join(args[1:])
-            self._pgn_path = path
-            self._pgn_moves = []
             try:
                 with open(path, 'r', encoding='utf-8') as handle:
                     content = handle.read()
-                self._pgn_moves = self._extract_pgn_moves(content)
-                print(f'PGN: loaded path="{path}"; moves={len(self._pgn_moves)}')
-            except Exception:
-                # Keep path for traceability even when the file is unavailable in container context.
-                print(f'PGN: loaded path="{path}"; moves=0; note=file-unavailable')
+                game = parse_pgn(content, path)
+                game.source = path
+                self._pgn_game = game
+                self._pgn_path = path
+                self._pgn_variation_stack = []
+                self._sync_runtime_to_pgn_cursor()
+                print(f'PGN: loaded source={path}')
+            except FileNotFoundError:
+                print(f'ERROR: pgn load failed: file not found: {path}')
+            except Exception as exc:
+                print(f'ERROR: pgn load failed: {exc}')
+            return
+
+        if subcommand == 'save':
+            if len(args) < 2:
+                print('ERROR: pgn save requires a file path')
+                return
+            path = ' '.join(args[1:])
+            try:
+                game = self._current_pgn_game()
+                with open(path, 'w', encoding='utf-8') as handle:
+                    handle.write(serialize_game(game))
+                self._pgn_path = path
+                game.source = path
+                print(f'PGN: saved path="{path}"')
+            except Exception as exc:
+                print(f'ERROR: pgn save failed: {exc}')
             return
 
         if subcommand == 'show':
-            source = self._pgn_path or 'current-game'
-            print(f'PGN: source={source}; moves={len(self._pgn_moves)}')
+            game = self._current_pgn_game()
+            source = game.source if game.source else 'current-game'
+            print(f'PGN: source={source}; moves={len(self._current_pgn_moves())}')
+            print(serialize_game(game).rstrip())
             return
 
         if subcommand == 'moves':
-            if self._pgn_moves:
-                print(f'PGN: moves {" ".join(self._pgn_moves)}')
+            moves = self._current_pgn_moves()
+            if moves:
+                print(f'PGN: moves {" ".join(moves)}')
             else:
                 print('PGN: moves (none)')
             return
 
+        if subcommand == 'variation':
+            if len(args) < 2:
+                print('ERROR: pgn variation requires enter or exit')
+                return
+            action = args[1].lower()
+            if action == 'enter':
+                current_sequence = self._current_pgn_sequence()
+                if not current_sequence:
+                    print('ERROR: No variation available')
+                    return
+                target = current_sequence[-1]
+                if not target.variations:
+                    target.variations.append([])
+                self._pgn_variation_stack.append((len(current_sequence) - 1, len(target.variations) - 1))
+                self._sync_runtime_to_pgn_cursor()
+                print(f'PGN: variation depth={len(self._pgn_variation_stack)}')
+                return
+            if action == 'exit':
+                if not self._pgn_variation_stack:
+                    print('ERROR: Not inside a variation')
+                    return
+                self._pgn_variation_stack.pop()
+                self._sync_runtime_to_pgn_cursor()
+                print(f'PGN: variation depth={len(self._pgn_variation_stack)}')
+                return
+            print('ERROR: Unsupported pgn variation command')
+            return
+
+        if subcommand == 'comment':
+            text = ' '.join(args[1:]).strip()
+            if not text:
+                print('ERROR: pgn comment requires text')
+                return
+            game = self._current_pgn_game()
+            comment = text
+            current_sequence = self._current_pgn_sequence()
+            if not current_sequence:
+                game.initial_comments.append(comment)
+            else:
+                current_sequence[-1].comments.append(comment)
+            print('PGN: comment added')
+            return
+
         print('ERROR: Unsupported pgn command')
+
+    def _current_pgn_game(self):
+        return self._pgn_game
+
+    def _current_pgn_moves(self):
+        return [node.san for node in self._current_pgn_sequence()]
 
     def handle_book(self, args):
         """Handle book command family."""
@@ -880,12 +940,10 @@ class ChessEngine:
 
     def handle_ucinewgame(self):
         """Handle UCI ucinewgame command."""
-        self.board = Board()
-        self.move_generator = MoveGenerator(self.board)
-        self.fen_parser = FenParser(self.board)
-        self.ai = AI(self.board, self.move_generator)
-        self.perft = Perft(self.board, self.move_generator)
-        self.move_history = []
+        self._reset_position(START_FEN)
+        self._pgn_path = None
+        self._pgn_game = build_game_from_history([], start_fen=START_FEN, source='current-game')
+        self._pgn_variation_stack = []
         self._uci_last_bestmove = None
         if self._protocol_mode == 'uci':
             self._set_uci_state('idle')
@@ -898,6 +956,7 @@ class ChessEngine:
 
         idx = 0
         keyword = args[0].lower()
+        start_fen = START_FEN
         if keyword == 'startpos':
             self.handle_ucinewgame()
             idx = 1
@@ -911,8 +970,8 @@ class ChessEngine:
                 print('ERROR: position fen requires a FEN string')
                 return
             try:
-                self.fen_parser.parse(' '.join(fen_tokens))
-                self.move_history = []
+                start_fen = ' '.join(fen_tokens)
+                self._reset_position(start_fen)
             except Exception as exc:
                 print(f'ERROR: Invalid FEN string: {exc}')
                 return
@@ -928,6 +987,10 @@ class ChessEngine:
                     print(f'ERROR: position move {move_str} failed: {error}')
                     return
 
+        self._pgn_path = None
+        self._pgn_variation_stack = []
+        current_start_fen = self.fen_parser.export() if not self.move_history else start_fen
+        self._pgn_game = build_game_from_history(self.move_history, start_fen=current_start_fen, source='current-game')
         if self._protocol_mode == 'uci':
             self._set_uci_state('idle')
 
@@ -936,30 +999,7 @@ class ChessEngine:
         move = Move.from_algebraic(move_str)
         if not move:
             return 'Invalid move format'
-
-        moving_piece = self.board.get_piece(move.from_row, move.from_col)
-        if moving_piece and moving_piece.type == PieceType.PAWN and move.promotion is None:
-            if (moving_piece.color == Color.WHITE and move.to_row == 7) or \
-               (moving_piece.color == Color.BLACK and move.to_row == 0):
-                move.promotion = PieceType.QUEEN
-
-        legal_moves = self.move_generator.generate_legal_moves()
-        legal_move = None
-        for candidate in legal_moves:
-            if (candidate.from_row == move.from_row and
-                candidate.from_col == move.from_col and
-                candidate.to_row == move.to_row and
-                candidate.to_col == move.to_col and
-                candidate.promotion == move.promotion):
-                legal_move = candidate
-                break
-
-        if not legal_move:
-            return 'Illegal move'
-
-        self.move_history.append(legal_move)
-        self.board.make_move(legal_move)
-        return None
+        return self._apply_move_object_silent(move)
 
     def handle_new960(self, args):
         """Handle new960 command."""
@@ -1531,31 +1571,6 @@ class ChessEngine:
                 count += 1
         return count
 
-    def _extract_pgn_moves(self, content: str):
-        """Parse a PGN text and return SAN move tokens."""
-        lines = []
-        for line in content.splitlines():
-            stripped = line.strip()
-            if not stripped or stripped.startswith('['):
-                continue
-            lines.append(stripped)
-
-        move_text = ' '.join(lines)
-        move_text = re.sub(r'\{[^}]*\}', ' ', move_text)
-        move_text = re.sub(r';[^\n]*', ' ', move_text)
-        move_text = re.sub(r'\([^)]*\)', ' ', move_text)
-
-        moves = []
-        for token in move_text.split():
-            if re.match(r'^\d+\.(\.\.)?$', token):
-                continue
-            if re.match(r'^\d+\.$', token):
-                continue
-            if token in ('1-0', '0-1', '1/2-1/2', '*'):
-                continue
-            moves.append(token)
-        return moves
-
     def _book_position_key(self, fen: str) -> str:
         parts = fen.strip().split()
         if len(parts) >= 4:
@@ -1645,8 +1660,7 @@ class ChessEngine:
         return chosen
 
     def _apply_book_move(self, move: Move):
-        self.move_history.append(move)
-        self.board.make_move(move)
+        self._record_pgn_move(move)
         self._book_played += 1
         move_str = move.to_algebraic()
         self._record_trace_ai('book', move_str, 0, 0, 0, False, 0, 0, 0, 0, 0)
@@ -1846,8 +1860,7 @@ class ChessEngine:
         return best_move, root_info
 
     def _apply_endgame_move(self, move: Move, info):
-        self.move_history.append(move)
-        self.board.make_move(move)
+        self._record_pgn_move(move)
         move_str = move.to_algebraic()
         self._record_trace_ai('endgame', move_str, 0, info["score_white"], 0, False, 0, 0, 0, 0, 0)
         print(f'AI: {move_str} (endgame {info["type"]}, score={info["score_white"]})')
@@ -1919,7 +1932,9 @@ Available commands:
   go depth <n>               - UCI-style depth search (prints info/bestmove)
   go infinite                - Start bounded long search mode
   stop                       - Stop infinite search mode
-  pgn load|show|moves        - PGN command family
+  pgn load|save|show|moves   - PGN command family
+  pgn variation enter|exit   - Enter or exit current variation
+  pgn comment "text"         - Add comment to current PGN node
   book load|on|off|stats     - Native opening book controls
   endgame                    - Detect specialized endgame and best move hint
   uci                        - Enter/respond to UCI handshake
@@ -1934,6 +1949,85 @@ Available commands:
   quit                       - Exit the program
         """
         print(help_text.strip())
+
+    def _reset_position(self, start_fen: str = START_FEN):
+        self.board = Board()
+        self.move_generator = MoveGenerator(self.board)
+        self.fen_parser = FenParser(self.board)
+        if start_fen != START_FEN:
+            self.fen_parser.parse(start_fen)
+        self.ai = AI(self.board, self.move_generator)
+        self.perft = Perft(self.board, self.move_generator)
+        self.move_history = []
+
+    def _resolve_legal_move(self, requested_move: Move):
+        move = copy_move(requested_move)
+        moving_piece = self.board.get_piece(move.from_row, move.from_col)
+        if moving_piece and moving_piece.type == PieceType.PAWN and move.promotion is None:
+            if (moving_piece.color == Color.WHITE and move.to_row == 7) or \
+               (moving_piece.color == Color.BLACK and move.to_row == 0):
+                move.promotion = PieceType.QUEEN
+
+        for candidate in self.move_generator.generate_legal_moves():
+            if (candidate.from_row == move.from_row and
+                candidate.from_col == move.from_col and
+                candidate.to_row == move.to_row and
+                candidate.to_col == move.to_col and
+                candidate.promotion == move.promotion):
+                return candidate
+        return None
+
+    def _apply_move_object_silent(self, move: Move) -> Optional[str]:
+        legal_move = self._resolve_legal_move(move)
+        if not legal_move:
+            return 'Illegal move'
+
+        self.move_history.append(legal_move)
+        self.board.make_move(legal_move)
+        return None
+
+    def _current_pgn_sequence(self):
+        sequence = self._pgn_game.moves
+        for anchor_index, variation_index in self._pgn_variation_stack:
+            if anchor_index < 0 or anchor_index >= len(sequence):
+                return []
+            anchor = sequence[anchor_index]
+            if variation_index < 0 or variation_index >= len(anchor.variations):
+                return []
+            sequence = anchor.variations[variation_index]
+        return sequence
+
+    def _active_line_nodes(self):
+        nodes = []
+        sequence = self._pgn_game.moves
+        for anchor_index, variation_index in self._pgn_variation_stack:
+            nodes.extend(sequence[:anchor_index + 1])
+            anchor = sequence[anchor_index]
+            sequence = anchor.variations[variation_index]
+        nodes.extend(sequence)
+        return nodes
+
+    def _sync_runtime_to_pgn_cursor(self):
+        self._reset_position(self._pgn_game.initial_fen)
+        for node in self._active_line_nodes():
+            error = self._apply_move_object_silent(node.move)
+            if error is not None:
+                raise ValueError(f'failed to replay PGN move {node.san}: {error}')
+
+    def _record_pgn_move(self, move: Move):
+        san = move_to_san(self.board, move)
+        fen_before = self.fen_parser.export()
+        self.move_history.append(move)
+        self.board.make_move(move)
+        fen_after = self.fen_parser.export()
+        self._current_pgn_sequence().append(
+            PgnMoveNode(
+                san=san,
+                move=copy_move(move),
+                fen_before=fen_before,
+                fen_after=fen_after,
+            )
+        )
 
 
 def main():

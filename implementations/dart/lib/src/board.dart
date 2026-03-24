@@ -331,6 +331,7 @@ class Board {
   String get_castlingRights_internal() => _castlingRights;
   ({int row, int col})? get_enPassantTarget_internal() => _enPassantTarget;
   int get_halfmoveClock_val() => _halfmoveClock;
+  int get_fullmoveNumber_val() => _fullmoveNumber;
 
   Board clone() {
     final newSquares = List.generate(8, (i) => List.of(squares[i]));
