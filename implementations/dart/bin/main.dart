@@ -20,6 +20,64 @@ typedef TraceAiRecorder =
       int betaCutoffs,
     );
 
+const _chess960KnightTable = <(int, int)>[
+  (0, 1),
+  (0, 2),
+  (0, 3),
+  (0, 4),
+  (1, 2),
+  (1, 3),
+  (1, 4),
+  (2, 3),
+  (2, 4),
+  (3, 4),
+];
+
+String _decodeChess960Backrank(int id) {
+  final pieces = List<String?>.filled(8, null);
+  var n = id;
+
+  var remainder = n % 4;
+  n ~/= 4;
+  pieces[2 * remainder + 1] = 'b';
+
+  remainder = n % 4;
+  n ~/= 4;
+  pieces[2 * remainder] = 'b';
+
+  var empty = [
+    for (var i = 0; i < pieces.length; i++)
+      if (pieces[i] == null) i,
+  ];
+  remainder = n % 6;
+  n ~/= 6;
+  pieces[empty[remainder]] = 'q';
+
+  final knights = _chess960KnightTable[n];
+  empty = [
+    for (var i = 0; i < pieces.length; i++)
+      if (pieces[i] == null) i,
+  ];
+  pieces[empty[knights.$1]] = 'n';
+  pieces[empty[knights.$2]] = 'n';
+
+  empty = [
+    for (var i = 0; i < pieces.length; i++)
+      if (pieces[i] == null) i,
+  ];
+  pieces[empty[0]] = 'r';
+  pieces[empty[1]] = 'k';
+  pieces[empty[2]] = 'r';
+
+  return pieces.map((piece) => piece ?? '').join();
+}
+
+String _buildChess960Fen(int id) {
+  final white = _decodeChess960Backrank(id).toUpperCase();
+  final black = white.toLowerCase();
+  return '$black/pppppppp/8/8/8/8/PPPPPPPP/$white w - - 0 1';
+}
+
 Future<void> main() async {
   final game = Game();
   var ai = AI();
@@ -1028,13 +1086,20 @@ Future<void> main() async {
           break;
         }
         chess960Id = id;
-        game.init();
+        game.loadFen(_buildChess960Fen(chess960Id));
         print('OK: New game started');
         game.printBoard();
-        print('960: new game id=$chess960Id');
+        print(
+          '960: new game id=$chess960Id; '
+          'backrank=${_decodeChess960Backrank(chess960Id)}',
+        );
         break;
       case 'position960':
-        print('960: id=$chess960Id; mode=chess960');
+        print(
+          '960: id=$chess960Id; mode=chess960; '
+          'backrank=${_decodeChess960Backrank(chess960Id)}; '
+          'fen=${_buildChess960Fen(chess960Id)}',
+        );
         break;
       case 'trace':
         if (parts.length < 2) {

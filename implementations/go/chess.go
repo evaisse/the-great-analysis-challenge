@@ -84,6 +84,11 @@ type EndgameInfo struct {
 	Detail     string
 }
 
+var chess960KnightTable = [10][2]int{
+	{0, 1}, {0, 2}, {0, 3}, {0, 4}, {1, 2},
+	{1, 3}, {1, 4}, {2, 3}, {2, 4}, {3, 4},
+}
+
 func NewChessEngine() *ChessEngine {
 	return &ChessEngine{
 		gameState:    NewGameState(),
@@ -1544,12 +1549,78 @@ func (engine *ChessEngine) handleNew960(args []string) {
 	}
 
 	engine.chess960ID = id
-	engine.handleNew()
-	fmt.Printf("960: new game id=%d\n", engine.chess960ID)
+	fen := buildChess960FEN(engine.chess960ID)
+	engine.gameState = NewGameState()
+	if err := engine.gameState.FromFEN(fen); err != nil {
+		fmt.Printf("ERROR: Invalid Chess960 FEN: %s\n", err.Error())
+		return
+	}
+	fmt.Println("OK: New game started")
+	fmt.Print(engine.gameState.Display())
+	fmt.Printf("960: new game id=%d; backrank=%s\n", engine.chess960ID, decodeChess960Backrank(engine.chess960ID))
 }
 
 func (engine *ChessEngine) handlePosition960() {
-	fmt.Printf("960: id=%d; mode=chess960\n", engine.chess960ID)
+	fmt.Printf(
+		"960: id=%d; mode=chess960; backrank=%s; fen=%s\n",
+		engine.chess960ID,
+		decodeChess960Backrank(engine.chess960ID),
+		buildChess960FEN(engine.chess960ID),
+	)
+}
+
+func decodeChess960Backrank(id int) string {
+	pieces := make([]rune, 8)
+	for i := range pieces {
+		pieces[i] = '_'
+	}
+
+	n := id
+	remainder := n % 4
+	n /= 4
+	pieces[2*remainder+1] = 'b'
+
+	remainder = n % 4
+	n /= 4
+	pieces[2*remainder] = 'b'
+
+	remainder = n % 6
+	n /= 6
+	empty := make([]int, 0, 8)
+	for i, piece := range pieces {
+		if piece == '_' {
+			empty = append(empty, i)
+		}
+	}
+	pieces[empty[remainder]] = 'q'
+
+	knights := chess960KnightTable[n]
+	empty = empty[:0]
+	for i, piece := range pieces {
+		if piece == '_' {
+			empty = append(empty, i)
+		}
+	}
+	pieces[empty[knights[0]]] = 'n'
+	pieces[empty[knights[1]]] = 'n'
+
+	empty = empty[:0]
+	for i, piece := range pieces {
+		if piece == '_' {
+			empty = append(empty, i)
+		}
+	}
+	pieces[empty[0]] = 'r'
+	pieces[empty[1]] = 'k'
+	pieces[empty[2]] = 'r'
+
+	return string(pieces)
+}
+
+func buildChess960FEN(id int) string {
+	white := strings.ToUpper(decodeChess960Backrank(id))
+	black := strings.ToLower(white)
+	return fmt.Sprintf("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w - - 0 1", black, white)
 }
 
 func (engine *ChessEngine) handleTrace(args []string) {

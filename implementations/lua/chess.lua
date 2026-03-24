@@ -85,6 +85,62 @@ local function parse_uci_check_value(raw)
     end
     return nil
 end
+
+local chess960_knight_table = {
+    {0, 1}, {0, 2}, {0, 3}, {0, 4}, {1, 2},
+    {1, 3}, {1, 4}, {2, 3}, {2, 4}, {3, 4}
+}
+
+local function decode_chess960_backrank(id)
+    local pieces = {nil, nil, nil, nil, nil, nil, nil, nil}
+    local n = id
+
+    local remainder = n % 4
+    n = math.floor(n / 4)
+    pieces[2 * remainder + 2] = "b"
+
+    remainder = n % 4
+    n = math.floor(n / 4)
+    pieces[2 * remainder + 1] = "b"
+
+    local empty = {}
+    for i = 1, 8 do
+        if pieces[i] == nil then
+            empty[#empty + 1] = i
+        end
+    end
+    remainder = n % 6
+    n = math.floor(n / 6)
+    pieces[empty[remainder + 1]] = "q"
+
+    local knight_pair = chess960_knight_table[n + 1]
+    empty = {}
+    for i = 1, 8 do
+        if pieces[i] == nil then
+            empty[#empty + 1] = i
+        end
+    end
+    pieces[empty[knight_pair[1] + 1]] = "n"
+    pieces[empty[knight_pair[2] + 1]] = "n"
+
+    empty = {}
+    for i = 1, 8 do
+        if pieces[i] == nil then
+            empty[#empty + 1] = i
+        end
+    end
+    pieces[empty[1]] = "r"
+    pieces[empty[2]] = "k"
+    pieces[empty[3]] = "r"
+
+    return table.concat(pieces)
+end
+
+local function build_chess960_fen(id)
+    local white = string.upper(decode_chess960_backrank(id))
+    local black = string.lower(white)
+    return string.format("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w - - 0 1", black, white)
+end
 local tt = {}
 local search_deadline = nil
 local search_timed_out = false
@@ -3081,13 +3137,23 @@ local function main()
                 print("ERROR: new960 id must be between 0 and 959")
             else
                 chess960_id = math.floor(id)
-                new_game()
+                local fen = build_chess960_fen(chess960_id)
+                local success, msg = import_fen(fen)
+                if not success then
+                    print("ERROR: Invalid Chess960 FEN: " .. msg)
+                    goto continue
+                end
                 print("OK: New game started")
                 display_board()
-                print(string.format("960: new game id=%d", chess960_id))
+                print(string.format("960: new game id=%d; backrank=%s", chess960_id, decode_chess960_backrank(chess960_id)))
             end
         elseif cmd == "position960" then
-            print(string.format("960: id=%d; mode=chess960", chess960_id))
+            print(string.format(
+                "960: id=%d; mode=chess960; backrank=%s; fen=%s",
+                chess960_id,
+                decode_chess960_backrank(chess960_id),
+                build_chess960_fen(chess960_id)
+            ))
         elseif cmd == "trace" then
             local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
             subcmd = subcmd and subcmd:lower() or ""
