@@ -32,6 +32,11 @@ class ChessEngine {
     private Perft $perft;
     private int $uci_hash_mb = 16;
     private int $uci_threads = 1;
+    private bool $uci_analyse_mode = false;
+    private bool $rich_eval_enabled = false;
+    private string $protocol_mode = 'boot';
+    private string $uci_state = 'boot';
+    private ?string $uci_last_bestmove = null;
     private ?string $pgn_path = null;
     private PgnGame $pgn_game;
     /** @var array<int,array{int,int}> */
@@ -82,9 +87,6 @@ class ChessEngine {
     }
     
     public function start(): void {
-        echo $this->board->display();
-        flush();
-        
         while (true) {
             $line = fgets(STDIN);
             
@@ -111,6 +113,7 @@ class ChessEngine {
         }
         
         $cmd = strtolower($parts[0]);
+        $this->select_protocol_mode($cmd);
         if ($cmd !== 'trace') {
             $this->trace_command_count++;
             $this->trace('command', $command);
@@ -161,7 +164,11 @@ class ChessEngine {
                     break;
 
                 case 'go':
-                    $this->handle_go(array_slice($parts, 1));
+                    if ($this->protocol_mode === 'uci') {
+                        $this->handle_uci_go(array_slice($parts, 1));
+                    } else {
+                        $this->handle_go(array_slice($parts, 1));
+                    }
                     break;
 
                 case 'stop':
@@ -229,7 +236,9 @@ class ChessEngine {
                     
                 case 'quit':
                 case 'exit':
-                    echo "Goodbye!\n";
+                    if ($this->protocol_mode !== 'uci') {
+                        echo "Goodbye!\n";
+                    }
                     exit(0);
                     
                 default:
@@ -238,6 +247,151 @@ class ChessEngine {
         } catch (\Exception $e) {
             echo "ERROR: " . $e->getMessage() . "\n";
         }
+    }
+
+    private function select_protocol_mode(string $cmd): void {
+        if ($this->protocol_mode === 'boot') {
+            $this->protocol_mode = $cmd === 'uci' ? 'uci' : 'custom';
+        } elseif ($cmd === 'uci') {
+            $this->protocol_mode = 'uci';
+        }
+    }
+
+    private function set_uci_state(string $state): void {
+        $this->uci_state = $state;
+    }
+
+    private function uci_bool_default(bool $value): string {
+        return $value ? 'true' : 'false';
+    }
+
+    private function parse_uci_check_value(string $raw_value): ?bool {
+        $normalized = strtolower(trim($raw_value));
+        if (in_array($normalized, ['true', '1', 'on', 'yes'], true)) {
+            return true;
+        }
+        if (in_array($normalized, ['false', '0', 'off', 'no'], true)) {
+            return false;
+        }
+        return null;
+    }
+
+    private function handle_uci_search(int $depth, int $movetime_ms): void {
+        $this->set_uci_state('searching');
+        $legal_moves = $this->move_gen->generate_moves();
+        if (empty($legal_moves)) {
+            $this->uci_last_bestmove = '0000';
+            echo "bestmove 0000\n";
+            $this->set_uci_state('idle');
+            return;
+        }
+
+        $book_move = $this->choose_book_move($legal_moves);
+        if ($book_move !== null) {
+            $move_str = strtolower($book_move->to_string());
+            $this->uci_last_bestmove = $move_str;
+            $this->record_trace_ai('uci-book', $move_str, 0, 0, 0, false, 0, 0, 0, 0, 0);
+            echo "info string bookmove {$move_str}\n";
+            echo "bestmove {$move_str}\n";
+            $this->set_uci_state('idle');
+            return;
+        }
+
+        $endgame_choice = $this->choose_endgame_move($legal_moves);
+        if ($endgame_choice !== null) {
+            $move_str = strtolower($endgame_choice['move']->to_string());
+            $info = $endgame_choice['info'];
+            $this->uci_last_bestmove = $move_str;
+            $this->record_trace_ai('uci-endgame', $move_str, 0, intval($info['score_white']), 0, false, 0, 0, 0, 0, 0);
+            echo "info string endgame {$info['type']} score cp {$info['score_white']}\n";
+            echo "bestmove {$move_str}\n";
+            $this->set_uci_state('idle');
+            return;
+        }
+
+        [$move, $eval, $depth_used, $time_ms, $timed_out, $nodes, $eval_calls, $tt_hits, $tt_misses, $beta_cutoffs] = $this->ai->search($depth, $movetime_ms);
+        if ($move === null) {
+            $this->uci_last_bestmove = '0000';
+            echo "bestmove 0000\n";
+            $this->set_uci_state('idle');
+            return;
+        }
+
+        $move_str = strtolower($move->to_string());
+        $this->uci_last_bestmove = $move_str;
+        $this->record_trace_ai(
+            'uci-search',
+            $move_str,
+            $depth_used,
+            $eval,
+            $time_ms,
+            $timed_out,
+            $nodes,
+            $eval_calls,
+            $tt_hits,
+            $tt_misses,
+            $beta_cutoffs
+        );
+        echo "info depth {$depth_used} score cp {$eval} time {$time_ms} nodes {$nodes}\n";
+        echo "bestmove {$move_str}\n";
+        $this->set_uci_state('idle');
+    }
+
+    private function handle_uci_go(array $args): void {
+        if (count($args) === 0) {
+            echo "ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|depth <n>|infinite)\n";
+            return;
+        }
+
+        $sub = strtolower($args[0]);
+        if ($sub === 'depth') {
+            if (!isset($args[1]) || !is_numeric($args[1])) {
+                echo "ERROR: go depth requires an integer value\n";
+                return;
+            }
+
+            $depth = intval($args[1]);
+            if ($depth < 1) {
+                $depth = 1;
+            } elseif ($depth > 5) {
+                $depth = 5;
+            }
+            $this->handle_uci_search($depth, 0);
+            return;
+        }
+
+        if ($sub === 'movetime') {
+            if (!isset($args[1])) {
+                echo "ERROR: go movetime requires a value in milliseconds\n";
+                return;
+            }
+
+            $movetime = intval($args[1]);
+            if ($movetime <= 0) {
+                echo "ERROR: go movetime must be > 0\n";
+                return;
+            }
+            $this->handle_uci_search(5, $movetime);
+            return;
+        }
+
+        if ($sub === 'wtime') {
+            [$movetime, $error] = $this->derive_movetime_from_clock_args($args);
+            if ($error !== null) {
+                echo "ERROR: {$error}\n";
+                return;
+            }
+            $this->handle_uci_search(5, $movetime);
+            return;
+        }
+
+        if ($sub === 'infinite') {
+            echo "info string infinite search bounded to 15000 ms in synchronous mode\n";
+            $this->handle_uci_search(5, 15000);
+            return;
+        }
+
+        echo "ERROR: Unsupported go command\n";
     }
     
     private function handle_move(?string $move_str): void {
@@ -559,6 +713,15 @@ class ChessEngine {
 
     private function handle_stop(): void {
         $this->ai->request_stop();
+        if ($this->protocol_mode === 'uci') {
+            if ($this->uci_state === 'searching') {
+                echo 'bestmove ' . ($this->uci_last_bestmove ?? '0000') . "\n";
+                $this->set_uci_state('idle');
+            } else {
+                echo "info string stop ignored (no active async search)\n";
+            }
+            return;
+        }
         echo "OK: stop\n";
     }
 
@@ -840,10 +1003,21 @@ class ChessEngine {
     }
 
     private function handle_uci(): void {
+        $this->protocol_mode = 'uci';
+        $this->set_uci_state('uci_sent');
+        echo "id name PHP Chess Engine\n";
+        echo "id author The Great Analysis Challenge\n";
+        echo "option name Hash type spin default {$this->uci_hash_mb} min 1 max 1024\n";
+        echo "option name Threads type spin default {$this->uci_threads} min 1 max 64\n";
+        echo "option name UCI_AnalyseMode type check default {$this->uci_bool_default($this->uci_analyse_mode)}\n";
+        echo "option name RichEval type check default {$this->uci_bool_default($this->rich_eval_enabled)}\n";
         echo "uciok\n";
     }
 
     private function handle_isready(): void {
+        if ($this->protocol_mode === 'uci' && $this->uci_state !== 'searching') {
+            $this->set_uci_state('idle');
+        }
         echo "readyok\n";
     }
 
@@ -865,26 +1039,54 @@ class ChessEngine {
             return;
         }
 
-        $name = strtolower(trim(implode(' ', array_slice($args, 1, $value_idx - 1))));
-        if (!is_numeric($args[$value_idx + 1])) {
-            echo "ERROR: setoption value must be an integer\n";
-            return;
-        }
-        $value = intval($args[$value_idx + 1]);
+        $raw_name = trim(implode(' ', array_slice($args, 1, $value_idx - 1)));
+        $name = strtolower($raw_name);
+        $raw_value = trim(implode(' ', array_slice($args, $value_idx + 1)));
 
         if ($name === 'hash') {
+            if (!is_numeric($raw_value)) {
+                echo "ERROR: setoption value must be an integer\n";
+                return;
+            }
+            $value = intval($raw_value);
             $this->uci_hash_mb = max(1, min(1024, $value));
             echo "info string option Hash={$this->uci_hash_mb}\n";
             return;
         }
 
         if ($name === 'threads') {
+            if (!is_numeric($raw_value)) {
+                echo "ERROR: setoption value must be an integer\n";
+                return;
+            }
+            $value = intval($raw_value);
             $this->uci_threads = max(1, min(64, $value));
             echo "info string option Threads={$this->uci_threads}\n";
             return;
         }
 
-        $raw_name = trim(implode(' ', array_slice($args, 1, $value_idx - 1)));
+        if ($name === 'uci_analysemode') {
+            $parsed = $this->parse_uci_check_value($raw_value);
+            if ($parsed === null) {
+                echo "ERROR: setoption value must be true/false\n";
+                return;
+            }
+            $this->uci_analyse_mode = $parsed;
+            echo "info string option UCI_AnalyseMode={$this->uci_bool_default($parsed)}\n";
+            return;
+        }
+
+        if ($name === 'richeval') {
+            $parsed = $this->parse_uci_check_value($raw_value);
+            if ($parsed === null) {
+                echo "ERROR: setoption value must be true/false\n";
+                return;
+            }
+            $this->rich_eval_enabled = $parsed;
+            echo "info string option RichEval={$this->uci_bool_default($parsed)}\n";
+            return;
+        }
+
         echo "info string unsupported option {$raw_name}\n";
     }
 
@@ -893,6 +1095,10 @@ class ChessEngine {
         $this->pgn_path = null;
         $this->pgn_game = PgnSupport::buildGameFromHistory([], PgnSupport::START_FEN, 'current-game');
         $this->pgn_variation_stack = [];
+        $this->uci_last_bestmove = null;
+        if ($this->protocol_mode === 'uci') {
+            $this->set_uci_state('idle');
+        }
     }
 
     private function handle_position(array $args): void {
@@ -945,6 +1151,9 @@ class ChessEngine {
         $this->pgn_variation_stack = [];
         $currentStartFen = count($this->board->game_history) === 0 ? $this->fen_parser->export_fen() : $startFen;
         $this->pgn_game = PgnSupport::buildGameFromHistory($this->board->game_history, $currentStartFen, 'current-game');
+        if ($this->protocol_mode === 'uci') {
+            $this->set_uci_state('idle');
+        }
     }
 
     private function apply_move_silent(string $move_str): ?string {
@@ -2029,7 +2238,7 @@ Available commands:
   endgame                     - Detect specialized endgame and best move hint
   uci                         - Enter/respond to UCI handshake
   isready                     - UCI readiness probe
-  setoption name <Hash|Threads> value <n> - Set UCI option
+  setoption name <Hash|Threads|UCI_AnalyseMode|RichEval> value <x> - Set UCI option
   ucinewgame                  - Reset internal state for UCI game
   position startpos|fen ... [moves ...] - Load UCI position
   new960 [id]                 - Start Chess960 game by id (0-959)

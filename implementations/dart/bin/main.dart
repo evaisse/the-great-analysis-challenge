@@ -94,6 +94,11 @@ Future<void> main() async {
   int bookPlayed = 0;
   var uciHashMb = 16;
   var uciThreads = 1;
+  var uciAnalyseMode = false;
+  var richEvalEnabled = false;
+  var protocolMode = 'boot';
+  var uciState = 'boot';
+  String? uciLastBestMove;
   int chess960Id = 0;
   bool traceEnabled = false;
   String traceLevel = 'info';
@@ -164,6 +169,37 @@ Future<void> main() async {
     traceLastAiTtHits = 0;
     traceLastAiTtMisses = 0;
     traceLastAiBetaCutoffs = 0;
+  }
+
+  void selectProtocolMode(String command) {
+    if (protocolMode == 'boot') {
+      protocolMode = command == 'uci' ? 'uci' : 'custom';
+    } else if (command == 'uci') {
+      protocolMode = 'uci';
+    }
+  }
+
+  void setUciState(String state) {
+    uciState = state;
+  }
+
+  String uciBoolDefault(bool value) => value ? 'true' : 'false';
+
+  bool? parseUciCheckValue(String rawValue) {
+    switch (rawValue.trim().toLowerCase()) {
+      case 'true':
+      case '1':
+      case 'on':
+      case 'yes':
+        return true;
+      case 'false':
+      case '0':
+      case 'off':
+      case 'no':
+        return false;
+      default:
+        return null;
+    }
   }
 
   String formatTraceAiSummary() {
@@ -486,6 +522,143 @@ Future<void> main() async {
 
   resetPgnLiveGame();
 
+  void emitUciSearch(int depth, int movetimeMs) {
+    setUciState('searching');
+    final legalMoves = game.board.generateMoves();
+    if (legalMoves.isEmpty) {
+      uciLastBestMove = '0000';
+      print('bestmove 0000');
+      setUciState('idle');
+      return;
+    }
+
+    final bookMove = chooseBookMove();
+    if (bookMove != null) {
+      uciLastBestMove = bookMove;
+      recordTraceAi('uci-book', bookMove, 0, 0, 0, false, 0, 0, 0, 0, 0);
+      print('info string bookmove $bookMove');
+      print('bestmove $bookMove');
+      setUciState('idle');
+      return;
+    }
+
+    final endgameChoice = chooseEndgameMove();
+    if (endgameChoice != null) {
+      uciLastBestMove = endgameChoice.move;
+      recordTraceAi(
+        'uci-endgame',
+        endgameChoice.move,
+        0,
+        endgameChoice.info.scoreWhite,
+        0,
+        false,
+        0,
+        0,
+        0,
+        0,
+        0,
+      );
+      print(
+        'info string endgame ${endgameChoice.info.type} score cp ${endgameChoice.info.scoreWhite}',
+      );
+      print('bestmove ${endgameChoice.move}');
+      setUciState('idle');
+      return;
+    }
+
+    final result = ai.search(game.board, depth, movetimeMs: movetimeMs);
+    final move = result.move;
+    if (move == null) {
+      uciLastBestMove = '0000';
+      print('bestmove 0000');
+      setUciState('idle');
+      return;
+    }
+
+    final moveString = move.toString().toLowerCase();
+    uciLastBestMove = moveString;
+    recordTraceAi(
+      'uci-search',
+      moveString,
+      result.depth,
+      result.score,
+      result.elapsedMs,
+      result.timedOut,
+      result.nodes,
+      result.evalCalls,
+      result.ttHits,
+      result.ttMisses,
+      result.betaCutoffs,
+    );
+    print(
+      'info depth ${result.depth} score cp ${result.score} time ${result.elapsedMs} nodes ${result.nodes}',
+    );
+    print('bestmove $moveString');
+    setUciState('idle');
+  }
+
+  void handleUciGo(List<String> parts) {
+    if (parts.length < 2) {
+      print(
+        'ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|depth <n>|infinite)',
+      );
+      return;
+    }
+
+    final sub = parts[1].toLowerCase();
+    if (sub == 'depth') {
+      if (parts.length < 3) {
+        print('ERROR: go depth requires a value');
+        return;
+      }
+      final depth = int.tryParse(parts[2]);
+      if (depth == null) {
+        print('ERROR: go depth requires an integer value');
+        return;
+      }
+      emitUciSearch(depth.clamp(1, 5).toInt(), 0);
+      return;
+    }
+
+    if (sub == 'movetime') {
+      if (parts.length < 3) {
+        print('ERROR: go movetime requires a value in milliseconds');
+        return;
+      }
+      final movetime = int.tryParse(parts[2]);
+      if (movetime == null) {
+        print('ERROR: go movetime requires an integer value');
+        return;
+      }
+      if (movetime <= 0) {
+        print('ERROR: go movetime must be > 0');
+        return;
+      }
+      emitUciSearch(5, movetime);
+      return;
+    }
+
+    if (sub == 'wtime') {
+      final parsed = _deriveMovetimeFromClocks(parts.sublist(1), game.board);
+      if (parsed.$2 != null) {
+        print('ERROR: ${parsed.$2}');
+        return;
+      }
+      emitUciSearch(5, parsed.$1);
+      return;
+    }
+
+    if (sub == 'infinite') {
+      print(
+        'info string infinite search bounded to 15000 ms in synchronous mode',
+      );
+      emitUciSearch(5, 15000);
+      return;
+    }
+
+    print('ERROR: Unsupported go command');
+  }
+
   while (true) {
     final line = stdin.readLineSync();
     if (line == null) {
@@ -493,6 +666,7 @@ Future<void> main() async {
     }
     final parts = line.split(' ');
     final command = parts[0].toLowerCase();
+    selectProtocolMode(command);
     if (command != 'trace') {
       traceCommandCount++;
       recordTrace('command', line.trim());
@@ -604,6 +778,10 @@ Future<void> main() async {
         );
         break;
       case 'go':
+        if (protocolMode == 'uci') {
+          handleUciGo(parts);
+          break;
+        }
         if (parts.length < 2) {
           print(
             'ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|infinite)',
@@ -751,6 +929,15 @@ Future<void> main() async {
         break;
       case 'stop':
         ai.requestStop();
+        if (protocolMode == 'uci') {
+          if (uciState == 'searching') {
+            print('bestmove ${uciLastBestMove ?? '0000'}');
+            setUciState('idle');
+          } else {
+            print('info string stop ignored (no active async search)');
+          }
+          break;
+        }
         print('OK: stop');
         break;
       case 'pgn':
@@ -922,9 +1109,24 @@ Future<void> main() async {
         print(output);
         break;
       case 'uci':
+        protocolMode = 'uci';
+        setUciState('uci_sent');
+        print('id name Dart Chess Engine');
+        print('id author The Great Analysis Challenge');
+        print('option name Hash type spin default $uciHashMb min 1 max 1024');
+        print('option name Threads type spin default $uciThreads min 1 max 64');
+        print(
+          'option name UCI_AnalyseMode type check default ${uciBoolDefault(uciAnalyseMode)}',
+        );
+        print(
+          'option name RichEval type check default ${uciBoolDefault(richEvalEnabled)}',
+        );
         print('uciok');
         break;
       case 'isready':
+        if (protocolMode == 'uci' && uciState != 'searching') {
+          setUciState('idle');
+        }
         print('readyok');
         break;
       case 'setoption':
@@ -945,30 +1147,59 @@ Future<void> main() async {
           print("ERROR: setoption requires 'value <n>'");
           break;
         }
-        final optionName = parts.sublist(2, valueIdx).join(' ').toLowerCase();
-        final value = int.tryParse(parts[valueIdx + 1]);
-        if (value == null) {
-          print('ERROR: setoption value must be an integer');
-          break;
-        }
+        final rawOptionName = parts.sublist(2, valueIdx).join(' ');
+        final optionName = rawOptionName.toLowerCase();
+        final rawValue = parts.sublist(valueIdx + 1).join(' ');
         if (optionName == 'hash') {
+          final value = int.tryParse(rawValue);
+          if (value == null) {
+            print('ERROR: setoption value must be an integer');
+            break;
+          }
           uciHashMb = value.clamp(1, 1024).toInt();
           print('info string option Hash=$uciHashMb');
           break;
         }
         if (optionName == 'threads') {
+          final value = int.tryParse(rawValue);
+          if (value == null) {
+            print('ERROR: setoption value must be an integer');
+            break;
+          }
           uciThreads = value.clamp(1, 64).toInt();
           print('info string option Threads=$uciThreads');
           break;
         }
-        print(
-          'info string unsupported option ${parts.sublist(2, valueIdx).join(' ')}',
-        );
+        if (optionName == 'uci_analysemode') {
+          final parsed = parseUciCheckValue(rawValue);
+          if (parsed == null) {
+            print('ERROR: setoption value must be true/false');
+            break;
+          }
+          uciAnalyseMode = parsed;
+          print('info string option UCI_AnalyseMode=${uciBoolDefault(parsed)}');
+          break;
+        }
+        if (optionName == 'richeval') {
+          final parsed = parseUciCheckValue(rawValue);
+          if (parsed == null) {
+            print('ERROR: setoption value must be true/false');
+            break;
+          }
+          richEvalEnabled = parsed;
+          print('info string option RichEval=${uciBoolDefault(parsed)}');
+          break;
+        }
+        print('info string unsupported option $rawOptionName');
         break;
       case 'ucinewgame':
         game.init();
         ai = AI();
         resetPgnLiveGame();
+        uciLastBestMove = null;
+        if (protocolMode == 'uci') {
+          setUciState('idle');
+        }
         break;
       case 'position':
         if (parts.length < 2) {
@@ -1017,6 +1248,9 @@ Future<void> main() async {
               break;
             }
           }
+        }
+        if (protocolMode == 'uci') {
+          setUciState('idle');
         }
         break;
       case 'new960':
@@ -1202,7 +1436,7 @@ book load|on|off|stats
 endgame
 uci
 isready
-setoption name <Hash|Threads> value <n>
+  setoption name <Hash|Threads|UCI_AnalyseMode|RichEval> value <x>
 ucinewgame
 position startpos|fen ... [moves ...]
 new960 [id]
@@ -1214,6 +1448,9 @@ help
 quit''');
         break;
       case 'quit':
+        if (protocolMode != 'uci') {
+          print('Goodbye!');
+        }
         exit(0);
       default:
         print('ERROR: Invalid command');

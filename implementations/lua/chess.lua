@@ -33,6 +33,11 @@ local book_misses = 0
 local book_played = 0
 local uci_hash_mb = 16
 local uci_threads = 1
+local uci_analyse_mode = false
+local rich_eval_enabled = false
+local protocol_mode = "boot"
+local uci_state = "boot"
+local uci_last_bestmove = nil
 local chess960_id = 0
 local trace_enabled = false
 local trace_level = "info"
@@ -56,6 +61,34 @@ local trace_last_ai_nps = 0
 local trace_last_ai_tt_hits = 0
 local trace_last_ai_tt_misses = 0
 local trace_last_ai_beta_cutoffs = 0
+
+local function select_protocol_mode(cmd)
+    if protocol_mode == "boot" then
+        protocol_mode = cmd == "uci" and "uci" or "custom"
+    elseif cmd == "uci" then
+        protocol_mode = "uci"
+    end
+end
+
+local function set_uci_state(state)
+    uci_state = state
+end
+
+local function uci_bool_default(value)
+    return value and "true" or "false"
+end
+
+local function parse_uci_check_value(raw)
+    local normalized = raw:lower()
+    if normalized == "true" or normalized == "1" or normalized == "on" or normalized == "yes" then
+        return true
+    end
+    if normalized == "false" or normalized == "0" or normalized == "off" or normalized == "no" then
+        return false
+    end
+    return nil
+end
+
 local chess960_knight_table = {
     {0, 1}, {0, 2}, {0, 3}, {0, 4}, {1, 2},
     {1, 3}, {1, 4}, {2, 3}, {2, 4}, {3, 4}
@@ -3048,6 +3081,7 @@ local function main()
         local cmd, arg = input:match("^(%S+)%s*(.*)$")
         if not cmd then cmd = input end
         cmd = cmd:lower()
+        select_protocol_mode(cmd)
         if cmd ~= "trace" then
             trace_command_count = trace_command_count + 1
             trace_event("command", input)
@@ -3137,6 +3171,187 @@ local function main()
             end
             print(string.format("  %d: %016x (current)", #position_history, zobrist_hash))
         elseif cmd == "go" then
+            if protocol_mode == "uci" then
+                local tokens = {}
+                for token in arg:gmatch("%S+") do
+                    table.insert(tokens, token)
+                end
+                local subcmd = tokens[1] and tokens[1]:lower() or ""
+
+                if subcmd == "depth" then
+                    local depth = tonumber(tokens[2])
+                    if not depth then
+                        print("ERROR: go depth requires an integer value")
+                    else
+                        depth = math.floor(depth)
+                        if depth < 1 then depth = 1 end
+                        if depth > 5 then depth = 5 end
+                        set_uci_state("searching")
+                        local book_move, book_move_str = choose_book_move()
+                        if book_move and book_move_str then
+                            uci_last_bestmove = book_move_str
+                            record_trace_ai("uci-book", book_move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
+                            print("info string bookmove " .. book_move_str)
+                            print("bestmove " .. book_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                        if endgame_move and endgame_info and endgame_move_str then
+                            uci_last_bestmove = endgame_move_str
+                            record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false, 0, 0, 0, 0, 0)
+                            print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
+                            print("bestmove " .. endgame_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(depth, 0)
+                        if not best_move then
+                            uci_last_bestmove = "0000"
+                            print("bestmove 0000")
+                        else
+                            local move_str = indices_to_algebraic(best_move[1], best_move[2]) ..
+                                             indices_to_algebraic(best_move[3], best_move[4])
+                            if best_move[5] then
+                                move_str = move_str .. best_move[5]
+                            end
+                            uci_last_bestmove = move_str
+                            record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+                            print(string.format("info depth %d score cp %d time %d nodes %d", depth_used, eval, elapsed, nodes))
+                            print("bestmove " .. move_str)
+                        end
+                        set_uci_state("idle")
+                    end
+                    goto continue
+                elseif subcmd == "movetime" then
+                    local movetime = tonumber(tokens[2])
+                    if not movetime then
+                        print("ERROR: go movetime requires an integer value")
+                    elseif movetime <= 0 then
+                        print("ERROR: go movetime must be > 0")
+                    else
+                        set_uci_state("searching")
+                        local book_move, book_move_str = choose_book_move()
+                        if book_move and book_move_str then
+                            uci_last_bestmove = book_move_str
+                            record_trace_ai("uci-book", book_move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
+                            print("info string bookmove " .. book_move_str)
+                            print("bestmove " .. book_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                        if endgame_move and endgame_info and endgame_move_str then
+                            uci_last_bestmove = endgame_move_str
+                            record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false, 0, 0, 0, 0, 0)
+                            print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
+                            print("bestmove " .. endgame_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(5, movetime)
+                        if not best_move then
+                            uci_last_bestmove = "0000"
+                            print("bestmove 0000")
+                        else
+                            local move_str = indices_to_algebraic(best_move[1], best_move[2]) ..
+                                             indices_to_algebraic(best_move[3], best_move[4])
+                            if best_move[5] then
+                                move_str = move_str .. best_move[5]
+                            end
+                            uci_last_bestmove = move_str
+                            record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+                            print(string.format("info depth %d score cp %d time %d nodes %d", depth_used, eval, elapsed, nodes))
+                            print("bestmove " .. move_str)
+                        end
+                        set_uci_state("idle")
+                    end
+                    goto continue
+                elseif subcmd == "wtime" then
+                    local movetime, err = derive_movetime_from_clock_args(tokens)
+                    if not movetime then
+                        print("ERROR: " .. err)
+                    else
+                        set_uci_state("searching")
+                        local book_move, book_move_str = choose_book_move()
+                        if book_move and book_move_str then
+                            uci_last_bestmove = book_move_str
+                            record_trace_ai("uci-book", book_move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
+                            print("info string bookmove " .. book_move_str)
+                            print("bestmove " .. book_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                        if endgame_move and endgame_info and endgame_move_str then
+                            uci_last_bestmove = endgame_move_str
+                            record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false, 0, 0, 0, 0, 0)
+                            print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
+                            print("bestmove " .. endgame_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(5, movetime)
+                        if not best_move then
+                            uci_last_bestmove = "0000"
+                            print("bestmove 0000")
+                        else
+                            local move_str = indices_to_algebraic(best_move[1], best_move[2]) ..
+                                             indices_to_algebraic(best_move[3], best_move[4])
+                            if best_move[5] then
+                                move_str = move_str .. best_move[5]
+                            end
+                            uci_last_bestmove = move_str
+                            record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+                            print(string.format("info depth %d score cp %d time %d nodes %d", depth_used, eval, elapsed, nodes))
+                            print("bestmove " .. move_str)
+                        end
+                        set_uci_state("idle")
+                    end
+                    goto continue
+                elseif subcmd == "infinite" then
+                    print("info string infinite search bounded to 15000 ms in synchronous mode")
+                    set_uci_state("searching")
+                    local book_move, book_move_str = choose_book_move()
+                    if book_move and book_move_str then
+                        uci_last_bestmove = book_move_str
+                        record_trace_ai("uci-book", book_move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
+                        print("info string bookmove " .. book_move_str)
+                        print("bestmove " .. book_move_str)
+                        set_uci_state("idle")
+                        goto continue
+                    end
+                    local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                    if endgame_move and endgame_info and endgame_move_str then
+                        uci_last_bestmove = endgame_move_str
+                        record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false, 0, 0, 0, 0, 0)
+                        print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
+                        print("bestmove " .. endgame_move_str)
+                        set_uci_state("idle")
+                        goto continue
+                    end
+                    local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(5, 15000)
+                    if not best_move then
+                        uci_last_bestmove = "0000"
+                        print("bestmove 0000")
+                    else
+                        local move_str = indices_to_algebraic(best_move[1], best_move[2]) ..
+                                         indices_to_algebraic(best_move[3], best_move[4])
+                        if best_move[5] then
+                            move_str = move_str .. best_move[5]
+                        end
+                        uci_last_bestmove = move_str
+                        record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+                        print(string.format("info depth %d score cp %d time %d nodes %d", depth_used, eval, elapsed, nodes))
+                        print("bestmove " .. move_str)
+                    end
+                    set_uci_state("idle")
+                    goto continue
+                else
+                    print("ERROR: Unsupported go command")
+                    goto continue
+                end
+            end
             local tokens = {}
             for token in arg:gmatch("%S+") do
                 table.insert(tokens, token)
@@ -3281,7 +3496,16 @@ local function main()
             end
         elseif cmd == "stop" then
             search_stop_requested = true
-            print("OK: stop")
+            if protocol_mode == "uci" then
+                if uci_state == "searching" then
+                    print("bestmove " .. (uci_last_bestmove or "0000"))
+                    set_uci_state("idle")
+                else
+                    print("info string stop ignored (no active async search)")
+                end
+            else
+                print("OK: stop")
+            end
         elseif cmd == "pgn" then
             local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
             subcmd = subcmd and subcmd:lower() or ""
@@ -3443,8 +3667,19 @@ local function main()
                 print(output)
             end
         elseif cmd == "uci" then
+            protocol_mode = "uci"
+            set_uci_state("uci_sent")
+            print("id name Lua Chess Engine")
+            print("id author The Great Analysis Challenge")
+            print(string.format("option name Hash type spin default %d min 1 max 1024", uci_hash_mb))
+            print(string.format("option name Threads type spin default %d min 1 max 64", uci_threads))
+            print("option name UCI_AnalyseMode type check default " .. uci_bool_default(uci_analyse_mode))
+            print("option name RichEval type check default " .. uci_bool_default(rich_eval_enabled))
             print("uciok")
         elseif cmd == "isready" then
+            if protocol_mode == "uci" and uci_state ~= "searching" then
+                set_uci_state("idle")
+            end
             print("readyok")
         elseif cmd == "setoption" then
             local tokens = {}
@@ -3468,31 +3703,55 @@ local function main()
                     for i = 2, value_idx - 1 do
                         table.insert(option_name_parts, tokens[i])
                     end
-                    local option_name = table.concat(option_name_parts, " "):lower()
-                    local value = tonumber(tokens[value_idx + 1])
-                    if not value then
-                        print("ERROR: setoption value must be an integer")
-                    else
-                        value = math.floor(value)
-                        if option_name == "hash" then
-                            if value < 1 then value = 1 end
-                            if value > 1024 then value = 1024 end
-                            uci_hash_mb = value
-                            print(string.format("info string option Hash=%d", uci_hash_mb))
-                        elseif option_name == "threads" then
-                            if value < 1 then value = 1 end
-                            if value > 64 then value = 64 end
-                            uci_threads = value
-                            print(string.format("info string option Threads=%d", uci_threads))
+                    local raw_name = table.concat(option_name_parts, " ")
+                    local option_name = raw_name:lower()
+                    local raw_value = table.concat(tokens, " ", value_idx + 1)
+                    if option_name == "hash" or option_name == "threads" then
+                        local value = tonumber(tokens[value_idx + 1])
+                        if not value then
+                            print("ERROR: setoption value must be an integer")
                         else
-                            print("info string unsupported option " .. table.concat(option_name_parts, " "))
+                            value = math.floor(value)
+                            if option_name == "hash" then
+                                if value < 1 then value = 1 end
+                                if value > 1024 then value = 1024 end
+                                uci_hash_mb = value
+                                print(string.format("info string option Hash=%d", uci_hash_mb))
+                            else
+                                if value < 1 then value = 1 end
+                                if value > 64 then value = 64 end
+                                uci_threads = value
+                                print(string.format("info string option Threads=%d", uci_threads))
+                            end
                         end
+                    elseif option_name == "uci_analysemode" then
+                        local parsed = parse_uci_check_value(raw_value)
+                        if parsed == nil then
+                            print("ERROR: setoption value must be true/false")
+                        else
+                            uci_analyse_mode = parsed
+                            print("info string option UCI_AnalyseMode=" .. uci_bool_default(parsed))
+                        end
+                    elseif option_name == "richeval" then
+                        local parsed = parse_uci_check_value(raw_value)
+                        if parsed == nil then
+                            print("ERROR: setoption value must be true/false")
+                        else
+                            rich_eval_enabled = parsed
+                            print("info string option RichEval=" .. uci_bool_default(parsed))
+                        end
+                    else
+                        print("info string unsupported option " .. raw_name)
                     end
                 end
             end
         elseif cmd == "ucinewgame" then
             new_game()
             tt = {}
+            uci_last_bestmove = nil
+            if protocol_mode == "uci" then
+                set_uci_state("idle")
+            end
         elseif cmd == "position" then
             local tokens = {}
             for token in arg:gmatch("%S+") do
@@ -3542,11 +3801,13 @@ local function main()
                         idx = idx + 1
                     end
                 end
-
                 pgn_path = nil
                 pgn_variation_stack = {}
                 local current_start_fen = (#move_history == 0) and export_fen() or start_fen
                 pgn_game = build_game_from_history(move_history, current_start_fen, "current-game")
+                if protocol_mode == "uci" then
+                    set_uci_state("idle")
+                end
             end
         elseif cmd == "new960" then
             local id = tonumber(arg) or 0
@@ -3711,6 +3972,7 @@ local function main()
             print("  uci              - Enter/respond to UCI handshake")
             print("  isready          - UCI readiness probe")
             print("  setoption name <Hash|Threads> value <n> - Set UCI option")
+            print("  setoption name <Hash|Threads|UCI_AnalyseMode|RichEval> value <x> - Set UCI option")
             print("  ucinewgame       - Reset internal state for UCI game")
             print("  position startpos|fen ... [moves ...] - Load UCI position")
             print("  new960 [id]      - Start Chess960 game by id (0-959)")
