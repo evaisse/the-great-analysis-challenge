@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 
 import {
   IMPLEMENTATIONS_DIR,
@@ -10,6 +10,7 @@ import {
   getMetadata,
   normalizeLineEndings,
   readJsonFile,
+  runCommand,
   sleep,
 } from "./shared.ts";
 
@@ -47,6 +48,53 @@ const END_KEYWORDS = [
   "PGN",
   "TRACE",
 ];
+
+const HARNESS_CONTAINER_PREFIX = "tgac-harness";
+const MAX_CONTAINER_NAME_LENGTH = 80;
+const SIGNAL_EXIT_CODES: Record<string, number> = {
+  SIGINT: 130,
+  SIGTERM: 143,
+};
+const ACTIVE_DOCKER_CONTAINERS = new Set<string>();
+
+let cleanupHandlersRegistered = false;
+
+export function sanitizeContainerNameSegment(value: string): string {
+  const sanitized = value
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, "-")
+    .replace(/^[.-]+|[.-]+$/g, "");
+
+  return sanitized || "engine";
+}
+
+export function buildHarnessContainerName(implementationPath: string, now = Date.now()): string {
+  const implementationName = sanitizeContainerNameSegment(basename(implementationPath));
+  const uniqueSuffix = `${process.pid}-${now.toString(36)}`;
+  const rawName = `${HARNESS_CONTAINER_PREFIX}-${implementationName}-${uniqueSuffix}`;
+  return rawName.slice(0, MAX_CONTAINER_NAME_LENGTH);
+}
+
+function cleanupActiveDockerContainersSync(): void {
+  for (const name of ACTIVE_DOCKER_CONTAINERS) {
+    spawnSync("docker", ["rm", "-f", name], { stdio: "ignore" });
+  }
+  ACTIVE_DOCKER_CONTAINERS.clear();
+}
+
+function registerCleanupHandlers(): void {
+  if (cleanupHandlersRegistered) {
+    return;
+  }
+
+  cleanupHandlersRegistered = true;
+  for (const signal of Object.keys(SIGNAL_EXIT_CODES)) {
+    process.once(signal, () => {
+      cleanupActiveDockerContainersSync();
+      process.exit(SIGNAL_EXIT_CODES[signal] ?? 1);
+    });
+  }
+}
 
 export interface ChessHarnessResults {
   passed: string[];
@@ -208,6 +256,8 @@ export class ChessEngineTester {
   lastStdoutAt = 0;
   artifactHostDir: string;
   artifactContainerDir: string;
+  dockerContainerName?: string;
+  dockerCleanupPromise: Promise<void> | null = null;
   results: ChessHarnessResults = {
     passed: [],
     failed: [],
@@ -219,10 +269,27 @@ export class ChessEngineTester {
     this.path = implementationPath;
     this.metadata = metadata;
     this.dockerImage = dockerImage;
+    this.dockerContainerName = dockerImage ? buildHarnessContainerName(implementationPath) : undefined;
     const artifactRoot = mkdtempSync(join(tmpdir(), "tgac-trace-"));
     this.artifactHostDir = join(artifactRoot, basename(implementationPath));
     mkdirSync(this.artifactHostDir, { recursive: true });
     this.artifactContainerDir = dockerImage ? "/trace" : this.artifactHostDir;
+  }
+
+  private async cleanupDockerContainer(): Promise<void> {
+    if (!this.dockerContainerName) {
+      return;
+    }
+
+    if (!this.dockerCleanupPromise) {
+      const containerName = this.dockerContainerName;
+      this.dockerCleanupPromise = (async () => {
+        ACTIVE_DOCKER_CONTAINERS.delete(containerName);
+        await runCommand(["docker", "rm", "-f", containerName], { check: false });
+      })();
+    }
+
+    await this.dockerCleanupPromise;
   }
 
   private replaceArtifactPlaceholders(value: string, hostPaths = false): string {
@@ -246,6 +313,8 @@ export class ChessEngineTester {
       return [
         "docker",
         "run",
+        "--name",
+        this.dockerContainerName ?? buildHarnessContainerName(this.path),
         "--rm",
         "--network",
         "none",
@@ -266,7 +335,11 @@ export class ChessEngineTester {
 
   async start(): Promise<boolean> {
     try {
+      registerCleanupHandlers();
       const command = this.buildCommand();
+      if (this.dockerContainerName) {
+        ACTIVE_DOCKER_CONTAINERS.add(this.dockerContainerName);
+      }
       this.process = spawn(command[0], command.slice(1), {
         cwd: this.dockerImage ? undefined : this.path,
         stdio: "pipe",
@@ -281,9 +354,13 @@ export class ChessEngineTester {
       this.process.on("error", (error) => {
         this.results.errors.push(`Failed to start: ${error.message}`);
       });
+      this.process.on("exit", () => {
+        void this.cleanupDockerContainer();
+      });
       await this.drainStartupOutput();
       return true;
     } catch (error) {
+      await this.cleanupDockerContainer();
       this.results.errors.push(`Failed to start: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
@@ -354,6 +431,7 @@ export class ChessEngineTester {
 
   async stop(): Promise<void> {
     if (!this.process) {
+      await this.cleanupDockerContainer();
       return;
     }
     try {
@@ -363,6 +441,7 @@ export class ChessEngineTester {
         this.process.kill();
       }
     } finally {
+      await this.cleanupDockerContainer();
       this.process = null;
     }
   }
@@ -685,42 +764,44 @@ export async function runTestHarness(options: TestHarnessRunOptions): Promise<nu
       continue;
     }
 
-    if (options.testName) {
-      const test = suite.tests.find((item) => item.name === options.testName);
-      if (test) {
-        console.log(`Running test: ${test.name}`);
-        const success = await suite.runTest(tester, test);
-        console.log(`  ${success ? "✓ PASSED" : "✗ FAILED"}`);
-      }
-    } else {
-      for (const test of suite.tests) {
-        if (options.category && test.category !== options.category) {
-          continue;
+    try {
+      if (options.testName) {
+        const test = suite.tests.find((item) => item.name === options.testName);
+        if (test) {
+          console.log(`Running test: ${test.name}`);
+          const success = await suite.runTest(tester, test);
+          console.log(`  ${success ? "✓ PASSED" : "✗ FAILED"}`);
         }
-        if (test.optional) {
-          const features = Array.isArray(metadata.features) ? metadata.features.map((value) => String(value)) : [];
-          if (!features.includes(test.name)) {
+      } else {
+        for (const test of suite.tests) {
+          if (options.category && test.category !== options.category) {
             continue;
           }
+          if (test.optional) {
+            const features = Array.isArray(metadata.features) ? metadata.features.map((value) => String(value)) : [];
+            if (!features.includes(test.name)) {
+              continue;
+            }
+          }
+          process.stdout.write(`Running test: ${test.name}`);
+          const success = await suite.runTest(tester, test);
+          process.stdout.write(` ${success ? "✓" : "✗"}\n`);
         }
-        process.stdout.write(`Running test: ${test.name}`);
-        const success = await suite.runTest(tester, test);
-        process.stdout.write(` ${success ? "✓" : "✗"}\n`);
       }
-    }
 
-    if (options.performance) {
-      console.log("\nRunning performance tests...");
-      allResults[implPath] = {
-        metadata,
-        results: tester.results,
-        performance: await runPerformanceTests(tester),
-      };
-    } else {
-      allResults[implPath] = { metadata, results: tester.results };
+      if (options.performance) {
+        console.log("\nRunning performance tests...");
+        allResults[implPath] = {
+          metadata,
+          results: tester.results,
+          performance: await runPerformanceTests(tester),
+        };
+      } else {
+        allResults[implPath] = { metadata, results: tester.results };
+      }
+    } finally {
+      await tester.stop();
     }
-
-    await tester.stop();
   }
 
   const report = generateReport(allResults);
