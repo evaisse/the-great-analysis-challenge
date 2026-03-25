@@ -679,7 +679,8 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
         promotion = promotion
     }
     local castle_details = nil
-    local is_castling = string.upper(piece) == "K" and from_rank == to_rank and (to_file == 3 or to_file == 7)
+    local expected_king_file = (piece == "K") and castling_config.white_king_file or castling_config.black_king_file
+    local is_castling = string.upper(piece) == "K" and from_rank == to_rank and from_file == expected_king_file and (to_file == 3 or to_file == 7)
 
     if en_passant_target and to_rank == en_passant_target[1] and to_file == en_passant_target[2] then
         if piece == "P" or piece == "p" then

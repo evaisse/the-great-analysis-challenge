@@ -179,6 +179,11 @@ class Board {
     final isCastling =
         piece.type == PieceType.king &&
         from.row == to.row &&
+        from.col ==
+            (piece.color == PieceColor.white
+                ? _castlingConfig.whiteKingCol
+                : _castlingConfig.blackKingCol) &&
+        _hasCastlingRight(piece.color, to.col == 6) &&
         (to.col == 2 || to.col == 6);
 
     irreversibleHistory.add(
