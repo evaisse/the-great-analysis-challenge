@@ -23,6 +23,7 @@ class ChessEngine {
     private FenParser $fen_parser;
     private AI $ai;
     private Perft $perft;
+    private bool $rich_eval_enabled;
     private int $uci_hash_mb = 16;
     private int $uci_threads = 1;
     private ?string $pgn_path = null;
@@ -60,11 +61,12 @@ class ChessEngine {
     private int $trace_ai_tt_misses = 0;
     private int $trace_ai_beta_cutoffs = 0;
     
-    public function __construct() {
+    public function __construct(bool $rich_eval_enabled = false) {
+        $this->rich_eval_enabled = $rich_eval_enabled;
         $this->board = new Board();
         $this->move_gen = new MoveGenerator($this->board);
         $this->fen_parser = new FenParser($this->board);
-        $this->ai = new AI($this->board, $this->move_gen);
+        $this->ai = new AI($this->board, $this->move_gen, $this->rich_eval_enabled);
         $this->perft = new Perft($this->board, $this->move_gen);
         $this->reset_trace_export_state();
         $this->reset_trace_search_state();
@@ -136,7 +138,11 @@ class ChessEngine {
                 case 'eval':
                     $this->handle_eval();
                     break;
-                    
+
+                case 'rich-eval':
+                    $this->handle_rich_eval(array_slice($parts, 1));
+                    break;
+                     
                 case 'hash':
                     $this->handle_hash();
                     break;
@@ -407,6 +413,25 @@ class ChessEngine {
     private function handle_eval(): void {
         $eval = $this->ai->evaluate();
         echo "Evaluation: $eval\n";
+    }
+
+    private function handle_rich_eval(array $args): void {
+        $action = strtolower(trim($args[0] ?? ''));
+        if ($action === 'on') {
+            $this->rich_eval_enabled = true;
+            $this->ai->set_rich_eval_enabled(true);
+            echo "Rich evaluation enabled\n";
+            return;
+        }
+
+        if ($action === 'off') {
+            $this->rich_eval_enabled = false;
+            $this->ai->set_rich_eval_enabled(false);
+            echo "Rich evaluation disabled\n";
+            return;
+        }
+
+        echo "ERROR: Use 'rich-eval on' or 'rich-eval off'\n";
     }
     
     private function handle_hash(): void {
@@ -792,7 +817,7 @@ class ChessEngine {
         $this->board = new Board();
         $this->move_gen = new MoveGenerator($this->board);
         $this->fen_parser = new FenParser($this->board);
-        $this->ai = new AI($this->board, $this->move_gen);
+        $this->ai = new AI($this->board, $this->move_gen, $this->rich_eval_enabled);
         $this->perft = new Perft($this->board, $this->move_gen);
     }
 
@@ -1891,6 +1916,7 @@ Available commands:
   fen <string>                - Load position from FEN notation
   export                      - Export current position as FEN
   eval                        - Display position evaluation
+  rich-eval on|off            - Enable or disable rich evaluation
   hash                        - Show Zobrist hash of current position
   draws                       - Show draw detection status
   history                     - Show position hash history
@@ -1920,5 +1946,5 @@ HELP;
 }
 
 // Start the engine
-$engine = new ChessEngine();
+$engine = new ChessEngine(in_array('--rich-eval', $argv, true));
 $engine->start();

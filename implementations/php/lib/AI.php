@@ -6,6 +6,7 @@ require_once __DIR__ . '/Types.php';
 require_once __DIR__ . '/Board.php';
 require_once __DIR__ . '/DrawDetection.php';
 require_once __DIR__ . '/MoveGenerator.php';
+require_once __DIR__ . '/Eval/RichEvaluator.php';
 
 /**
  * AI with iterative deepening + negamax alpha-beta + transposition table.
@@ -25,10 +26,22 @@ class AI {
     private int $tt_hits = 0;
     private int $tt_misses = 0;
     private int $beta_cutoffs = 0;
+    private bool $rich_eval_enabled;
+    private Eval\RichEvaluator $rich_evaluator;
 
-    public function __construct(Board $board, MoveGenerator $move_gen) {
+    public function __construct(Board $board, MoveGenerator $move_gen, bool $rich_eval_enabled = false) {
         $this->board = $board;
         $this->move_gen = $move_gen;
+        $this->rich_eval_enabled = $rich_eval_enabled;
+        $this->rich_evaluator = new Eval\RichEvaluator($board, $move_gen);
+    }
+
+    public function set_rich_eval_enabled(bool $enabled): void {
+        $this->rich_eval_enabled = $enabled;
+    }
+
+    public function is_rich_eval_enabled(): bool {
+        return $this->rich_eval_enabled;
     }
 
     public function request_stop(): void {
@@ -318,6 +331,15 @@ class AI {
     
     public function evaluate(): int {
         $this->eval_calls++;
+        if ($this->rich_eval_enabled) {
+            $score = $this->rich_evaluator->evaluate();
+            return $this->board->current_player === CHESS_WHITE ? $score : -$score;
+        }
+
+        return $this->evaluate_simple();
+    }
+
+    private function evaluate_simple(): int {
         $score = 0;
         
         // Material evaluation
