@@ -13,6 +13,15 @@ local START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 local board = {}
 local white_to_move = true
 local castling_rights = {white_king = true, white_queen = true, black_king = true, black_queen = true}
+local castling_config = default_castling_config and default_castling_config() or {
+    white_king_file = 5,
+    white_kingside_rook_file = 8,
+    white_queenside_rook_file = 1,
+    black_king_file = 5,
+    black_kingside_rook_file = 8,
+    black_queenside_rook_file = 1,
+}
+local chess960_mode = false
 local en_passant_target = nil
 local halfmove_clock = 0
 local fullmove_number = 1
@@ -142,7 +151,13 @@ end
 local function build_chess960_fen(id)
     local white = string.upper(decode_chess960_backrank(id))
     local black = string.lower(white)
-    return string.format("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w - - 0 1", black, white)
+    local castling = ""
+    for i = 1, #white do
+        if string.sub(white, i, i) == "R" then
+            castling = castling .. string.char(string.byte("A") + i - 1)
+        end
+    end
+    return string.format("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w %s - 0 1", black, white, castling .. string.lower(castling))
 end
 local tt = {}
 local search_deadline = nil
@@ -263,6 +278,15 @@ local function new_game()
     }
     white_to_move = true
     castling_rights = {white_king = true, white_queen = true, black_king = true, black_queen = true}
+    castling_config = {
+        white_king_file = 5,
+        white_kingside_rook_file = 8,
+        white_queenside_rook_file = 1,
+        black_king_file = 5,
+        black_kingside_rook_file = 8,
+        black_queenside_rook_file = 1,
+    }
+    chess960_mode = false
     en_passant_target = nil
     halfmove_clock = 0
     fullmove_number = 1
@@ -382,6 +406,155 @@ local function manhattan_distance(a_rank, a_file, b_rank, b_file)
     return MANHATTAN_DISTANCE[square_index(a_rank, a_file)][square_index(b_rank, b_file)]
 end
 
+local function clone_castling_config(source)
+    return {
+        white_king_file = source.white_king_file,
+        white_kingside_rook_file = source.white_kingside_rook_file,
+        white_queenside_rook_file = source.white_queenside_rook_file,
+        black_king_file = source.black_king_file,
+        black_kingside_rook_file = source.black_kingside_rook_file,
+        black_queenside_rook_file = source.black_queenside_rook_file,
+    }
+end
+
+local function castling_config_is_classical(config)
+    return config.white_king_file == 5 and
+        config.white_kingside_rook_file == 8 and
+        config.white_queenside_rook_file == 1 and
+        config.black_king_file == 5 and
+        config.black_kingside_rook_file == 8 and
+        config.black_queenside_rook_file == 1
+end
+
+local function get_castle_details(is_white, kingside)
+    local rank = is_white and 1 or 8
+    local king_file = is_white and castling_config.white_king_file or castling_config.black_king_file
+    local rook_file
+    if is_white then
+        rook_file = kingside and castling_config.white_kingside_rook_file or castling_config.white_queenside_rook_file
+    else
+        rook_file = kingside and castling_config.black_kingside_rook_file or castling_config.black_queenside_rook_file
+    end
+    return {
+        king_start = {rank, king_file},
+        rook_start = {rank, rook_file},
+        king_target = {rank, kingside and 7 or 3},
+        rook_target = {rank, kingside and 6 or 4},
+    }
+end
+
+local function line_path(start_rank, start_file, target_rank, target_file)
+    if start_rank == target_rank and start_file == target_file then
+        return {}
+    end
+    local rank_step = target_rank == start_rank and 0 or (target_rank > start_rank and 1 or -1)
+    local file_step = target_file == start_file and 0 or (target_file > start_file and 1 or -1)
+    local rank = start_rank + rank_step
+    local file = start_file + file_step
+    local path = {}
+    while rank ~= target_rank or file ~= target_file do
+        path[#path + 1] = {rank, file}
+        rank = rank + rank_step
+        file = file + file_step
+    end
+    path[#path + 1] = {target_rank, target_file}
+    return path
+end
+
+local function find_home_rank_piece(is_white, piece_char)
+    local rank = is_white and 1 or 8
+    local target = is_white and string.upper(piece_char) or string.lower(piece_char)
+    for file = 1, 8 do
+        if board[rank][file] == target then
+            return file
+        end
+    end
+    return nil
+end
+
+local function select_rook_file(files, king_file, kingside, fallback)
+    local selected = fallback
+    local found = false
+    for _, file in ipairs(files) do
+        if kingside then
+            if file > king_file and (not found or file > selected) then
+                selected = file
+                found = true
+            end
+        else
+            if file < king_file and (not found or file < selected) then
+                selected = file
+                found = true
+            end
+        end
+    end
+    return selected
+end
+
+local function configure_chess960_from_board()
+    local white_king_file = find_home_rank_piece(true, "K")
+    local black_king_file = find_home_rank_piece(false, "K")
+    if not white_king_file or not black_king_file then
+        castling_config = clone_castling_config({
+            white_king_file = 5,
+            white_kingside_rook_file = 8,
+            white_queenside_rook_file = 1,
+            black_king_file = 5,
+            black_kingside_rook_file = 8,
+            black_queenside_rook_file = 1,
+        })
+        chess960_mode = false
+        return
+    end
+
+    local white_rooks = {}
+    local black_rooks = {}
+    for file = 1, 8 do
+        if board[1][file] == "R" then white_rooks[#white_rooks + 1] = file end
+        if board[8][file] == "r" then black_rooks[#black_rooks + 1] = file end
+    end
+    if #white_rooks == 0 or #black_rooks == 0 then
+        castling_config = clone_castling_config({
+            white_king_file = 5,
+            white_kingside_rook_file = 8,
+            white_queenside_rook_file = 1,
+            black_king_file = 5,
+            black_kingside_rook_file = 8,
+            black_queenside_rook_file = 1,
+        })
+        chess960_mode = false
+        return
+    end
+
+    castling_config = {
+        white_king_file = white_king_file,
+        white_kingside_rook_file = select_rook_file(white_rooks, white_king_file, true, 8),
+        white_queenside_rook_file = select_rook_file(white_rooks, white_king_file, false, 1),
+        black_king_file = black_king_file,
+        black_kingside_rook_file = select_rook_file(black_rooks, black_king_file, true, 8),
+        black_queenside_rook_file = select_rook_file(black_rooks, black_king_file, false, 1),
+    }
+    chess960_mode = not castling_config_is_classical(castling_config)
+end
+
+local function current_castling_fen()
+    if chess960_mode then
+        local result = ""
+        if castling_rights.white_queen then result = result .. string.char(string.byte("A") + castling_config.white_queenside_rook_file - 1) end
+        if castling_rights.white_king then result = result .. string.char(string.byte("A") + castling_config.white_kingside_rook_file - 1) end
+        if castling_rights.black_queen then result = result .. string.char(string.byte("a") + castling_config.black_queenside_rook_file - 1) end
+        if castling_rights.black_king then result = result .. string.char(string.byte("a") + castling_config.black_kingside_rook_file - 1) end
+        return result ~= "" and result or "-"
+    end
+
+    local castling = ""
+    if castling_rights.white_king then castling = castling .. "K" end
+    if castling_rights.white_queen then castling = castling .. "Q" end
+    if castling_rights.black_king then castling = castling .. "k" end
+    if castling_rights.black_queen then castling = castling .. "q" end
+    return castling ~= "" and castling or "-"
+end
+
 KNIGHT_ATTACKS = build_attack_table(KNIGHT_DELTAS)
 KING_ATTACKS = build_attack_table(KING_DELTAS)
 for _, dir in ipairs(RAY_DIRECTIONS) do
@@ -484,6 +657,8 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
     table.insert(irreversible_history, {
         castling_rights = {white_king = castling_rights.white_king, white_queen = castling_rights.white_queen,
                           black_king = castling_rights.black_king, black_queen = castling_rights.black_queen},
+        castling_config = clone_castling_config(castling_config),
+        chess960_mode = chess960_mode,
         en_passant_target = en_passant_target and {en_passant_target[1], en_passant_target[2]} or nil,
         halfmove_clock = halfmove_clock,
         zobrist_hash = zobrist_hash
@@ -503,6 +678,9 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
         white_to_move = white_to_move,
         promotion = promotion
     }
+    local castle_details = nil
+    local expected_king_file = (piece == "K") and castling_config.white_king_file or castling_config.black_king_file
+    local is_castling = string.upper(piece) == "K" and from_rank == to_rank and from_file == expected_king_file and (to_file == 3 or to_file == 7)
 
     if en_passant_target and to_rank == en_passant_target[1] and to_file == en_passant_target[2] then
         if piece == "P" or piece == "p" then
@@ -512,7 +690,7 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
             board[capture_rank][to_file] = "."
             move_record.en_passant_captured = ep_captured
         end
-    elseif captured ~= "." then
+    elseif (not is_castling) and captured ~= "." then
         hash = hash ~ zobrist_keys.pieces[get_piece_index(captured)][(to_rank - 1) * 8 + to_file]
     end
 
@@ -529,41 +707,19 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
     board[from_rank][from_file] = "."
 
     -- 4. Handle castling rook
-    if piece == "K" and from_file == 5 then
-        if to_file == 7 then  -- Kingside
-            local rook = board[1][8]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 8]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 6]
-            board[1][6] = board[1][8]
-            board[1][8] = "."
-            move_record.castling = "kingside"
-        elseif to_file == 3 then  -- Queenside
-            local rook = board[1][1]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 1]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 4]
-            board[1][4] = board[1][1]
-            board[1][1] = "."
-            move_record.castling = "queenside"
+    if is_castling then
+        castle_details = get_castle_details(piece == "K", to_file == 7)
+        local rook = board[castle_details.rook_start[1]][castle_details.rook_start[2]]
+        hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(castle_details.rook_start[1] - 1) * 8 + castle_details.rook_start[2]]
+        hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(castle_details.rook_target[1] - 1) * 8 + castle_details.rook_target[2]]
+        if not (castle_details.rook_start[1] == from_rank and castle_details.rook_start[2] == from_file) and
+           not (castle_details.rook_start[1] == to_rank and castle_details.rook_start[2] == to_file) then
+            board[castle_details.rook_start[1]][castle_details.rook_start[2]] = "."
         end
-    elseif piece == "k" and from_file == 5 then
-        if to_file == 7 then  -- Kingside
-            local rook = board[8][8]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 8]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 6]
-            board[8][6] = board[8][8]
-            board[8][8] = "."
-            move_record.castling = "kingside"
-        elseif to_file == 3 then  -- Queenside
-            local rook = board[8][1]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 1]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 4]
-            board[8][4] = board[8][1]
-            board[8][1] = "."
-            move_record.castling = "queenside"
-        end
+        board[castle_details.rook_target[1]][castle_details.rook_target[2]] = rook
+        move_record.castling = to_file == 7 and "kingside" or "queenside"
     end
 
-    -- 5. Update castling rights in hash
     if castling_rights.white_king then hash = hash ~ zobrist_keys.castling[1] end
     if castling_rights.white_queen then hash = hash ~ zobrist_keys.castling[2] end
     if castling_rights.black_king then hash = hash ~ zobrist_keys.castling[3] end
@@ -576,17 +732,16 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
         castling_rights.black_king = false
         castling_rights.black_queen = false
     elseif piece == "R" then
-        if from_rank == 1 and from_file == 1 then castling_rights.white_queen = false end
-        if from_rank == 1 and from_file == 8 then castling_rights.white_king = false end
+        if from_rank == 1 and from_file == castling_config.white_queenside_rook_file then castling_rights.white_queen = false end
+        if from_rank == 1 and from_file == castling_config.white_kingside_rook_file then castling_rights.white_king = false end
     elseif piece == "r" then
-        if from_rank == 8 and from_file == 1 then castling_rights.black_queen = false end
-        if from_rank == 8 and from_file == 8 then castling_rights.black_king = false end
+        if from_rank == 8 and from_file == castling_config.black_queenside_rook_file then castling_rights.black_queen = false end
+        if from_rank == 8 and from_file == castling_config.black_kingside_rook_file then castling_rights.black_king = false end
     end
-    -- Handle capture of rooks
-    if to_rank == 1 and to_file == 1 then castling_rights.white_queen = false end
-    if to_rank == 1 and to_file == 8 then castling_rights.white_king = false end
-    if to_rank == 8 and to_file == 1 then castling_rights.black_queen = false end
-    if to_rank == 8 and to_file == 8 then castling_rights.black_king = false end
+    if to_rank == 1 and to_file == castling_config.white_queenside_rook_file then castling_rights.white_queen = false end
+    if to_rank == 1 and to_file == castling_config.white_kingside_rook_file then castling_rights.white_king = false end
+    if to_rank == 8 and to_file == castling_config.black_queenside_rook_file then castling_rights.black_queen = false end
+    if to_rank == 8 and to_file == castling_config.black_kingside_rook_file then castling_rights.black_king = false end
 
     if castling_rights.white_king then hash = hash ~ zobrist_keys.castling[1] end
     if castling_rights.white_queen then hash = hash ~ zobrist_keys.castling[2] end
@@ -608,7 +763,7 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
     
     -- 7. Update active color and clocks
     hash = hash ~ zobrist_keys.side_to_move
-    if captured ~= "." or piece == "P" or piece == "p" then
+    if captured ~= "." or move_record.en_passant_captured or piece == "P" or piece == "p" then
         halfmove_clock = 0
     else
         halfmove_clock = halfmove_clock + 1
@@ -645,25 +800,23 @@ local function undo_move()
     
     -- Undo castling
     if move.castling == "kingside" then
-        if move.piece == "K" then
-            board[1][8] = board[1][6]
-            board[1][6] = "."
-        else
-            board[8][8] = board[8][6]
-            board[8][6] = "."
+        local details = get_castle_details(move.piece == "K", true)
+        board[details.rook_start[1]][details.rook_start[2]] = board[details.rook_target[1]][details.rook_target[2]]
+        if not (details.rook_target[1] == move.from_rank and details.rook_target[2] == move.from_file) then
+            board[details.rook_target[1]][details.rook_target[2]] = "."
         end
     elseif move.castling == "queenside" then
-        if move.piece == "K" then
-            board[1][1] = board[1][4]
-            board[1][4] = "."
-        else
-            board[8][1] = board[8][4]
-            board[8][4] = "."
+        local details = get_castle_details(move.piece == "K", false)
+        board[details.rook_start[1]][details.rook_start[2]] = board[details.rook_target[1]][details.rook_target[2]]
+        if not (details.rook_target[1] == move.from_rank and details.rook_target[2] == move.from_file) then
+            board[details.rook_target[1]][details.rook_target[2]] = "."
         end
     end
     
     -- Restore state
     castling_rights = old.castling_rights
+    castling_config = old.castling_config
+    chess960_mode = old.chess960_mode
     en_passant_target = old.en_passant_target
     halfmove_clock = old.halfmove_clock
     zobrist_hash = old.zobrist_hash
@@ -791,38 +944,49 @@ local function is_legal_move(from_rank, from_file, to_rank, to_file, promotion)
         if dr <= 1 and df <= 1 then
             -- Valid
         -- Castling
-        elseif dr == 0 and df == 2 and from_file == 5 then
-            if is_white then
-                if to_file == 7 then
-                    if not castling_rights.white_king then return false, "Cannot castle" end
-                    if board[1][6] ~= "." or board[1][7] ~= "." then return false, "Path blocked" end
-                    if is_in_check(true) or is_square_attacked(1, 6, false) or is_square_attacked(1, 7, false) then
-                        return false, "Cannot castle through check"
-                    end
-                elseif to_file == 3 then
-                    if not castling_rights.white_queen then return false, "Cannot castle" end
-                    if board[1][2] ~= "." or board[1][3] ~= "." or board[1][4] ~= "." then return false, "Path blocked" end
-                    if is_in_check(true) or is_square_attacked(1, 3, false) or is_square_attacked(1, 4, false) then
-                        return false, "Cannot castle through check"
-                    end
-                else
-                    return false, "Illegal king move"
+        elseif dr == 0 and (to_file == 3 or to_file == 7) then
+            local kingside = to_file == 7
+            if is_white and not (castling_rights.white_king and kingside or castling_rights.white_queen and not kingside) then
+                return false, "Cannot castle"
+            end
+            if (not is_white) and not (castling_rights.black_king and kingside or castling_rights.black_queen and not kingside) then
+                return false, "Cannot castle"
+            end
+            local details = get_castle_details(is_white, kingside)
+            if from_rank ~= details.king_start[1] or from_file ~= details.king_start[2] then
+                return false, "Illegal king move"
+            end
+            local rook_piece = board[details.rook_start[1]][details.rook_start[2]]
+            if rook_piece == "." or string.upper(rook_piece) ~= "R" or (rook_piece == string.upper(rook_piece)) ~= is_white then
+                return false, "Cannot castle"
+            end
+
+            local seen = {}
+            for _, square in ipairs(line_path(details.king_start[1], details.king_start[2], details.king_target[1], details.king_target[2])) do
+                seen[square[1] .. ":" .. square[2]] = square
+            end
+            for _, square in ipairs(line_path(details.rook_start[1], details.rook_start[2], details.rook_target[1], details.rook_target[2])) do
+                seen[square[1] .. ":" .. square[2]] = square
+            end
+            for _, square in pairs(seen) do
+                if not (square[1] == details.king_start[1] and square[2] == details.king_start[2]) and
+                   not (square[1] == details.rook_start[1] and square[2] == details.rook_start[2]) and
+                   board[square[1]][square[2]] ~= "." then
+                    return false, "Path blocked"
                 end
-            else
-                if to_file == 7 then
-                    if not castling_rights.black_king then return false, "Cannot castle" end
-                    if board[8][6] ~= "." or board[8][7] ~= "." then return false, "Path blocked" end
-                    if is_in_check(false) or is_square_attacked(8, 6, true) or is_square_attacked(8, 7, true) then
-                        return false, "Cannot castle through check"
-                    end
-                elseif to_file == 3 then
-                    if not castling_rights.black_queen then return false, "Cannot castle" end
-                    if board[8][2] ~= "." or board[8][3] ~= "." or board[8][4] ~= "." then return false, "Path blocked" end
-                    if is_in_check(false) or is_square_attacked(8, 3, true) or is_square_attacked(8, 4, true) then
-                        return false, "Cannot castle through check"
-                    end
-                else
-                    return false, "Illegal king move"
+            end
+
+            if is_in_check(is_white) then
+                return false, "Cannot castle through check"
+            end
+            local attack_seen = {}
+            attack_seen[details.king_start[1] .. ":" .. details.king_start[2]] = details.king_start
+            for _, square in ipairs(line_path(details.king_start[1], details.king_start[2], details.king_target[1], details.king_target[2])) do
+                attack_seen[square[1] .. ":" .. square[2]] = square
+            end
+            for _, square in pairs(attack_seen) do
+                if is_square_attacked(square[1], square[2], not is_white) then
+                    return false, "Cannot castle through check"
                 end
             end
         else
@@ -921,13 +1085,7 @@ local function export_fen()
     fen = fen .. " " .. (white_to_move and "w" or "b")
     
     -- Castling rights
-    local castling = ""
-    if castling_rights.white_king then castling = castling .. "K" end
-    if castling_rights.white_queen then castling = castling .. "Q" end
-    if castling_rights.black_king then castling = castling .. "k" end
-    if castling_rights.black_queen then castling = castling .. "q" end
-    if castling == "" then castling = "-" end
-    fen = fen .. " " .. castling
+    fen = fen .. " " .. current_castling_fen()
     
     -- En passant target
     if en_passant_target then
@@ -986,6 +1144,8 @@ local function import_fen(fen_str)
     
     -- Parse castling rights
     castling_rights = {white_king = false, white_queen = false, black_king = false, black_queen = false}
+    configure_chess960_from_board()
+    chess960_mode = false
     if parts[3] ~= "-" then
         for i = 1, #parts[3] do
             local c = string.sub(parts[3], i, i)
@@ -993,6 +1153,26 @@ local function import_fen(fen_str)
             elseif c == "Q" then castling_rights.white_queen = true
             elseif c == "k" then castling_rights.black_king = true
             elseif c == "q" then castling_rights.black_queen = true
+            elseif c >= "A" and c <= "H" then
+                local rook_file = string.byte(c) - string.byte("A") + 1
+                chess960_mode = true
+                if rook_file > castling_config.white_king_file then
+                    castling_rights.white_king = true
+                    castling_config.white_kingside_rook_file = rook_file
+                else
+                    castling_rights.white_queen = true
+                    castling_config.white_queenside_rook_file = rook_file
+                end
+            elseif c >= "a" and c <= "h" then
+                local rook_file = string.byte(c) - string.byte("a") + 1
+                chess960_mode = true
+                if rook_file > castling_config.black_king_file then
+                    castling_rights.black_king = true
+                    castling_config.black_kingside_rook_file = rook_file
+                else
+                    castling_rights.black_queen = true
+                    castling_config.black_queenside_rook_file = rook_file
+                end
             end
         end
     end
@@ -2654,6 +2834,17 @@ local function clone_castling_state(source)
     }
 end
 
+local function default_castling_config()
+    return {
+        white_king_file = 5,
+        white_kingside_rook_file = 8,
+        white_queenside_rook_file = 1,
+        black_king_file = 5,
+        black_kingside_rook_file = 8,
+        black_queenside_rook_file = 1,
+    }
+end
+
 local function clone_square(square)
     if not square then
         return nil
@@ -2695,6 +2886,8 @@ snapshot_engine_state = function()
         board = clone_board_state(board),
         white_to_move = white_to_move,
         castling_rights = clone_castling_state(castling_rights),
+        castling_config = clone_castling_config(castling_config),
+        chess960_mode = chess960_mode,
         en_passant_target = clone_square(en_passant_target),
         halfmove_clock = halfmove_clock,
         fullmove_number = fullmove_number,
@@ -2709,6 +2902,8 @@ restore_engine_state = function(state)
     board = clone_board_state(state.board)
     white_to_move = state.white_to_move
     castling_rights = clone_castling_state(state.castling_rights)
+    castling_config = clone_castling_config(state.castling_config)
+    chess960_mode = state.chess960_mode
     en_passant_target = clone_square(state.en_passant_target)
     halfmove_clock = state.halfmove_clock
     fullmove_number = state.fullmove_number

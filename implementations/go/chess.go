@@ -1724,7 +1724,25 @@ func decodeChess960Backrank(id int) string {
 func buildChess960FEN(id int) string {
 	white := strings.ToUpper(decodeChess960Backrank(id))
 	black := strings.ToLower(white)
-	return fmt.Sprintf("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w - - 0 1", black, white)
+	castling := buildChess960CastlingRights(white)
+	return fmt.Sprintf("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w %s - 0 1", black, white, castling)
+}
+
+func buildChess960CastlingRights(whiteBackrank string) string {
+	rights := make([]rune, 0, 4)
+	for file, piece := range whiteBackrank {
+		if piece == 'R' {
+			rights = append(rights, rune('A'+file))
+		}
+	}
+	if len(rights) == 0 {
+		return "-"
+	}
+	black := make([]rune, 0, len(rights))
+	for _, right := range rights {
+		black = append(black, rune(int(right)+'a'-'A'))
+	}
+	return string(append(rights, black...))
 }
 
 func (engine *ChessEngine) handleTrace(args []string) {

@@ -1249,7 +1249,24 @@ class ChessEngine {
     private function build_chess960_fen(int $id): string {
         $white = strtoupper($this->decode_chess960_backrank($id));
         $black = strtolower($white);
-        return "{$black}/pppppppp/8/8/8/8/PPPPPPPP/{$white} w - - 0 1";
+        $white_king = strpos($white, 'K');
+        $white_rooks = [];
+        for ($i = 0; $i < 8; $i++) {
+            if ($white[$i] === 'R') {
+                $white_rooks[] = $i;
+            }
+        }
+
+        $white_castling = [];
+        foreach ($white_rooks as $rook_col) {
+            $white_castling[] = chr(ord('A') + $rook_col);
+        }
+        sort($white_castling);
+
+        $black_castling = array_map('strtolower', $white_castling);
+        $castling = implode('', $white_castling) . implode('', $black_castling);
+
+        return "{$black}/pppppppp/8/8/8/8/PPPPPPPP/{$white} w {$castling} - 0 1";
     }
 
     private function handle_trace(array $args): void {

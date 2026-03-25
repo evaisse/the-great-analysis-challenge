@@ -3,7 +3,7 @@ FEN (Forsyth-Edwards Notation) parser and serializer.
 """
 
 from typing import Optional
-from lib.types import Piece, PieceType, Color, CastlingRights
+from lib.types import Piece, PieceType, Color, CastlingRights, CastlingConfig
 from lib.board import Board
 
 
@@ -83,6 +83,15 @@ class FenParser:
     def _parse_castling(self, castling_str: str):
         """Parse castling availability from FEN."""
         self.board.castling_rights = CastlingRights(False, False, False, False)
+        self.board.castling_config = CastlingConfig()
+        self.board.chess960_mode = False
+
+        white_king_col = self.board._find_home_rank_piece(Color.WHITE, PieceType.KING)
+        black_king_col = self.board._find_home_rank_piece(Color.BLACK, PieceType.KING)
+        if white_king_col is not None:
+            self.board.castling_config.white_king_col = white_king_col
+        if black_king_col is not None:
+            self.board.castling_config.black_king_col = black_king_col
         
         if castling_str != '-':
             for char in castling_str:
@@ -94,6 +103,28 @@ class FenParser:
                     self.board.castling_rights.black_kingside = True
                 elif char == 'q':
                     self.board.castling_rights.black_queenside = True
+                elif 'A' <= char <= 'H':
+                    if white_king_col is None:
+                        raise ValueError(f"Invalid castling character: {char}")
+                    rook_col = ord(char) - ord('A')
+                    self.board.chess960_mode = True
+                    if rook_col > white_king_col:
+                        self.board.castling_rights.white_kingside = True
+                        self.board.castling_config.white_kingside_rook_col = rook_col
+                    else:
+                        self.board.castling_rights.white_queenside = True
+                        self.board.castling_config.white_queenside_rook_col = rook_col
+                elif 'a' <= char <= 'h':
+                    if black_king_col is None:
+                        raise ValueError(f"Invalid castling character: {char}")
+                    rook_col = ord(char) - ord('a')
+                    self.board.chess960_mode = True
+                    if rook_col > black_king_col:
+                        self.board.castling_rights.black_kingside = True
+                        self.board.castling_config.black_kingside_rook_col = rook_col
+                    else:
+                        self.board.castling_rights.black_queenside = True
+                        self.board.castling_config.black_queenside_rook_col = rook_col
                 else:
                     raise ValueError(f"Invalid castling character: {char}")
     
@@ -157,7 +188,10 @@ class FenParser:
         turn_str = 'w' if self.board.to_move == Color.WHITE else 'b'
         
         # Generate castling
-        castling_str = self.board.castling_rights.to_fen()
+        castling_str = self.board.castling_rights.to_fen(
+            self.board.castling_config,
+            self.board.chess960_mode,
+        )
         
         # Generate en passant
         en_passant_str = self._generate_en_passant_string()
