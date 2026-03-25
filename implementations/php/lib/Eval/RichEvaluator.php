@@ -22,13 +22,6 @@ final class RichEvaluator {
     }
 
     public function evaluate(): int {
-        if ($this->moveGenerator->is_checkmate()) {
-            return $this->board->current_player === CHESS_WHITE ? -100000 : 100000;
-        }
-        if ($this->moveGenerator->is_stalemate()) {
-            return 0;
-        }
-
         $phase = Tapered::scalePhaseTo256(Tapered::computePhase($this->board));
         [$middlegamePst, $endgamePst] = Tapered::evaluateMaterialAndPst($this->board);
         $mobility = Mobility::evaluate($this->board);

@@ -214,15 +214,12 @@ class AI {
             return [$this->evaluate(), null, true];
         }
 
-        if ($this->move_gen->is_checkmate()) {
-            return [-self::MATE_VALUE + $depth, null, true];
-        }
-        if ($this->move_gen->is_stalemate()) {
-            return [0, null, true];
-        }
-
         $moves = $this->move_gen->generate_moves();
         if (empty($moves)) {
+            if ($this->move_gen->is_in_check()) {
+                return [-self::MATE_VALUE + $depth, null, true];
+            }
+
             return [0, null, true];
         }
 
@@ -290,15 +287,20 @@ class AI {
             $score += 100000;
         }
 
+        $from_piece = $this->board->get_piece($move->from_row, $move->from_col)[0];
+
         [$target_piece, ] = $this->board->get_piece($move->to_row, $move->to_col);
         if ($target_piece !== CHESS_EMPTY) {
-            $score += 10000 + CHESS_PIECE_VALUES[$target_piece];
+            $score += 10000 + (CHESS_PIECE_VALUES[$target_piece] * 10) - CHESS_PIECE_VALUES[$from_piece];
         }
         if ($move->promotion !== null) {
             $score += 9000 + CHESS_PIECE_VALUES[$move->promotion];
         }
         if ($move->is_castling) {
             $score += 100;
+        }
+        if (($move->to_row === 3 || $move->to_row === 4) && ($move->to_col === 3 || $move->to_col === 4)) {
+            $score += 10;
         }
         return $score;
     }

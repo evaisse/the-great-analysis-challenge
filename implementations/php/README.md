@@ -147,6 +147,8 @@ Rich evaluation mode is opt-in and keeps the classic `v1` evaluator as the defau
 - king-safety scoring for pawn shield, open files, and attacked king-zone squares
 - positional bonuses for bishop pair, rook activity, and knight outposts
 
+The `eval` command now also prints the active evaluation mode so fixtures and manual checks can confirm whether the engine is on the default `simple` path or the opt-in `rich` path.
+
 ### Performance
 
 Expected performance on modern hardware:

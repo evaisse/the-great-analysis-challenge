@@ -412,7 +412,8 @@ class ChessEngine {
     
     private function handle_eval(): void {
         $eval = $this->ai->evaluate();
-        echo "Evaluation: $eval\n";
+        echo "EVALUATION: $eval\n";
+        echo "EVAL-MODE: " . ($this->rich_eval_enabled ? 'rich' : 'simple') . "\n";
     }
 
     private function handle_rich_eval(array $args): void {
