@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 func main() {
@@ -22,7 +23,8 @@ type ChessEngine struct {
 	gameState              *GameState
 	ai                     *AI
 	pgnPath                string
-	pgnMoves               []string
+	pgnGame                *PgnGame
+	pgnVariationStack      [][2]int
 	bookPath               string
 	bookEnabled            bool
 	bookEntries            map[string][]BookEntry
@@ -58,6 +60,11 @@ type ChessEngine struct {
 	traceLastAITTHits      int
 	traceLastAITTMisses    int
 	traceLastAIBetaCutoffs int
+	protocolMode           string
+	uciState               string
+	uciAnalyseMode         bool
+	richEvalEnabled        bool
+	uciLastBestMove        string
 }
 
 type TraceEvent struct {
@@ -79,19 +86,27 @@ type EndgameInfo struct {
 	Detail     string
 }
 
+var chess960KnightTable = [10][2]int{
+	{0, 1}, {0, 2}, {0, 3}, {0, 4}, {1, 2},
+	{1, 3}, {1, 4}, {2, 3}, {2, 4}, {3, 4},
+}
+
 func NewChessEngine() *ChessEngine {
 	return &ChessEngine{
-		gameState:   NewGameState(),
-		ai:          NewAI(),
-		pgnPath:     "",
-		pgnMoves:    make([]string, 0),
-		bookPath:    "",
-		bookEnabled: false,
-		bookEntries: make(map[string][]BookEntry),
-		uciHashMB:   16,
-		uciThreads:  1,
-		traceLevel:  "info",
-		traceEvents: make([]TraceEvent, 0),
+		gameState:         NewGameState(),
+		ai:                NewAI(),
+		pgnPath:           "",
+		pgnGame:           newPgnGameFromHistory(nil, pgnStartFEN, "current-game"),
+		pgnVariationStack: make([][2]int, 0),
+		bookPath:          "",
+		bookEnabled:       false,
+		bookEntries:       make(map[string][]BookEntry),
+		uciHashMB:         16,
+		uciThreads:        1,
+		protocolMode:      "boot",
+		uciState:          "boot",
+		traceLevel:        "info",
+		traceEvents:       make([]TraceEvent, 0),
 	}
 }
 
@@ -109,12 +124,13 @@ func (engine *ChessEngine) Run() {
 			continue
 		}
 
-		parts := strings.Fields(line)
+		parts := splitCommandLine(line)
 		if len(parts) == 0 {
 			continue
 		}
 
 		command := strings.ToLower(parts[0])
+		engine.selectProtocolMode(command)
 		if command != "trace" {
 			engine.traceCommandCount++
 			engine.trace("command", line)
@@ -161,9 +177,13 @@ func (engine *ChessEngine) Run() {
 			}
 			fmt.Printf("  %d: %016x (current)\n", len(engine.gameState.PositionHistory), engine.gameState.ZobristHash)
 		case "go":
-			engine.handleGo(parts[1:])
+			if engine.protocolMode == "uci" {
+				engine.handleUCIGo(parts[1:])
+			} else {
+				engine.handleGo(parts[1:])
+			}
 		case "stop":
-			fmt.Println("OK: stop")
+			engine.handleStop()
 		case "pgn":
 			engine.handlePGN(parts[1:])
 		case "book":
@@ -231,8 +251,49 @@ func (engine *ChessEngine) Run() {
 	}
 }
 
+func (engine *ChessEngine) selectProtocolMode(command string) {
+	if engine.protocolMode == "boot" {
+		if command == "uci" {
+			engine.protocolMode = "uci"
+		} else {
+			engine.protocolMode = "custom"
+		}
+		return
+	}
+
+	if command == "uci" {
+		engine.protocolMode = "uci"
+	}
+}
+
+func (engine *ChessEngine) setUCIState(state string) {
+	engine.uciState = state
+}
+
+func uciBoolDefault(value bool) string {
+	if value {
+		return "true"
+	}
+	return "false"
+}
+
+func parseUCICheckValue(raw string) (bool, bool) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "true", "1", "on", "yes":
+		return true, true
+	case "false", "0", "off", "no":
+		return false, true
+	default:
+		return false, false
+	}
+}
+
 func (engine *ChessEngine) handleNew() {
 	engine.gameState = NewGameState()
+	engine.ai = NewAI()
+	engine.pgnPath = ""
+	engine.pgnGame = newPgnGameFromHistory(nil, pgnStartFEN, "current-game")
+	engine.pgnVariationStack = nil
 	fmt.Println("OK: New game started")
 	fmt.Print(engine.gameState.Display())
 }
@@ -283,7 +344,7 @@ func (engine *ChessEngine) handleMove(moveStr string) {
 		move.PromoteTo = promotionPiece
 	}
 
-	engine.gameState.MakeMove(move)
+	engine.recordPGNMove(move)
 
 	// Check for game end conditions
 	legalMoves := engine.gameState.GenerateLegalMoves()
@@ -309,6 +370,25 @@ func (engine *ChessEngine) handleMove(moveStr string) {
 }
 
 func (engine *ChessEngine) handleUndo() {
+	if len(engine.pgnVariationStack) == 0 {
+		if engine.gameState.UndoLastMove() {
+			if len(engine.pgnGame.Moves) > 0 {
+				engine.pgnGame.Moves = engine.pgnGame.Moves[:len(engine.pgnGame.Moves)-1]
+			}
+			fmt.Println("OK: undo")
+			fmt.Print(engine.gameState.Display())
+			return
+		}
+	} else {
+		seq := engine.currentPGNSequenceRef()
+		if len(*seq) > 0 {
+			*seq = (*seq)[:len(*seq)-1]
+			engine.syncRuntimeToPGNCursor()
+			fmt.Println("OK: undo")
+			fmt.Print(engine.gameState.Display())
+			return
+		}
+	}
 	if engine.gameState.UndoLastMove() {
 		fmt.Println("OK: undo")
 		fmt.Print(engine.gameState.Display())
@@ -318,10 +398,17 @@ func (engine *ChessEngine) handleUndo() {
 }
 
 func (engine *ChessEngine) handleFEN(fen string) {
-	err := engine.gameState.FromFEN(fen)
+	gs := NewGameState()
+	err := gs.FromFEN(fen)
 	if err != nil {
 		fmt.Printf("ERROR: Invalid FEN: %s\n", err.Error())
 	} else {
+		engine.gameState = gs
+		engine.ai = NewAI()
+		startFEN := engine.gameState.ToFEN()
+		engine.pgnPath = ""
+		engine.pgnGame = newPgnGameFromHistory(nil, startFEN, "current-game")
+		engine.pgnVariationStack = nil
 		fmt.Println("OK: FEN loaded")
 		fmt.Print(engine.gameState.Display())
 	}
@@ -466,6 +553,100 @@ func (engine *ChessEngine) handleGo(args []string) {
 	}
 }
 
+func (engine *ChessEngine) handleUCIGo(args []string) {
+	if len(args) == 0 {
+		fmt.Println("ERROR: go requires subcommand (movetime <ms>|wtime <ms> btime <ms> winc <ms> binc <ms> [movestogo <n>]|depth <n>|infinite)")
+		return
+	}
+
+	switch strings.ToLower(args[0]) {
+	case "depth":
+		if len(args) < 2 {
+			fmt.Println("ERROR: go depth requires a value")
+			return
+		}
+		depth, err := strconv.Atoi(args[1])
+		if err != nil {
+			fmt.Println("ERROR: go depth requires an integer value")
+			return
+		}
+		if depth < 1 {
+			depth = 1
+		}
+		if depth > MAX_DEPTH {
+			depth = MAX_DEPTH
+		}
+		engine.handleUCISearch(depth, 0)
+	case "movetime":
+		if len(args) < 2 {
+			fmt.Println("ERROR: go movetime requires a value in milliseconds")
+			return
+		}
+		movetimeMs, err := strconv.Atoi(args[1])
+		if err != nil {
+			fmt.Println("ERROR: go movetime requires an integer value")
+			return
+		}
+		if movetimeMs <= 0 {
+			fmt.Println("ERROR: go movetime must be > 0")
+			return
+		}
+		engine.handleUCISearch(MAX_DEPTH, movetimeMs)
+	case "wtime":
+		movetimeMs, err := deriveMovetimeFromClockArgs(args, engine.gameState.ActiveColor)
+		if err != nil {
+			fmt.Printf("ERROR: %s\n", err.Error())
+			return
+		}
+		engine.handleUCISearch(MAX_DEPTH, movetimeMs)
+	case "infinite":
+		fmt.Println("info string infinite search bounded to 15000 ms in synchronous mode")
+		engine.handleUCISearch(MAX_DEPTH, 15000)
+	default:
+		fmt.Println("ERROR: Unsupported go command")
+	}
+}
+
+func (engine *ChessEngine) handleUCISearch(depth int, movetimeMs int) {
+	engine.setUCIState("searching")
+	legalMoves := engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		engine.uciLastBestMove = "0000"
+		fmt.Println("bestmove 0000")
+		engine.setUCIState("idle")
+		return
+	}
+
+	if bookMove, ok := engine.chooseBookMove(legalMoves); ok {
+		moveStr := moveToString(bookMove)
+		engine.uciLastBestMove = moveStr
+		engine.recordTraceAI("uci-book", moveStr, 0, 0, 0, false, 0, 0, 0, 0, 0)
+		fmt.Printf("info string bookmove %s\n", moveStr)
+		fmt.Printf("bestmove %s\n", moveStr)
+		engine.setUCIState("idle")
+		return
+	}
+
+	if endgameMove, info, ok := engine.chooseEndgameMove(legalMoves); ok {
+		moveStr := moveToString(endgameMove)
+		engine.uciLastBestMove = moveStr
+		engine.recordTraceAI("uci-endgame", moveStr, 0, info.WhiteScore, 0, false, 0, 0, 0, 0, 0)
+		fmt.Printf("info string endgame %s score cp %d\n", info.Kind, info.WhiteScore)
+		fmt.Printf("bestmove %s\n", moveStr)
+		engine.setUCIState("idle")
+		return
+	}
+
+	result := engine.ai.Search(engine.gameState, depth, movetimeMs)
+	bestMove := normalizeBestMove(result.Move, legalMoves)
+	moveStr := moveToString(bestMove)
+	engine.uciLastBestMove = moveStr
+	engine.recordTraceAI("uci-search", moveStr, result.Depth, result.Score, result.ElapsedMS, result.TimedOut, result.Nodes, result.EvalCalls, result.TTHits, result.TTMisses, result.BetaCutoffs)
+	fmt.Printf("info depth %d score cp %d time %d nodes %d\n", result.Depth, result.Score, result.ElapsedMS, result.Nodes)
+	fmt.Printf("bestmove %s\n", moveStr)
+	engine.setUCIState("idle")
+}
+
 func (engine *ChessEngine) handleUCIDepthSearch(depth int) {
 	legalMoves := engine.gameState.GenerateLegalMoves()
 	if len(legalMoves) == 0 {
@@ -578,10 +759,27 @@ func (engine *ChessEngine) handleAITimed(maxDepth int, movetimeMs int) {
 	engine.applyAIMove(result, legalMoves, maxDepth)
 }
 
+func (engine *ChessEngine) handleStop() {
+	if engine.protocolMode == "uci" {
+		if engine.uciState == "searching" {
+			bestMove := engine.uciLastBestMove
+			if bestMove == "" {
+				bestMove = "0000"
+			}
+			fmt.Printf("bestmove %s\n", bestMove)
+			engine.setUCIState("idle")
+		} else {
+			fmt.Println("info string stop ignored (no active async search)")
+		}
+		return
+	}
+	fmt.Println("OK: stop")
+}
+
 func (engine *ChessEngine) applyAIMove(result SearchResult, legalMoves []Move, requestedDepth int) {
 	bestMove := normalizeBestMove(result.Move, legalMoves)
 
-	engine.gameState.MakeMove(bestMove)
+	engine.recordPGNMove(bestMove)
 
 	moveStr := moveToString(bestMove)
 	depthUsed := result.Depth
@@ -839,7 +1037,7 @@ func (engine *ChessEngine) chooseBookMove(legalMoves []Move) (Move, bool) {
 }
 
 func (engine *ChessEngine) applyBookAIMove(bestMove Move) {
-	engine.gameState.MakeMove(bestMove)
+	engine.recordPGNMove(bestMove)
 	engine.bookPlayed++
 
 	moveStr := moveToString(bestMove)
@@ -898,13 +1096,6 @@ func colorName(color Color) string {
 	return "black"
 }
 
-func absInt(value int) int {
-	if value < 0 {
-		return -value
-	}
-	return value
-}
-
 func minInt(values ...int) int {
 	if len(values) == 0 {
 		return 0
@@ -916,10 +1107,6 @@ func minInt(values ...int) int {
 		}
 	}
 	return result
-}
-
-func manhattanDistance(a, b Square) int {
-	return absInt(a.File-b.File) + absInt(a.Rank-b.Rank)
 }
 
 func nonKingMaterialCount(counts [2][7]int, color Color) int {
@@ -985,7 +1172,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[Black]
 		strongKing := kingSquares[White]
 		edgeDistance := minInt(weakKing.File, 7-weakKing.File, weakKing.Rank, 7-weakKing.Rank)
-		kingDistance := manhattanDistance(strongKing, weakKing)
+		kingDistance := attackTableManhattanDistance(strongKing, weakKing)
 		score := 900 + (14-kingDistance)*6 + (3-edgeDistance)*20
 		return EndgameInfo{
 			Kind:       "KQK",
@@ -999,7 +1186,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[White]
 		strongKing := kingSquares[Black]
 		edgeDistance := minInt(weakKing.File, 7-weakKing.File, weakKing.Rank, 7-weakKing.Rank)
-		kingDistance := manhattanDistance(strongKing, weakKing)
+		kingDistance := attackTableManhattanDistance(strongKing, weakKing)
 		score := 900 + (14-kingDistance)*6 + (3-edgeDistance)*20
 		return EndgameInfo{
 			Kind:       "KQK",
@@ -1017,7 +1204,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[Black]
 		promotion := Square{File: pawn.File, Rank: 7}
 		pawnSteps := 7 - pawn.Rank
-		score := 120 + (6-pawnSteps)*35 + manhattanDistance(weakKing, promotion)*6 - manhattanDistance(strongKing, pawn)*8
+		score := 120 + (6-pawnSteps)*35 + attackTableManhattanDistance(weakKing, promotion)*6 - attackTableManhattanDistance(strongKing, pawn)*8
 		if pawnSteps <= 1 {
 			score += 80
 		}
@@ -1038,7 +1225,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[White]
 		promotion := Square{File: pawn.File, Rank: 0}
 		pawnSteps := pawn.Rank
-		score := 120 + (6-pawnSteps)*35 + manhattanDistance(weakKing, promotion)*6 - manhattanDistance(strongKing, pawn)*8
+		score := 120 + (6-pawnSteps)*35 + attackTableManhattanDistance(weakKing, promotion)*6 - attackTableManhattanDistance(strongKing, pawn)*8
 		if pawnSteps <= 1 {
 			score += 80
 		}
@@ -1060,7 +1247,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[Black]
 		weakPawn := pawnSquares[Black]
 		pawnSteps := weakPawn.Rank
-		score := 380 - pawnSteps*25 + (manhattanDistance(weakKing, weakPawn)-manhattanDistance(strongKing, weakPawn))*12
+		score := 380 - pawnSteps*25 + (attackTableManhattanDistance(weakKing, weakPawn)-attackTableManhattanDistance(strongKing, weakPawn))*12
 		if score < 50 {
 			score = 50
 		}
@@ -1077,7 +1264,7 @@ func detectEndgame(gs *GameState) (EndgameInfo, bool) {
 		weakKing := kingSquares[White]
 		weakPawn := pawnSquares[White]
 		pawnSteps := 7 - weakPawn.Rank
-		score := 380 - pawnSteps*25 + (manhattanDistance(weakKing, weakPawn)-manhattanDistance(strongKing, weakPawn))*12
+		score := 380 - pawnSteps*25 + (attackTableManhattanDistance(weakKing, weakPawn)-attackTableManhattanDistance(strongKing, weakPawn))*12
 		if score < 50 {
 			score = 50
 		}
@@ -1128,7 +1315,7 @@ func (engine *ChessEngine) chooseEndgameMove(legalMoves []Move) (Move, EndgameIn
 }
 
 func (engine *ChessEngine) applyEndgameAIMove(bestMove Move, info EndgameInfo) {
-	engine.gameState.MakeMove(bestMove)
+	engine.recordPGNMove(bestMove)
 	moveStr := moveToString(bestMove)
 	engine.recordTraceAI("endgame", moveStr, 0, info.WhiteScore, 0, false, 0, 0, 0, 0, 0)
 
@@ -1153,7 +1340,7 @@ func (engine *ChessEngine) applyEndgameAIMove(bestMove Move, info EndgameInfo) {
 
 func (engine *ChessEngine) handlePGN(args []string) {
 	if len(args) == 0 {
-		fmt.Println("ERROR: pgn requires subcommand (load|show|moves)")
+		fmt.Println("ERROR: pgn requires subcommand (load|save|show|moves|variation|comment)")
 		return
 	}
 
@@ -1164,38 +1351,109 @@ func (engine *ChessEngine) handlePGN(args []string) {
 			return
 		}
 		path := strings.Join(args[1:], " ")
-		engine.pgnPath = path
-		engine.pgnMoves = make([]string, 0)
-
-		content, err := os.ReadFile(path)
+		game, err := loadPGNFile(path)
 		if err != nil {
-			fmt.Printf("PGN: loaded path=\"%s\"; moves=0; note=file-unavailable\n", path)
+			fmt.Printf("ERROR: pgn load failed: %s\n", err.Error())
 			return
 		}
-		engine.pgnMoves = extractPgnMoves(string(content))
-		fmt.Printf("PGN: loaded path=\"%s\"; moves=%d\n", path, len(engine.pgnMoves))
+		engine.pgnPath = path
+		engine.pgnGame = game
+		engine.pgnVariationStack = nil
+		engine.syncRuntimeToPGNCursor()
+		fmt.Printf("PGN: loaded source=%s\n", path)
+	case "save":
+		if len(args) < 2 {
+			fmt.Println("ERROR: pgn save requires a file path")
+			return
+		}
+		path := strings.Join(args[1:], " ")
+		if err := os.WriteFile(path, []byte(serializePGN(engine.pgnGame)), 0644); err != nil {
+			fmt.Printf("ERROR: pgn save failed: %s\n", err.Error())
+			return
+		}
+		engine.pgnPath = path
+		engine.pgnGame.Source = path
+		fmt.Printf("PGN: saved path=\"%s\"\n", path)
 	case "show":
-		source := engine.pgnPath
+		source := engine.pgnGame.Source
 		if source == "" {
 			source = "current-game"
 		}
-		fmt.Printf("PGN: source=%s; moves=%d\n", source, len(engine.pgnMoves))
+		moves := engine.currentPGNMoves()
+		fmt.Printf("PGN: source=%s; moves=%d\n", source, len(moves))
+		fmt.Print(strings.TrimRight(serializePGN(engine.pgnGame), "\n") + "\n")
 	case "moves":
-		if len(engine.pgnMoves) == 0 {
+		moves := engine.currentPGNMoves()
+		if len(moves) == 0 {
 			fmt.Println("PGN: moves (none)")
 			return
 		}
-		fmt.Printf("PGN: moves %s\n", strings.Join(engine.pgnMoves, " "))
+		fmt.Printf("PGN: moves %s\n", strings.Join(moves, " "))
+	case "variation":
+		if len(args) < 2 {
+			fmt.Println("ERROR: pgn variation requires enter or exit")
+			return
+		}
+		switch strings.ToLower(args[1]) {
+		case "enter":
+			seq := engine.currentPGNSequenceRef()
+			if len(*seq) == 0 {
+				fmt.Println("ERROR: No variation available")
+				return
+			}
+			anchorIndex := len(*seq) - 1
+			anchor := (*seq)[anchorIndex]
+			if len(anchor.Variations) == 0 {
+				anchor.Variations = append(anchor.Variations, []*PgnMoveNode{})
+			}
+			engine.pgnVariationStack = append(engine.pgnVariationStack, [2]int{anchorIndex, len(anchor.Variations) - 1})
+			engine.syncRuntimeToPGNCursor()
+			fmt.Printf("PGN: variation depth=%d\n", len(engine.pgnVariationStack))
+		case "exit":
+			if len(engine.pgnVariationStack) == 0 {
+				fmt.Println("ERROR: Not inside a variation")
+				return
+			}
+			engine.pgnVariationStack = engine.pgnVariationStack[:len(engine.pgnVariationStack)-1]
+			engine.syncRuntimeToPGNCursor()
+			fmt.Printf("PGN: variation depth=%d\n", len(engine.pgnVariationStack))
+		default:
+			fmt.Println("ERROR: Unsupported pgn variation command")
+		}
+	case "comment":
+		text := strings.TrimSpace(strings.Join(args[1:], " "))
+		if text == "" {
+			fmt.Println("ERROR: pgn comment requires text")
+			return
+		}
+		seq := engine.currentPGNSequenceRef()
+		if len(*seq) == 0 {
+			engine.pgnGame.InitialComments = append(engine.pgnGame.InitialComments, text)
+		} else {
+			(*seq)[len(*seq)-1].Comments = append((*seq)[len(*seq)-1].Comments, text)
+		}
+		fmt.Println("PGN: comment added")
 	default:
 		fmt.Println("ERROR: Unsupported pgn command")
 	}
 }
 
 func (engine *ChessEngine) handleUCI() {
+	engine.protocolMode = "uci"
+	engine.setUCIState("uci_sent")
+	fmt.Println("id name Go Chess Engine")
+	fmt.Println("id author The Great Analysis Challenge")
+	fmt.Printf("option name Hash type spin default %d min 1 max 1024\n", engine.uciHashMB)
+	fmt.Printf("option name Threads type spin default %d min 1 max 64\n", engine.uciThreads)
+	fmt.Printf("option name UCI_AnalyseMode type check default %s\n", uciBoolDefault(engine.uciAnalyseMode))
+	fmt.Printf("option name RichEval type check default %s\n", uciBoolDefault(engine.richEvalEnabled))
 	fmt.Println("uciok")
 }
 
 func (engine *ChessEngine) handleIsReady() {
+	if engine.protocolMode == "uci" && engine.uciState != "searching" {
+		engine.setUCIState("idle")
+	}
 	fmt.Println("readyok")
 }
 
@@ -1218,14 +1476,16 @@ func (engine *ChessEngine) handleSetOption(args []string) {
 	}
 
 	name := strings.ToLower(strings.TrimSpace(strings.Join(args[1:valueIndex], " ")))
-	value, err := strconv.Atoi(args[valueIndex+1])
-	if err != nil {
-		fmt.Println("ERROR: setoption value must be an integer")
-		return
-	}
+	rawName := strings.TrimSpace(strings.Join(args[1:valueIndex], " "))
+	rawValue := strings.TrimSpace(strings.Join(args[valueIndex+1:], " "))
 
 	switch name {
 	case "hash":
+		value, err := strconv.Atoi(rawValue)
+		if err != nil {
+			fmt.Println("ERROR: setoption value must be an integer")
+			return
+		}
 		if value < 1 {
 			value = 1
 		}
@@ -1235,6 +1495,11 @@ func (engine *ChessEngine) handleSetOption(args []string) {
 		engine.uciHashMB = value
 		fmt.Printf("info string option Hash=%d\n", engine.uciHashMB)
 	case "threads":
+		value, err := strconv.Atoi(rawValue)
+		if err != nil {
+			fmt.Println("ERROR: setoption value must be an integer")
+			return
+		}
 		if value < 1 {
 			value = 1
 		}
@@ -1243,14 +1508,37 @@ func (engine *ChessEngine) handleSetOption(args []string) {
 		}
 		engine.uciThreads = value
 		fmt.Printf("info string option Threads=%d\n", engine.uciThreads)
+	case "uci_analysemode":
+		value, ok := parseUCICheckValue(rawValue)
+		if !ok {
+			fmt.Println("ERROR: setoption value must be true/false")
+			return
+		}
+		engine.uciAnalyseMode = value
+		fmt.Printf("info string option UCI_AnalyseMode=%s\n", uciBoolDefault(value))
+	case "richeval":
+		value, ok := parseUCICheckValue(rawValue)
+		if !ok {
+			fmt.Println("ERROR: setoption value must be true/false")
+			return
+		}
+		engine.richEvalEnabled = value
+		fmt.Printf("info string option RichEval=%s\n", uciBoolDefault(value))
 	default:
-		fmt.Printf("info string unsupported option %s\n", strings.TrimSpace(strings.Join(args[1:valueIndex], " ")))
+		fmt.Printf("info string unsupported option %s\n", rawName)
 	}
 }
 
 func (engine *ChessEngine) handleUCINewGame() {
 	engine.gameState = NewGameState()
 	engine.ai = NewAI()
+	engine.pgnPath = ""
+	engine.pgnGame = newPgnGameFromHistory(nil, pgnStartFEN, "current-game")
+	engine.pgnVariationStack = nil
+	engine.uciLastBestMove = ""
+	if engine.protocolMode == "uci" {
+		engine.setUCIState("idle")
+	}
 }
 
 func (engine *ChessEngine) handlePosition(args []string) {
@@ -1260,6 +1548,7 @@ func (engine *ChessEngine) handlePosition(args []string) {
 	}
 
 	i := 0
+	startFEN := pgnStartFEN
 	switch strings.ToLower(args[0]) {
 	case "startpos":
 		engine.gameState = NewGameState()
@@ -1276,7 +1565,8 @@ func (engine *ChessEngine) handlePosition(args []string) {
 			fmt.Println("ERROR: position fen requires a FEN string")
 			return
 		}
-		if err := engine.gameState.FromFEN(strings.Join(fenParts, " ")); err != nil {
+		startFEN = strings.Join(fenParts, " ")
+		if err := engine.gameState.FromFEN(startFEN); err != nil {
 			fmt.Printf("ERROR: Invalid FEN: %s\n", err.Error())
 			return
 		}
@@ -1293,6 +1583,16 @@ func (engine *ChessEngine) handlePosition(args []string) {
 				return
 			}
 		}
+	}
+	engine.pgnPath = ""
+	engine.pgnVariationStack = nil
+	currentStart := startFEN
+	if len(engine.gameState.MoveHistory) == 0 {
+		currentStart = engine.gameState.ToFEN()
+	}
+	engine.pgnGame = newPgnGameFromHistory(engine.gameState.MoveHistory, currentStart, "current-game")
+	if engine.protocolMode == "uci" {
+		engine.setUCIState("idle")
 	}
 }
 
@@ -1353,12 +1653,78 @@ func (engine *ChessEngine) handleNew960(args []string) {
 	}
 
 	engine.chess960ID = id
-	engine.handleNew()
-	fmt.Printf("960: new game id=%d\n", engine.chess960ID)
+	fen := buildChess960FEN(engine.chess960ID)
+	engine.gameState = NewGameState()
+	if err := engine.gameState.FromFEN(fen); err != nil {
+		fmt.Printf("ERROR: Invalid Chess960 FEN: %s\n", err.Error())
+		return
+	}
+	fmt.Println("OK: New game started")
+	fmt.Print(engine.gameState.Display())
+	fmt.Printf("960: new game id=%d; backrank=%s\n", engine.chess960ID, decodeChess960Backrank(engine.chess960ID))
 }
 
 func (engine *ChessEngine) handlePosition960() {
-	fmt.Printf("960: id=%d; mode=chess960\n", engine.chess960ID)
+	fmt.Printf(
+		"960: id=%d; mode=chess960; backrank=%s; fen=%s\n",
+		engine.chess960ID,
+		decodeChess960Backrank(engine.chess960ID),
+		buildChess960FEN(engine.chess960ID),
+	)
+}
+
+func decodeChess960Backrank(id int) string {
+	pieces := make([]rune, 8)
+	for i := range pieces {
+		pieces[i] = '_'
+	}
+
+	n := id
+	remainder := n % 4
+	n /= 4
+	pieces[2*remainder+1] = 'b'
+
+	remainder = n % 4
+	n /= 4
+	pieces[2*remainder] = 'b'
+
+	remainder = n % 6
+	n /= 6
+	empty := make([]int, 0, 8)
+	for i, piece := range pieces {
+		if piece == '_' {
+			empty = append(empty, i)
+		}
+	}
+	pieces[empty[remainder]] = 'q'
+
+	knights := chess960KnightTable[n]
+	empty = empty[:0]
+	for i, piece := range pieces {
+		if piece == '_' {
+			empty = append(empty, i)
+		}
+	}
+	pieces[empty[knights[0]]] = 'n'
+	pieces[empty[knights[1]]] = 'n'
+
+	empty = empty[:0]
+	for i, piece := range pieces {
+		if piece == '_' {
+			empty = append(empty, i)
+		}
+	}
+	pieces[empty[0]] = 'r'
+	pieces[empty[1]] = 'k'
+	pieces[empty[2]] = 'r'
+
+	return string(pieces)
+}
+
+func buildChess960FEN(id int) string {
+	white := strings.ToUpper(decodeChess960Backrank(id))
+	black := strings.ToLower(white)
+	return fmt.Sprintf("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w - - 0 1", black, white)
 }
 
 func (engine *ChessEngine) handleTrace(args []string) {
@@ -1752,43 +2118,6 @@ func (engine *ChessEngine) trace(event, detail string) {
 	}
 }
 
-func extractPgnMoves(content string) []string {
-	lines := strings.Split(content, "\n")
-	movetextParts := make([]string, 0, len(lines))
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "[") {
-			continue
-		}
-		movetextParts = append(movetextParts, line)
-	}
-
-	moveText := strings.Join(movetextParts, " ")
-	reBraces := regexp.MustCompile(`\{[^}]*\}`)
-	moveText = reBraces.ReplaceAllString(moveText, " ")
-	reParens := regexp.MustCompile(`\([^)]*\)`)
-	moveText = reParens.ReplaceAllString(moveText, " ")
-	reLineComment := regexp.MustCompile(`;[^\n]*`)
-	moveText = reLineComment.ReplaceAllString(moveText, " ")
-
-	tokens := strings.Fields(moveText)
-	moves := make([]string, 0, len(tokens))
-	reMoveNumber := regexp.MustCompile(`^\d+\.(\.\.)?$`)
-	for _, tok := range tokens {
-		if reMoveNumber.MatchString(tok) {
-			continue
-		}
-		switch tok {
-		case "1-0", "0-1", "1/2-1/2", "*":
-			continue
-		default:
-			moves = append(moves, tok)
-		}
-	}
-	return moves
-}
-
 type concurrencyProfile struct {
 	workers int
 	runs    int
@@ -2054,12 +2383,14 @@ func (engine *ChessEngine) showHelp() {
 	fmt.Println("  go depth <n> - UCI-style depth-limited search (prints info/bestmove)")
 	fmt.Println("  go infinite  - Start bounded long search mode")
 	fmt.Println("  stop         - Stop infinite search mode")
-	fmt.Println("  pgn load|show|moves - PGN command family")
+	fmt.Println("  pgn load|save|show|moves - PGN command family")
+	fmt.Println("  pgn variation enter|exit - Navigate PGN variations")
+	fmt.Println("  pgn comment \"text\" - Add PGN comment")
 	fmt.Println("  book load|on|off|stats - Native opening book controls")
 	fmt.Println("  endgame      - Detect specialized endgame module and best move hint")
 	fmt.Println("  uci          - Enter/respond to UCI handshake")
 	fmt.Println("  isready      - UCI readiness probe")
-	fmt.Println("  setoption name <Hash|Threads> value <n> - Set UCI option")
+	fmt.Println("  setoption name <Hash|Threads|UCI_AnalyseMode|RichEval> value <x> - Set UCI option")
 	fmt.Println("  ucinewgame   - Reset internal state for UCI game")
 	fmt.Println("  position startpos|fen ... [moves ...] - Load UCI position")
 	fmt.Println("  new960 [id]  - Start Chess960 game by id (0-959)")
@@ -2070,4 +2401,105 @@ func (engine *ChessEngine) showHelp() {
 	fmt.Println("  display      - Show the current board")
 	fmt.Println("  help         - Show this help")
 	fmt.Println("  quit         - Exit the program")
+}
+
+func splitCommandLine(line string) []string {
+	parts := make([]string, 0)
+	var current strings.Builder
+	inQuotes := false
+	escaped := false
+	flush := func() {
+		if current.Len() > 0 {
+			parts = append(parts, current.String())
+			current.Reset()
+		}
+	}
+	for _, r := range line {
+		switch {
+		case escaped:
+			current.WriteRune(r)
+			escaped = false
+		case r == '\\':
+			escaped = true
+		case r == '"':
+			inQuotes = !inQuotes
+		case unicode.IsSpace(r) && !inQuotes:
+			flush()
+		default:
+			current.WriteRune(r)
+		}
+	}
+	flush()
+	return parts
+}
+
+func (engine *ChessEngine) currentPGNSequenceRef() *[]*PgnMoveNode {
+	seq := &engine.pgnGame.Moves
+	for _, entry := range engine.pgnVariationStack {
+		anchorIndex := entry[0]
+		variationIndex := entry[1]
+		if anchorIndex < 0 || anchorIndex >= len(*seq) {
+			empty := make([]*PgnMoveNode, 0)
+			return &empty
+		}
+		anchor := (*seq)[anchorIndex]
+		if variationIndex < 0 || variationIndex >= len(anchor.Variations) {
+			empty := make([]*PgnMoveNode, 0)
+			return &empty
+		}
+		seq = &anchor.Variations[variationIndex]
+	}
+	return seq
+}
+
+func (engine *ChessEngine) currentPGNMoves() []string {
+	seq := engine.currentPGNSequenceRef()
+	result := make([]string, 0, len(*seq))
+	for _, node := range *seq {
+		result = append(result, node.SAN)
+	}
+	return result
+}
+
+func (engine *ChessEngine) syncRuntimeToPGNCursor() {
+	gs, err := gameStateFromFEN(engine.pgnGame.InitialFEN)
+	if err != nil {
+		engine.gameState = NewGameState()
+		engine.ai = NewAI()
+		return
+	}
+	engine.gameState = gs
+	engine.ai = NewAI()
+	line := make([]*PgnMoveNode, 0)
+	seq := engine.pgnGame.Moves
+	for _, entry := range engine.pgnVariationStack {
+		anchorIndex := entry[0]
+		variationIndex := entry[1]
+		if anchorIndex < 0 || anchorIndex >= len(seq) {
+			break
+		}
+		line = append(line, seq[:anchorIndex+1]...)
+		anchor := seq[anchorIndex]
+		if variationIndex < 0 || variationIndex >= len(anchor.Variations) {
+			seq = nil
+			break
+		}
+		seq = anchor.Variations[variationIndex]
+	}
+	line = append(line, seq...)
+	for _, node := range line {
+		engine.gameState.MakeMove(cloneMove(node.Move))
+	}
+}
+
+func (engine *ChessEngine) recordPGNMove(move Move) {
+	fenBefore := engine.gameState.ToFEN()
+	san, err := moveToSAN(engine.gameState, move)
+	if err != nil {
+		san = moveToString(move)
+	}
+	engine.gameState.MakeMove(move)
+	node := &PgnMoveNode{SAN: san, Move: cloneMove(move), FenBefore: fenBefore, FenAfter: engine.gameState.ToFEN()}
+	seq := engine.currentPGNSequenceRef()
+	*seq = append(*seq, node)
 }

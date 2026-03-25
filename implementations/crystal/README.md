@@ -66,6 +66,7 @@ The engine provides an interactive command-line interface:
 ## Architecture
 
 - `src/types.cr` - Core data structures (Color, Piece, Move, GameState)
+- `src/attack_tables.cr` - Precomputed knight, king, sliding ray, and distance tables
 - `src/board.cr` - Board representation and game state management
 - `src/move_generator.cr` - Move generation and legal move validation
 - `src/ai.cr` - Minimax AI with alpha-beta pruning
@@ -81,6 +82,13 @@ Crystal's compiled nature provides excellent performance for chess calculations:
 - **AI search**: 4-ply search in ~100-500ms
 - **Memory usage**: Minimal due to value types and stack allocation
 - **Binary size**: ~2-3MB statically compiled executable
+
+## Attack Table Strategy
+
+This implementation precomputes knight attacks, king attacks, sliding rays, and
+Chebyshev/Manhattan distance tables when the program boots. Move generation,
+attack detection, and endgame king-distance evaluation all reuse those lookup
+tables instead of recalculating offsets on every query.
 
 ## Testing
 

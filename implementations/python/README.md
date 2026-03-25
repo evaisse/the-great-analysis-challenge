@@ -11,6 +11,7 @@ A complete chess engine implementation in Python following the Chess Engine Spec
 - ✅ **Game State Management**: Undo moves, detect checkmate/stalemate
 - ✅ **Performance Testing**: Perft function for move generation validation
 - ✅ **Static Analysis**: Comprehensive code quality tools
+- ✅ **Lookup Tables**: Precomputed knight, king, ray, and distance tables for hot-path move generation
 
 ## Quick Start
 
@@ -66,6 +67,7 @@ chess.py              # Main entry point and command interface
 lib/
 ├── types.py          # Type definitions and data classes
 ├── board.py          # Board representation and game state
+├── attack_tables.py  # Precomputed attack and distance lookup tables
 ├── move_generator.py # Legal move generation for all pieces
 ├── fen_parser.py     # FEN import/export functionality
 ├── ai.py             # Minimax AI with alpha-beta pruning

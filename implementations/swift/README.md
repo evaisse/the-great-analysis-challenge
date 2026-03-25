@@ -7,6 +7,7 @@ Swift implementation of the shared chess engine spec with the `v2-full` command 
 - Core chess rules: castling, en passant, promotion, FEN, perft, minimax AI
 - Extended `v2-full` surface: `hash`, `draws`, `history`, `go movetime`, `pgn`, `book`, `uci`, `isready`, `ucinewgame`, `new960`, `position960`, `trace`, `concurrency`
 - Harness-friendly CLI: no startup board dump, no prompt noise, flushed line-based responses
+- Precomputed knight, king, ray, and distance tables wired into move generation, attack checks, and endgame scoring
 
 ## Docker Workflow
 

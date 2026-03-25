@@ -8,6 +8,7 @@ A complete chess engine implementation in Kotlin following the Chess Engine Spec
 - AI opponent with minimax algorithm and alpha-beta pruning
 - FEN import/export support
 - Performance testing with perft
+- Precomputed knight, king, ray, and distance lookup tables for move generation hot paths
 - Object-oriented design with Kotlin's modern language features
 - Null safety and immutable data structures
 - Type-safe implementation with sealed classes and enums
@@ -52,6 +53,7 @@ docker run --network none -it chess-kotlin
 ## Architecture
 
 - `Types.kt` - Core type definitions and data classes
+- `AttackTables.kt` - Precomputed attack, ray, and distance tables
 - `Board.kt` - Board representation and game state management
 - `MoveGenerator.kt` - Move generation and validation  
 - `FenParser.kt` - FEN parsing and serialization

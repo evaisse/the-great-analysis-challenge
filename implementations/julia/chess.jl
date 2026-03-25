@@ -7,6 +7,7 @@ Command-line interface for the Julia chess engine implementation
 
 include("src/types.jl")
 include("src/zobrist.jl")
+include("src/attack_tables.jl")
 include("src/board.jl")
 include("src/move_generator.jl")
 include("src/fen.jl")

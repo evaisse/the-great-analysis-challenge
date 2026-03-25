@@ -68,6 +68,111 @@ struct GameState {
     let fullmoveNumber: Int
 }
 
+enum AttackTables {
+    static let knightAttackTable = buildAttackTable(deltas: [
+        (-1, -2), (1, -2),
+        (-2, -1), (2, -1),
+        (-2, 1), (2, 1),
+        (-1, 2), (1, 2),
+    ])
+
+    static let kingAttackTable = buildAttackTable(deltas: [
+        (-1, -1), (0, -1), (1, -1),
+        (-1, 0),            (1, 0),
+        (-1, 1),  (0, 1),  (1, 1),
+    ])
+
+    static let rayTables: [Int: [[[(Int, Int)]]]] = [
+        -9: buildRayTable(delta: (-1, -1)),
+        -8: buildRayTable(delta: (0, -1)),
+        -7: buildRayTable(delta: (1, -1)),
+        -1: buildRayTable(delta: (-1, 0)),
+        1: buildRayTable(delta: (1, 0)),
+        7: buildRayTable(delta: (-1, 1)),
+        8: buildRayTable(delta: (0, 1)),
+        9: buildRayTable(delta: (1, 1)),
+    ]
+
+    static let chebyshevDistanceTable = buildDistanceTable { rowDistance, colDistance in
+        max(rowDistance, colDistance)
+    }
+
+    static let manhattanDistanceTable = buildDistanceTable { rowDistance, colDistance in
+        rowDistance + colDistance
+    }
+
+    static func knightAttacks(from position: (Int, Int)) -> [(Int, Int)] {
+        knightAttackTable[position.0][position.1]
+    }
+
+    static func kingAttacks(from position: (Int, Int)) -> [(Int, Int)] {
+        kingAttackTable[position.0][position.1]
+    }
+
+    static func rayAttacks(from position: (Int, Int), direction: Int) -> [(Int, Int)] {
+        rayTables[direction]?[position.0][position.1] ?? []
+    }
+
+    static func chebyshevDistance(from: (Int, Int), to: (Int, Int)) -> Int {
+        chebyshevDistanceTable[squareIndex(from)][squareIndex(to)]
+    }
+
+    static func manhattanDistance(from: (Int, Int), to: (Int, Int)) -> Int {
+        manhattanDistanceTable[squareIndex(from)][squareIndex(to)]
+    }
+
+    private static func buildAttackTable(deltas: [(Int, Int)]) -> [[[(Int, Int)]]] {
+        (0..<8).map { row in
+            (0..<8).map { col in
+                deltas.compactMap { dRow, dCol in
+                    let nextRow = row + dRow
+                    let nextCol = col + dCol
+                    return isWithinBounds(row: nextRow, col: nextCol) ? (nextRow, nextCol) : nil
+                }
+            }
+        }
+    }
+
+    private static func buildRayTable(delta: (Int, Int)) -> [[[(Int, Int)]]] {
+        let (dRow, dCol) = delta
+        return (0..<8).map { row in
+            (0..<8).map { col in
+                var ray: [(Int, Int)] = []
+                var nextRow = row + dRow
+                var nextCol = col + dCol
+                while isWithinBounds(row: nextRow, col: nextCol) {
+                    ray.append((nextRow, nextCol))
+                    nextRow += dRow
+                    nextCol += dCol
+                }
+                return ray
+            }
+        }
+    }
+
+    private static func buildDistanceTable(metric: (Int, Int) -> Int) -> [[Int]] {
+        (0..<64).map { from in
+            let fromPosition = position(for: from)
+            return (0..<64).map { to in
+                let toPosition = position(for: to)
+                return metric(abs(fromPosition.0 - toPosition.0), abs(fromPosition.1 - toPosition.1))
+            }
+        }
+    }
+
+    private static func squareIndex(_ position: (Int, Int)) -> Int {
+        position.0 * 8 + position.1
+    }
+
+    private static func position(for square: Int) -> (Int, Int) {
+        (square / 8, square % 8)
+    }
+
+    private static func isWithinBounds(row: Int, col: Int) -> Bool {
+        row >= 0 && row < 8 && col >= 0 && col < 8
+    }
+}
+
 // Represents the game board
 struct Board {
     var pieces: [[Piece?]] = Array(repeating: Array(repeating: nil, count: 8), count: 8)
@@ -226,23 +331,13 @@ struct Board {
 
     func generateKnightMoves(from position: (Int, Int)) -> [Move] {
         var moves: [Move] = []
-        let (row, col) = position
-        let knightMoves = [
-            (row + 2, col + 1), (row + 2, col - 1),
-            (row - 2, col + 1), (row - 2, col - 1),
-            (row + 1, col + 2), (row + 1, col - 2),
-            (row - 1, col + 2), (row - 1, col - 2),
-        ]
-
-        for (newRow, newCol) in knightMoves {
-            if isWithinBounds(row: newRow, col: newCol) {
-                if let piece = pieces[newRow][newCol] {
-                    if piece.color != currentPlayer {
-                        moves.append(Move(from: position, to: (newRow, newCol)))
-                    }
-                } else {
+        for (newRow, newCol) in AttackTables.knightAttacks(from: position) {
+            if let piece = pieces[newRow][newCol] {
+                if piece.color != currentPlayer {
                     moves.append(Move(from: position, to: (newRow, newCol)))
                 }
+            } else {
+                moves.append(Move(from: position, to: (newRow, newCol)))
             }
         }
 
@@ -263,12 +358,20 @@ struct Board {
 
     func generateSlidingMoves(from position: (Int, Int), directions: [(Int, Int)]) -> [Move] {
         var moves: [Move] = []
-        let (row, col) = position
+        let directionMap: [String: Int] = [
+            "0,1": 1,
+            "0,-1": -1,
+            "1,0": 8,
+            "-1,0": -8,
+            "1,1": 9,
+            "1,-1": 7,
+            "-1,1": -7,
+            "-1,-1": -9,
+        ]
 
         for (rowDir, colDir) in directions {
-            var newRow = row + rowDir
-            var newCol = col + colDir
-            while isWithinBounds(row: newRow, col: newCol) {
+            guard let direction = directionMap["\(rowDir),\(colDir)"] else { continue }
+            for (newRow, newCol) in AttackTables.rayAttacks(from: position, direction: direction) {
                 if let piece = pieces[newRow][newCol] {
                     if piece.color != currentPlayer {
                         moves.append(Move(from: position, to: (newRow, newCol)))
@@ -276,8 +379,6 @@ struct Board {
                     break
                 }
                 moves.append(Move(from: position, to: (newRow, newCol)))
-                newRow += rowDir
-                newCol += colDir
             }
         }
         return moves
@@ -285,23 +386,13 @@ struct Board {
 
     func generateKingMoves(from position: (Int, Int)) -> [Move] {
         var moves: [Move] = []
-        let (row, col) = position
-        let kingMoves = [
-            (row + 1, col), (row - 1, col),
-            (row, col + 1), (row, col - 1),
-            (row + 1, col + 1), (row + 1, col - 1),
-            (row - 1, col + 1), (row - 1, col - 1),
-        ]
-
-        for (newRow, newCol) in kingMoves {
-            if isWithinBounds(row: newRow, col: newCol) {
-                if let piece = pieces[newRow][newCol] {
-                    if piece.color != currentPlayer {
-                        moves.append(Move(from: position, to: (newRow, newCol)))
-                    }
-                } else {
+        for (newRow, newCol) in AttackTables.kingAttacks(from: position) {
+            if let piece = pieces[newRow][newCol] {
+                if piece.color != currentPlayer {
                     moves.append(Move(from: position, to: (newRow, newCol)))
                 }
+            } else {
+                moves.append(Move(from: position, to: (newRow, newCol)))
             }
         }
 
@@ -344,40 +435,33 @@ struct Board {
         }
 
         // Check for knight attacks
-        let knightMoves = [
-            (position.0 + 2, position.1 + 1), (position.0 + 2, position.1 - 1),
-            (position.0 - 2, position.1 + 1), (position.0 - 2, position.1 - 1),
-            (position.0 + 1, position.1 + 2), (position.0 + 1, position.1 - 2),
-            (position.0 - 1, position.1 + 2), (position.0 - 1, position.1 - 2),
-        ]
-        for (row, col) in knightMoves {
-            if isWithinBounds(row: row, col: col) {
-                if let piece = pieces[row][col], piece.type == .knight && piece.color == color {
-                    return true
-                }
+        for (row, col) in AttackTables.knightAttacks(from: position) {
+            if let piece = pieces[row][col], piece.type == .knight && piece.color == color {
+                return true
+            }
+        }
+
+        for (row, col) in AttackTables.kingAttacks(from: position) {
+            if let piece = pieces[row][col], piece.type == .king && piece.color == color {
+                return true
             }
         }
 
         // Check for sliding piece attacks
-        let rookDirections = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-        let bishopDirections = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
-        let queenDirections = rookDirections + bishopDirections
-        for (rowDir, colDir) in queenDirections {
-            var newRow = position.0 + rowDir
-            var newCol = position.1 + colDir
-            while isWithinBounds(row: newRow, col: newCol) {
+        let rookDirections = [1, -1, 8, -8]
+        let bishopDirections = [9, 7, -7, -9]
+        for direction in rookDirections + bishopDirections {
+            for (newRow, newCol) in AttackTables.rayAttacks(from: position, direction: direction) {
                 if let piece = pieces[newRow][newCol] {
                     if piece.color == color {
-                        if (piece.type == .rook && rookDirections.contains(where: { $0 == (rowDir, colDir) })) ||
-                           (piece.type == .bishop && bishopDirections.contains(where: { $0 == (rowDir, colDir) })) ||
+                        if (piece.type == .rook && rookDirections.contains(direction)) ||
+                           (piece.type == .bishop && bishopDirections.contains(direction)) ||
                            piece.type == .queen {
                             return true
                         }
                     }
                     break
                 }
-                newRow += rowDir
-                newCol += colDir
             }
         }
 
@@ -526,7 +610,29 @@ struct Board {
                 score += 5 * (6 - row)
             }
         }
+        if piece.type == .king,
+           let otherKing = kingPosition(for: piece.color == .white ? .black : .white),
+           isEndgamePosition() {
+            score += 14 - AttackTables.manhattanDistance(from: position, to: otherKing)
+        }
         return piece.color == .white ? score : -score
+    }
+
+    private func isEndgamePosition() -> Bool {
+        var minorMajorCount = 0
+        var queenCount = 0
+        for row in 0..<8 {
+            for col in 0..<8 {
+                guard let piece = pieces[row][col] else { continue }
+                if piece.type == .queen {
+                    queenCount += 1
+                }
+                if piece.type != .king && piece.type != .pawn {
+                    minorMajorCount += 1
+                }
+            }
+        }
+        return minorMajorCount <= 4 || (minorMajorCount <= 6 && queenCount == 0)
     }
 
     mutating func undoMove(_ move: Move, capturedPiece: Piece?) {

@@ -3,6 +3,80 @@ import readline from 'node:readline'
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 }
+const PROMOTION_PIECES = ['q', 'r', 'b', 'n']
+
+const KNIGHT_DELTAS = [
+	[-1, -2], [1, -2], [-2, -1], [2, -1],
+	[-2, 1], [2, 1], [-1, 2], [1, 2]
+]
+
+const KING_DELTAS = [
+	[-1, -1], [0, -1], [1, -1],
+	[-1, 0], [1, 0],
+	[-1, 1], [0, 1], [1, 1]
+]
+
+const BISHOP_DELTAS = [[-1, -1], [1, -1], [-1, 1], [1, 1]]
+const ROOK_DELTAS = [[0, -1], [-1, 0], [1, 0], [0, 1]]
+const QUEEN_DELTAS = BISHOP_DELTAS.concat(ROOK_DELTAS)
+const SLIDING_ATTACKERS = { b: ['b', 'q'], r: ['r', 'q'] }
+
+def build-attack-table deltas
+	const table = []
+	for square in [0 ... 64]
+		const file = square % 8
+		const rank = Math.floor(square / 8)
+		const attacks = []
+		for [df, dr] in deltas
+			const targetFile = file + df
+			const targetRank = rank + dr
+			if targetFile >= 0 and targetFile < 8 and targetRank >= 0 and targetRank < 8
+				attacks.push(targetRank * 8 + targetFile)
+		table.push(attacks)
+	return table
+
+def build-ray-table deltas
+	const table = []
+	for square in [0 ... 64]
+		const file = square % 8
+		const rank = Math.floor(square / 8)
+		const rays = []
+		for [df, dr] in deltas
+			const ray = []
+			let targetFile = file + df
+			let targetRank = rank + dr
+			while targetFile >= 0 and targetFile < 8 and targetRank >= 0 and targetRank < 8
+				ray.push(targetRank * 8 + targetFile)
+				targetFile += df
+				targetRank += dr
+			rays.push(ray)
+		table.push(rays)
+	return table
+
+def build-distance-table metric
+	const table = []
+	for from in [0 ... 64]
+		const fromFile = from % 8
+		const fromRank = Math.floor(from / 8)
+		const row = []
+		for to in [0 ... 64]
+			const fileDistance = Math.abs(fromFile - (to % 8))
+			const rankDistance = Math.abs(fromRank - Math.floor(to / 8))
+			row.push(metric(fileDistance, rankDistance))
+		table.push(row)
+	return table
+
+const KNIGHT_ATTACKS = build-attack-table(KNIGHT_DELTAS)
+const KING_ATTACKS = build-attack-table(KING_DELTAS)
+const SLIDING_RAYS = {
+	b: build-ray-table(BISHOP_DELTAS)
+	r: build-ray-table(ROOK_DELTAS)
+	q: build-ray-table(QUEEN_DELTAS)
+}
+const CHEBYSHEV_DISTANCE = build-distance-table do(fileDistance, rankDistance)
+	fileDistance > rankDistance ? fileDistance : rankDistance
+const MANHATTAN_DISTANCE = build-distance-table do(fileDistance, rankDistance)
+	fileDistance + rankDistance
 
 const PAWN_PST = [
 	[0,  0,  0,  0,  0,  0,  0,  0],
@@ -531,7 +605,7 @@ class ChessEngine
 			const pushIdx = index + dir * 8
 			if pushIdx >= 0 and pushIdx < 64 and !state.board[pushIdx]
 				if r + dir === promRank
-					for p in ['q', 'r', 'b', 'n']
+					for p in PROMOTION_PIECES
 						add-move(r + dir, c, p)
 				else
 					add-move(r + dir, c)
@@ -545,26 +619,22 @@ class ChessEngine
 					const target = state.board[targetIdx]
 					if (target and target.color !== piece.color) or targetIdx === state.enPassant
 						if r + dir === promRank
-							for p in ['q', 'r', 'b', 'n']
+							for p in PROMOTION_PIECES
 								add-move(r + dir, c + dc, p)
 						else
 							add-move(r + dir, c + dc)
 
 		else if piece.type === 'n'
-			for [dr, dc] in [[-1, -2], [-2, -1], [-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2]]
-				const tr = r + dr
-				const tc = c + dc
-				if tr >= 0 and tr < 8 and tc >= 0 and tc < 8
-					const target = state.board[tr * 8 + tc]
-					if !target or target.color !== piece.color then add-move(tr, tc)
+			for targetIdx in KNIGHT_ATTACKS[index]
+				const target = state.board[targetIdx]
+				if !target or target.color !== piece.color
+					add-move(Math.floor(targetIdx / 8), targetIdx % 8)
 
 		else if piece.type === 'k'
-			for [dr, dc] in [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]
-				const tr = r + dr
-				const tc = c + dc
-				if tr >= 0 and tr < 8 and tc >= 0 and tc < 8
-					const target = state.board[tr * 8 + tc]
-					if !target or target.color !== piece.color then add-move(tr, tc)
+			for targetIdx in KING_ATTACKS[index]
+				const target = state.board[targetIdx]
+				if !target or target.color !== piece.color
+					add-move(Math.floor(targetIdx / 8), targetIdx % 8)
 			
 			# Castling
 			const try-castle = do(side)
@@ -600,63 +670,42 @@ class ChessEngine
 			try-castle('Q')
 
 		else
-			let dirs = []
-			if piece.type === 'b'
-				dirs = [[-1, -1], [-1, 1], [1, -1], [1, 1]]
-			else if piece.type === 'r'
-				dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]]
-			else
-				dirs = [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]
-			
-			for [dr, dc] in dirs
-				for dist in [1 ... 8]
-					const tr = r + dr * dist
-					const tc = c + dc * dist
-					if tr < 0 or tr >= 8 or tc < 0 or tc >= 8 then break
-					const target = state.board[tr * 8 + tc]
+			const rays = piece.type === 'b' ? SLIDING_RAYS.b[index] : piece.type === 'r' ? SLIDING_RAYS.r[index] : SLIDING_RAYS.q[index]
+			for ray in rays
+				for targetIdx in ray
+					const target = state.board[targetIdx]
 					if !target
-						add-move(tr, tc)
+						add-move(Math.floor(targetIdx / 8), targetIdx % 8)
 					else
-						if target.color !== piece.color then add-move(tr, tc)
+						if target.color !== piece.color then add-move(Math.floor(targetIdx / 8), targetIdx % 8)
 						break
 
 	def is-square-attacked index, attackerColor
-		const r = Math.floor(index / 8)
-		const c = index % 8
-		
-		# Knight
-		for [dr, dc] in [[-1, -2], [-2, -1], [-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2]]
-			const tr = r + dr
-			const tc = c + dc
-			if tr >= 0 and tr < 8 and tc >= 0 and tc < 8
-				const p = state.board[tr * 8 + tc]
-				if p and p.type === 'n' and p.color === attackerColor then return true
+		for attackerIdx in KNIGHT_ATTACKS[index]
+			const piece = state.board[attackerIdx]
+			if piece and piece.type === 'n' and piece.color === attackerColor then return true
 
-		# King
-		for [dr, dc] in [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]
-			const tr = r + dr
-			const tc = c + dc
-			if tr >= 0 and tr < 8 and tc >= 0 and tc < 8
-				const p = state.board[tr * 8 + tc]
-				if p and p.type === 'k' and p.color === attackerColor then return true
+		for attackerIdx in KING_ATTACKS[index]
+			const piece = state.board[attackerIdx]
+			if piece and piece.type === 'k' and piece.color === attackerColor then return true
 
-		# Sliding
-		const sliding = [
-			{ type: ['r', 'q'], dirs: [[-1, 0], [1, 0], [0, -1], [0, 1]] },
-			{ type: ['b', 'q'], dirs: [[-1, -1], [-1, 1], [1, -1], [1, 1]] }
-		]
-		for group in sliding
-			for [dr, dc] in group.dirs
-				for d in [1 ... 8]
-					const tr = r + dr * d
-					const tc = c + dc * d
-					if tr < 0 or tr >= 8 or tc < 0 or tc >= 8 then break
-					const p = state.board[tr * 8 + tc]
-					if p
-						if p.color === attackerColor and group.type.includes(p.type) then return true
-						break
+		for ray in SLIDING_RAYS.b[index]
+			for attackerIdx in ray
+				const piece = state.board[attackerIdx]
+				if piece
+					if piece.color === attackerColor and SLIDING_ATTACKERS.b.includes(piece.type) then return true
+					break
+
+		for ray in SLIDING_RAYS.r[index]
+			for attackerIdx in ray
+				const piece = state.board[attackerIdx]
+				if piece
+					if piece.color === attackerColor and SLIDING_ATTACKERS.r.includes(piece.type) then return true
+					break
 
 		# Pawn
+		const r = Math.floor(index / 8)
+		const c = index % 8
 		const pDir = attackerColor === 'w' ? 1 : -1
 		for dc in [-1, 1]
 			const tr = r + pDir
@@ -747,6 +796,10 @@ class ChessEngine
 
 	def evaluate
 		let score = 0
+		let whiteKing = null
+		let blackKing = null
+		let minorMajorCount = 0
+		let queenCount = 0
 		for piece, i in state.board
 			if piece
 				const val = PIECE_VALUES[piece.type]
@@ -766,7 +819,16 @@ class ChessEngine
 					pst = QUEEN_PST[evalRow][c]
 				else if piece.type === 'k'
 					pst = KING_PST[evalRow][c]
+					if piece.color === 'w'
+						whiteKing = i
+					else
+						blackKing = i
+				if piece.type !== 'p' and piece.type !== 'k'
+					minorMajorCount++
+					if piece.type === 'q' then queenCount++
 				score += (piece.color === 'w' ? 1 : -1) * (val + pst)
+		if (minorMajorCount <= 4 or (minorMajorCount <= 6 and queenCount === 0)) and whiteKing !== null and blackKing !== null
+			score += 14 - MANHATTAN_DISTANCE[whiteKing][blackKing]
 		return score
 
 	def perft depth

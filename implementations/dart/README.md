@@ -52,6 +52,7 @@ make docker-test
 - ✅ Special moves (castling, en passant, promotion)
 - ✅ Perft testing for move generation verification
 - ✅ PGN commands, UCI handshake, and Chess960 command surface
+- ✅ Precomputed knight, king, ray, and distance lookup tables for move generation hot paths
 - ✅ Command-line interface matching project specification
 
 ## Commands
@@ -62,7 +63,9 @@ make docker-test
 - `fen <string>` - Load position from FEN
 - `export` - Export position as FEN
 - `ai <depth>` - AI move with specified depth
-- `pgn load|show|moves` - PGN command family
+- `pgn load|save|show|moves` - PGN command family
+- `pgn variation enter|exit` - Navigate the current PGN variation
+- `pgn comment "text"` - Attach a PGN comment to the current move/variation
 - `uci` / `isready` - UCI handshake commands
 - `new960 [id]` / `position960` - Chess960 command surface
 - `quit` - Exit program

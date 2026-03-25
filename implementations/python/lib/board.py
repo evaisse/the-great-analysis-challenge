@@ -3,6 +3,7 @@ Chess board representation and manipulation.
 """
 
 from typing import Optional, List, Tuple
+from lib.attack_tables import king_attacks, knight_attacks, ray_attacks
 from lib.types import Piece, PieceType, Color, Move, CastlingRights, GameState
 
 
@@ -96,23 +97,15 @@ class Board:
                     return True
         
         # Check knight attacks
-        knight_moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
-                       (1, -2), (1, 2), (2, -1), (2, 1)]
-        for dr, dc in knight_moves:
-            new_row, new_col = row + dr, col + dc
-            if self.is_valid_square(new_row, new_col):
-                piece = self.get_piece(new_row, new_col)
-                if (piece and piece.type == PieceType.KNIGHT and 
-                    piece.color == by_color):
-                    return True
+        for new_row, new_col in knight_attacks(row, col):
+            piece = self.get_piece(new_row, new_col)
+            if piece and piece.type == PieceType.KNIGHT and piece.color == by_color:
+                return True
         
         # Check bishop/queen diagonal attacks
         diagonal_directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
         for dr, dc in diagonal_directions:
-            for i in range(1, 8):
-                new_row, new_col = row + i * dr, col + i * dc
-                if not self.is_valid_square(new_row, new_col):
-                    break
+            for new_row, new_col in ray_attacks(row, col, dr, dc):
                 piece = self.get_piece(new_row, new_col)
                 if piece:
                     if (piece.color == by_color and 
@@ -123,10 +116,7 @@ class Board:
         # Check rook/queen straight attacks
         straight_directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         for dr, dc in straight_directions:
-            for i in range(1, 8):
-                new_row, new_col = row + i * dr, col + i * dc
-                if not self.is_valid_square(new_row, new_col):
-                    break
+            for new_row, new_col in ray_attacks(row, col, dr, dc):
                 piece = self.get_piece(new_row, new_col)
                 if piece:
                     if (piece.color == by_color and 
@@ -135,15 +125,10 @@ class Board:
                     break
         
         # Check king attacks
-        king_moves = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
-                     (0, 1), (1, -1), (1, 0), (1, 1)]
-        for dr, dc in king_moves:
-            new_row, new_col = row + dr, col + dc
-            if self.is_valid_square(new_row, new_col):
-                piece = self.get_piece(new_row, new_col)
-                if (piece and piece.type == PieceType.KING and 
-                    piece.color == by_color):
-                    return True
+        for new_row, new_col in king_attacks(row, col):
+            piece = self.get_piece(new_row, new_col)
+            if piece and piece.type == PieceType.KING and piece.color == by_color:
+                return True
         
         return False
     
