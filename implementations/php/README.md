@@ -24,6 +24,7 @@ This implementation demonstrates PHP's object-oriented programming capabilities 
 - Configurable search depth (1-5)
 - Material and positional evaluation
 - Center control and pawn advancement bonuses
+- Optional rich evaluation mode with tapered PSTs, mobility, pawn structure, king safety, and positional bonuses
 
 ✅ **Performance Testing**
 - Perft (performance test) for move generation verification
@@ -88,6 +89,7 @@ php/
 │   ├── MoveGenerator.php  # Move generation and validation
 │   ├── FenParser.php   # FEN import/export
 │   ├── AI.php          # Minimax AI with alpha-beta pruning
+│   ├── Eval/           # Rich evaluation modules
 │   └── Perft.php       # Performance testing
 ├── Dockerfile          # Container definition
 ├── Makefile           # Build automation
@@ -106,6 +108,7 @@ php/
 | `fen <string>` | Load position from FEN | `fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1` |
 | `export` | Export position as FEN | `export` |
 | `eval` | Show position evaluation | `eval` |
+| `rich-eval on|off` | Toggle rich evaluation mode | `rich-eval on` |
 | `perft <depth>` | Run performance test | `perft 4` |
 | `help` | Show available commands | `help` |
 | `quit` | Exit the program | `quit` |
@@ -138,6 +141,15 @@ The evaluation function considers:
   - Center control: +10 for pieces on central squares (d4, d5, e4, e5)
   - Pawn advancement: +5 per rank advanced from starting position
 - **Special Scores**: Checkmate = ±100000, Stalemate = 0
+
+Rich evaluation mode is opt-in and keeps the classic `v1` evaluator as the default path. When enabled with `rich-eval on` or by starting `php chess.php --rich-eval`, the engine switches to a tapered evaluation composed from:
+- middlegame and endgame piece-square tables
+- mobility bonuses for knights, bishops, rooks, and queens
+- pawn-structure terms for doubled, isolated, passed, chained, and connected pawns
+- king-safety scoring for pawn shield, open files, and attacked king-zone squares
+- positional bonuses for bishop pair, rook activity, and knight outposts
+
+The `eval` command now also prints the active evaluation mode so fixtures and manual checks can confirm whether the engine is on the default `simple` path or the opt-in `rich` path.
 
 ### Performance
 
