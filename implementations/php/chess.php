@@ -74,6 +74,11 @@ class ChessEngine {
     private int $trace_ai_tt_hits = 0;
     private int $trace_ai_tt_misses = 0;
     private int $trace_ai_beta_cutoffs = 0;
+    private int $trace_ai_move_gen_calls = 0;
+    private float $trace_ai_move_gen_time_ms = 0.0;
+    private float $trace_ai_eval_time_ms = 0.0;
+    private float $trace_ai_branching_factor = 0.0;
+    private array $trace_ai_depth_breakdown = [];
     
     public function __construct(bool $rich_eval_enabled = false) {
         $this->rich_eval_enabled = $rich_eval_enabled;
@@ -1328,6 +1333,9 @@ class ChessEngine {
 
         if ($sub === 'report') {
             echo $this->format_trace_report() . "\n";
+            if ($this->trace_ai_source !== null && str_contains($this->trace_ai_source, 'search')) {
+                echo $this->format_trace_report_details();
+            }
             return;
         }
 
@@ -1632,6 +1640,11 @@ class ChessEngine {
         $this->trace_ai_tt_hits = 0;
         $this->trace_ai_tt_misses = 0;
         $this->trace_ai_beta_cutoffs = 0;
+        $this->trace_ai_move_gen_calls = 0;
+        $this->trace_ai_move_gen_time_ms = 0.0;
+        $this->trace_ai_eval_time_ms = 0.0;
+        $this->trace_ai_branching_factor = 0.0;
+        $this->trace_ai_depth_breakdown = [];
     }
 
     private function format_trace_report(): string {
@@ -1653,6 +1666,33 @@ class ChessEngine {
             $report .= "; search_metrics={$search_metrics}";
         }
         return $report;
+    }
+
+    private function format_trace_report_details(): string {
+        $lines = [
+            "TRACE REPORT:",
+            "  nodes={$this->trace_ai_nodes}; nps={$this->trace_ai_nps}; eval_calls={$this->trace_ai_eval_calls}",
+            "  move_gen_calls={$this->trace_ai_move_gen_calls}; move_gen_time_ms=" . number_format($this->trace_ai_move_gen_time_ms, 3, '.', '') .
+                "; eval_time_ms=" . number_format($this->trace_ai_eval_time_ms, 3, '.', '') .
+                "; branching_factor=" . number_format($this->trace_ai_branching_factor, 2, '.', ''),
+            "  tt_hits={$this->trace_ai_tt_hits}; tt_misses={$this->trace_ai_tt_misses}; beta_cutoffs={$this->trace_ai_beta_cutoffs}",
+        ];
+
+        if (!empty($this->trace_ai_depth_breakdown)) {
+            $lines[] = '  depth_breakdown:';
+            foreach ($this->trace_ai_depth_breakdown as $summary) {
+                $lines[] =
+                    '    depth=' . ($summary['depth'] ?? 0) .
+                    '; elapsed_ms=' . ($summary['elapsed_ms'] ?? 0) .
+                    '; nodes=' . ($summary['nodes'] ?? 0) .
+                    '; eval_calls=' . ($summary['eval_calls'] ?? 0) .
+                    '; move_gen_calls=' . ($summary['move_gen_calls'] ?? 0) .
+                    '; best_move=' . (($summary['best_move'] ?? '') ?: 'none') .
+                    '; score_cp=' . ($summary['score_cp'] ?? 0);
+            }
+        }
+
+        return implode("\n", $lines) . "\n";
     }
 
     private function format_trace_report_segment(int $count, ?string $target, int $byte_count): string {
@@ -1697,7 +1737,7 @@ class ChessEngine {
             return null;
         }
 
-        return "nodes={$this->trace_ai_nodes},eval_calls={$this->trace_ai_eval_calls},tt_hits={$this->trace_ai_tt_hits},tt_misses={$this->trace_ai_tt_misses},beta_cutoffs={$this->trace_ai_beta_cutoffs},nps={$this->trace_ai_nps}";
+        return "nodes={$this->trace_ai_nodes},eval_calls={$this->trace_ai_eval_calls},move_gen_calls={$this->trace_ai_move_gen_calls},move_gen_time_ms=" . number_format($this->trace_ai_move_gen_time_ms, 3, '.', '') . ",eval_time_ms=" . number_format($this->trace_ai_eval_time_ms, 3, '.', '') . ",branching_factor=" . number_format($this->trace_ai_branching_factor, 2, '.', '') . ",tt_hits={$this->trace_ai_tt_hits},tt_misses={$this->trace_ai_tt_misses},beta_cutoffs={$this->trace_ai_beta_cutoffs},nps={$this->trace_ai_nps}";
     }
 
     private function record_trace_ai(
@@ -1726,6 +1766,22 @@ class ChessEngine {
         $this->trace_ai_tt_hits = $tt_hits;
         $this->trace_ai_tt_misses = $tt_misses;
         $this->trace_ai_beta_cutoffs = $beta_cutoffs;
+        $trace_snapshot = $this->ai->get_trace_snapshot();
+        if ($trace_snapshot !== null) {
+            $this->trace_ai_move_gen_calls = intval($trace_snapshot['move_gen_calls'] ?? 0);
+            $this->trace_ai_move_gen_time_ms = floatval($trace_snapshot['move_gen_time_ms'] ?? 0.0);
+            $this->trace_ai_eval_time_ms = floatval($trace_snapshot['eval_time_ms'] ?? 0.0);
+            $this->trace_ai_branching_factor = floatval($trace_snapshot['branching_factor'] ?? 0.0);
+            $this->trace_ai_depth_breakdown = is_array($trace_snapshot['depth_breakdown'] ?? null)
+                ? array_values($trace_snapshot['depth_breakdown'])
+                : [];
+        } else {
+            $this->trace_ai_move_gen_calls = 0;
+            $this->trace_ai_move_gen_time_ms = 0.0;
+            $this->trace_ai_eval_time_ms = 0.0;
+            $this->trace_ai_branching_factor = 0.0;
+            $this->trace_ai_depth_breakdown = [];
+        }
         $this->trace('ai', $this->format_trace_ai_summary());
     }
 
@@ -1744,9 +1800,14 @@ class ChessEngine {
             'nodes' => $this->trace_ai_nodes,
             'eval_calls' => $this->trace_ai_eval_calls,
             'nps' => $this->trace_ai_nps,
+            'move_gen_calls' => $this->trace_ai_move_gen_calls,
+            'move_gen_time_ms' => $this->trace_ai_move_gen_time_ms,
+            'eval_time_ms' => $this->trace_ai_eval_time_ms,
+            'branching_factor' => $this->trace_ai_branching_factor,
             'tt_hits' => $this->trace_ai_tt_hits,
             'tt_misses' => $this->trace_ai_tt_misses,
             'beta_cutoffs' => $this->trace_ai_beta_cutoffs,
+            'depth_breakdown' => array_values($this->trace_ai_depth_breakdown),
             'summary' => $this->format_trace_ai_summary(),
         ];
     }
@@ -1777,6 +1838,10 @@ class ChessEngine {
         $last_ai = $this->trace_last_ai_payload();
         if ($last_ai !== null) {
             $payload['last_ai'] = $last_ai;
+        }
+        $search_snapshot = $this->ai->get_trace_snapshot();
+        if ($search_snapshot !== null) {
+            $payload['search_snapshot'] = $search_snapshot;
         }
         $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
         if ($json === false) {
