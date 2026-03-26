@@ -13,6 +13,7 @@ require_once __DIR__ . '/lib/MoveGenerator.php';
 require_once __DIR__ . '/lib/FenParser.php';
 require_once __DIR__ . '/lib/AI.php';
 require_once __DIR__ . '/lib/Perft.php';
+require_once __DIR__ . '/lib/PGN.php';
 
 /**
  * Main chess engine class
@@ -27,6 +28,7 @@ class ChessEngine {
     private int $uci_threads = 1;
     private ?string $pgn_path = null;
     private array $pgn_moves = [];
+    private PgnGame $pgn_game;
     private ?string $book_path = null;
     private bool $book_enabled = false;
     /** @var array<string,array<int,array{move:string,weight:int}>> */
@@ -66,6 +68,7 @@ class ChessEngine {
         $this->fen_parser = new FenParser($this->board);
         $this->ai = new AI($this->board, $this->move_gen);
         $this->perft = new Perft($this->board, $this->move_gen);
+        $this->reset_pgn_live_game();
         $this->reset_trace_export_state();
         $this->reset_trace_search_state();
     }
@@ -158,7 +161,7 @@ class ChessEngine {
                     break;
 
                 case 'pgn':
-                    $this->handle_pgn(array_slice($parts, 1));
+                    $this->handle_pgn($command, array_slice($parts, 1));
                     break;
                 case 'book':
                     $this->handle_book(array_slice($parts, 1));
@@ -274,8 +277,15 @@ class ChessEngine {
             echo "ERROR: Illegal move\n";
             return;
         }
+
+        $pre_move_fen = $this->fen_parser->export_fen();
+        $pre_move_number = $this->board->fullmove_number;
+        $pre_move_color = $this->board->current_player;
+        $san = PgnSanCodec::move_to_san($this->board, $this->move_gen, $this->fen_parser, $move, $legal_moves);
         
         $this->board->make_move($move);
+        $this->append_pgn_move_record($move, $san, $pre_move_fen, $pre_move_number, $pre_move_color);
+        $this->sync_pgn_result_with_position();
         
         // Check for game end first
         $is_checkmate = $this->move_gen->is_checkmate();
@@ -301,6 +311,9 @@ class ChessEngine {
     
     private function handle_undo(): void {
         if ($this->board->undo_move()) {
+            $this->pgn_game->rewind_last_move();
+            $this->refresh_pgn_move_cache();
+            $this->sync_pgn_result_with_position();
             echo "OK: Undo\n";
             echo $this->board->display();
         } else {
@@ -310,6 +323,7 @@ class ChessEngine {
     
     private function handle_new_game(): void {
         $this->board->reset();
+        $this->reset_pgn_live_game();
         echo "OK: New game started\n";
         echo $this->board->display();
     }
@@ -348,7 +362,13 @@ class ChessEngine {
             return;
         }
 
+        $san = PgnSanCodec::move_to_san($this->board, $this->move_gen, $this->fen_parser, $move, $legal_moves);
+        $pre_move_fen = $this->fen_parser->export_fen();
+        $pre_move_number = $this->board->fullmove_number;
+        $pre_move_color = $this->board->current_player;
         $this->board->make_move($move);
+        $this->append_pgn_move_record($move, $san, $pre_move_fen, $pre_move_number, $pre_move_color);
+        $this->sync_pgn_result_with_position();
         $move_str = strtolower($move->to_string());
         $this->record_trace_ai(
             'search',
@@ -392,6 +412,11 @@ class ChessEngine {
         }
         
         if ($this->fen_parser->load_fen($fen)) {
+            $this->board->game_history = [];
+            $this->board->position_history = [];
+            $this->board->irreversible_history = [];
+            $this->board->zobrist_hash = Zobrist::getInstance()->compute_hash($this->board);
+            $this->reset_pgn_live_game();
             echo "OK: FEN loaded\n";
             echo $this->board->display();
         } else {
@@ -602,9 +627,9 @@ class ChessEngine {
         return [$budget, null];
     }
 
-    private function handle_pgn(array $args): void {
+    private function handle_pgn(string $command, array $args): void {
         if (count($args) === 0) {
-            echo "ERROR: pgn requires subcommand (load|show|moves)\n";
+            echo "ERROR: pgn requires subcommand (load|save|show|moves|variation|comment)\n";
             return;
         }
 
@@ -624,7 +649,16 @@ class ChessEngine {
                     echo "PGN: loaded path=\"{$path}\"; moves=0; note=file-unavailable\n";
                     return;
                 }
-                $this->pgn_moves = $this->extract_pgn_moves($content);
+                try {
+                    $parser = new PgnParser();
+                    $this->pgn_game = $parser->parse($content, $path);
+                    $this->pgn_game->set_source($path);
+                    $this->refresh_pgn_move_cache();
+                    $this->rebuild_board_from_pgn_cursor();
+                } catch (\Exception $e) {
+                    echo 'ERROR: pgn load failed: ' . $e->getMessage() . "\n";
+                    return;
+                }
                 echo "PGN: loaded path=\"{$path}\"; moves=" . count($this->pgn_moves) . "\n";
                 return;
             }
@@ -633,9 +667,29 @@ class ChessEngine {
             return;
         }
 
+        if ($sub === 'save') {
+            if (!isset($args[1])) {
+                echo "ERROR: pgn save requires a file path\n";
+                return;
+            }
+
+            $path = implode(' ', array_slice($args, 1));
+            $written = @file_put_contents($path, $this->pgn_game->serialize() . "\n");
+            if ($written === false) {
+                echo "ERROR: pgn save failed: unable to write file\n";
+                return;
+            }
+
+            $this->pgn_path = $path;
+            $this->pgn_game->set_source($path);
+            echo 'PGN: saved path="' . $path . '"; moves=' . count($this->pgn_moves) . "\n";
+            return;
+        }
+
         if ($sub === 'show') {
             $source = $this->pgn_path ?? "current-game";
             echo "PGN: source={$source}; moves=" . count($this->pgn_moves) . "\n";
+            echo $this->pgn_game->serialize() . "\n";
             return;
         }
 
@@ -645,6 +699,41 @@ class ChessEngine {
             } else {
                 echo "PGN: moves (none)\n";
             }
+            return;
+        }
+
+        if ($sub === 'variation') {
+            $action = strtolower($args[1] ?? '');
+            if ($action === 'enter') {
+                $result = $this->pgn_game->enter_variation();
+                if ($result['ok']) {
+                    $this->rebuild_board_from_pgn_cursor();
+                }
+                echo $result['message'] . "\n";
+                return;
+            }
+            if ($action === 'exit') {
+                $result = $this->pgn_game->exit_variation();
+                if ($result['ok']) {
+                    $this->rebuild_board_from_pgn_cursor();
+                }
+                echo $result['message'] . "\n";
+                return;
+            }
+
+            echo "ERROR: pgn variation requires enter|exit\n";
+            return;
+        }
+
+        if ($sub === 'comment') {
+            $text = $this->extract_pgn_comment_text($command);
+            if ($text === null || trim($text) === '') {
+                echo "ERROR: pgn comment requires text\n";
+                return;
+            }
+
+            $this->pgn_game->add_comment($text);
+            echo 'PGN: comment added text="' . str_replace('"', '\\"', str_replace('"', '\\"', $text)) . '"' . "\n";
             return;
         }
 
@@ -794,6 +883,7 @@ class ChessEngine {
         $this->fen_parser = new FenParser($this->board);
         $this->ai = new AI($this->board, $this->move_gen);
         $this->perft = new Perft($this->board, $this->move_gen);
+        $this->reset_pgn_live_game();
     }
 
     private function handle_position(array $args): void {
@@ -822,10 +912,16 @@ class ChessEngine {
                 echo "ERROR: Invalid FEN string\n";
                 return;
             }
+            $this->board->game_history = [];
+            $this->board->position_history = [];
+            $this->board->irreversible_history = [];
+            $this->board->zobrist_hash = Zobrist::getInstance()->compute_hash($this->board);
         } else {
             echo "ERROR: position requires 'startpos' or 'fen <...>'\n";
             return;
         }
+
+        $this->reset_pgn_live_game();
 
         if ($idx < count($args) && strtolower($args[$idx]) === 'moves') {
             $idx++;
@@ -860,7 +956,13 @@ class ChessEngine {
             return 'Illegal move';
         }
 
+        $pre_move_fen = $this->fen_parser->export_fen();
+        $pre_move_number = $this->board->fullmove_number;
+        $pre_move_color = $this->board->current_player;
+        $san = PgnSanCodec::move_to_san($this->board, $this->move_gen, $this->fen_parser, $selected, $legal_moves);
         $this->board->make_move($selected);
+        $this->append_pgn_move_record($selected, $san, $pre_move_fen, $pre_move_number, $pre_move_color);
+        $this->sync_pgn_result_with_position();
         return null;
     }
 
@@ -1444,38 +1546,6 @@ class ChessEngine {
         return $count;
     }
 
-    private function extract_pgn_moves(string $content): array {
-        $lines = preg_split('/\R/', $content) ?: [];
-        $movetext_lines = [];
-
-        foreach ($lines as $line) {
-            $trimmed = trim($line);
-            if ($trimmed === '' || str_starts_with($trimmed, '[')) {
-                continue;
-            }
-            $movetext_lines[] = $trimmed;
-        }
-
-        $move_text = implode(' ', $movetext_lines);
-        $move_text = preg_replace('/\{[^}]*\}/', ' ', $move_text) ?? $move_text;
-        $move_text = preg_replace('/;[^\n]*/', ' ', $move_text) ?? $move_text;
-        $move_text = preg_replace('/\([^)]*\)/', ' ', $move_text) ?? $move_text;
-
-        $tokens = preg_split('/\s+/', trim($move_text)) ?: [];
-        $moves = [];
-        foreach ($tokens as $token) {
-            if ($token === '' || preg_match('/^\d+\.(\.\.)?$/', $token)) {
-                continue;
-            }
-            if (in_array($token, ['1-0', '0-1', '1/2-1/2', '*'], true)) {
-                continue;
-            }
-            $moves[] = $token;
-        }
-
-        return $moves;
-    }
-
     private function book_position_key(string $fen): string {
         $parts = preg_split('/\s+/', trim($fen)) ?: [];
         if (count($parts) >= 4) {
@@ -1593,7 +1663,14 @@ class ChessEngine {
     }
 
     private function apply_book_move(Move $move): void {
+        $legal_moves = $this->move_gen->generate_moves();
+        $san = PgnSanCodec::move_to_san($this->board, $this->move_gen, $this->fen_parser, $move, $legal_moves);
+        $pre_move_fen = $this->fen_parser->export_fen();
+        $pre_move_number = $this->board->fullmove_number;
+        $pre_move_color = $this->board->current_player;
         $this->board->make_move($move);
+        $this->append_pgn_move_record($move, $san, $pre_move_fen, $pre_move_number, $pre_move_color);
+        $this->sync_pgn_result_with_position();
         $this->book_played++;
         $move_str = strtolower($move->to_string());
         $this->record_trace_ai('book', $move_str, 0, 0, 0, false, 0, 0, 0, 0, 0);
@@ -1822,7 +1899,14 @@ class ChessEngine {
     }
 
     private function apply_endgame_move(Move $move, array $info): void {
+        $legal_moves = $this->move_gen->generate_moves();
+        $san = PgnSanCodec::move_to_san($this->board, $this->move_gen, $this->fen_parser, $move, $legal_moves);
+        $pre_move_fen = $this->fen_parser->export_fen();
+        $pre_move_number = $this->board->fullmove_number;
+        $pre_move_color = $this->board->current_player;
         $this->board->make_move($move);
+        $this->append_pgn_move_record($move, $san, $pre_move_fen, $pre_move_number, $pre_move_color);
+        $this->sync_pgn_result_with_position();
         $move_str = strtolower($move->to_string());
         $this->record_trace_ai('endgame', $move_str, 0, intval($info['score_white']), 0, false, 0, 0, 0, 0, 0);
         echo "AI: {$move_str} (endgame {$info['type']}, score={$info['score_white']})\n";
@@ -1899,7 +1983,9 @@ Available commands:
   go depth <n>                - UCI-style depth search (prints info/bestmove)
   go infinite                 - Start bounded long search mode
   stop                        - Stop infinite search mode
-  pgn load|show|moves         - PGN command family
+  pgn load|save|show|moves    - PGN import/export and listing
+  pgn variation enter|exit    - Enter or leave the current PGN variation
+  pgn comment "text"          - Attach a comment to the current PGN node
   book load|on|off|stats      - Native opening book controls
   endgame                     - Detect specialized endgame and best move hint
   uci                         - Enter/respond to UCI handshake
@@ -1916,6 +2002,86 @@ Available commands:
   quit                        - Exit the program
 
 HELP;
+    }
+
+    private function reset_pgn_live_game(?string $source = null): void {
+        $source = $source ?? ($this->pgn_path ?? 'current-game');
+        $this->pgn_game = PgnGame::create_live_game($source, $this->fen_parser->export_fen());
+        $this->pgn_path = $source === 'current-game' ? null : $source;
+        $this->refresh_pgn_move_cache();
+    }
+
+    private function refresh_pgn_move_cache(): void {
+        $this->pgn_moves = $this->pgn_game->mainline_moves();
+    }
+
+    private function append_pgn_move_record(
+        Move $move,
+        string $san,
+        string $before_fen,
+        int $move_number,
+        int $color
+    ): void {
+        $this->pgn_game->append_move(new PgnMoveNode(
+            $san,
+            strtolower($move->to_string()),
+            $move_number,
+            $color,
+            $before_fen
+        ));
+        $this->refresh_pgn_move_cache();
+    }
+
+    private function sync_pgn_result_with_position(): void {
+        if ($this->move_gen->is_checkmate()) {
+            $this->pgn_game->set_result($this->board->current_player === CHESS_WHITE ? '0-1' : '1-0');
+            return;
+        }
+
+        if ($this->move_gen->is_stalemate()) {
+            $this->pgn_game->set_result('1/2-1/2');
+            return;
+        }
+
+        $this->pgn_game->set_result('*');
+    }
+
+    private function rebuild_board_from_pgn_cursor(): void {
+        $variation = $this->pgn_game->current_variation();
+        [$board, $move_gen, $fen_parser] = PgnSanCodec::create_state($variation->start_fen);
+
+        foreach ($variation->moves as $node) {
+            $selected = null;
+            foreach ($move_gen->generate_moves() as $candidate) {
+                if (strtolower($candidate->to_string()) === $node->uci) {
+                    $selected = $candidate;
+                    break;
+                }
+            }
+            if ($selected === null) {
+                throw new \RuntimeException('PGN move no longer legal in current variation');
+            }
+            $board->make_move($selected);
+        }
+
+        $this->board = $board;
+        $this->move_gen = $move_gen;
+        $this->fen_parser = $fen_parser;
+        $this->ai = new AI($this->board, $this->move_gen);
+        $this->perft = new Perft($this->board, $this->move_gen);
+        $this->sync_pgn_result_with_position();
+    }
+
+    private function extract_pgn_comment_text(string $command): ?string {
+        if (preg_match('/^pgn\s+comment\s+"((?:\\.|[^"])*)"\s*$/i', $command, $matches) === 1) {
+            return stripcslashes($matches[1]);
+        }
+
+        if (preg_match('/^pgn\s+comment\s+(.+)$/i', $command, $matches) === 1) {
+            return trim($matches[1]);
+        }
+
+        return null;
     }
 }
 

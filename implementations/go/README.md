@@ -30,7 +30,9 @@ echo -e "new\nmove e2e4\nexport\nquit" | docker run --network none -i chess-go
 - `undo` - Undo the last move
 - `export` - Export current position as FEN
 - `ai <depth>` - Let AI make a move at specified depth (1-5)
-- `pgn load|show|moves` - PGN command family
+- `pgn load|save|show|moves` - PGN import/export and listing
+- `pgn variation enter|exit` - Navigate the current PGN variation tree
+- `pgn comment "text"` - Attach a comment to the current PGN node
 - `uci` / `isready` - UCI handshake commands
 - `new960 [id]` / `position960` - Chess960 command surface
 - `quit` - Exit the program
