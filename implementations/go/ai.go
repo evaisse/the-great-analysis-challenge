@@ -95,9 +95,45 @@ type AI struct {
 	ttHits         int
 	ttMisses       int
 	betaCutoffs    int
+	moveGenCalls   int
+	moveGenTimeNS  int64
+	moveGenTotal   int
+	evalTimeNS     int64
 	tt             map[uint64]TTEntry
 	deadline       time.Time
 	timedOut       bool
+	depthSummaries []DepthSummary
+	lastSnapshot   *TraceSnapshot
+}
+
+type DepthSummary struct {
+	Depth        int    `json:"depth"`
+	ElapsedMS    int64  `json:"elapsed_ms"`
+	Nodes        int    `json:"nodes"`
+	EvalCalls    int    `json:"eval_calls"`
+	MoveGenCalls int    `json:"move_gen_calls"`
+	BestMove     string `json:"best_move,omitempty"`
+	ScoreCP      int    `json:"score_cp"`
+}
+
+type TraceSnapshot struct {
+	ElapsedMS       int64          `json:"elapsed_ms"`
+	BestMove        string         `json:"best_move,omitempty"`
+	BestScoreCP     int            `json:"best_score_cp"`
+	DepthReached    int            `json:"depth_reached"`
+	TimedOut        bool           `json:"timed_out"`
+	Nodes           int            `json:"nodes"`
+	NPS             int64          `json:"nps"`
+	EvalCalls       int            `json:"eval_calls"`
+	EvalTimeMS      float64        `json:"eval_time_ms"`
+	MoveGenCalls    int            `json:"move_gen_calls"`
+	MoveGenTimeMS   float64        `json:"move_gen_time_ms"`
+	MoveGenTotal    int            `json:"move_gen_total_moves"`
+	BranchingFactor float64        `json:"branching_factor"`
+	TTHits          int            `json:"tt_hits"`
+	TTMisses        int            `json:"tt_misses"`
+	BetaCutoffs     int            `json:"beta_cutoffs"`
+	DepthBreakdown  []DepthSummary `json:"depth_breakdown"`
 }
 
 type TTFlag int
@@ -134,6 +170,10 @@ func NewAI() *AI {
 		ttHits:         0,
 		ttMisses:       0,
 		betaCutoffs:    0,
+		moveGenCalls:   0,
+		moveGenTimeNS:  0,
+		moveGenTotal:   0,
+		evalTimeNS:     0,
 		tt:             make(map[uint64]TTEntry, 1<<16),
 	}
 }
@@ -149,7 +189,13 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 	ai.ttHits = 0
 	ai.ttMisses = 0
 	ai.betaCutoffs = 0
+	ai.moveGenCalls = 0
+	ai.moveGenTimeNS = 0
+	ai.moveGenTotal = 0
+	ai.evalTimeNS = 0
 	ai.timedOut = false
+	ai.depthSummaries = nil
+	ai.lastSnapshot = nil
 
 	if depth < 1 || depth > MAX_DEPTH {
 		depth = 3
@@ -162,8 +208,9 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 		ai.deadline = time.Time{}
 	}
 
-	legalMoves := gs.GenerateLegalMoves()
+	legalMoves := ai.generateLegalMovesTimed(gs)
 	if len(legalMoves) == 0 {
+		ai.lastSnapshot = ai.buildTraceSnapshot(0, "", DRAW_VALUE, 0, false)
 		return SearchResult{
 			Move:        Move{},
 			Score:       DRAW_VALUE,
@@ -184,10 +231,23 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 
 	// Iterative deepening: keep the last fully completed depth result.
 	for currentDepth := 1; currentDepth <= depth; currentDepth++ {
+		depthStart := time.Now()
+		nodesBefore := ai.nodesEvaluated
+		evalCallsBefore := ai.evalCalls
+		moveGenCallsBefore := ai.moveGenCalls
 		score, move, ok := ai.searchRoot(gs, currentDepth)
 		if !ok {
 			break
 		}
+		ai.depthSummaries = append(ai.depthSummaries, DepthSummary{
+			Depth:        currentDepth,
+			ElapsedMS:    time.Since(depthStart).Milliseconds(),
+			Nodes:        ai.nodesEvaluated - nodesBefore,
+			EvalCalls:    ai.evalCalls - evalCallsBefore,
+			MoveGenCalls: ai.moveGenCalls - moveGenCallsBefore,
+			BestMove:     moveToString(move),
+			ScoreCP:      score,
+		})
 		bestMove = move
 		bestScore = score
 		completedDepth = currentDepth
@@ -200,12 +260,15 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 		completedDepth = 1
 	}
 
+	elapsedMS := time.Since(start).Milliseconds()
+	ai.lastSnapshot = ai.buildTraceSnapshot(elapsedMS, moveToString(bestMove), bestScore, completedDepth, ai.timedOut)
+
 	return SearchResult{
 		Move:        bestMove,
 		Score:       bestScore,
 		Depth:       completedDepth,
 		TimedOut:    ai.timedOut,
-		ElapsedMS:   time.Since(start).Milliseconds(),
+		ElapsedMS:   elapsedMS,
 		Nodes:       ai.nodesEvaluated,
 		EvalCalls:   ai.evalCalls,
 		TTHits:      ai.ttHits,
@@ -220,7 +283,7 @@ func (ai *AI) searchRoot(gs *GameState, depth int) (int, Move, bool) {
 	}
 	ai.nodesEvaluated++
 
-	moves := gs.GenerateLegalMoves()
+	moves := ai.generateLegalMovesTimed(gs)
 	if len(moves) == 0 {
 		return DRAW_VALUE, Move{}, true
 	}
@@ -308,7 +371,7 @@ func (ai *AI) negamax(gs *GameState, depth int, alpha int, beta int) (int, Move,
 		return ai.evaluate(gs), Move{}, true
 	}
 
-	moves := gs.GenerateLegalMoves()
+	moves := ai.generateLegalMovesTimed(gs)
 	if len(moves) == 0 {
 		if gs.IsInCheck(gs.ActiveColor) {
 			return -MATE_VALUE + (MAX_DEPTH - depth), Move{}, true
@@ -493,6 +556,7 @@ func (ai *AI) minimax(gs *GameState, depth int, alpha, beta int, maximizingPlaye
 }
 
 func (ai *AI) evaluate(gs *GameState) int {
+	start := time.Now()
 	ai.evalCalls++
 	score := 0
 
@@ -517,22 +581,22 @@ func (ai *AI) evaluate(gs *GameState) int {
 
 	// Count white moves
 	if gs.ActiveColor == White {
-		whiteMoves = len(gs.GenerateLegalMoves())
+		whiteMoves = len(ai.generateLegalMovesTimed(gs))
 	} else {
 		// Switch to white temporarily to count moves
 		tempState := gs.Clone()
 		tempState.ActiveColor = White
-		whiteMoves = len(tempState.GenerateLegalMoves())
+		whiteMoves = len(ai.generateLegalMovesTimed(tempState))
 	}
 
 	// Count black moves
 	if gs.ActiveColor == Black {
-		blackMoves = len(gs.GenerateLegalMoves())
+		blackMoves = len(ai.generateLegalMovesTimed(gs))
 	} else {
 		// Switch to black temporarily to count moves
 		tempState := gs.Clone()
 		tempState.ActiveColor = Black
-		blackMoves = len(tempState.GenerateLegalMoves())
+		blackMoves = len(ai.generateLegalMovesTimed(tempState))
 	}
 
 	// Mobility bonus (each legal move is worth a small amount)
@@ -540,10 +604,69 @@ func (ai *AI) evaluate(gs *GameState) int {
 
 	// Return score from current player's perspective
 	if gs.ActiveColor == White {
+		ai.evalTimeNS += time.Since(start).Nanoseconds()
 		return score
 	} else {
+		ai.evalTimeNS += time.Since(start).Nanoseconds()
 		return -score
 	}
+}
+
+func (ai *AI) generateLegalMovesTimed(gs *GameState) []Move {
+	start := time.Now()
+	moves := gs.GenerateLegalMoves()
+	ai.moveGenCalls++
+	ai.moveGenTimeNS += time.Since(start).Nanoseconds()
+	ai.moveGenTotal += len(moves)
+	return moves
+}
+
+func (ai *AI) buildTraceSnapshot(elapsedMS int64, bestMove string, bestScore int, depthReached int, timedOut bool) *TraceSnapshot {
+	branchingFactor := 0.0
+	if ai.moveGenCalls > 0 {
+		branchingFactor = float64(ai.moveGenTotal) / float64(ai.moveGenCalls)
+	}
+
+	depthBreakdown := make([]DepthSummary, len(ai.depthSummaries))
+	copy(depthBreakdown, ai.depthSummaries)
+
+	nps := int64(0)
+	if ai.nodesEvaluated > 0 {
+		divisor := elapsedMS
+		if divisor <= 0 {
+			divisor = 1
+		}
+		nps = int64(ai.nodesEvaluated) * 1000 / divisor
+	}
+
+	return &TraceSnapshot{
+		ElapsedMS:       elapsedMS,
+		BestMove:        bestMove,
+		BestScoreCP:     bestScore,
+		DepthReached:    depthReached,
+		TimedOut:        timedOut,
+		Nodes:           ai.nodesEvaluated,
+		NPS:             nps,
+		EvalCalls:       ai.evalCalls,
+		EvalTimeMS:      float64(ai.evalTimeNS) / 1_000_000,
+		MoveGenCalls:    ai.moveGenCalls,
+		MoveGenTimeMS:   float64(ai.moveGenTimeNS) / 1_000_000,
+		MoveGenTotal:    ai.moveGenTotal,
+		BranchingFactor: branchingFactor,
+		TTHits:          ai.ttHits,
+		TTMisses:        ai.ttMisses,
+		BetaCutoffs:     ai.betaCutoffs,
+		DepthBreakdown:  depthBreakdown,
+	}
+}
+
+func (ai *AI) GetTraceSnapshot() *TraceSnapshot {
+	if ai.lastSnapshot == nil {
+		return nil
+	}
+	clone := *ai.lastSnapshot
+	clone.DepthBreakdown = append([]DepthSummary(nil), ai.lastSnapshot.DepthBreakdown...)
+	return &clone
 }
 
 func (ai *AI) evaluatePiece(piece Piece, square Square) int {
