@@ -1113,7 +1113,7 @@ class ChessEngine:
             return
 
         if subcommand == 'report':
-            print(self._trace_report_line())
+            print(self._trace_report_multiline())
             return
 
         if subcommand == 'reset':
@@ -1387,6 +1387,11 @@ class ChessEngine:
         self._trace_ai_tt_hits = 0
         self._trace_ai_tt_misses = 0
         self._trace_ai_beta_cutoffs = 0
+        self._trace_ai_move_gen_calls = 0
+        self._trace_ai_move_gen_time_ms = 0.0
+        self._trace_ai_eval_time_ms = 0.0
+        self._trace_ai_branching_factor = 0.0
+        self._trace_ai_depth_breakdown = []
 
     def _trace_report_line(self) -> str:
         report = (
@@ -1428,6 +1433,8 @@ class ChessEngine:
             return None
         return (
             f'nodes={self._trace_ai_nodes},eval_calls={self._trace_ai_eval_calls},'
+            f'move_gen_calls={self._trace_ai_move_gen_calls},move_gen_time_ms={self._trace_ai_move_gen_time_ms:.3f},'
+            f'eval_time_ms={self._trace_ai_eval_time_ms:.3f},branching_factor={self._trace_ai_branching_factor:.2f},'
             f'tt_hits={self._trace_ai_tt_hits},tt_misses={self._trace_ai_tt_misses},'
             f'beta_cutoffs={self._trace_ai_beta_cutoffs},nps={self._trace_ai_nps}'
         )
@@ -1459,6 +1466,19 @@ class ChessEngine:
         self._trace_ai_tt_hits = tt_hits
         self._trace_ai_tt_misses = tt_misses
         self._trace_ai_beta_cutoffs = beta_cutoffs
+        trace_snapshot = self.ai.get_trace_snapshot()
+        if trace_snapshot is not None:
+            self._trace_ai_move_gen_calls = int(trace_snapshot.get('move_gen_calls', 0))
+            self._trace_ai_move_gen_time_ms = float(trace_snapshot.get('move_gen_time_ms', 0.0))
+            self._trace_ai_eval_time_ms = float(trace_snapshot.get('eval_time_ms', 0.0))
+            self._trace_ai_branching_factor = float(trace_snapshot.get('branching_factor', 0.0))
+            self._trace_ai_depth_breakdown = list(trace_snapshot.get('depth_breakdown', []))
+        else:
+            self._trace_ai_move_gen_calls = 0
+            self._trace_ai_move_gen_time_ms = 0.0
+            self._trace_ai_eval_time_ms = 0.0
+            self._trace_ai_branching_factor = 0.0
+            self._trace_ai_depth_breakdown = []
         self._trace('ai', self._trace_last_ai_summary())
 
     def _trace_last_ai_payload(self):
@@ -1512,6 +1532,9 @@ class ChessEngine:
         last_ai = self._trace_last_ai_payload()
         if last_ai is not None:
             payload['last_ai'] = last_ai
+        search_snapshot = self.ai.get_trace_snapshot()
+        if search_snapshot is not None:
+            payload['search_snapshot'] = search_snapshot
         return (json.dumps(payload, separators=(',', ':'), ensure_ascii=True) + '\n').encode('utf-8')
 
     def _encode_trace_chrome_payload(self) -> bytes:
@@ -1547,6 +1570,36 @@ class ChessEngine:
             'events': trace_events,
         }
         return (json.dumps(payload, separators=(',', ':'), ensure_ascii=True) + '\n').encode('utf-8')
+
+    def _trace_report_multiline(self) -> str:
+        lines = [self._trace_report_line()]
+        if self._trace_ai_source is None or 'search' not in self._trace_ai_source:
+            return '\n'.join(lines)
+
+        lines.extend([
+            'TRACE REPORT:',
+            f'  nodes={self._trace_ai_nodes}; nps={self._trace_ai_nps}; eval_calls={self._trace_ai_eval_calls}',
+            (
+                '  move_gen_calls='
+                f'{self._trace_ai_move_gen_calls}; move_gen_time_ms={self._trace_ai_move_gen_time_ms:.3f}; '
+                f'eval_time_ms={self._trace_ai_eval_time_ms:.3f}; branching_factor={self._trace_ai_branching_factor:.2f}'
+            ),
+            (
+                f'  tt_hits={self._trace_ai_tt_hits}; tt_misses={self._trace_ai_tt_misses}; '
+                f'beta_cutoffs={self._trace_ai_beta_cutoffs}'
+            ),
+        ])
+        if self._trace_ai_depth_breakdown:
+            lines.append('  depth_breakdown:')
+            for summary in self._trace_ai_depth_breakdown:
+                lines.append(
+                    '    '
+                    f'depth={summary.get("depth")}; elapsed_ms={summary.get("elapsed_ms")}; '
+                    f'nodes={summary.get("nodes")}; eval_calls={summary.get("eval_calls")}; '
+                    f'move_gen_calls={summary.get("move_gen_calls")}; '
+                    f'best_move={summary.get("best_move")}; score_cp={summary.get("score_cp")}'
+                )
+        return '\n'.join(lines)
 
     def depth_for_movetime(self, movetime_ms: int) -> int:
         """Convert movetime budget to a practical search depth."""
