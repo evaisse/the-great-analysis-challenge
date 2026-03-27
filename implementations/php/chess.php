@@ -1484,7 +1484,9 @@ class ChessEngine {
                 usort($legal_moves, fn(Move $left, Move $right): int => strcmp($left->to_string(), $right->to_string()));
                 $checksum = $this->concurrency_checksum_mix($checksum, 'legal:' . count($legal_moves));
                 if (count($legal_moves) === 0) {
-                    $invariant_errors++;
+                    if ($ply === 0) {
+                        $invariant_errors++;
+                    }
                     $checksum = $this->concurrency_checksum_mix($checksum, "empty:$sequence:$ply");
                     break;
                 }
