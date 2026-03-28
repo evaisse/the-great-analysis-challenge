@@ -219,10 +219,13 @@ async function runSingleBenchmark(
     const startedAt = Bun.nanoseconds();
     const execution = await executePhase(implPath, phase, imageName);
     const elapsed = Number(Bun.nanoseconds() - startedAt) / 1_000_000_000;
-    result.timings[`${phase}_seconds`] = execution.skipped ? null : elapsed;
+    result.timings[`${phase}_seconds`] = execution.skipped && execution.treatAsSuccessForValidation ? 0 : (execution.skipped ? null : elapsed);
     result.memory[phase] = execution.skipped ? memoryPlaceholder("skipped") : memoryPlaceholder("unavailable");
     result.docker[`make_${phase}_success`] = execution.returncode === 0;
     result.docker[`make_${phase}_time`] = execution.skipped ? null : elapsed;
+    if (execution.skipped && execution.treatAsSuccessForValidation) {
+      result.docker[`make_${phase}_skipped`] = true;
+    }
     result.task_results[`make_${phase}`] = execution.returncode === 0;
     if (execution.returncode !== 0) {
       result.errors.push(`${phase} failed: ${(execution.stderr || execution.stdout).slice(0, 500)}`);

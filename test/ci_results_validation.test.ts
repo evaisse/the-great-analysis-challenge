@@ -152,4 +152,27 @@ describe("benchmark result safety checks", () => {
     expect(normalizedJavascript.report_status).toBe("failed");
     expect(normalizedJavascript.errors).toContain("build error: Required timing field 'build_seconds' is missing");
   });
+
+  test("validateAllResults accepts skipped builds when build timing is recorded as zero", async () => {
+    const root = makeTempDir("tgac-ci-skipped-build-");
+    tempDirs.push(root);
+
+    const reportsDir = join(root, "reports");
+
+    await writeJsonFile(join(reportsDir, "python.json"), {
+      ...benchmarkPayload("python"),
+      timings: {
+        build_seconds: 0,
+        analyze_seconds: 1,
+        test_seconds: 1,
+        test_chess_engine_seconds: 1,
+      },
+      docker: {
+        make_build_skipped: true,
+      },
+    });
+
+    const exitCode = await validateAllResults(reportsDir, ["python"]);
+    expect(exitCode).toBe(0);
+  });
 });
