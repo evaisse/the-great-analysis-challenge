@@ -1,0 +1,7 @@
+# PGN result sync smoke script
+new
+move f2f3
+move e7e5
+move g2g4
+move d8h4
+pgn show

@@ -36,6 +36,26 @@
           ],
           "expected_patterns": ["PGN: loaded", "PGN: source="],
           "timeout": 8000
+        },
+        {
+          "id": "pgn_comment_show",
+          "name": "PGN Comment Show",
+          "commands": [
+            {"fixture_file": "test/fixtures/pgn/commands_comment_show.txt"}
+          ],
+          "expected_patterns": ["PGN: comment added", "{sharp line}"],
+          "timeout": 8000,
+          "optional": true
+        },
+        {
+          "id": "pgn_result_checkmate_show",
+          "name": "PGN Result Checkmate Show",
+          "commands": [
+            {"fixture_file": "test/fixtures/pgn/commands_checkmate_show.txt"}
+          ],
+          "expected_patterns": ["CHECKMATE:", "[Result \"0-1\"]", "Qh4# 0-1"],
+          "timeout": 8000,
+          "optional": true
         }
       ]
     },

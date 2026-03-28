@@ -1,0 +1,6 @@
+# PGN comment smoke script
+new
+move e2e4
+move e7e5
+pgn comment "sharp line"
+pgn show
