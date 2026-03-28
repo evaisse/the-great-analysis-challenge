@@ -23,6 +23,7 @@ type ChessEngine struct {
 	gameState              *GameState
 	ai                     *AI
 	pgnPath                string
+	pgnMoves               []string
 	pgnGame                *PgnGame
 	pgnVariationStack      [][2]int
 	bookPath               string
@@ -96,6 +97,7 @@ func NewChessEngine() *ChessEngine {
 		gameState:         NewGameState(),
 		ai:                NewAI(),
 		pgnPath:           "",
+		pgnMoves:          make([]string, 0),
 		pgnGame:           newPgnGameFromHistory(nil, pgnStartFEN, "current-game"),
 		pgnVariationStack: make([][2]int, 0),
 		bookPath:          "",
@@ -294,6 +296,7 @@ func (engine *ChessEngine) handleNew() {
 	engine.pgnPath = ""
 	engine.pgnGame = newPgnGameFromHistory(nil, pgnStartFEN, "current-game")
 	engine.pgnVariationStack = nil
+	engine.refreshPGNMoveCache()
 	fmt.Println("OK: New game started")
 	fmt.Print(engine.gameState.Display())
 }
@@ -345,6 +348,7 @@ func (engine *ChessEngine) handleMove(moveStr string) {
 	}
 
 	engine.recordPGNMove(move)
+	engine.syncPGNResultWithPosition()
 
 	// Check for game end conditions
 	legalMoves := engine.gameState.GenerateLegalMoves()
@@ -375,6 +379,8 @@ func (engine *ChessEngine) handleUndo() {
 			if len(engine.pgnGame.Moves) > 0 {
 				engine.pgnGame.Moves = engine.pgnGame.Moves[:len(engine.pgnGame.Moves)-1]
 			}
+			engine.refreshPGNMoveCache()
+			engine.syncPGNResultWithPosition()
 			fmt.Println("OK: undo")
 			fmt.Print(engine.gameState.Display())
 			return
@@ -384,6 +390,8 @@ func (engine *ChessEngine) handleUndo() {
 		if len(*seq) > 0 {
 			*seq = (*seq)[:len(*seq)-1]
 			engine.syncRuntimeToPGNCursor()
+			engine.refreshPGNMoveCache()
+			engine.syncPGNResultWithPosition()
 			fmt.Println("OK: undo")
 			fmt.Print(engine.gameState.Display())
 			return
@@ -409,6 +417,8 @@ func (engine *ChessEngine) handleFEN(fen string) {
 		engine.pgnPath = ""
 		engine.pgnGame = newPgnGameFromHistory(nil, startFEN, "current-game")
 		engine.pgnVariationStack = nil
+		engine.refreshPGNMoveCache()
+		engine.syncPGNResultWithPosition()
 		fmt.Println("OK: FEN loaded")
 		fmt.Print(engine.gameState.Display())
 	}
@@ -780,6 +790,7 @@ func (engine *ChessEngine) applyAIMove(result SearchResult, legalMoves []Move, r
 	bestMove := normalizeBestMove(result.Move, legalMoves)
 
 	engine.recordPGNMove(bestMove)
+	engine.syncPGNResultWithPosition()
 
 	moveStr := moveToString(bestMove)
 	depthUsed := result.Depth
@@ -1038,6 +1049,7 @@ func (engine *ChessEngine) chooseBookMove(legalMoves []Move) (Move, bool) {
 
 func (engine *ChessEngine) applyBookAIMove(bestMove Move) {
 	engine.recordPGNMove(bestMove)
+	engine.syncPGNResultWithPosition()
 	engine.bookPlayed++
 
 	moveStr := moveToString(bestMove)
@@ -1316,6 +1328,7 @@ func (engine *ChessEngine) chooseEndgameMove(legalMoves []Move) (Move, EndgameIn
 
 func (engine *ChessEngine) applyEndgameAIMove(bestMove Move, info EndgameInfo) {
 	engine.recordPGNMove(bestMove)
+	engine.syncPGNResultWithPosition()
 	moveStr := moveToString(bestMove)
 	engine.recordTraceAI("endgame", moveStr, 0, info.WhiteScore, 0, false, 0, 0, 0, 0, 0)
 
@@ -1360,6 +1373,8 @@ func (engine *ChessEngine) handlePGN(args []string) {
 		engine.pgnGame = game
 		engine.pgnVariationStack = nil
 		engine.syncRuntimeToPGNCursor()
+		engine.refreshPGNMoveCache()
+		engine.syncPGNResultWithPosition()
 		fmt.Printf("PGN: loaded source=%s\n", path)
 	case "save":
 		if len(args) < 2 {
@@ -1372,10 +1387,10 @@ func (engine *ChessEngine) handlePGN(args []string) {
 			return
 		}
 		engine.pgnPath = path
-		engine.pgnGame.Source = path
+		engine.pgnGame.SetSource(path)
 		fmt.Printf("PGN: saved path=\"%s\"\n", path)
 	case "show":
-		source := engine.pgnGame.Source
+		source := engine.pgnPath
 		if source == "" {
 			source = "current-game"
 		}
@@ -1421,8 +1436,8 @@ func (engine *ChessEngine) handlePGN(args []string) {
 			fmt.Println("ERROR: Unsupported pgn variation command")
 		}
 	case "comment":
-		text := strings.TrimSpace(strings.Join(args[1:], " "))
-		if text == "" {
+		text, ok := extractPgnCommentText(strings.Join(append([]string{"pgn"}, args...), " "))
+		if !ok || text == "" {
 			fmt.Println("ERROR: pgn comment requires text")
 			return
 		}
@@ -1432,6 +1447,7 @@ func (engine *ChessEngine) handlePGN(args []string) {
 		} else {
 			(*seq)[len(*seq)-1].Comments = append((*seq)[len(*seq)-1].Comments, text)
 		}
+		engine.refreshPGNMoveCache()
 		fmt.Println("PGN: comment added")
 	default:
 		fmt.Println("ERROR: Unsupported pgn command")
@@ -1535,6 +1551,7 @@ func (engine *ChessEngine) handleUCINewGame() {
 	engine.pgnPath = ""
 	engine.pgnGame = newPgnGameFromHistory(nil, pgnStartFEN, "current-game")
 	engine.pgnVariationStack = nil
+	engine.refreshPGNMoveCache()
 	engine.uciLastBestMove = ""
 	if engine.protocolMode == "uci" {
 		engine.setUCIState("idle")
@@ -1591,6 +1608,8 @@ func (engine *ChessEngine) handlePosition(args []string) {
 		currentStart = engine.gameState.ToFEN()
 	}
 	engine.pgnGame = newPgnGameFromHistory(engine.gameState.MoveHistory, currentStart, "current-game")
+	engine.refreshPGNMoveCache()
+	engine.syncPGNResultWithPosition()
 	if engine.protocolMode == "uci" {
 		engine.setUCIState("idle")
 	}
@@ -1633,6 +1652,7 @@ func (engine *ChessEngine) applyMoveSilently(moveStr string) error {
 		move.PromoteTo = promotionPiece
 	}
 	engine.gameState.MakeMove(move)
+	engine.syncPGNResultWithPosition()
 	return nil
 }
 
@@ -1659,6 +1679,11 @@ func (engine *ChessEngine) handleNew960(args []string) {
 		fmt.Printf("ERROR: Invalid Chess960 FEN: %s\n", err.Error())
 		return
 	}
+	engine.pgnPath = ""
+	engine.pgnGame = newPgnGameFromHistory(nil, engine.gameState.ToFEN(), "current-game")
+	engine.pgnVariationStack = nil
+	engine.refreshPGNMoveCache()
+	engine.syncPGNResultWithPosition()
 	fmt.Println("OK: New game started")
 	fmt.Print(engine.gameState.Display())
 	fmt.Printf("960: new game id=%d; backrank=%s\n", engine.chess960ID, decodeChess960Backrank(engine.chess960ID))
@@ -2471,6 +2496,9 @@ func (engine *ChessEngine) currentPGNSequenceRef() *[]*PgnMoveNode {
 }
 
 func (engine *ChessEngine) currentPGNMoves() []string {
+	if len(engine.pgnVariationStack) == 0 && len(engine.pgnMoves) > 0 {
+		return append([]string(nil), engine.pgnMoves...)
+	}
 	seq := engine.currentPGNSequenceRef()
 	result := make([]string, 0, len(*seq))
 	for _, node := range *seq {
@@ -2508,6 +2536,7 @@ func (engine *ChessEngine) syncRuntimeToPGNCursor() {
 	for _, node := range line {
 		engine.gameState.MakeMove(cloneMove(node.Move))
 	}
+	engine.syncPGNResultWithPosition()
 }
 
 func (engine *ChessEngine) recordPGNMove(move Move) {
@@ -2520,4 +2549,43 @@ func (engine *ChessEngine) recordPGNMove(move Move) {
 	node := &PgnMoveNode{SAN: san, Move: cloneMove(move), FenBefore: fenBefore, FenAfter: engine.gameState.ToFEN()}
 	seq := engine.currentPGNSequenceRef()
 	*seq = append(*seq, node)
+	engine.refreshPGNMoveCache()
+}
+
+func (engine *ChessEngine) refreshPGNMoveCache() {
+	if engine.pgnGame == nil {
+		engine.pgnMoves = make([]string, 0)
+		return
+	}
+	engine.pgnMoves = make([]string, 0, len(engine.pgnGame.Moves))
+	for _, node := range engine.pgnGame.Moves {
+		engine.pgnMoves = append(engine.pgnMoves, node.SAN)
+	}
+}
+
+func (engine *ChessEngine) syncPGNResultWithPosition() {
+	if engine.pgnGame == nil {
+		return
+	}
+
+	legalMoves := engine.gameState.GenerateLegalMoves()
+	if len(legalMoves) == 0 {
+		if engine.gameState.IsInCheck(engine.gameState.ActiveColor) {
+			if engine.gameState.ActiveColor == White {
+				engine.pgnGame.SetResult("0-1")
+			} else {
+				engine.pgnGame.SetResult("1-0")
+			}
+			return
+		}
+		engine.pgnGame.SetResult("1/2-1/2")
+		return
+	}
+
+	if engine.gameState.IsDraw() {
+		engine.pgnGame.SetResult("1/2-1/2")
+		return
+	}
+
+	engine.pgnGame.SetResult("*")
 }

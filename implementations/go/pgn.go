@@ -3,11 +3,15 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
 const pgnStartFEN = StartingPositionFEN
+
+var pgnQuotedCommentPattern = regexp.MustCompile(`(?i)^pgn\s+comment\s+"((?:\\.|[^"])*)"\s*$`)
+var pgnPlainCommentPattern = regexp.MustCompile(`(?i)^pgn\s+comment\s+(.+)$`)
 
 type PgnMoveNode struct {
 	SAN        string
@@ -26,6 +30,21 @@ type PgnGame struct {
 	Source          string
 	InitialFEN      string
 	InitialComments []string
+}
+
+func (game *PgnGame) SetSource(source string) {
+	game.Source = source
+}
+
+func (game *PgnGame) SetResult(result string) {
+	game.Result = result
+	if game.Tags == nil {
+		game.Tags = map[string]string{}
+	}
+	game.Tags["Result"] = result
+	if result == "*" && len(game.Tags) == 1 {
+		return
+	}
 }
 
 func newPgnGameFromHistory(history []Move, startFEN, source string) *PgnGame {
@@ -517,4 +536,20 @@ func loadPGNFile(path string) (*PgnGame, error) {
 		return nil, err
 	}
 	return parsePGN(string(content), path)
+}
+
+func extractPgnCommentText(command string) (string, bool) {
+	trimmed := strings.TrimSpace(command)
+	if matches := pgnQuotedCommentPattern.FindStringSubmatch(trimmed); len(matches) == 2 {
+		text := strings.ReplaceAll(matches[1], `\"`, `"`)
+		text = strings.ReplaceAll(text, `\\`, `\\`)
+		return text, true
+	}
+	if matches := pgnPlainCommentPattern.FindStringSubmatch(trimmed); len(matches) == 2 {
+		text := strings.TrimSpace(matches[1])
+		if text != "" {
+			return text, true
+		}
+	}
+	return "", false
 }
