@@ -283,7 +283,63 @@ function resolveTestChessEngineSeconds(implData: Record<string, any>): number | 
   return value == null ? null : Number(value);
 }
 
-export async function updateReadmeStatusTable(): Promise<boolean> {
+function normalizeReportStatus(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim().toLowerCase() : "fresh";
+}
+
+export function hasBuildErrorStatus(implData: Record<string, any>): boolean {
+  const reportStatus = normalizeReportStatus(implData.report_status);
+  if (reportStatus !== "fresh") {
+    return true;
+  }
+  return implData.status != null && implData.status !== "completed";
+}
+
+export function resolveReadmeStepMetrics(
+  implData: Record<string, any>,
+  memory: Record<string, any>,
+): {
+  hasBuildError: boolean;
+  build: string;
+  analyze: string;
+  test: string;
+  testChessEngine: string;
+} {
+  const timings = implData.timings ?? {};
+  const buildStep = timings.build_seconds ?? null;
+  const analyzeStep = timings.analyze_seconds ?? null;
+  const testStep = timings.test_seconds ?? null;
+  const ceStep = resolveTestChessEngineSeconds(implData);
+  const buildMemory = Number(memory.build?.peak_memory_mb ?? 0);
+  const analyzeMemory = Number(memory.analyze?.peak_memory_mb ?? 0);
+  const testMemory = Number(memory.test?.peak_memory_mb ?? 0);
+  const ceMemory = Number(memory.test_chess_engine?.peak_memory_mb ?? 0);
+
+  if (hasBuildErrorStatus(implData)) {
+    return {
+      hasBuildError: true,
+      build: "build error",
+      analyze: "-",
+      test: "-",
+      testChessEngine: "-",
+    };
+  }
+
+  return {
+    hasBuildError: false,
+    build: formatStepMetric(buildStep, buildMemory),
+    analyze: formatStepMetric(analyzeStep, analyzeMemory),
+    test: formatStepMetric(testStep, testMemory),
+    testChessEngine: formatStepMetric(ceStep, ceMemory),
+  };
+}
+
+export interface ReadmeUpdateResult {
+  changed: boolean;
+  buildErrorLanguages: string[];
+}
+
+export async function updateReadmeStatusTable(): Promise<ReadmeUpdateResult> {
   console.log("=== Updating README Status Table ===");
   const performanceData = await loadPerformanceData();
   const verificationData = await getVerificationStatus();
@@ -298,21 +354,24 @@ export async function updateReadmeStatusTable(): Promise<boolean> {
   const implementations = (await discoverImplementationDirs(IMPLEMENTATIONS_DIR)).map((path) => basename(path).toLowerCase()).sort();
   if (implementations.length === 0) {
     console.log("❌ Error: Could not discover any implementations");
-    return false;
+    return { changed: false, buildErrorLanguages: [] };
   }
 
   for (const language of implementations) {
     if (!combinedData.has(language)) {
       combinedData.set(language, {
         language,
+        report_status: "missing",
         timings: {},
         test_results: { passed: [], failed: [] },
-        status: "completed",
+        errors: ["build error: benchmark report missing"],
+        status: "failed",
       });
     }
   }
 
   const rows: string[] = [];
+  const buildErrorLanguages: string[] = [];
   for (const language of implementations) {
     const implData = combinedData.get(language) ?? {};
     const implPath = join(IMPLEMENTATIONS_DIR, language);
@@ -320,20 +379,10 @@ export async function updateReadmeStatusTable(): Promise<boolean> {
     const complexityScore = await resolveComplexityScore(implData, implPath, language);
     const sourceLoc = await resolveSourceLoc(implData, implPath, language);
     const entrypointFile = await resolveEntrypointFile(implPath, language, metadata);
-    const status = verificationData[language] ?? "needs_work";
+    const metricsDisplay = resolveReadmeStepMetrics(implData, implData.memory ?? {});
+    const status = metricsDisplay.hasBuildError ? "needs_work" : (verificationData[language] ?? "needs_work");
     const emoji = status === "excellent" ? "🟢" : status === "good" ? "🟡" : "🔴";
     const languageEmoji = CUSTOM_EMOJIS[language] ?? "📦";
-
-    const timings = implData.timings ?? {};
-    const memory = implData.memory ?? {};
-    const buildStep = timings.build_seconds ?? null;
-    const analyzeStep = timings.analyze_seconds ?? null;
-    const testStep = timings.test_seconds ?? null;
-    const ceStep = resolveTestChessEngineSeconds(implData);
-    const buildMemory = Number(memory.build?.peak_memory_mb ?? 0);
-    const analyzeMemory = Number(memory.analyze?.peak_memory_mb ?? 0);
-    const testMemory = Number(memory.test?.peak_memory_mb ?? 0);
-    const ceMemory = Number(memory.test_chess_engine?.peak_memory_mb ?? 0);
 
     let complexityDisplay = "-";
     if (typeof complexityScore === "number" && Number.isFinite(complexityScore)) {
@@ -344,9 +393,12 @@ export async function updateReadmeStatusTable(): Promise<boolean> {
       complexityDisplay = `[${formatGroupedNumber(complexityScore)}](${repoPath})`;
     }
     const locDisplay = sourceLoc == null ? "-" : formatGroupedInt(sourceLoc);
+    if (metricsDisplay.hasBuildError) {
+      buildErrorLanguages.push(language);
+    }
 
     rows.push(
-      `| ${languageEmoji} ${language.charAt(0).toUpperCase()}${language.slice(1)} | ${complexityDisplay} | ${locDisplay} | ${formatStepMetric(buildStep, buildMemory)} | ${formatStepMetric(analyzeStep, analyzeMemory)} | ${formatStepMetric(testStep, testMemory)} | ${formatStepMetric(ceStep, ceMemory)} | ${emoji} ${formatFeatureSummary(metadata)} |`,
+      `| ${languageEmoji} ${language.charAt(0).toUpperCase()}${language.slice(1)} | ${complexityDisplay} | ${locDisplay} | ${metricsDisplay.build} | ${metricsDisplay.analyze} | ${metricsDisplay.test} | ${metricsDisplay.testChessEngine} | ${emoji} ${formatFeatureSummary(metadata)} |`,
     );
   }
 
@@ -360,7 +412,7 @@ export async function updateReadmeStatusTable(): Promise<boolean> {
   const content = await readTextFile(readmePath);
   if (!content.includes("<!-- status-table-start -->") || !content.includes("<!-- status-table-end -->")) {
     console.log("⚠️ Warning: README doesn't contain status table markers");
-    return false;
+    return { changed: false, buildErrorLanguages };
   }
 
   const newContent = content.replace(
@@ -369,16 +421,18 @@ export async function updateReadmeStatusTable(): Promise<boolean> {
   );
   if (newContent === content) {
     console.log("⚠️ No changes detected in README content");
-    return false;
+    return { changed: false, buildErrorLanguages };
   }
 
   await writeTextFile(readmePath, newContent);
   console.log("✅ README status table updated");
-  return true;
+  return { changed: true, buildErrorLanguages };
 }
 
 export async function runUpdateReadme(): Promise<number> {
-  const changed = await updateReadmeStatusTable();
-  writeGithubOutput("changed", String(changed).toLowerCase());
+  const result = await updateReadmeStatusTable();
+  writeGithubOutput("changed", String(result.changed).toLowerCase());
+  writeGithubOutput("build-error-count", String(result.buildErrorLanguages.length));
+  writeGithubOutput("build-error-languages", result.buildErrorLanguages.join(","));
   return 0;
 }

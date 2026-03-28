@@ -415,12 +415,33 @@ export async function main(argv: string[]): Promise<number> {
   }
 
   if (command === "validate-results") {
-    const { values } = parseArgs({ args, options: { "benchmark-dir": { type: "string" } } });
-    return await validateAllResults(values["benchmark-dir"] ? resolve(values["benchmark-dir"]) : undefined);
+    const { values } = parseArgs({
+      args,
+      options: {
+        "benchmark-dir": { type: "string" },
+        expected: { type: "string", multiple: true },
+      },
+    });
+    return await validateAllResults(
+      values["benchmark-dir"] ? resolve(values["benchmark-dir"]) : undefined,
+      values.expected,
+    );
   }
 
   if (command === "combine-results") {
-    return (await combineResults()) ? 0 : 1;
+    const { values } = parseArgs({
+      args,
+      options: {
+        "artifacts-dir": { type: "string" },
+        "reports-dir": { type: "string" },
+        expected: { type: "string", multiple: true },
+      },
+    });
+    return (await combineResults({
+      artifactsDir: values["artifacts-dir"] ? resolve(values["artifacts-dir"]) : undefined,
+      reportsDir: values["reports-dir"] ? resolve(values["reports-dir"]) : undefined,
+      expectedImplementations: values.expected,
+    })) ? 0 : 1;
   }
 
   if (command === "update-readme") {

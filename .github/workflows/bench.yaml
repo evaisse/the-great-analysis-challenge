@@ -167,6 +167,8 @@ jobs:
     if: needs.detect-changes.outputs.has-changes == 'true'
     outputs:
       readme-changed: ${{ steps.update.outputs.changed }}
+      build-error-count: ${{ steps.update.outputs.build-error-count }}
+      build-error-languages: ${{ steps.update.outputs.build-error-languages }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -187,11 +189,10 @@ jobs:
           path: benchmark_artifacts/
 
       - name: Combine benchmark results
-        run: ./workflow combine-results
+        run: ./workflow combine-results --expected all
 
       - name: Validate benchmark results
-        run: ./workflow validate-results
-        continue-on-error: true
+        run: ./workflow validate-results --expected all || true
 
       - name: Update README status table
         id: update
@@ -223,7 +224,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Combine benchmark results
-        run: ./workflow combine-results
+        run: ./workflow combine-results --expected all
 
       - name: Update README status table
         id: update
@@ -239,6 +240,10 @@ jobs:
           VERSION_TYPE="${{ github.event.inputs.version_type }}"
           if [ -z "$VERSION_TYPE" ]; then
             VERSION_TYPE="patch"
+          fi
+          BUILD_ERROR_COUNT="${{ needs.combine-results.outputs.build-error-count }}"
+          if [ -z "$BUILD_ERROR_COUNT" ]; then
+            BUILD_ERROR_COUNT="0"
           fi
           ./workflow create-release \
             --version-type "$VERSION_TYPE" \
@@ -263,6 +268,7 @@ jobs:
             - 🟢 **Excellent**: ${{ needs.validation.outputs.excellent-count }} implementations
             - 🟡 **Good**: ${{ needs.validation.outputs.good-count }} implementations  
             - 🔴 **Needs Work**: ${{ needs.validation.outputs.needs-work-count }} implementations
+            - 🚨 **Build errors in benchmark table**: ${{ needs.combine-results.outputs.build-error-count }} implementations
 
             **Total**: ${{ needs.validation.outputs.total-count }} implementations tested
 
@@ -303,6 +309,14 @@ jobs:
             echo "- 🟢 **Excellent**: ${{ needs.validation.outputs.excellent-count }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🟡 **Good**: ${{ needs.validation.outputs.good-count }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🔴 **Needs work**: ${{ needs.validation.outputs.needs-work-count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- 🚨 **Build errors in README benchmark table**: ${{ needs.combine-results.outputs.build-error-count }}" >> $GITHUB_STEP_SUMMARY
+            if [[ -n "${{ needs.combine-results.outputs.build-error-languages }}" ]]; then
+              echo "- **Build error implementations**: ${{ needs.combine-results.outputs.build-error-languages }}" >> $GITHUB_STEP_SUMMARY
+            fi
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "✅ Matrix-based benchmarking completed successfully!" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ needs.combine-results.outputs.build-error-count }}" != "0" && -n "${{ needs.combine-results.outputs.build-error-count }}" ]]; then
+              echo "⚠️ Matrix-based benchmarking completed with build errors reported in the README table." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ Matrix-based benchmarking completed successfully!" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
