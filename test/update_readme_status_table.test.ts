@@ -25,6 +25,26 @@ describe("README benchmark status rendering", () => {
     expect(metrics.testChessEngine).toBe("-");
   });
 
+  test("marks invalid reports as build error", () => {
+    const implData = {
+      language: "javascript",
+      report_status: "failed",
+      status: "completed",
+      timings: {
+        analyze_seconds: 1,
+        test_seconds: 1,
+      },
+      errors: ["build error: Required timing field 'build_seconds' is missing"],
+    };
+
+    expect(hasBuildErrorStatus(implData)).toBe(true);
+
+    const metrics = resolveReadmeStepMetrics(implData, {});
+    expect(metrics.hasBuildError).toBe(true);
+    expect(metrics.build).toBe("build error");
+    expect(metrics.analyze).toBe("-");
+  });
+
   test("keeps timing metrics for fresh completed reports", () => {
     const implData = {
       language: "rust",

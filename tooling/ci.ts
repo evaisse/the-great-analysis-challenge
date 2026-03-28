@@ -195,6 +195,26 @@ async function writeSyntheticBenchmarkErrorReport(reportsDir: string, implName: 
   return synthetic;
 }
 
+async function normalizeInvalidBenchmarkReport(reportFile: string, data: any): Promise<any> {
+  const [isValid, issues] = await validateResultJson(reportFile);
+  if (isValid) {
+    return data;
+  }
+
+  const normalizeOne = (item: any): any => {
+    const normalized = typeof item === "object" && item ? { ...item } : { language: basename(reportFile, ".json") };
+    normalized.report_status = "failed";
+    const existingErrors = Array.isArray(normalized.errors) ? normalized.errors.filter((entry: unknown) => typeof entry === "string") : [];
+    const validationErrors = issues.map((issue) => `build error: ${issue}`);
+    normalized.errors = [...new Set([...existingErrors, ...validationErrors])];
+    return normalized;
+  };
+
+  const normalized = Array.isArray(data) ? data.map((item) => normalizeOne(item)) : normalizeOne(data);
+  await writeJsonFile(reportFile, normalized);
+  return normalized;
+}
+
 export async function combineResults(
   options: { artifactsDir?: string; reportsDir?: string; expectedImplementations?: string[] } = {},
 ): Promise<boolean> {
@@ -262,13 +282,11 @@ export async function combineResults(
   for await (const file of reportsGlob.scan({ cwd: reportsDir, onlyFiles: true })) {
     if (file === "performance_data.json" || isConcurrencyReportFile(file)) continue;
     try {
-      const data = await readJsonFile<any>(join(reportsDir, file));
-      if (typeof data === "object" && data && Array.isArray(data.errors) && data.errors.length > 0 && data.status !== "completed") {
-        data.report_status = data.report_status ?? "failed";
-        await writeJsonFile(join(reportsDir, file), data);
-      }
-      if (Array.isArray(data)) allResults.push(...data);
-      else allResults.push(data);
+      const reportFile = join(reportsDir, file);
+      const data = await readJsonFile<any>(reportFile);
+      const normalized = await normalizeInvalidBenchmarkReport(reportFile, data);
+      if (Array.isArray(normalized)) allResults.push(...normalized);
+      else allResults.push(normalized);
     } catch (error) {
       console.log(`Error reading ${file}: ${error instanceof Error ? error.message : String(error)}`);
     }

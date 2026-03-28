@@ -89,7 +89,7 @@ describe("benchmark result safety checks", () => {
 
     const syntheticPython = await readJsonFile<any>(join(reportsDir, "python.json"));
     expect(syntheticPython.status).toBe("failed");
-    expect(syntheticPython.report_status).toBe("missing");
+    expect(syntheticPython.report_status).toBe("failed");
     expect(syntheticPython.errors).toContain("build error: benchmark report missing");
 
     const validationExitCode = await validateAllResults(reportsDir, ["rust", "python"]);
@@ -121,5 +121,35 @@ describe("benchmark result safety checks", () => {
 
     const exitCode = await validateAllResults(reportsDir, ["rust", "python"]);
     expect(exitCode).toBe(1);
+  });
+
+  test("combineResults marks invalid benchmark reports as failed build errors", async () => {
+    const root = makeTempDir("tgac-ci-invalid-");
+    tempDirs.push(root);
+
+    const artifactsDir = join(root, "benchmark_artifacts");
+    const reportsDir = join(root, "reports");
+    const nestedArtifactDir = join(artifactsDir, "benchmark-javascript-123");
+
+    await writeJsonFile(join(nestedArtifactDir, "javascript.json"), {
+      ...benchmarkPayload("javascript"),
+      timings: {
+        analyze_seconds: 1,
+        test_seconds: 1,
+        test_chess_engine_seconds: 1,
+      },
+    });
+
+    const combined = await combineResults({
+      artifactsDir,
+      reportsDir,
+      expectedImplementations: ["javascript"],
+    });
+
+    expect(combined).toBe(true);
+
+    const normalizedJavascript = await readJsonFile<any>(join(reportsDir, "javascript.json"));
+    expect(normalizedJavascript.report_status).toBe("failed");
+    expect(normalizedJavascript.errors).toContain("build error: Required timing field 'build_seconds' is missing");
   });
 });
