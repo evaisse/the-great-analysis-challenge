@@ -38,3 +38,9 @@ Extended protocol surface:
 - `Board.hs` now handles castling, en passant, promotion, and legal ray generation consistently enough for the shared suites.
 - `Main.hs` owns deterministic hash/draw/book/PGN/UCI/Chess960/trace/concurrency responses required by `v2-full`.
 - The implementation passes both the shared `v1` suite and the `v2-full` suite in Docker.
+
+## Attack Table Strategy
+
+- `src/AttackTables.hs` precomputes knight attacks, king attacks, sliding rays, and Chebyshev/Manhattan distance tables.
+- `src/Board.hs` uses those lookup tables for knight, king, bishop, rook, and queen move generation plus blocker-aware attack detection.
+- `src/Eval/Mod.hs` uses the Manhattan king-distance table for simplified endgame king-activity scoring.

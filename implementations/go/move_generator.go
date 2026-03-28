@@ -154,30 +154,22 @@ func (gs *GameState) GenerateKnightMoves(square Square) []Move {
 	moves := make([]Move, 0, 8)
 	piece := gs.GetPiece(square)
 
-	knightMoves := [][]int{
-		{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
-		{1, -2}, {1, 2}, {2, -1}, {2, 1},
-	}
-
-	for _, move := range knightMoves {
-		toSquare := Square{square.File + move[0], square.Rank + move[1]}
-		if toSquare.IsValid() {
-			target := gs.GetPiece(toSquare)
-			if target.IsEmpty() {
-				moves = append(moves, Move{
-					From:  square,
-					To:    toSquare,
-					Piece: piece,
-				})
-			} else if target.Color != piece.Color {
-				moves = append(moves, Move{
-					From:      square,
-					To:        toSquare,
-					Piece:     piece,
-					Captured:  &target,
-					IsCapture: true,
-				})
-			}
+	for _, toSquare := range knightAttacks(square) {
+		target := gs.GetPiece(toSquare)
+		if target.IsEmpty() {
+			moves = append(moves, Move{
+				From:  square,
+				To:    toSquare,
+				Piece: piece,
+			})
+		} else if target.Color != piece.Color {
+			moves = append(moves, Move{
+				From:      square,
+				To:        toSquare,
+				Piece:     piece,
+				Captured:  &target,
+				IsCapture: true,
+			})
 		}
 	}
 
@@ -189,16 +181,8 @@ func (gs *GameState) GenerateSlidingMoves(square Square, directions [][]int) []M
 	piece := gs.GetPiece(square)
 
 	for _, direction := range directions {
-		for distance := 1; distance < 8; distance++ {
-			toSquare := Square{
-				square.File + direction[0]*distance,
-				square.Rank + direction[1]*distance,
-			}
-
-			if !toSquare.IsValid() {
-				break
-			}
-
+		toSquareList := rayAttacks(directionToEnum(direction[0], direction[1]), square)
+		for _, toSquare := range toSquareList {
 			target := gs.GetPiece(toSquare)
 			if target.IsEmpty() {
 				moves = append(moves, Move{
@@ -251,72 +235,118 @@ func (gs *GameState) GenerateKingMoves(square Square) []Move {
 	moves := make([]Move, 0, 10)
 	piece := gs.GetPiece(square)
 
-	// Regular king moves
-	kingMoves := [][]int{
-		{-1, -1}, {-1, 0}, {-1, 1},
-		{0, -1}, {0, 1},
-		{1, -1}, {1, 0}, {1, 1},
-	}
-
-	for _, move := range kingMoves {
-		toSquare := Square{square.File + move[0], square.Rank + move[1]}
-		if toSquare.IsValid() {
-			target := gs.GetPiece(toSquare)
-			if target.IsEmpty() {
-				moves = append(moves, Move{
-					From:  square,
-					To:    toSquare,
-					Piece: piece,
-				})
-			} else if target.Color != piece.Color {
-				moves = append(moves, Move{
-					From:      square,
-					To:        toSquare,
-					Piece:     piece,
-					Captured:  &target,
-					IsCapture: true,
-				})
-			}
+	for _, toSquare := range kingAttacks(square) {
+		target := gs.GetPiece(toSquare)
+		if target.IsEmpty() {
+			moves = append(moves, Move{
+				From:  square,
+				To:    toSquare,
+				Piece: piece,
+			})
+		} else if target.Color != piece.Color {
+			moves = append(moves, Move{
+				From:      square,
+				To:        toSquare,
+				Piece:     piece,
+				Captured:  &target,
+				IsCapture: true,
+			})
 		}
 	}
 
 	// Castling
 	if !gs.IsInCheck(piece.Color) {
-		rank := 0
-		if piece.Color == Black {
-			rank = 7
-		}
-
-		// Kingside castling
-		if gs.CastlingRights[piece.Color][KingsideCastle] {
-			if gs.GetPiece(Square{5, rank}).IsEmpty() && gs.GetPiece(Square{6, rank}).IsEmpty() {
-				if !gs.IsSquareAttacked(Square{5, rank}, 1-piece.Color) && !gs.IsSquareAttacked(Square{6, rank}, 1-piece.Color) {
-					moves = append(moves, Move{
-						From:     square,
-						To:       Square{6, rank},
-						Piece:    piece,
-						IsCastle: true,
-					})
-				}
-			}
-		}
-
-		// Queenside castling
-		if gs.CastlingRights[piece.Color][QueensideCastle] {
-			if gs.GetPiece(Square{1, rank}).IsEmpty() && gs.GetPiece(Square{2, rank}).IsEmpty() && gs.GetPiece(Square{3, rank}).IsEmpty() {
-				if !gs.IsSquareAttacked(Square{2, rank}, 1-piece.Color) && !gs.IsSquareAttacked(Square{3, rank}, 1-piece.Color) {
-					moves = append(moves, Move{
-						From:     square,
-						To:       Square{2, rank},
-						Piece:    piece,
-						IsCastle: true,
-					})
-				}
-			}
-		}
+		moves = append(moves, gs.generateCastlingMoves(square, piece)...)
 	}
 
 	return moves
+}
+
+func (gs *GameState) generateCastlingMoves(square Square, piece Piece) []Move {
+	moves := make([]Move, 0, 2)
+	for _, side := range []int{KingsideCastle, QueensideCastle} {
+		if !gs.CastlingRights[piece.Color][side] {
+			continue
+		}
+
+		kingStart, rookStart, kingTarget, rookTarget := gs.GetCastleDetails(piece.Color, side)
+		if square != kingStart {
+			continue
+		}
+
+		rook := gs.GetPiece(rookStart)
+		if rook.Type != Rook || rook.Color != piece.Color {
+			continue
+		}
+
+		blockerSquares := append(gs.LinePath(kingStart, kingTarget), gs.LinePath(rookStart, rookTarget)...)
+		seen := make(map[Square]bool)
+		blocked := false
+		for _, pathSquare := range blockerSquares {
+			if seen[pathSquare] {
+				continue
+			}
+			seen[pathSquare] = true
+			if pathSquare == kingStart || pathSquare == rookStart {
+				continue
+			}
+			if !gs.GetPiece(pathSquare).IsEmpty() {
+				blocked = true
+				break
+			}
+		}
+		if blocked {
+			continue
+		}
+
+		attackSquares := append([]Square{kingStart}, gs.LinePath(kingStart, kingTarget)...)
+		seen = make(map[Square]bool)
+		unsafe := false
+		for _, attackSquare := range attackSquares {
+			if seen[attackSquare] {
+				continue
+			}
+			seen[attackSquare] = true
+			if gs.IsSquareAttacked(attackSquare, 1-piece.Color) {
+				unsafe = true
+				break
+			}
+		}
+		if unsafe {
+			continue
+		}
+
+		moves = append(moves, Move{
+			From:     square,
+			To:       kingTarget,
+			Piece:    piece,
+			IsCastle: true,
+		})
+	}
+	return moves
+}
+
+func directionToEnum(fileDelta, rankDelta int) Direction {
+	switch {
+	case fileDelta == -1 && rankDelta == -1:
+		return DirectionSouthWest
+	case fileDelta == 0 && rankDelta == -1:
+		return DirectionSouth
+	case fileDelta == 1 && rankDelta == -1:
+		return DirectionSouthEast
+	case fileDelta == -1 && rankDelta == 0:
+		return DirectionWest
+	case fileDelta == 1 && rankDelta == 0:
+		return DirectionEast
+	case fileDelta == -1 && rankDelta == 1:
+		return DirectionNorthWest
+	case fileDelta == 0 && rankDelta == 1:
+		return DirectionNorth
+	case fileDelta == 1 && rankDelta == 1:
+		return DirectionNorthEast
+	default:
+		panic(fmt.Sprintf("unsupported direction: %d,%d", fileDelta, rankDelta))
+	}
 }
 
 func (gs *GameState) IsLegalMove(move Move) bool {
@@ -357,6 +387,8 @@ func (gs *GameState) MakeMove(move Move) {
 	// Save current state for undo
 	gs.StateHistory = append(gs.StateHistory, SavedState{
 		CastlingRights:  gs.CastlingRights,
+		CastlingConfig:  gs.CastlingConfig,
+		Chess960Mode:    gs.Chess960Mode,
 		EnPassantTarget: gs.EnPassantTarget,
 		HalfmoveClock:   gs.HalfmoveClock,
 		ZobristHash:     gs.ZobristHash,
@@ -368,23 +400,16 @@ func (gs *GameState) MakeMove(move Move) {
 		gs.SetPiece(capturedPawnSquare, Piece{Type: Empty})
 	}
 
-	// Handle castling
+	var castleRook Piece
+	var rookFrom Square
+	var rookTo Square
 	if move.IsCastle {
-		// Move the rook
-		rank := move.From.Rank
-		if move.To.File == 6 { // Kingside
-			rookFrom := Square{7, rank}
-			rookTo := Square{5, rank}
-			rook := gs.GetPiece(rookFrom)
-			gs.SetPiece(rookFrom, Piece{Type: Empty})
-			gs.SetPiece(rookTo, rook)
-		} else { // Queenside
-			rookFrom := Square{0, rank}
-			rookTo := Square{3, rank}
-			rook := gs.GetPiece(rookFrom)
-			gs.SetPiece(rookFrom, Piece{Type: Empty})
-			gs.SetPiece(rookTo, rook)
+		side := QueensideCastle
+		if move.To.File == 6 {
+			side = KingsideCastle
 		}
+		_, rookFrom, _, rookTo = gs.GetCastleDetails(move.Piece.Color, side)
+		castleRook = gs.GetPiece(rookFrom)
 	}
 
 	// Move the piece
@@ -396,16 +421,33 @@ func (gs *GameState) MakeMove(move Move) {
 		gs.SetPiece(move.To, move.Piece)
 	}
 
+	// Handle castling
+	if move.IsCastle {
+		if rookFrom != move.From && rookFrom != move.To {
+			gs.SetPiece(rookFrom, Piece{Type: Empty})
+		}
+		gs.SetPiece(rookTo, castleRook)
+	}
+
 	// Update castling rights
 	if move.Piece.Type == King {
 		gs.CastlingRights[move.Piece.Color][KingsideCastle] = false
 		gs.CastlingRights[move.Piece.Color][QueensideCastle] = false
 	} else if move.Piece.Type == Rook {
-		if move.From.File == 0 {
+		if move.From.File == gs.CastlingConfig.RookFile[move.Piece.Color][QueensideCastle] {
 			gs.CastlingRights[move.Piece.Color][QueensideCastle] = false
-		} else if move.From.File == 7 {
+		} else if move.From.File == gs.CastlingConfig.RookFile[move.Piece.Color][KingsideCastle] {
 			gs.CastlingRights[move.Piece.Color][KingsideCastle] = false
 		}
+	}
+	if move.To.Rank == 0 && move.To.File == gs.CastlingConfig.RookFile[White][QueensideCastle] {
+		gs.CastlingRights[White][QueensideCastle] = false
+	} else if move.To.Rank == 0 && move.To.File == gs.CastlingConfig.RookFile[White][KingsideCastle] {
+		gs.CastlingRights[White][KingsideCastle] = false
+	} else if move.To.Rank == 7 && move.To.File == gs.CastlingConfig.RookFile[Black][QueensideCastle] {
+		gs.CastlingRights[Black][QueensideCastle] = false
+	} else if move.To.Rank == 7 && move.To.File == gs.CastlingConfig.RookFile[Black][KingsideCastle] {
+		gs.CastlingRights[Black][KingsideCastle] = false
 	}
 
 	// Update en passant target
@@ -455,6 +497,8 @@ func (gs *GameState) UndoLastMove() bool {
 	gs.StateHistory = gs.StateHistory[:lastStateIndex]
 
 	gs.CastlingRights = savedState.CastlingRights
+	gs.CastlingConfig = savedState.CastlingConfig
+	gs.Chess960Mode = savedState.Chess960Mode
 	gs.EnPassantTarget = savedState.EnPassantTarget
 	gs.HalfmoveClock = savedState.HalfmoveClock
 	gs.ZobristHash = savedState.ZobristHash
@@ -464,6 +508,18 @@ func (gs *GameState) UndoLastMove() bool {
 		gs.FullmoveNumber--
 	}
 	gs.ActiveColor = 1 - gs.ActiveColor
+
+	var castleRook Piece
+	var rookFrom Square
+	var rookTo Square
+	if move.IsCastle {
+		side := QueensideCastle
+		if move.To.File == 6 {
+			side = KingsideCastle
+		}
+		_, rookFrom, _, rookTo = gs.GetCastleDetails(move.Piece.Color, side)
+		castleRook = gs.GetPiece(rookTo)
+	}
 
 	// Restore the piece to its original position
 	gs.SetPiece(move.From, move.Piece)
@@ -484,20 +540,10 @@ func (gs *GameState) UndoLastMove() bool {
 
 	// Handle castling undo
 	if move.IsCastle {
-		rank := move.From.Rank
-		if move.To.File == 6 { // Kingside
-			rookFrom := Square{5, rank}
-			rookTo := Square{7, rank}
-			rook := gs.GetPiece(rookFrom)
-			gs.SetPiece(rookFrom, Piece{Type: Empty})
-			gs.SetPiece(rookTo, rook)
-		} else { // Queenside
-			rookFrom := Square{3, rank}
-			rookTo := Square{0, rank}
-			rook := gs.GetPiece(rookFrom)
-			gs.SetPiece(rookFrom, Piece{Type: Empty})
-			gs.SetPiece(rookTo, rook)
+		if rookTo != move.From {
+			gs.SetPiece(rookTo, Piece{Type: Empty})
 		}
+		gs.SetPiece(rookFrom, castleRook)
 	}
 
 	return true

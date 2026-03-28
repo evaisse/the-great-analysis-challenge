@@ -6,6 +6,7 @@ require_once __DIR__ . '/Types.php';
 require_once __DIR__ . '/Board.php';
 require_once __DIR__ . '/DrawDetection.php';
 require_once __DIR__ . '/MoveGenerator.php';
+require_once __DIR__ . '/Eval/RichEvaluator.php';
 
 /**
  * AI with iterative deepening + negamax alpha-beta + transposition table.
@@ -25,10 +26,22 @@ class AI {
     private int $tt_hits = 0;
     private int $tt_misses = 0;
     private int $beta_cutoffs = 0;
+    private bool $rich_eval_enabled;
+    private Eval\RichEvaluator $rich_evaluator;
 
-    public function __construct(Board $board, MoveGenerator $move_gen) {
+    public function __construct(Board $board, MoveGenerator $move_gen, bool $rich_eval_enabled = false) {
         $this->board = $board;
         $this->move_gen = $move_gen;
+        $this->rich_eval_enabled = $rich_eval_enabled;
+        $this->rich_evaluator = new Eval\RichEvaluator($board, $move_gen);
+    }
+
+    public function set_rich_eval_enabled(bool $enabled): void {
+        $this->rich_eval_enabled = $enabled;
+    }
+
+    public function is_rich_eval_enabled(): bool {
+        return $this->rich_eval_enabled;
     }
 
     public function request_stop(): void {
@@ -201,15 +214,12 @@ class AI {
             return [$this->evaluate(), null, true];
         }
 
-        if ($this->move_gen->is_checkmate()) {
-            return [-self::MATE_VALUE + $depth, null, true];
-        }
-        if ($this->move_gen->is_stalemate()) {
-            return [0, null, true];
-        }
-
         $moves = $this->move_gen->generate_moves();
         if (empty($moves)) {
+            if ($this->move_gen->is_in_check()) {
+                return [-self::MATE_VALUE + $depth, null, true];
+            }
+
             return [0, null, true];
         }
 
@@ -277,15 +287,20 @@ class AI {
             $score += 100000;
         }
 
+        $from_piece = $this->board->get_piece($move->from_row, $move->from_col)[0];
+
         [$target_piece, ] = $this->board->get_piece($move->to_row, $move->to_col);
         if ($target_piece !== CHESS_EMPTY) {
-            $score += 10000 + CHESS_PIECE_VALUES[$target_piece];
+            $score += 10000 + (CHESS_PIECE_VALUES[$target_piece] * 10) - CHESS_PIECE_VALUES[$from_piece];
         }
         if ($move->promotion !== null) {
             $score += 9000 + CHESS_PIECE_VALUES[$move->promotion];
         }
         if ($move->is_castling) {
             $score += 100;
+        }
+        if (($move->to_row === 3 || $move->to_row === 4) && ($move->to_col === 3 || $move->to_col === 4)) {
+            $score += 10;
         }
         return $score;
     }
@@ -318,6 +333,15 @@ class AI {
     
     public function evaluate(): int {
         $this->eval_calls++;
+        if ($this->rich_eval_enabled) {
+            $score = $this->rich_evaluator->evaluate();
+            return $this->board->current_player === CHESS_WHITE ? $score : -$score;
+        }
+
+        return $this->evaluate_simple();
+    }
+
+    private function evaluate_simple(): int {
         $score = 0;
         
         // Material evaluation

@@ -220,11 +220,7 @@ fn handle_move(engine: ChessEngine, move_str: String) -> ChessEngine {
                       io.println("OK: " <> move_str)
                       io.println(display_board(new_state))
                       check_game_end(new_state)
-                      ChessEngine(
-                        ..engine,
-                        game_state: new_state,
-                        runtime: new_runtime,
-                      )
+                      ChessEngine(new_state, new_runtime)
                     }
                   }
                 }
@@ -290,7 +286,7 @@ fn handle_undo(engine: ChessEngine) -> ChessEngine {
         Ok(new_state) -> {
           io.println("OK: undo")
           io.println(display_board(new_state))
-          ChessEngine(..engine, game_state: new_state, runtime: new_runtime)
+          ChessEngine(new_state, new_runtime)
         }
       }
     }
@@ -302,7 +298,7 @@ fn handle_new(engine: ChessEngine) -> ChessEngine {
   let new_runtime = reset_runtime_for_position(engine.runtime, new_state)
   io.println("OK: New game started")
   io.println(display_board(new_state))
-  ChessEngine(..engine, game_state: new_state, runtime: new_runtime)
+  ChessEngine(new_state, new_runtime)
 }
 
 fn handle_ai(engine: ChessEngine, depth_str: String) -> ChessEngine {
@@ -389,7 +385,7 @@ fn handle_ai_search(
           io.println(display_board(new_state))
           check_game_end(new_state)
           append_trace_event(
-            ChessEngine(..engine, game_state: new_state, runtime: runtime),
+            ChessEngine(new_state, runtime),
             "ai",
             runtime.trace_last_ai,
           )
@@ -423,7 +419,7 @@ fn maybe_play_book_move(engine: ChessEngine) -> Option(ChessEngine) {
           io.println(display_board(new_state))
           check_game_end(new_state)
           Some(append_trace_event(
-            ChessEngine(..engine, game_state: new_state, runtime: runtime),
+            ChessEngine(new_state, runtime),
             "ai",
             runtime.trace_last_ai,
           ))
@@ -444,7 +440,7 @@ fn handle_fen(engine: ChessEngine, fen_string: String) -> ChessEngine {
       let new_runtime = reset_runtime_for_position(engine.runtime, new_state)
       io.println("OK: FEN loaded")
       io.println(display_board(new_state))
-      ChessEngine(..engine, game_state: new_state, runtime: new_runtime)
+      ChessEngine(new_state, new_runtime)
     }
   }
 }
@@ -636,7 +632,7 @@ fn handle_new960(engine: ChessEngine, id: Int) -> ChessEngine {
   io.println(
     "960: id=" <> int.to_string(id) <> " fen=" <> export_fen(new_state),
   )
-  ChessEngine(..engine, game_state: new_state, runtime: runtime)
+  ChessEngine(new_state, runtime)
 }
 
 fn handle_position960(engine: ChessEngine) -> ChessEngine {

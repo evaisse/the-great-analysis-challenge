@@ -1,5 +1,6 @@
 // AI engine with minimax and alpha-beta pruning
 
+import attack_tables
 import board.{get_piece, make_move}
 import gleam/int
 import gleam/list
@@ -165,24 +166,83 @@ fn minimax_moves(
 }
 
 fn evaluate(game_state: GameState) -> Int {
-  list.range(0, 63)
-  |> list.fold(0, fn(score, square) {
-    case get_piece(game_state, square) {
-      None -> score
-      Some(piece) -> {
-        let value = piece_value(piece.piece_type)
-        let position_bonus =
-          get_position_bonus(square, piece.piece_type, piece.color, game_state)
-        let total_value = value + position_bonus
+  let #(score, white_king, black_king, minor_major_count, queen_count) =
+    list.range(0, 63)
+    |> list.fold(#(0, -1, -1, 0, 0), fn(acc, square) {
+      let #(score, white_king, black_king, minor_major_count, queen_count) = acc
+      case get_piece(game_state, square) {
+        None -> acc
+        Some(piece) -> {
+          let value = piece_value(piece.piece_type)
+          let position_bonus =
+            get_position_bonus(
+              square,
+              piece.piece_type,
+              piece.color,
+              game_state,
+            )
+          let total_value = value + position_bonus
 
-        score
-        + case piece.color {
-          White -> total_value
-          Black -> -total_value
+          let next_score =
+            score
+            + case piece.color {
+              White -> total_value
+              Black -> -total_value
+            }
+
+          case piece.piece_type {
+            King ->
+              case piece.color {
+                White -> #(
+                  next_score,
+                  square,
+                  black_king,
+                  minor_major_count,
+                  queen_count,
+                )
+                Black -> #(
+                  next_score,
+                  white_king,
+                  square,
+                  minor_major_count,
+                  queen_count,
+                )
+              }
+            Pawn -> #(
+              next_score,
+              white_king,
+              black_king,
+              minor_major_count,
+              queen_count,
+            )
+            Queen -> #(
+              next_score,
+              white_king,
+              black_king,
+              minor_major_count + 1,
+              queen_count + 1,
+            )
+            _ -> #(
+              next_score,
+              white_king,
+              black_king,
+              minor_major_count + 1,
+              queen_count,
+            )
+          }
         }
       }
-    }
-  })
+    })
+
+  let endgame = {
+    minor_major_count <= 4 || { minor_major_count <= 6 && queen_count == 0 }
+  }
+
+  case endgame && white_king >= 0 && black_king >= 0 {
+    True ->
+      score + 14 - attack_tables.manhattan_distance(white_king, black_king)
+    False -> score
+  }
 }
 
 fn get_position_bonus(

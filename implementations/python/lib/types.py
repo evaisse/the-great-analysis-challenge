@@ -137,9 +137,25 @@ class CastlingRights:
             self.black_kingside,
             self.black_queenside
         )
-    
-    def to_fen(self) -> str:
+
+    def to_fen(self, config: Optional['CastlingConfig'] = None, chess960_mode: bool = False) -> str:
         """Convert to FEN castling string."""
+        if chess960_mode and config is not None:
+            white_files = []
+            black_files = []
+            if self.white_queenside:
+                white_files.append(config.white_queenside_rook_col)
+            if self.white_kingside:
+                white_files.append(config.white_kingside_rook_col)
+            if self.black_queenside:
+                black_files.append(config.black_queenside_rook_col)
+            if self.black_kingside:
+                black_files.append(config.black_kingside_rook_col)
+
+            result = ''.join(chr(ord('A') + col) for col in sorted(white_files))
+            result += ''.join(chr(ord('a') + col) for col in sorted(black_files))
+            return result if result else '-'
+
         result = ""
         if self.white_kingside:
             result += "K"
@@ -153,6 +169,37 @@ class CastlingRights:
 
 
 @dataclass
+class CastlingConfig:
+    """Tracks king and rook start files for castling."""
+    white_king_col: int = 4
+    white_kingside_rook_col: int = 7
+    white_queenside_rook_col: int = 0
+    black_king_col: int = 4
+    black_kingside_rook_col: int = 7
+    black_queenside_rook_col: int = 0
+
+    def copy(self) -> 'CastlingConfig':
+        return CastlingConfig(
+            self.white_king_col,
+            self.white_kingside_rook_col,
+            self.white_queenside_rook_col,
+            self.black_king_col,
+            self.black_kingside_rook_col,
+            self.black_queenside_rook_col,
+        )
+
+    def is_classical(self) -> bool:
+        return (
+            self.white_king_col == 4 and
+            self.white_kingside_rook_col == 7 and
+            self.white_queenside_rook_col == 0 and
+            self.black_king_col == 4 and
+            self.black_kingside_rook_col == 7 and
+            self.black_queenside_rook_col == 0
+        )
+
+
+@dataclass
 
 
 class IrreversibleState:
@@ -162,6 +209,12 @@ class IrreversibleState:
 
 
     castling_rights: CastlingRights
+
+
+    castling_config: CastlingConfig
+
+
+    chess960_mode: bool
 
 
     en_passant_target: Optional[Tuple[int, int]]
@@ -188,6 +241,12 @@ class GameState:
     castling_rights: CastlingRights
 
 
+    castling_config: CastlingConfig
+
+
+    chess960_mode: bool
+
+
     en_passant_target: Optional[Tuple[int, int]]
 
 
@@ -207,4 +266,3 @@ class GameState:
 
 
     captured_piece: Optional[Piece] = None
-

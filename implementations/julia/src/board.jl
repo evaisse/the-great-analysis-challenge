@@ -105,95 +105,56 @@ end
 
 function is_square_attacked(board::Board, square::Int, by_color::Color)
     # Check pawn attacks
-    pawn_direction = by_color == WHITE ? 8 : -8
-    for df in [-1, 1]
-        attack_square = square - pawn_direction + df
-        if is_valid_square(attack_square)
-            file_diff = abs((square % 8) - (attack_square % 8))
-            if file_diff == 1
-                piece = get_piece(board, attack_square)
-                if piece.type == PAWN && piece.color == by_color
-                    return true
-                end
+    pawn_offsets = by_color == WHITE ? (-9, -7) : (7, 9)
+    for offset in pawn_offsets
+        attack_square = square + offset
+        if is_valid_square(attack_square) && abs((square % 8) - (attack_square % 8)) == 1
+            piece = get_piece(board, attack_square)
+            if piece.type == PAWN && piece.color == by_color
+                return true
             end
         end
     end
     
     # Check knight attacks
-    knight_moves = [-17, -15, -10, -6, 6, 10, 15, 17]
-    for move in knight_moves
-        attack_square = square + move
-        if is_valid_square(attack_square)
-            file_diff = abs((square % 8) - (attack_square % 8))
-            rank_diff = abs((square ÷ 8) - (attack_square ÷ 8))
-            if (file_diff == 2 && rank_diff == 1) || (file_diff == 1 && rank_diff == 2)
-                piece = get_piece(board, attack_square)
-                if piece.type == KNIGHT && piece.color == by_color
-                    return true
-                end
-            end
+    for attack_square in knight_attacks(square)
+        piece = get_piece(board, attack_square)
+        if piece.type == KNIGHT && piece.color == by_color
+            return true
         end
     end
     
     # Check diagonal attacks (bishop/queen)
-    directions = [-9, -7, 7, 9]
-    for direction in directions
-        current = square + direction
-        while is_valid_square(current)
-            file_diff = abs((square % 8) - (current % 8))
-            rank_diff = abs((square ÷ 8) - (current ÷ 8))
-            if file_diff != rank_diff
-                break
-            end
-            
-            piece = get_piece(board, current)
+    for ray in bishop_rays(square)
+        for attack_square in ray
+            piece = get_piece(board, attack_square)
             if piece.type != EMPTY
                 if piece.color == by_color && (piece.type == BISHOP || piece.type == QUEEN)
                     return true
                 end
                 break
             end
-            current += direction
         end
     end
     
     # Check straight attacks (rook/queen)
-    directions = [-8, -1, 1, 8]
-    for direction in directions
-        current = square + direction
-        while is_valid_square(current)
-            if direction == -1 || direction == 1
-                if (square ÷ 8) != (current ÷ 8)
-                    break
-                end
-            end
-            
-            piece = get_piece(board, current)
+    for ray in rook_rays(square)
+        for attack_square in ray
+            piece = get_piece(board, attack_square)
             if piece.type != EMPTY
                 if piece.color == by_color && (piece.type == ROOK || piece.type == QUEEN)
                     return true
                 end
                 break
             end
-            current += direction
         end
     end
     
     # Check king attacks
-    for dr in -1:1, df in -1:1
-        if dr == 0 && df == 0
-            continue
-        end
-        attack_square = square + dr * 8 + df
-        if is_valid_square(attack_square)
-            file_diff = abs((square % 8) - (attack_square % 8))
-            rank_diff = abs((square ÷ 8) - (attack_square ÷ 8))
-            if file_diff <= 1 && rank_diff <= 1
-                piece = get_piece(board, attack_square)
-                if piece.type == KING && piece.color == by_color
-                    return true
-                end
-            end
+    for attack_square in king_attacks(square)
+        piece = get_piece(board, attack_square)
+        if piece.type == KING && piece.color == by_color
+            return true
         end
     end
     

@@ -52,6 +52,8 @@ let positionBonus = (state: gameState, square: square, piece: piece): int => {
 
 let evaluateGameState = (state: gameState): int => {
   let score = ref(0)
+  let whiteKingSquare = ref(None)
+  let blackKingSquare = ref(None)
 
   for square in 0 to 63 {
     switch Belt.Array.getExn(state.board, square) {
@@ -59,12 +61,27 @@ let evaluateGameState = (state: gameState): int => {
       let value = pieceValue(piece.pieceType)
       let bonus = positionBonus(state, square, piece)
       let total = value + bonus
+      if piece.pieceType == King {
+        if piece.color == White {
+          whiteKingSquare := Some(square)
+        } else {
+          blackKingSquare := Some(square)
+        }
+      }
       if piece.color == White {
         score := score.contents + total
       } else {
         score := score.contents - total
       }
     | None => ()
+    }
+  }
+
+  if isEndgame(state) {
+    switch (whiteKingSquare.contents, blackKingSquare.contents) {
+    | (Some(whiteKing), Some(blackKing)) =>
+      score := score.contents + 14 - Belt.Array.getExn(Belt.Array.getExn(AttackTables.manhattanDistance, whiteKing), blackKing)
+    | _ => ()
     }
   }
 

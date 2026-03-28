@@ -84,6 +84,7 @@ docker-compose up --build chess-engine
 - `src/types.rs` - Type definitions and constants
 - `src/board.rs` - Board representation and game state
 - `src/move_generator.rs` - Move generation and validation  
+- `src/attack_tables.rs` - Precomputed knight/king/ray/distance lookup tables
 - `src/fen.rs` - FEN parsing and serialization
 - `src/ai.rs` - AI engine with minimax/alpha-beta
 - `src/perft.rs` - Performance testing utilities

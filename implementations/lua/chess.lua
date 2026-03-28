@@ -8,9 +8,20 @@
 -- "." = empty square
 
 -- Global state
+local START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 local board = {}
 local white_to_move = true
 local castling_rights = {white_king = true, white_queen = true, black_king = true, black_queen = true}
+local castling_config = default_castling_config and default_castling_config() or {
+    white_king_file = 5,
+    white_kingside_rook_file = 8,
+    white_queenside_rook_file = 1,
+    black_king_file = 5,
+    black_kingside_rook_file = 8,
+    black_queenside_rook_file = 1,
+}
+local chess960_mode = false
 local en_passant_target = nil
 local halfmove_clock = 0
 local fullmove_number = 1
@@ -19,7 +30,8 @@ local zobrist_hash = 0
 local position_history = {}
 local irreversible_history = {}
 local pgn_path = nil
-local pgn_moves = {}
+local pgn_game = nil
+local pgn_variation_stack = {}
 local book_path = nil
 local book_enabled = false
 local book_entries = {}
@@ -30,6 +42,11 @@ local book_misses = 0
 local book_played = 0
 local uci_hash_mb = 16
 local uci_threads = 1
+local uci_analyse_mode = false
+local rich_eval_enabled = false
+local protocol_mode = "boot"
+local uci_state = "boot"
+local uci_last_bestmove = nil
 local chess960_id = 0
 local trace_enabled = false
 local trace_level = "info"
@@ -53,16 +70,127 @@ local trace_last_ai_nps = 0
 local trace_last_ai_tt_hits = 0
 local trace_last_ai_tt_misses = 0
 local trace_last_ai_beta_cutoffs = 0
+
+local function select_protocol_mode(cmd)
+    if protocol_mode == "boot" then
+        protocol_mode = cmd == "uci" and "uci" or "custom"
+    elseif cmd == "uci" then
+        protocol_mode = "uci"
+    end
+end
+
+local function set_uci_state(state)
+    uci_state = state
+end
+
+local function uci_bool_default(value)
+    return value and "true" or "false"
+end
+
+local function parse_uci_check_value(raw)
+    local normalized = raw:lower()
+    if normalized == "true" or normalized == "1" or normalized == "on" or normalized == "yes" then
+        return true
+    end
+    if normalized == "false" or normalized == "0" or normalized == "off" or normalized == "no" then
+        return false
+    end
+    return nil
+end
+
+local chess960_knight_table = {
+    {0, 1}, {0, 2}, {0, 3}, {0, 4}, {1, 2},
+    {1, 3}, {1, 4}, {2, 3}, {2, 4}, {3, 4}
+}
+
+local function decode_chess960_backrank(id)
+    local pieces = {nil, nil, nil, nil, nil, nil, nil, nil}
+    local n = id
+
+    local remainder = n % 4
+    n = math.floor(n / 4)
+    pieces[2 * remainder + 2] = "b"
+
+    remainder = n % 4
+    n = math.floor(n / 4)
+    pieces[2 * remainder + 1] = "b"
+
+    local empty = {}
+    for i = 1, 8 do
+        if pieces[i] == nil then
+            empty[#empty + 1] = i
+        end
+    end
+    remainder = n % 6
+    n = math.floor(n / 6)
+    pieces[empty[remainder + 1]] = "q"
+
+    local knight_pair = chess960_knight_table[n + 1]
+    empty = {}
+    for i = 1, 8 do
+        if pieces[i] == nil then
+            empty[#empty + 1] = i
+        end
+    end
+    pieces[empty[knight_pair[1] + 1]] = "n"
+    pieces[empty[knight_pair[2] + 1]] = "n"
+
+    empty = {}
+    for i = 1, 8 do
+        if pieces[i] == nil then
+            empty[#empty + 1] = i
+        end
+    end
+    pieces[empty[1]] = "r"
+    pieces[empty[2]] = "k"
+    pieces[empty[3]] = "r"
+
+    return table.concat(pieces)
+end
+
+local function build_chess960_fen(id)
+    local white = string.upper(decode_chess960_backrank(id))
+    local black = string.lower(white)
+    local castling = ""
+    for i = 1, #white do
+        if string.sub(white, i, i) == "R" then
+            castling = castling .. string.char(string.byte("A") + i - 1)
+        end
+    end
+    return string.format("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w %s - 0 1", black, white, castling .. string.lower(castling))
+end
 local tt = {}
 local search_deadline = nil
 local search_timed_out = false
 local search_stop_requested = false
 local record_trace_ai
+local reset_pgn_state
+local current_pgn_game
+local current_pgn_moves
+local current_pgn_sequence
+local current_pgn_sequence_ref
+local sync_runtime_to_pgn_cursor
+local record_pgn_move
+local build_game_from_history
+local snapshot_engine_state
+local restore_engine_state
 local search_nodes_visited = 0
 local search_eval_calls = 0
 local search_tt_hits = 0
 local search_tt_misses = 0
 local search_beta_cutoffs = 0
+
+local KNIGHT_DELTAS = {{2,1},{2,-1},{-2,1},{-2,-1},{1,2},{1,-2},{-1,2},{-1,-2}}
+local KING_DELTAS = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}}
+local RAY_DIRECTIONS = {
+    {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+    {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+}
+local KNIGHT_ATTACKS = {}
+local KING_ATTACKS = {}
+local RAY_TABLES = {}
+local CHEBYSHEV_DISTANCE = {}
+local MANHATTAN_DISTANCE = {}
 
 local zobrist_keys = {
     pieces = {},
@@ -150,6 +278,15 @@ local function new_game()
     }
     white_to_move = true
     castling_rights = {white_king = true, white_queen = true, black_king = true, black_queen = true}
+    castling_config = {
+        white_king_file = 5,
+        white_kingside_rook_file = 8,
+        white_queenside_rook_file = 1,
+        black_king_file = 5,
+        black_kingside_rook_file = 8,
+        black_queenside_rook_file = 1,
+    }
+    chess960_mode = false
     en_passant_target = nil
     halfmove_clock = 0
     fullmove_number = 1
@@ -157,6 +294,7 @@ local function new_game()
     zobrist_hash = compute_hash()
     position_history = {}
     irreversible_history = {}
+    reset_pgn_state(START_FEN, "current-game")
 end
 
 -- Display board
@@ -190,6 +328,245 @@ local function indices_to_algebraic(rank, file)
     return string.char(string.byte("a") + file - 1) .. tostring(rank)
 end
 
+local function square_index(rank, file)
+    return (rank - 1) * 8 + file
+end
+
+local function build_attack_table(deltas)
+    local table_out = {}
+    for rank = 1, 8 do
+        table_out[rank] = {}
+        for file = 1, 8 do
+            local attacks = {}
+            for _, delta in ipairs(deltas) do
+                local r, f = rank + delta[1], file + delta[2]
+                if r >= 1 and r <= 8 and f >= 1 and f <= 8 then
+                    attacks[#attacks + 1] = {r, f}
+                end
+            end
+            table_out[rank][file] = attacks
+        end
+    end
+    return table_out
+end
+
+local function build_ray_table(drank, dfile)
+    local table_out = {}
+    for rank = 1, 8 do
+        table_out[rank] = {}
+        for file = 1, 8 do
+            local ray = {}
+            local r, f = rank + drank, file + dfile
+            while r >= 1 and r <= 8 and f >= 1 and f <= 8 do
+                ray[#ray + 1] = {r, f}
+                r, f = r + drank, f + dfile
+            end
+            table_out[rank][file] = ray
+        end
+    end
+    return table_out
+end
+
+local function build_distance_table(metric)
+    local table_out = {}
+    for from_rank = 1, 8 do
+        for from_file = 1, 8 do
+            local from_idx = square_index(from_rank, from_file)
+            table_out[from_idx] = {}
+            for to_rank = 1, 8 do
+                for to_file = 1, 8 do
+                    local to_idx = square_index(to_rank, to_file)
+                    local rank_distance = math.abs(from_rank - to_rank)
+                    local file_distance = math.abs(from_file - to_file)
+                    table_out[from_idx][to_idx] = metric(rank_distance, file_distance)
+                end
+            end
+        end
+    end
+    return table_out
+end
+
+local function knight_attacks(rank, file)
+    return KNIGHT_ATTACKS[rank][file]
+end
+
+local function king_attacks(rank, file)
+    return KING_ATTACKS[rank][file]
+end
+
+local function ray_attacks(rank, file, drank, dfile)
+    return RAY_TABLES[drank .. "," .. dfile][rank][file]
+end
+
+local function chebyshev_distance(a_rank, a_file, b_rank, b_file)
+    return CHEBYSHEV_DISTANCE[square_index(a_rank, a_file)][square_index(b_rank, b_file)]
+end
+
+local function manhattan_distance(a_rank, a_file, b_rank, b_file)
+    return MANHATTAN_DISTANCE[square_index(a_rank, a_file)][square_index(b_rank, b_file)]
+end
+
+local function clone_castling_config(source)
+    return {
+        white_king_file = source.white_king_file,
+        white_kingside_rook_file = source.white_kingside_rook_file,
+        white_queenside_rook_file = source.white_queenside_rook_file,
+        black_king_file = source.black_king_file,
+        black_kingside_rook_file = source.black_kingside_rook_file,
+        black_queenside_rook_file = source.black_queenside_rook_file,
+    }
+end
+
+local function castling_config_is_classical(config)
+    return config.white_king_file == 5 and
+        config.white_kingside_rook_file == 8 and
+        config.white_queenside_rook_file == 1 and
+        config.black_king_file == 5 and
+        config.black_kingside_rook_file == 8 and
+        config.black_queenside_rook_file == 1
+end
+
+local function get_castle_details(is_white, kingside)
+    local rank = is_white and 1 or 8
+    local king_file = is_white and castling_config.white_king_file or castling_config.black_king_file
+    local rook_file
+    if is_white then
+        rook_file = kingside and castling_config.white_kingside_rook_file or castling_config.white_queenside_rook_file
+    else
+        rook_file = kingside and castling_config.black_kingside_rook_file or castling_config.black_queenside_rook_file
+    end
+    return {
+        king_start = {rank, king_file},
+        rook_start = {rank, rook_file},
+        king_target = {rank, kingside and 7 or 3},
+        rook_target = {rank, kingside and 6 or 4},
+    }
+end
+
+local function line_path(start_rank, start_file, target_rank, target_file)
+    if start_rank == target_rank and start_file == target_file then
+        return {}
+    end
+    local rank_step = target_rank == start_rank and 0 or (target_rank > start_rank and 1 or -1)
+    local file_step = target_file == start_file and 0 or (target_file > start_file and 1 or -1)
+    local rank = start_rank + rank_step
+    local file = start_file + file_step
+    local path = {}
+    while rank ~= target_rank or file ~= target_file do
+        path[#path + 1] = {rank, file}
+        rank = rank + rank_step
+        file = file + file_step
+    end
+    path[#path + 1] = {target_rank, target_file}
+    return path
+end
+
+local function find_home_rank_piece(is_white, piece_char)
+    local rank = is_white and 1 or 8
+    local target = is_white and string.upper(piece_char) or string.lower(piece_char)
+    for file = 1, 8 do
+        if board[rank][file] == target then
+            return file
+        end
+    end
+    return nil
+end
+
+local function select_rook_file(files, king_file, kingside, fallback)
+    local selected = fallback
+    local found = false
+    for _, file in ipairs(files) do
+        if kingside then
+            if file > king_file and (not found or file > selected) then
+                selected = file
+                found = true
+            end
+        else
+            if file < king_file and (not found or file < selected) then
+                selected = file
+                found = true
+            end
+        end
+    end
+    return selected
+end
+
+local function configure_chess960_from_board()
+    local white_king_file = find_home_rank_piece(true, "K")
+    local black_king_file = find_home_rank_piece(false, "K")
+    if not white_king_file or not black_king_file then
+        castling_config = clone_castling_config({
+            white_king_file = 5,
+            white_kingside_rook_file = 8,
+            white_queenside_rook_file = 1,
+            black_king_file = 5,
+            black_kingside_rook_file = 8,
+            black_queenside_rook_file = 1,
+        })
+        chess960_mode = false
+        return
+    end
+
+    local white_rooks = {}
+    local black_rooks = {}
+    for file = 1, 8 do
+        if board[1][file] == "R" then white_rooks[#white_rooks + 1] = file end
+        if board[8][file] == "r" then black_rooks[#black_rooks + 1] = file end
+    end
+    if #white_rooks == 0 or #black_rooks == 0 then
+        castling_config = clone_castling_config({
+            white_king_file = 5,
+            white_kingside_rook_file = 8,
+            white_queenside_rook_file = 1,
+            black_king_file = 5,
+            black_kingside_rook_file = 8,
+            black_queenside_rook_file = 1,
+        })
+        chess960_mode = false
+        return
+    end
+
+    castling_config = {
+        white_king_file = white_king_file,
+        white_kingside_rook_file = select_rook_file(white_rooks, white_king_file, true, 8),
+        white_queenside_rook_file = select_rook_file(white_rooks, white_king_file, false, 1),
+        black_king_file = black_king_file,
+        black_kingside_rook_file = select_rook_file(black_rooks, black_king_file, true, 8),
+        black_queenside_rook_file = select_rook_file(black_rooks, black_king_file, false, 1),
+    }
+    chess960_mode = not castling_config_is_classical(castling_config)
+end
+
+local function current_castling_fen()
+    if chess960_mode then
+        local result = ""
+        if castling_rights.white_queen then result = result .. string.char(string.byte("A") + castling_config.white_queenside_rook_file - 1) end
+        if castling_rights.white_king then result = result .. string.char(string.byte("A") + castling_config.white_kingside_rook_file - 1) end
+        if castling_rights.black_queen then result = result .. string.char(string.byte("a") + castling_config.black_queenside_rook_file - 1) end
+        if castling_rights.black_king then result = result .. string.char(string.byte("a") + castling_config.black_kingside_rook_file - 1) end
+        return result ~= "" and result or "-"
+    end
+
+    local castling = ""
+    if castling_rights.white_king then castling = castling .. "K" end
+    if castling_rights.white_queen then castling = castling .. "Q" end
+    if castling_rights.black_king then castling = castling .. "k" end
+    if castling_rights.black_queen then castling = castling .. "q" end
+    return castling ~= "" and castling or "-"
+end
+
+KNIGHT_ATTACKS = build_attack_table(KNIGHT_DELTAS)
+KING_ATTACKS = build_attack_table(KING_DELTAS)
+for _, dir in ipairs(RAY_DIRECTIONS) do
+    RAY_TABLES[dir[1] .. "," .. dir[2]] = build_ray_table(dir[1], dir[2])
+end
+CHEBYSHEV_DISTANCE = build_distance_table(function(rank_distance, file_distance)
+    return math.max(rank_distance, file_distance)
+end)
+MANHATTAN_DISTANCE = build_distance_table(function(rank_distance, file_distance)
+    return rank_distance + file_distance
+end)
+
 -- Check if a square is attacked by opponent
 local function is_square_attacked(rank, file, by_white)
     -- Check pawn attacks
@@ -202,24 +579,19 @@ local function is_square_attacked(rank, file, by_white)
     
     -- Check knight attacks
     local knight = by_white and "N" or "n"
-    local knight_moves = {{2,1},{2,-1},{-2,1},{-2,-1},{1,2},{1,-2},{-1,2},{-1,-2}}
-    for _, move in ipairs(knight_moves) do
-        local r, f = rank + move[1], file + move[2]
-        if r >= 1 and r <= 8 and f >= 1 and f <= 8 and board[r][f] == knight then
+    for _, square in ipairs(knight_attacks(rank, file)) do
+        local r, f = square[1], square[2]
+        if board[r][f] == knight then
             return true
         end
     end
     
     -- Check king attacks
     local king = by_white and "K" or "k"
-    for dr = -1, 1 do
-        for df = -1, 1 do
-            if dr ~= 0 or df ~= 0 then
-                local r, f = rank + dr, file + df
-                if r >= 1 and r <= 8 and f >= 1 and f <= 8 and board[r][f] == king then
-                    return true
-                end
-            end
+    for _, square in ipairs(king_attacks(rank, file)) do
+        local r, f = square[1], square[2]
+        if board[r][f] == king then
+            return true
         end
     end
     
@@ -230,8 +602,8 @@ local function is_square_attacked(rank, file, by_white)
     }
     
     for _, dir in ipairs(directions) do
-        local r, f = rank + dir[1], file + dir[2]
-        while r >= 1 and r <= 8 and f >= 1 and f <= 8 do
+        for _, square in ipairs(ray_attacks(rank, file, dir[1], dir[2])) do
+            local r, f = square[1], square[2]
             local piece = board[r][f]
             if piece ~= "." then
                 local is_rook_dir = dir[1] == 0 or dir[2] == 0
@@ -250,7 +622,6 @@ local function is_square_attacked(rank, file, by_white)
                 end
                 break
             end
-            r, f = r + dir[1], f + dir[2]
         end
     end
     
@@ -286,6 +657,8 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
     table.insert(irreversible_history, {
         castling_rights = {white_king = castling_rights.white_king, white_queen = castling_rights.white_queen,
                           black_king = castling_rights.black_king, black_queen = castling_rights.black_queen},
+        castling_config = clone_castling_config(castling_config),
+        chess960_mode = chess960_mode,
         en_passant_target = en_passant_target and {en_passant_target[1], en_passant_target[2]} or nil,
         halfmove_clock = halfmove_clock,
         zobrist_hash = zobrist_hash
@@ -305,6 +678,9 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
         white_to_move = white_to_move,
         promotion = promotion
     }
+    local castle_details = nil
+    local expected_king_file = (piece == "K") and castling_config.white_king_file or castling_config.black_king_file
+    local is_castling = string.upper(piece) == "K" and from_rank == to_rank and from_file == expected_king_file and (to_file == 3 or to_file == 7)
 
     if en_passant_target and to_rank == en_passant_target[1] and to_file == en_passant_target[2] then
         if piece == "P" or piece == "p" then
@@ -314,7 +690,7 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
             board[capture_rank][to_file] = "."
             move_record.en_passant_captured = ep_captured
         end
-    elseif captured ~= "." then
+    elseif (not is_castling) and captured ~= "." then
         hash = hash ~ zobrist_keys.pieces[get_piece_index(captured)][(to_rank - 1) * 8 + to_file]
     end
 
@@ -331,41 +707,19 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
     board[from_rank][from_file] = "."
 
     -- 4. Handle castling rook
-    if piece == "K" and from_file == 5 then
-        if to_file == 7 then  -- Kingside
-            local rook = board[1][8]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 8]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 6]
-            board[1][6] = board[1][8]
-            board[1][8] = "."
-            move_record.castling = "kingside"
-        elseif to_file == 3 then  -- Queenside
-            local rook = board[1][1]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 1]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(1 - 1) * 8 + 4]
-            board[1][4] = board[1][1]
-            board[1][1] = "."
-            move_record.castling = "queenside"
+    if is_castling then
+        castle_details = get_castle_details(piece == "K", to_file == 7)
+        local rook = board[castle_details.rook_start[1]][castle_details.rook_start[2]]
+        hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(castle_details.rook_start[1] - 1) * 8 + castle_details.rook_start[2]]
+        hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(castle_details.rook_target[1] - 1) * 8 + castle_details.rook_target[2]]
+        if not (castle_details.rook_start[1] == from_rank and castle_details.rook_start[2] == from_file) and
+           not (castle_details.rook_start[1] == to_rank and castle_details.rook_start[2] == to_file) then
+            board[castle_details.rook_start[1]][castle_details.rook_start[2]] = "."
         end
-    elseif piece == "k" and from_file == 5 then
-        if to_file == 7 then  -- Kingside
-            local rook = board[8][8]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 8]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 6]
-            board[8][6] = board[8][8]
-            board[8][8] = "."
-            move_record.castling = "kingside"
-        elseif to_file == 3 then  -- Queenside
-            local rook = board[8][1]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 1]
-            hash = hash ~ zobrist_keys.pieces[get_piece_index(rook)][(8 - 1) * 8 + 4]
-            board[8][4] = board[8][1]
-            board[8][1] = "."
-            move_record.castling = "queenside"
-        end
+        board[castle_details.rook_target[1]][castle_details.rook_target[2]] = rook
+        move_record.castling = to_file == 7 and "kingside" or "queenside"
     end
 
-    -- 5. Update castling rights in hash
     if castling_rights.white_king then hash = hash ~ zobrist_keys.castling[1] end
     if castling_rights.white_queen then hash = hash ~ zobrist_keys.castling[2] end
     if castling_rights.black_king then hash = hash ~ zobrist_keys.castling[3] end
@@ -378,17 +732,16 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
         castling_rights.black_king = false
         castling_rights.black_queen = false
     elseif piece == "R" then
-        if from_rank == 1 and from_file == 1 then castling_rights.white_queen = false end
-        if from_rank == 1 and from_file == 8 then castling_rights.white_king = false end
+        if from_rank == 1 and from_file == castling_config.white_queenside_rook_file then castling_rights.white_queen = false end
+        if from_rank == 1 and from_file == castling_config.white_kingside_rook_file then castling_rights.white_king = false end
     elseif piece == "r" then
-        if from_rank == 8 and from_file == 1 then castling_rights.black_queen = false end
-        if from_rank == 8 and from_file == 8 then castling_rights.black_king = false end
+        if from_rank == 8 and from_file == castling_config.black_queenside_rook_file then castling_rights.black_queen = false end
+        if from_rank == 8 and from_file == castling_config.black_kingside_rook_file then castling_rights.black_king = false end
     end
-    -- Handle capture of rooks
-    if to_rank == 1 and to_file == 1 then castling_rights.white_queen = false end
-    if to_rank == 1 and to_file == 8 then castling_rights.white_king = false end
-    if to_rank == 8 and to_file == 1 then castling_rights.black_queen = false end
-    if to_rank == 8 and to_file == 8 then castling_rights.black_king = false end
+    if to_rank == 1 and to_file == castling_config.white_queenside_rook_file then castling_rights.white_queen = false end
+    if to_rank == 1 and to_file == castling_config.white_kingside_rook_file then castling_rights.white_king = false end
+    if to_rank == 8 and to_file == castling_config.black_queenside_rook_file then castling_rights.black_queen = false end
+    if to_rank == 8 and to_file == castling_config.black_kingside_rook_file then castling_rights.black_king = false end
 
     if castling_rights.white_king then hash = hash ~ zobrist_keys.castling[1] end
     if castling_rights.white_queen then hash = hash ~ zobrist_keys.castling[2] end
@@ -410,7 +763,7 @@ local function make_move_internal(from_rank, from_file, to_rank, to_file, promot
     
     -- 7. Update active color and clocks
     hash = hash ~ zobrist_keys.side_to_move
-    if captured ~= "." or piece == "P" or piece == "p" then
+    if captured ~= "." or move_record.en_passant_captured or piece == "P" or piece == "p" then
         halfmove_clock = 0
     else
         halfmove_clock = halfmove_clock + 1
@@ -447,25 +800,23 @@ local function undo_move()
     
     -- Undo castling
     if move.castling == "kingside" then
-        if move.piece == "K" then
-            board[1][8] = board[1][6]
-            board[1][6] = "."
-        else
-            board[8][8] = board[8][6]
-            board[8][6] = "."
+        local details = get_castle_details(move.piece == "K", true)
+        board[details.rook_start[1]][details.rook_start[2]] = board[details.rook_target[1]][details.rook_target[2]]
+        if not (details.rook_target[1] == move.from_rank and details.rook_target[2] == move.from_file) then
+            board[details.rook_target[1]][details.rook_target[2]] = "."
         end
     elseif move.castling == "queenside" then
-        if move.piece == "K" then
-            board[1][1] = board[1][4]
-            board[1][4] = "."
-        else
-            board[8][1] = board[8][4]
-            board[8][4] = "."
+        local details = get_castle_details(move.piece == "K", false)
+        board[details.rook_start[1]][details.rook_start[2]] = board[details.rook_target[1]][details.rook_target[2]]
+        if not (details.rook_target[1] == move.from_rank and details.rook_target[2] == move.from_file) then
+            board[details.rook_target[1]][details.rook_target[2]] = "."
         end
     end
     
     -- Restore state
     castling_rights = old.castling_rights
+    castling_config = old.castling_config
+    chess960_mode = old.chess960_mode
     en_passant_target = old.en_passant_target
     halfmove_clock = old.halfmove_clock
     zobrist_hash = old.zobrist_hash
@@ -593,38 +944,49 @@ local function is_legal_move(from_rank, from_file, to_rank, to_file, promotion)
         if dr <= 1 and df <= 1 then
             -- Valid
         -- Castling
-        elseif dr == 0 and df == 2 and from_file == 5 then
-            if is_white then
-                if to_file == 7 then
-                    if not castling_rights.white_king then return false, "Cannot castle" end
-                    if board[1][6] ~= "." or board[1][7] ~= "." then return false, "Path blocked" end
-                    if is_in_check(true) or is_square_attacked(1, 6, false) or is_square_attacked(1, 7, false) then
-                        return false, "Cannot castle through check"
-                    end
-                elseif to_file == 3 then
-                    if not castling_rights.white_queen then return false, "Cannot castle" end
-                    if board[1][2] ~= "." or board[1][3] ~= "." or board[1][4] ~= "." then return false, "Path blocked" end
-                    if is_in_check(true) or is_square_attacked(1, 3, false) or is_square_attacked(1, 4, false) then
-                        return false, "Cannot castle through check"
-                    end
-                else
-                    return false, "Illegal king move"
+        elseif dr == 0 and (to_file == 3 or to_file == 7) then
+            local kingside = to_file == 7
+            if is_white and not (castling_rights.white_king and kingside or castling_rights.white_queen and not kingside) then
+                return false, "Cannot castle"
+            end
+            if (not is_white) and not (castling_rights.black_king and kingside or castling_rights.black_queen and not kingside) then
+                return false, "Cannot castle"
+            end
+            local details = get_castle_details(is_white, kingside)
+            if from_rank ~= details.king_start[1] or from_file ~= details.king_start[2] then
+                return false, "Illegal king move"
+            end
+            local rook_piece = board[details.rook_start[1]][details.rook_start[2]]
+            if rook_piece == "." or string.upper(rook_piece) ~= "R" or (rook_piece == string.upper(rook_piece)) ~= is_white then
+                return false, "Cannot castle"
+            end
+
+            local seen = {}
+            for _, square in ipairs(line_path(details.king_start[1], details.king_start[2], details.king_target[1], details.king_target[2])) do
+                seen[square[1] .. ":" .. square[2]] = square
+            end
+            for _, square in ipairs(line_path(details.rook_start[1], details.rook_start[2], details.rook_target[1], details.rook_target[2])) do
+                seen[square[1] .. ":" .. square[2]] = square
+            end
+            for _, square in pairs(seen) do
+                if not (square[1] == details.king_start[1] and square[2] == details.king_start[2]) and
+                   not (square[1] == details.rook_start[1] and square[2] == details.rook_start[2]) and
+                   board[square[1]][square[2]] ~= "." then
+                    return false, "Path blocked"
                 end
-            else
-                if to_file == 7 then
-                    if not castling_rights.black_king then return false, "Cannot castle" end
-                    if board[8][6] ~= "." or board[8][7] ~= "." then return false, "Path blocked" end
-                    if is_in_check(false) or is_square_attacked(8, 6, true) or is_square_attacked(8, 7, true) then
-                        return false, "Cannot castle through check"
-                    end
-                elseif to_file == 3 then
-                    if not castling_rights.black_queen then return false, "Cannot castle" end
-                    if board[8][2] ~= "." or board[8][3] ~= "." or board[8][4] ~= "." then return false, "Path blocked" end
-                    if is_in_check(false) or is_square_attacked(8, 3, true) or is_square_attacked(8, 4, true) then
-                        return false, "Cannot castle through check"
-                    end
-                else
-                    return false, "Illegal king move"
+            end
+
+            if is_in_check(is_white) then
+                return false, "Cannot castle through check"
+            end
+            local attack_seen = {}
+            attack_seen[details.king_start[1] .. ":" .. details.king_start[2]] = details.king_start
+            for _, square in ipairs(line_path(details.king_start[1], details.king_start[2], details.king_target[1], details.king_target[2])) do
+                attack_seen[square[1] .. ":" .. square[2]] = square
+            end
+            for _, square in pairs(attack_seen) do
+                if is_square_attacked(square[1], square[2], not is_white) then
+                    return false, "Cannot castle through check"
                 end
             end
         else
@@ -645,7 +1007,8 @@ local function is_legal_move(from_rank, from_file, to_rank, to_file, promotion)
 end
 
 -- Execute a move
-local function execute_move(move_str)
+local function execute_move(move_str, options)
+    options = options or {}
     if #move_str < 4 then
         return false, "ERROR: Invalid move format"
     end
@@ -681,8 +1044,13 @@ local function execute_move(move_str)
     if not legal then
         return false, "ERROR: " .. msg
     end
-    
-    make_move_internal(from_rank, from_file, to_rank, to_file, promotion_piece)
+
+    local resolved = {from_rank, from_file, to_rank, to_file, promotion_piece}
+    if options.record_pgn == false then
+        make_move_internal(from_rank, from_file, to_rank, to_file, promotion_piece)
+    else
+        record_pgn_move(resolved)
+    end
     return true, "OK: " .. move_str
 end
 
@@ -717,13 +1085,7 @@ local function export_fen()
     fen = fen .. " " .. (white_to_move and "w" or "b")
     
     -- Castling rights
-    local castling = ""
-    if castling_rights.white_king then castling = castling .. "K" end
-    if castling_rights.white_queen then castling = castling .. "Q" end
-    if castling_rights.black_king then castling = castling .. "k" end
-    if castling_rights.black_queen then castling = castling .. "q" end
-    if castling == "" then castling = "-" end
-    fen = fen .. " " .. castling
+    fen = fen .. " " .. current_castling_fen()
     
     -- En passant target
     if en_passant_target then
@@ -782,6 +1144,8 @@ local function import_fen(fen_str)
     
     -- Parse castling rights
     castling_rights = {white_king = false, white_queen = false, black_king = false, black_queen = false}
+    configure_chess960_from_board()
+    chess960_mode = false
     if parts[3] ~= "-" then
         for i = 1, #parts[3] do
             local c = string.sub(parts[3], i, i)
@@ -789,6 +1153,26 @@ local function import_fen(fen_str)
             elseif c == "Q" then castling_rights.white_queen = true
             elseif c == "k" then castling_rights.black_king = true
             elseif c == "q" then castling_rights.black_queen = true
+            elseif c >= "A" and c <= "H" then
+                local rook_file = string.byte(c) - string.byte("A") + 1
+                chess960_mode = true
+                if rook_file > castling_config.white_king_file then
+                    castling_rights.white_king = true
+                    castling_config.white_kingside_rook_file = rook_file
+                else
+                    castling_rights.white_queen = true
+                    castling_config.white_queenside_rook_file = rook_file
+                end
+            elseif c >= "a" and c <= "h" then
+                local rook_file = string.byte(c) - string.byte("a") + 1
+                chess960_mode = true
+                if rook_file > castling_config.black_king_file then
+                    castling_rights.black_king = true
+                    castling_config.black_kingside_rook_file = rook_file
+                else
+                    castling_rights.black_queen = true
+                    castling_config.black_queenside_rook_file = rook_file
+                end
             end
         end
     end
@@ -805,6 +1189,9 @@ local function import_fen(fen_str)
     fullmove_number = tonumber(parts[6]) or 1
     
     move_history = {}
+    position_history = {}
+    irreversible_history = {}
+    zobrist_hash = compute_hash()
     return true, "OK"
 end
 
@@ -1128,8 +1515,8 @@ local function ai_move(max_depth, movetime_ms)
     if best_move[5] then
         move_str = move_str .. best_move[5]
     end
-    
-    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+
+    record_pgn_move(best_move)
     record_trace_ai("search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
     
     return true, string.format("AI: %s (depth=%d, eval=%d, time=%d)", move_str, depth_used, eval, elapsed)
@@ -1320,7 +1707,7 @@ local function apply_book_move(best_move, move_str)
         return false
     end
 
-    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    record_pgn_move(best_move)
     book_played = book_played + 1
     record_trace_ai("book", move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
     print("AI: " .. move_str .. " (book)")
@@ -1343,10 +1730,6 @@ end
 
 local function color_name(is_white)
     return is_white and "white" or "black"
-end
-
-local function manhattan(a_rank, a_file, b_rank, b_file)
-    return math.abs(a_rank - b_rank) + math.abs(a_file - b_file)
 end
 
 local function non_king_material(counts)
@@ -1396,7 +1779,7 @@ local function detect_endgame_state()
         local weak_king = kings.black
         local strong_king = kings.white
         local edge = math.min(weak_king[1] - 1, 8 - weak_king[1], weak_king[2] - 1, 8 - weak_king[2])
-        local king_distance = manhattan(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
+        local king_distance = manhattan_distance(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
         local score = 900 + (14 - king_distance) * 6 + (3 - edge) * 20
         return {
             type = "KQK",
@@ -1410,7 +1793,7 @@ local function detect_endgame_state()
         local weak_king = kings.white
         local strong_king = kings.black
         local edge = math.min(weak_king[1] - 1, 8 - weak_king[1], weak_king[2] - 1, 8 - weak_king[2])
-        local king_distance = manhattan(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
+        local king_distance = manhattan_distance(strong_king[1], strong_king[2], weak_king[1], weak_king[2])
         local score = 900 + (14 - king_distance) * 6 + (3 - edge) * 20
         return {
             type = "KQK",
@@ -1429,8 +1812,8 @@ local function detect_endgame_state()
         local promotion_rank, promotion_file = 8, pawn[2]
         local pawn_steps = 8 - pawn[1]
         local score = 120 + (6 - pawn_steps) * 35 +
-            manhattan(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
-            manhattan(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
+            manhattan_distance(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
+            manhattan_distance(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
         if pawn_steps <= 1 then
             score = score + 80
         end
@@ -1452,8 +1835,8 @@ local function detect_endgame_state()
         local promotion_rank, promotion_file = 1, pawn[2]
         local pawn_steps = pawn[1] - 1
         local score = 120 + (6 - pawn_steps) * 35 +
-            manhattan(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
-            manhattan(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
+            manhattan_distance(weak_king[1], weak_king[2], promotion_rank, promotion_file) * 6 -
+            manhattan_distance(strong_king[1], strong_king[2], pawn[1], pawn[2]) * 8
         if pawn_steps <= 1 then
             score = score + 80
         end
@@ -1476,8 +1859,8 @@ local function detect_endgame_state()
         local weak_pawn = pawns.black
         local pawn_steps = weak_pawn[1] - 1
         local score = 380 - pawn_steps * 25 +
-            (manhattan(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
-                manhattan(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
+            (manhattan_distance(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
+                manhattan_distance(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
         if score < 50 then
             score = 50
         end
@@ -1496,8 +1879,8 @@ local function detect_endgame_state()
         local weak_pawn = pawns.white
         local pawn_steps = 8 - weak_pawn[1]
         local score = 380 - pawn_steps * 25 +
-            (manhattan(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
-                manhattan(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
+            (manhattan_distance(weak_king[1], weak_king[2], weak_pawn[1], weak_pawn[2]) -
+                manhattan_distance(strong_king[1], strong_king[2], weak_pawn[1], weak_pawn[2])) * 12
         if score < 50 then
             score = 50
         end
@@ -1562,7 +1945,7 @@ local function apply_endgame_move(best_move, info, move_str)
         return false
     end
 
-    make_move_internal(best_move[1], best_move[2], best_move[3], best_move[4], best_move[5])
+    record_pgn_move(best_move)
     record_trace_ai("endgame", move_str, 0, info.score_white, 0, false, 0, 0, 0, 0, 0)
     print(string.format("AI: %s (endgame %s, score=%d)", move_str, info.type, info.score_white))
     display_board()
@@ -1582,40 +1965,625 @@ local function apply_endgame_move(best_move, info, move_str)
     return true
 end
 
-local function load_pgn(path)
-    pgn_path = path
-    pgn_moves = {}
+local function trim(value)
+    return tostring(value or ""):gsub("^%s*(.-)%s*$", "%1")
+end
 
+local function copy_move_array(move)
+    return {move[1], move[2], move[3], move[4], move[5]}
+end
+
+local function moves_equal(a, b)
+    return a[1] == b[1] and a[2] == b[2] and a[3] == b[3] and a[4] == b[4] and a[5] == b[5]
+end
+
+local function is_move_castling(move)
+    local piece = board[move[1]][move[2]]
+    return (piece == "K" or piece == "k") and math.abs(move[4] - move[2]) == 2
+end
+
+local function is_move_en_passant(move)
+    local piece = board[move[1]][move[2]]
+    return en_passant_target ~= nil and
+        (piece == "P" or piece == "p") and
+        move[3] == en_passant_target[1] and
+        move[4] == en_passant_target[2] and
+        board[move[3]][move[4]] == "." and
+        move[2] ~= move[4]
+end
+
+local function pgn_piece_letter(piece)
+    local upper = tostring(piece or ""):upper()
+    if upper == "P" then
+        return ""
+    end
+    return upper
+end
+
+local function normalize_san(token)
+    local cleaned = trim(token)
+    cleaned = cleaned:gsub("^(%d+)%.%.%.", "")
+    cleaned = cleaned:gsub("^(%d+)%.", "")
+    cleaned = cleaned:gsub("[!?]+$", "")
+    cleaned = cleaned:gsub("[+#]+$", "")
+    cleaned = cleaned:gsub("0%-0%-0", "O-O-O")
+    cleaned = cleaned:gsub("0%-0", "O-O")
+    cleaned = cleaned:gsub("e%.p%.", "")
+    cleaned = cleaned:gsub("ep", "")
+    return trim(cleaned)
+end
+
+local function move_disambiguation(move)
+    local piece = board[move[1]][move[2]]
+    local clash_found = false
+    local same_file = false
+    local same_rank = false
+
+    for _, candidate in ipairs(generate_legal_moves()) do
+        if not moves_equal(candidate, move) then
+            local candidate_piece = board[candidate[1]][candidate[2]]
+            if candidate_piece == piece and candidate[3] == move[3] and candidate[4] == move[4] then
+                clash_found = true
+                if candidate[2] == move[2] then
+                    same_file = true
+                end
+                if candidate[1] == move[1] then
+                    same_rank = true
+                end
+            end
+        end
+    end
+
+    if not clash_found then
+        return ""
+    end
+    if not same_file then
+        return string.char(string.byte("a") + move[2] - 1)
+    end
+    if not same_rank then
+        return tostring(move[1])
+    end
+    return string.char(string.byte("a") + move[2] - 1) .. tostring(move[1])
+end
+
+local function move_to_san(move)
+    local piece = board[move[1]][move[2]]
+    if piece == "." then
+        error("missing moving piece for SAN serialization")
+    end
+
+    local san
+    local capture = board[move[3]][move[4]] ~= "." or is_move_en_passant(move)
+    if is_move_castling(move) then
+        san = move[4] == 7 and "O-O" or "O-O-O"
+    else
+        local destination = indices_to_algebraic(move[3], move[4])
+        local promotion = move[5] and ("=" .. pgn_piece_letter(move[5])) or ""
+        if piece:upper() == "P" then
+            if capture then
+                san = string.char(string.byte("a") + move[2] - 1) .. "x" .. destination .. promotion
+            else
+                san = destination .. promotion
+            end
+        else
+            local prefix = pgn_piece_letter(piece) .. move_disambiguation(move)
+            if capture then
+                prefix = prefix .. "x"
+            end
+            san = prefix .. destination .. promotion
+        end
+    end
+
+    make_move_internal(move[1], move[2], move[3], move[4], move[5])
+    local replies = generate_legal_moves()
+    if is_in_check(white_to_move) then
+        san = san .. ((#replies == 0) and "#" or "+")
+    end
+    undo_move()
+
+    return san
+end
+
+local function san_to_move(san)
+    local normalized = normalize_san(san)
+    for _, move in ipairs(generate_legal_moves()) do
+        if normalize_san(move_to_san(move)) == normalized then
+            return copy_move_array(move)
+        end
+    end
+    error("unresolved SAN move: " .. tostring(san))
+end
+
+local function starting_ply_from_fen(fen)
+    local parts = {}
+    for token in tostring(fen or ""):gmatch("%S+") do
+        table.insert(parts, token)
+    end
+
+    local move_number = tonumber(parts[6]) or 1
+    local side = (parts[2] == "b") and "black" or "white"
+    return math.max(1, move_number), side
+end
+
+local function serialize_sequence(sequence, move_number, side)
+    local parts = {}
+    local current_number = move_number
+    local current_side = side
+
+    for _, node in ipairs(sequence) do
+        if current_side == "white" then
+            table.insert(parts, tostring(current_number) .. ". " .. node.san)
+        else
+            local last = parts[#parts]
+            if not last or not last:match("^" .. tostring(current_number) .. "%.%s") then
+                table.insert(parts, tostring(current_number) .. "... " .. node.san)
+            else
+                table.insert(parts, node.san)
+            end
+        end
+
+        for _, nag in ipairs(node.nags) do
+            table.insert(parts, nag)
+        end
+        for _, comment in ipairs(node.comments) do
+            table.insert(parts, "{" .. comment .. "}")
+        end
+        for _, variation in ipairs(node.variations) do
+            table.insert(parts, "(" .. serialize_sequence(variation, current_number, current_side) .. ")")
+        end
+
+        if current_side == "black" then
+            current_number = current_number + 1
+            current_side = "white"
+        else
+            current_side = "black"
+        end
+    end
+
+    return trim(table.concat(parts, " "))
+end
+
+local function serialize_game(game)
+    local lines = {}
+    for _, tag in ipairs(game.tag_order) do
+        local value = tostring(game.tags[tag] or ""):gsub('"', '\\"')
+        table.insert(lines, string.format("[%s \"%s\"]", tag, value))
+    end
+    if #lines > 0 then
+        table.insert(lines, "")
+    end
+
+    local move_number, side = starting_ply_from_fen(game.initial_fen)
+    local move_text = serialize_sequence(game.moves, move_number, side)
+    if #game.initial_comments > 0 then
+        local comments = {}
+        for _, comment in ipairs(game.initial_comments) do
+            table.insert(comments, "{" .. comment .. "}")
+        end
+        move_text = trim(table.concat(comments, " ") .. " " .. move_text)
+    end
+    if game.result and game.result ~= "" then
+        move_text = trim(move_text .. " " .. game.result)
+    end
+    table.insert(lines, move_text ~= "" and move_text or (game.result or "*"))
+
+    return trim(table.concat(lines, "\n")) .. "\n"
+end
+
+local function tokenize_pgn(content)
+    local tokens = {}
+    local length = #content
+    local index = 1
+    local result_tokens = {
+        ["1-0"] = true,
+        ["0-1"] = true,
+        ["1/2-1/2"] = true,
+        ["*"] = true,
+    }
+
+    while index <= length do
+        local char = content:sub(index, index)
+        if char:match("%s") then
+            index = index + 1
+        elseif char == "[" then
+            local end_index = content:find("]", index, true)
+            if not end_index then
+                error("unterminated PGN tag")
+            end
+            local raw = trim(content:sub(index + 1, end_index - 1))
+            local name, value = raw:match('^([A-Za-z0-9_]+)%s+"(.*)"$')
+            if not name then
+                error("invalid PGN tag: [" .. raw .. "]")
+            end
+            value = value:gsub('\\"', '"')
+            table.insert(tokens, {kind = "TAG", name = name, value = value})
+            index = end_index + 1
+        elseif char == "{" then
+            local end_index = content:find("}", index, true)
+            if not end_index then
+                error("unterminated PGN comment")
+            end
+            table.insert(tokens, {kind = "COMMENT", value = trim(content:sub(index + 1, end_index - 1))})
+            index = end_index + 1
+        elseif char == ";" then
+            local end_index = content:find("\n", index, true) or (length + 1)
+            table.insert(tokens, {kind = "COMMENT", value = trim(content:sub(index + 1, end_index - 1))})
+            index = end_index
+        elseif char == "(" then
+            table.insert(tokens, {kind = "LPAREN", value = "("})
+            index = index + 1
+        elseif char == ")" then
+            table.insert(tokens, {kind = "RPAREN", value = ")"})
+            index = index + 1
+        elseif char == "$" then
+            local start_index = index
+            index = index + 1
+            while index <= length and content:sub(index, index):match("%d") do
+                index = index + 1
+            end
+            table.insert(tokens, {kind = "NAG", value = content:sub(start_index, index - 1)})
+        else
+            local start_index = index
+            while index <= length do
+                local current = content:sub(index, index)
+                if current:match("%s") or current == "[" or current == "]" or current == "{" or current == "}" or current == "(" or current == ")" or current == ";" then
+                    break
+                end
+                index = index + 1
+            end
+            local value = content:sub(start_index, index - 1)
+            if result_tokens[value] then
+                table.insert(tokens, {kind = "RESULT", value = value})
+            elseif value:match("^%d+%.%.%.$") or value:match("^%d+%.$") then
+                table.insert(tokens, {kind = "MOVE_NO", value = value})
+            else
+                table.insert(tokens, {kind = "SAN", value = value})
+            end
+        end
+    end
+
+    return tokens
+end
+
+local parse_pgn_sequence
+
+parse_pgn_sequence = function(tokens, index)
+    local moves = {}
+    local trailing_comments = {}
+    local result = "*"
+
+    while index <= #tokens do
+        local token = tokens[index]
+        if token.kind == "RPAREN" then
+            break
+        elseif token.kind == "RESULT" then
+            result = token.value
+            index = index + 1
+            break
+        elseif token.kind == "MOVE_NO" then
+            index = index + 1
+        elseif token.kind == "COMMENT" then
+            if #moves > 0 then
+                table.insert(moves[#moves].comments, token.value)
+            else
+                table.insert(trailing_comments, token.value)
+            end
+            index = index + 1
+        elseif token.kind == "NAG" then
+            if #moves == 0 then
+                error("NAG without move")
+            end
+            table.insert(moves[#moves].nags, token.value)
+            index = index + 1
+        elseif token.kind == "LPAREN" then
+            if #moves == 0 then
+                error("variation without anchor move")
+            end
+            index = index + 1
+            local anchor = moves[#moves]
+            local snapshot = snapshot_engine_state()
+            local ok, variation_moves, variation_result, pending, next_index = pcall(function()
+                local success, msg = import_fen(anchor.fen_before)
+                if not success then
+                    error(msg)
+                end
+                local parsed_moves, parsed_result, parsed_pending, parsed_index = parse_pgn_sequence(tokens, index)
+                return parsed_moves, parsed_result, parsed_pending, parsed_index
+            end)
+            restore_engine_state(snapshot)
+            if not ok then
+                error(variation_moves)
+            end
+            index = next_index
+            if index > #tokens or tokens[index].kind ~= "RPAREN" then
+                error("unterminated PGN variation")
+            end
+            index = index + 1
+            if #pending > 0 and #variation_moves > 0 then
+                for _, comment in ipairs(pending) do
+                    table.insert(variation_moves[#variation_moves].comments, comment)
+                end
+            end
+            if variation_result ~= "*" and #variation_moves > 0 then
+                table.insert(variation_moves[#variation_moves].comments, "result " .. variation_result)
+            end
+            table.insert(anchor.variations, variation_moves)
+        elseif token.kind == "SAN" then
+            local fen_before = export_fen()
+            local move = san_to_move(token.value)
+            local canonical = move_to_san(move)
+            make_move_internal(move[1], move[2], move[3], move[4], move[5])
+            local fen_after = export_fen()
+            table.insert(moves, {
+                san = canonical,
+                move = copy_move_array(move),
+                fen_before = fen_before,
+                fen_after = fen_after,
+                nags = {},
+                comments = {},
+                variations = {},
+            })
+            index = index + 1
+        else
+            error("unexpected PGN token: " .. tostring(token.kind))
+        end
+    end
+
+    return moves, result, trailing_comments, index
+end
+
+local function parse_pgn(content, source)
+    local tokens = tokenize_pgn(content)
+    local index = 1
+    local tags = {}
+    local tag_order = {}
+
+    while index <= #tokens and tokens[index].kind == "TAG" do
+        local token = tokens[index]
+        tags[token.name] = token.value
+        table.insert(tag_order, token.name)
+        index = index + 1
+    end
+
+    local initial_fen = tags.FEN or START_FEN
+    local snapshot = snapshot_engine_state()
+    local ok, moves, result, initial_comments = pcall(function()
+        local success, msg = import_fen(initial_fen)
+        if not success then
+            error(msg)
+        end
+        local parsed_moves, parsed_result, parsed_comments = parse_pgn_sequence(tokens, index)
+        return parsed_moves, parsed_result, parsed_comments
+    end)
+    restore_engine_state(snapshot)
+    if not ok then
+        error(moves)
+    end
+
+    if result == "*" and tags.Result then
+        result = tags.Result
+    end
+    if not tags.Result then
+        tags.Result = result
+        table.insert(tag_order, "Result")
+    end
+
+    return {
+        tags = tags,
+        tag_order = tag_order,
+        moves = moves,
+        result = result,
+        source = source or "current-game",
+        initial_fen = initial_fen,
+        initial_comments = initial_comments,
+    }
+end
+
+build_game_from_history = function(history, start_fen, source)
+    local snapshot = snapshot_engine_state()
+    local ok, moves = pcall(function()
+        local success, msg = import_fen(start_fen or START_FEN)
+        if not success then
+            error(msg)
+        end
+
+        local built = {}
+        for _, raw_move in ipairs(history or {}) do
+            local move = raw_move[1] and copy_move_array(raw_move) or {
+                raw_move.from_rank,
+                raw_move.from_file,
+                raw_move.to_rank,
+                raw_move.to_file,
+                raw_move.promotion,
+            }
+            local fen_before = export_fen()
+            local san = move_to_san(move)
+            make_move_internal(move[1], move[2], move[3], move[4], move[5])
+            local fen_after = export_fen()
+            table.insert(built, {
+                san = san,
+                move = copy_move_array(move),
+                fen_before = fen_before,
+                fen_after = fen_after,
+                nags = {},
+                comments = {},
+                variations = {},
+            })
+        end
+        return built
+    end)
+    restore_engine_state(snapshot)
+    if not ok then
+        error(moves)
+    end
+
+    local effective_start_fen = start_fen or START_FEN
+    local tags = {
+        Event = "CLI Game",
+        Site = "Local",
+        Result = "*",
+    }
+    local tag_order = {"Event", "Site", "Result"}
+    if effective_start_fen ~= START_FEN then
+        tags.SetUp = "1"
+        tags.FEN = effective_start_fen
+        table.insert(tag_order, "SetUp")
+        table.insert(tag_order, "FEN")
+    end
+
+    return {
+        tags = tags,
+        tag_order = tag_order,
+        moves = moves,
+        result = "*",
+        source = source or "current-game",
+        initial_fen = effective_start_fen,
+        initial_comments = {},
+    }
+end
+
+reset_pgn_state = function(start_fen, source)
+    pgn_path = nil
+    pgn_game = build_game_from_history({}, start_fen or START_FEN, source or "current-game")
+    pgn_variation_stack = {}
+end
+
+current_pgn_game = function()
+    return pgn_game
+end
+
+current_pgn_sequence_ref = function()
+    local sequence = pgn_game.moves
+    for _, frame in ipairs(pgn_variation_stack) do
+        local anchor = sequence[frame[1]]
+        if not anchor or not anchor.variations[frame[2]] then
+            return pgn_game.moves
+        end
+        sequence = anchor.variations[frame[2]]
+    end
+    return sequence
+end
+
+current_pgn_sequence = function()
+    return current_pgn_sequence_ref()
+end
+
+current_pgn_moves = function()
+    local moves = {}
+    for _, node in ipairs(current_pgn_sequence()) do
+        table.insert(moves, node.san)
+    end
+    return moves
+end
+
+local function active_line_nodes()
+    local nodes = {}
+    local sequence = pgn_game.moves
+    for _, frame in ipairs(pgn_variation_stack) do
+        local anchor_index = frame[1]
+        local variation_index = frame[2]
+        for index = 1, anchor_index - 1 do
+            if sequence[index] then
+                table.insert(nodes, sequence[index])
+            end
+        end
+        local anchor = sequence[anchor_index]
+        if not anchor or not anchor.variations[variation_index] then
+            break
+        end
+        sequence = anchor.variations[variation_index]
+    end
+    for _, node in ipairs(sequence) do
+        table.insert(nodes, node)
+    end
+    return nodes
+end
+
+local function apply_move_object_silent(move)
+    local legal = generate_legal_moves()
+    for _, candidate in ipairs(legal) do
+        if moves_equal(candidate, move) then
+            make_move_internal(candidate[1], candidate[2], candidate[3], candidate[4], candidate[5])
+            return nil
+        end
+    end
+    return "Illegal move"
+end
+
+local function apply_move_silent(move_str)
+    if #move_str < 4 then
+        return "Invalid move format"
+    end
+    local from_rank, from_file = algebraic_to_indices(move_str:sub(1, 2))
+    local to_rank, to_file = algebraic_to_indices(move_str:sub(3, 4))
+    if not from_rank or not from_file or not to_rank or not to_file then
+        return "Invalid move format"
+    end
+    local promotion = (#move_str >= 5) and move_str:sub(5, 5) or nil
+    if promotion and promotion ~= "" then
+        promotion = white_to_move and promotion:upper() or promotion:lower()
+    else
+        promotion = nil
+    end
+    local requested = {from_rank, from_file, to_rank, to_file, promotion}
+    return apply_move_object_silent(requested)
+end
+
+sync_runtime_to_pgn_cursor = function()
+    local success, msg = import_fen(pgn_game.initial_fen)
+    if not success then
+        error("failed to load PGN base position: " .. tostring(msg))
+    end
+    for _, node in ipairs(active_line_nodes()) do
+        local err = apply_move_object_silent(node.move)
+        if err ~= nil then
+            error("failed to replay PGN move " .. node.san .. ": " .. tostring(err))
+        end
+    end
+end
+
+record_pgn_move = function(move)
+    local san = move_to_san(move)
+    local fen_before = export_fen()
+    make_move_internal(move[1], move[2], move[3], move[4], move[5])
+    local fen_after = export_fen()
+    table.insert(current_pgn_sequence_ref(), {
+        san = san,
+        move = copy_move_array(move),
+        fen_before = fen_before,
+        fen_after = fen_after,
+        nags = {},
+        comments = {},
+        variations = {},
+    })
+end
+
+local function load_pgn(path)
     local file = io.open(path, "r")
     if not file then
-        return true, string.format("PGN: loaded path=\"%s\"; moves=0; note=file-unavailable", path)
+        return false, "ERROR: pgn load failed: file not found: " .. tostring(path)
     end
 
     local content = file:read("*a")
     file:close()
 
-    local move_text = {}
-    for line in content:gmatch("[^\r\n]+") do
-        local trimmed = line:gsub("^%s*(.-)%s*$", "%1")
-        if trimmed ~= "" and not trimmed:match("^%[") then
-            table.insert(move_text, trimmed)
-        end
+    local ok, game = pcall(function()
+        return parse_pgn(content, path)
+    end)
+    if not ok then
+        return false, "ERROR: pgn load failed: " .. tostring(game)
     end
 
-    local text = table.concat(move_text, " ")
-    text = text:gsub("%b{}", " ")
-    text = text:gsub("%b()", " ")
-    text = text:gsub(";%s*[^%c]*", " ")
-
-    for token in text:gmatch("%S+") do
-        if not token:match("^%d+%.%.%.$") and
-           not token:match("^%d+%.$") and
-           token ~= "1-0" and token ~= "0-1" and token ~= "1/2-1/2" and token ~= "*" then
-            table.insert(pgn_moves, token)
-        end
+    local sync_ok, sync_err = pcall(function()
+        pgn_game = game
+        pgn_path = path
+        pgn_variation_stack = {}
+        sync_runtime_to_pgn_cursor()
+    end)
+    if not sync_ok then
+        return false, "ERROR: pgn load failed: " .. tostring(sync_err)
     end
-
-    return true, string.format("PGN: loaded path=\"%s\"; moves=%d", path, #pgn_moves)
+    return true, "PGN: loaded source=" .. tostring(path)
 end
 
 local function trace_event(event, detail)
@@ -1866,6 +2834,17 @@ local function clone_castling_state(source)
     }
 end
 
+local function default_castling_config()
+    return {
+        white_king_file = 5,
+        white_kingside_rook_file = 8,
+        white_queenside_rook_file = 1,
+        black_king_file = 5,
+        black_kingside_rook_file = 8,
+        black_queenside_rook_file = 1,
+    }
+end
+
 local function clone_square(square)
     if not square then
         return nil
@@ -1897,7 +2876,7 @@ local function clone_irreversible_history(source)
     return copy
 end
 
-local function snapshot_engine_state()
+snapshot_engine_state = function()
     local history_copy = {}
     for i, hash in ipairs(position_history) do
         history_copy[i] = hash
@@ -1907,6 +2886,8 @@ local function snapshot_engine_state()
         board = clone_board_state(board),
         white_to_move = white_to_move,
         castling_rights = clone_castling_state(castling_rights),
+        castling_config = clone_castling_config(castling_config),
+        chess960_mode = chess960_mode,
         en_passant_target = clone_square(en_passant_target),
         halfmove_clock = halfmove_clock,
         fullmove_number = fullmove_number,
@@ -1917,10 +2898,12 @@ local function snapshot_engine_state()
     }
 end
 
-local function restore_engine_state(state)
+restore_engine_state = function(state)
     board = clone_board_state(state.board)
     white_to_move = state.white_to_move
     castling_rights = clone_castling_state(state.castling_rights)
+    castling_config = clone_castling_config(state.castling_config)
+    chess960_mode = state.chess960_mode
     en_passant_target = clone_square(state.en_passant_target)
     halfmove_clock = state.halfmove_clock
     fullmove_number = state.fullmove_number
@@ -2293,6 +3276,7 @@ local function main()
         local cmd, arg = input:match("^(%S+)%s*(.*)$")
         if not cmd then cmd = input end
         cmd = cmd:lower()
+        select_protocol_mode(cmd)
         if cmd ~= "trace" then
             trace_command_count = trace_command_count + 1
             trace_event("command", input)
@@ -2329,7 +3313,10 @@ local function main()
                 print("ERROR: Move requires argument (e.g., 'move e2e4')")
             end
         elseif cmd == "undo" then
-            if undo_move() then
+            local sequence = current_pgn_sequence()
+            if #sequence > 0 then
+                table.remove(sequence)
+                sync_runtime_to_pgn_cursor()
                 print("OK: undo")
                 display_board()
             else
@@ -2379,6 +3366,187 @@ local function main()
             end
             print(string.format("  %d: %016x (current)", #position_history, zobrist_hash))
         elseif cmd == "go" then
+            if protocol_mode == "uci" then
+                local tokens = {}
+                for token in arg:gmatch("%S+") do
+                    table.insert(tokens, token)
+                end
+                local subcmd = tokens[1] and tokens[1]:lower() or ""
+
+                if subcmd == "depth" then
+                    local depth = tonumber(tokens[2])
+                    if not depth then
+                        print("ERROR: go depth requires an integer value")
+                    else
+                        depth = math.floor(depth)
+                        if depth < 1 then depth = 1 end
+                        if depth > 5 then depth = 5 end
+                        set_uci_state("searching")
+                        local book_move, book_move_str = choose_book_move()
+                        if book_move and book_move_str then
+                            uci_last_bestmove = book_move_str
+                            record_trace_ai("uci-book", book_move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
+                            print("info string bookmove " .. book_move_str)
+                            print("bestmove " .. book_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                        if endgame_move and endgame_info and endgame_move_str then
+                            uci_last_bestmove = endgame_move_str
+                            record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false, 0, 0, 0, 0, 0)
+                            print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
+                            print("bestmove " .. endgame_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(depth, 0)
+                        if not best_move then
+                            uci_last_bestmove = "0000"
+                            print("bestmove 0000")
+                        else
+                            local move_str = indices_to_algebraic(best_move[1], best_move[2]) ..
+                                             indices_to_algebraic(best_move[3], best_move[4])
+                            if best_move[5] then
+                                move_str = move_str .. best_move[5]
+                            end
+                            uci_last_bestmove = move_str
+                            record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+                            print(string.format("info depth %d score cp %d time %d nodes %d", depth_used, eval, elapsed, nodes))
+                            print("bestmove " .. move_str)
+                        end
+                        set_uci_state("idle")
+                    end
+                    goto continue
+                elseif subcmd == "movetime" then
+                    local movetime = tonumber(tokens[2])
+                    if not movetime then
+                        print("ERROR: go movetime requires an integer value")
+                    elseif movetime <= 0 then
+                        print("ERROR: go movetime must be > 0")
+                    else
+                        set_uci_state("searching")
+                        local book_move, book_move_str = choose_book_move()
+                        if book_move and book_move_str then
+                            uci_last_bestmove = book_move_str
+                            record_trace_ai("uci-book", book_move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
+                            print("info string bookmove " .. book_move_str)
+                            print("bestmove " .. book_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                        if endgame_move and endgame_info and endgame_move_str then
+                            uci_last_bestmove = endgame_move_str
+                            record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false, 0, 0, 0, 0, 0)
+                            print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
+                            print("bestmove " .. endgame_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(5, movetime)
+                        if not best_move then
+                            uci_last_bestmove = "0000"
+                            print("bestmove 0000")
+                        else
+                            local move_str = indices_to_algebraic(best_move[1], best_move[2]) ..
+                                             indices_to_algebraic(best_move[3], best_move[4])
+                            if best_move[5] then
+                                move_str = move_str .. best_move[5]
+                            end
+                            uci_last_bestmove = move_str
+                            record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+                            print(string.format("info depth %d score cp %d time %d nodes %d", depth_used, eval, elapsed, nodes))
+                            print("bestmove " .. move_str)
+                        end
+                        set_uci_state("idle")
+                    end
+                    goto continue
+                elseif subcmd == "wtime" then
+                    local movetime, err = derive_movetime_from_clock_args(tokens)
+                    if not movetime then
+                        print("ERROR: " .. err)
+                    else
+                        set_uci_state("searching")
+                        local book_move, book_move_str = choose_book_move()
+                        if book_move and book_move_str then
+                            uci_last_bestmove = book_move_str
+                            record_trace_ai("uci-book", book_move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
+                            print("info string bookmove " .. book_move_str)
+                            print("bestmove " .. book_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                        if endgame_move and endgame_info and endgame_move_str then
+                            uci_last_bestmove = endgame_move_str
+                            record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false, 0, 0, 0, 0, 0)
+                            print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
+                            print("bestmove " .. endgame_move_str)
+                            set_uci_state("idle")
+                            goto continue
+                        end
+                        local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(5, movetime)
+                        if not best_move then
+                            uci_last_bestmove = "0000"
+                            print("bestmove 0000")
+                        else
+                            local move_str = indices_to_algebraic(best_move[1], best_move[2]) ..
+                                             indices_to_algebraic(best_move[3], best_move[4])
+                            if best_move[5] then
+                                move_str = move_str .. best_move[5]
+                            end
+                            uci_last_bestmove = move_str
+                            record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+                            print(string.format("info depth %d score cp %d time %d nodes %d", depth_used, eval, elapsed, nodes))
+                            print("bestmove " .. move_str)
+                        end
+                        set_uci_state("idle")
+                    end
+                    goto continue
+                elseif subcmd == "infinite" then
+                    print("info string infinite search bounded to 15000 ms in synchronous mode")
+                    set_uci_state("searching")
+                    local book_move, book_move_str = choose_book_move()
+                    if book_move and book_move_str then
+                        uci_last_bestmove = book_move_str
+                        record_trace_ai("uci-book", book_move_str, 0, 0, 0, false, 0, 0, 0, 0, 0)
+                        print("info string bookmove " .. book_move_str)
+                        print("bestmove " .. book_move_str)
+                        set_uci_state("idle")
+                        goto continue
+                    end
+                    local endgame_move, endgame_info, endgame_move_str = choose_endgame_move()
+                    if endgame_move and endgame_info and endgame_move_str then
+                        uci_last_bestmove = endgame_move_str
+                        record_trace_ai("uci-endgame", endgame_move_str, 0, endgame_info.score_white, 0, false, 0, 0, 0, 0, 0)
+                        print(string.format("info string endgame %s score cp %d", endgame_info.type, endgame_info.score_white))
+                        print("bestmove " .. endgame_move_str)
+                        set_uci_state("idle")
+                        goto continue
+                    end
+                    local best_move, eval, depth_used, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs = search_best_move(5, 15000)
+                    if not best_move then
+                        uci_last_bestmove = "0000"
+                        print("bestmove 0000")
+                    else
+                        local move_str = indices_to_algebraic(best_move[1], best_move[2]) ..
+                                         indices_to_algebraic(best_move[3], best_move[4])
+                        if best_move[5] then
+                            move_str = move_str .. best_move[5]
+                        end
+                        uci_last_bestmove = move_str
+                        record_trace_ai("uci-search", move_str, depth_used, eval, elapsed, timed_out, nodes, eval_calls, tt_hits, tt_misses, beta_cutoffs)
+                        print(string.format("info depth %d score cp %d time %d nodes %d", depth_used, eval, elapsed, nodes))
+                        print("bestmove " .. move_str)
+                    end
+                    set_uci_state("idle")
+                    goto continue
+                else
+                    print("ERROR: Unsupported go command")
+                    goto continue
+                end
+            end
             local tokens = {}
             for token in arg:gmatch("%S+") do
                 table.insert(tokens, token)
@@ -2523,7 +3691,16 @@ local function main()
             end
         elseif cmd == "stop" then
             search_stop_requested = true
-            print("OK: stop")
+            if protocol_mode == "uci" then
+                if uci_state == "searching" then
+                    print("bestmove " .. (uci_last_bestmove or "0000"))
+                    set_uci_state("idle")
+                else
+                    print("info string stop ignored (no active async search)")
+                end
+            else
+                print("OK: stop")
+            end
         elseif cmd == "pgn" then
             local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
             subcmd = subcmd and subcmd:lower() or ""
@@ -2532,17 +3709,78 @@ local function main()
                 if not subarg or subarg == "" then
                     print("ERROR: pgn load requires a file path")
                 else
-                    local _, msg = load_pgn(subarg)
+                    local _, msg = load_pgn(trim(subarg))
                     print(msg)
                 end
+            elseif subcmd == "save" then
+                local path = trim(subarg)
+                if path == "" then
+                    print("ERROR: pgn save requires a file path")
+                else
+                    local file = io.open(path, "w")
+                    if not file then
+                        print("ERROR: pgn save failed: unable to write file")
+                    else
+                        file:write(serialize_game(current_pgn_game()))
+                        file:close()
+                        pgn_path = path
+                        current_pgn_game().source = path
+                        print(string.format("PGN: saved path=\"%s\"", path))
+                    end
+                end
             elseif subcmd == "show" then
-                local source = pgn_path or "current-game"
-                print(string.format("PGN: source=%s; moves=%d", source, #pgn_moves))
+                local game = current_pgn_game()
+                local source = game.source ~= "" and game.source or "current-game"
+                print(string.format("PGN: source=%s; moves=%d", source, #current_pgn_moves()))
+                io.write(serialize_game(game):gsub("\n$", "") .. "\n")
             elseif subcmd == "moves" then
-                if #pgn_moves > 0 then
-                    print("PGN: moves " .. table.concat(pgn_moves, " "))
+                local moves = current_pgn_moves()
+                if #moves > 0 then
+                    print("PGN: moves " .. table.concat(moves, " "))
                 else
                     print("PGN: moves (none)")
+                end
+            elseif subcmd == "variation" then
+                local action = trim(subarg):match("^(%S+)")
+                action = action and action:lower() or ""
+                if action == "enter" then
+                    local sequence = current_pgn_sequence_ref()
+                    if #sequence == 0 then
+                        print("ERROR: No variation available")
+                    else
+                        local anchor_index = #sequence
+                        local target = sequence[anchor_index]
+                        if #target.variations == 0 then
+                            table.insert(target.variations, {})
+                        end
+                        table.insert(pgn_variation_stack, {anchor_index, #target.variations})
+                        sync_runtime_to_pgn_cursor()
+                        print("PGN: variation depth=" .. tostring(#pgn_variation_stack))
+                    end
+                elseif action == "exit" then
+                    if #pgn_variation_stack == 0 then
+                        print("ERROR: Not inside a variation")
+                    else
+                        table.remove(pgn_variation_stack)
+                        sync_runtime_to_pgn_cursor()
+                        print("PGN: variation depth=" .. tostring(#pgn_variation_stack))
+                    end
+                else
+                    print("ERROR: pgn variation requires enter or exit")
+                end
+            elseif subcmd == "comment" then
+                local text = trim(subarg)
+                text = text:gsub('^"(.*)"$', '%1')
+                if text == "" then
+                    print("ERROR: pgn comment requires text")
+                else
+                    local sequence = current_pgn_sequence_ref()
+                    if #sequence == 0 then
+                        table.insert(current_pgn_game().initial_comments, text)
+                    else
+                        table.insert(sequence[#sequence].comments, text)
+                    end
+                    print("PGN: comment added")
                 end
             else
                 print("ERROR: Unsupported pgn command")
@@ -2624,8 +3862,19 @@ local function main()
                 print(output)
             end
         elseif cmd == "uci" then
+            protocol_mode = "uci"
+            set_uci_state("uci_sent")
+            print("id name Lua Chess Engine")
+            print("id author The Great Analysis Challenge")
+            print(string.format("option name Hash type spin default %d min 1 max 1024", uci_hash_mb))
+            print(string.format("option name Threads type spin default %d min 1 max 64", uci_threads))
+            print("option name UCI_AnalyseMode type check default " .. uci_bool_default(uci_analyse_mode))
+            print("option name RichEval type check default " .. uci_bool_default(rich_eval_enabled))
             print("uciok")
         elseif cmd == "isready" then
+            if protocol_mode == "uci" and uci_state ~= "searching" then
+                set_uci_state("idle")
+            end
             print("readyok")
         elseif cmd == "setoption" then
             local tokens = {}
@@ -2649,31 +3898,55 @@ local function main()
                     for i = 2, value_idx - 1 do
                         table.insert(option_name_parts, tokens[i])
                     end
-                    local option_name = table.concat(option_name_parts, " "):lower()
-                    local value = tonumber(tokens[value_idx + 1])
-                    if not value then
-                        print("ERROR: setoption value must be an integer")
-                    else
-                        value = math.floor(value)
-                        if option_name == "hash" then
-                            if value < 1 then value = 1 end
-                            if value > 1024 then value = 1024 end
-                            uci_hash_mb = value
-                            print(string.format("info string option Hash=%d", uci_hash_mb))
-                        elseif option_name == "threads" then
-                            if value < 1 then value = 1 end
-                            if value > 64 then value = 64 end
-                            uci_threads = value
-                            print(string.format("info string option Threads=%d", uci_threads))
+                    local raw_name = table.concat(option_name_parts, " ")
+                    local option_name = raw_name:lower()
+                    local raw_value = table.concat(tokens, " ", value_idx + 1)
+                    if option_name == "hash" or option_name == "threads" then
+                        local value = tonumber(tokens[value_idx + 1])
+                        if not value then
+                            print("ERROR: setoption value must be an integer")
                         else
-                            print("info string unsupported option " .. table.concat(option_name_parts, " "))
+                            value = math.floor(value)
+                            if option_name == "hash" then
+                                if value < 1 then value = 1 end
+                                if value > 1024 then value = 1024 end
+                                uci_hash_mb = value
+                                print(string.format("info string option Hash=%d", uci_hash_mb))
+                            else
+                                if value < 1 then value = 1 end
+                                if value > 64 then value = 64 end
+                                uci_threads = value
+                                print(string.format("info string option Threads=%d", uci_threads))
+                            end
                         end
+                    elseif option_name == "uci_analysemode" then
+                        local parsed = parse_uci_check_value(raw_value)
+                        if parsed == nil then
+                            print("ERROR: setoption value must be true/false")
+                        else
+                            uci_analyse_mode = parsed
+                            print("info string option UCI_AnalyseMode=" .. uci_bool_default(parsed))
+                        end
+                    elseif option_name == "richeval" then
+                        local parsed = parse_uci_check_value(raw_value)
+                        if parsed == nil then
+                            print("ERROR: setoption value must be true/false")
+                        else
+                            rich_eval_enabled = parsed
+                            print("info string option RichEval=" .. uci_bool_default(parsed))
+                        end
+                    else
+                        print("info string unsupported option " .. raw_name)
                     end
                 end
             end
         elseif cmd == "ucinewgame" then
             new_game()
             tt = {}
+            uci_last_bestmove = nil
+            if protocol_mode == "uci" then
+                set_uci_state("idle")
+            end
         elseif cmd == "position" then
             local tokens = {}
             for token in arg:gmatch("%S+") do
@@ -2684,6 +3957,7 @@ local function main()
             else
                 local idx = 1
                 local keyword = tokens[1]:lower()
+                local start_fen = START_FEN
                 if keyword == "startpos" then
                     new_game()
                     tt = {}
@@ -2699,7 +3973,8 @@ local function main()
                         print("ERROR: position fen requires a FEN string")
                         goto continue
                     end
-                    local success, msg = import_fen(table.concat(fen_parts, " "))
+                    start_fen = table.concat(fen_parts, " ")
+                    local success, msg = import_fen(start_fen)
                     if not success then
                         print(msg)
                         goto continue
@@ -2713,13 +3988,20 @@ local function main()
                     idx = idx + 1
                     while idx <= #tokens do
                         local move_str = tokens[idx]
-                        local success, msg = execute_move(move_str)
+                        local success, msg = execute_move(move_str, {record_pgn = false})
                         if not success then
                             print("ERROR: position move " .. move_str .. " failed: " .. msg)
                             break
                         end
                         idx = idx + 1
                     end
+                end
+                pgn_path = nil
+                pgn_variation_stack = {}
+                local current_start_fen = (#move_history == 0) and export_fen() or start_fen
+                pgn_game = build_game_from_history(move_history, current_start_fen, "current-game")
+                if protocol_mode == "uci" then
+                    set_uci_state("idle")
                 end
             end
         elseif cmd == "new960" then
@@ -2728,13 +4010,23 @@ local function main()
                 print("ERROR: new960 id must be between 0 and 959")
             else
                 chess960_id = math.floor(id)
-                new_game()
+                local fen = build_chess960_fen(chess960_id)
+                local success, msg = import_fen(fen)
+                if not success then
+                    print("ERROR: Invalid Chess960 FEN: " .. msg)
+                    goto continue
+                end
                 print("OK: New game started")
                 display_board()
-                print(string.format("960: new game id=%d", chess960_id))
+                print(string.format("960: new game id=%d; backrank=%s", chess960_id, decode_chess960_backrank(chess960_id)))
             end
         elseif cmd == "position960" then
-            print(string.format("960: id=%d; mode=chess960", chess960_id))
+            print(string.format(
+                "960: id=%d; mode=chess960; backrank=%s; fen=%s",
+                chess960_id,
+                decode_chess960_backrank(chess960_id),
+                build_chess960_fen(chess960_id)
+            ))
         elseif cmd == "trace" then
             local subcmd, subarg = arg:match("^(%S+)%s*(.*)$")
             subcmd = subcmd and subcmd:lower() or ""
@@ -2804,6 +4096,8 @@ local function main()
             if arg and arg ~= "" then
                 local success, msg = import_fen(arg)
                 if success then
+                    local start_fen = export_fen()
+                    reset_pgn_state(start_fen, "current-game")
                     print("OK: FEN loaded")
                     display_board()
                 else
@@ -2865,12 +4159,15 @@ local function main()
             print("  go depth <n>     - UCI-style depth search (prints info/bestmove)")
             print("  go infinite      - Start bounded long search mode")
             print("  stop             - Stop infinite search mode")
-            print("  pgn load|show|moves - PGN command family")
+            print("  pgn load|save|show|moves - PGN command family")
+            print("  pgn variation enter|exit - Enter or exit current variation")
+            print("  pgn comment \"text\" - Add comment to current PGN node")
             print("  book load|on|off|stats - Native opening book controls")
             print("  endgame          - Detect specialized endgame and best move hint")
             print("  uci              - Enter/respond to UCI handshake")
             print("  isready          - UCI readiness probe")
             print("  setoption name <Hash|Threads> value <n> - Set UCI option")
+            print("  setoption name <Hash|Threads|UCI_AnalyseMode|RichEval> value <x> - Set UCI option")
             print("  ucinewgame       - Reset internal state for UCI game")
             print("  position startpos|fen ... [moves ...] - Load UCI position")
             print("  new960 [id]      - Start Chess960 game by id (0-959)")

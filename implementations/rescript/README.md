@@ -7,6 +7,7 @@ A ReScript chess engine implementation with the shared core chess spec and the c
 - Core chess engine parity: `perft`, `fen`, `ai`, `castling`, `en_passant`, `promotion`
 - Protocol features: `pgn`, `uci`, `chess960`
 - System surfaces: deterministic `hash`, `draws`, `history`, `trace`, and `concurrency`
+- Precomputed knight, king, sliding-ray, and Manhattan distance lookup tables
 - Opening-book and time-managed search command surfaces for the shared harness
 
 ## Validation

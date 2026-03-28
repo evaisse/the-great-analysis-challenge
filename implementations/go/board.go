@@ -9,6 +9,8 @@ func NewGameState() *GameState {
 	gs := &GameState{
 		ActiveColor:     White,
 		CastlingRights:  [2][2]bool{{true, true}, {true, true}},
+		CastlingConfig:  DefaultCastlingConfig(),
+		Chess960Mode:    false,
 		EnPassantTarget: nil,
 		HalfmoveClock:   0,
 		FullmoveNumber:  1,
@@ -57,6 +59,55 @@ func (gs *GameState) SetupInitialPosition() {
 	gs.Board[7][5] = NewPiece(Bishop, Black)
 	gs.Board[7][6] = NewPiece(Knight, Black)
 	gs.Board[7][7] = NewPiece(Rook, Black)
+	gs.CastlingConfig = DefaultCastlingConfig()
+	gs.Chess960Mode = false
+}
+
+func (gs *GameState) LinePath(start, target Square) []Square {
+	if start == target {
+		return nil
+	}
+
+	fileStep := 0
+	if target.File > start.File {
+		fileStep = 1
+	} else if target.File < start.File {
+		fileStep = -1
+	}
+
+	rankStep := 0
+	if target.Rank > start.Rank {
+		rankStep = 1
+	} else if target.Rank < start.Rank {
+		rankStep = -1
+	}
+
+	file := start.File + fileStep
+	rank := start.Rank + rankStep
+	path := make([]Square, 0, 8)
+	for file != target.File || rank != target.Rank {
+		path = append(path, Square{file, rank})
+		file += fileStep
+		rank += rankStep
+	}
+	path = append(path, target)
+	return path
+}
+
+func (gs *GameState) GetCastleDetails(color Color, side int) (Square, Square, Square, Square) {
+	rank := 0
+	if color == Black {
+		rank = 7
+	}
+	kingStart := Square{gs.CastlingConfig.KingFile[color], rank}
+	rookStart := Square{gs.CastlingConfig.RookFile[color][side], rank}
+	kingTarget := Square{2, rank}
+	rookTarget := Square{3, rank}
+	if side == KingsideCastle {
+		kingTarget = Square{6, rank}
+		rookTarget = Square{5, rank}
+	}
+	return kingStart, rookStart, kingTarget, rookTarget
 }
 
 func (gs *GameState) GetPiece(square Square) Piece {
@@ -120,64 +171,44 @@ func (gs *GameState) IsSquareAttacked(square Square, byColor Color) bool {
 	}
 
 	// Check for knight attacks
-	knightMoves := [][]int{
-		{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
-		{1, -2}, {1, 2}, {2, -1}, {2, 1},
-	}
-
-	for _, move := range knightMoves {
-		attackSquare := Square{square.File + move[0], square.Rank + move[1]}
-		if attackSquare.IsValid() {
-			piece := gs.GetPiece(attackSquare)
-			if piece.Type == Knight && piece.Color == byColor {
-				return true
-			}
+	for _, attackSquare := range knightAttacks(square) {
+		piece := gs.GetPiece(attackSquare)
+		if piece.Type == Knight && piece.Color == byColor {
+			return true
 		}
 	}
 
 	// Check for king attacks
-	kingMoves := [][]int{
-		{-1, -1}, {-1, 0}, {-1, 1},
-		{0, -1}, {0, 1},
-		{1, -1}, {1, 0}, {1, 1},
-	}
-
-	for _, move := range kingMoves {
-		attackSquare := Square{square.File + move[0], square.Rank + move[1]}
-		if attackSquare.IsValid() {
-			piece := gs.GetPiece(attackSquare)
-			if piece.Type == King && piece.Color == byColor {
-				return true
-			}
+	for _, attackSquare := range kingAttacks(square) {
+		piece := gs.GetPiece(attackSquare)
+		if piece.Type == King && piece.Color == byColor {
+			return true
 		}
 	}
 
 	// Check for sliding piece attacks (bishop, rook, queen)
-	directions := [][]int{
-		{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
-		{0, 1}, {1, -1}, {1, 0}, {1, 1},
+	directions := []struct {
+		fileDelta  int
+		rankDelta  int
+		isDiagonal bool
+	}{
+		{-1, -1, true},
+		{-1, 0, false},
+		{-1, 1, true},
+		{0, -1, false},
+		{0, 1, false},
+		{1, -1, true},
+		{1, 0, false},
+		{1, 1, true},
 	}
 
-	for i, direction := range directions {
-		for distance := 1; distance < 8; distance++ {
-			attackSquare := Square{
-				square.File + direction[0]*distance,
-				square.Rank + direction[1]*distance,
-			}
-
-			if !attackSquare.IsValid() {
-				break
-			}
-
+	for _, direction := range directions {
+		for _, attackSquare := range rayAttacks(directionToEnum(direction.fileDelta, direction.rankDelta), square) {
 			piece := gs.GetPiece(attackSquare)
 			if !piece.IsEmpty() {
 				if piece.Color == byColor {
-					// Check if this piece can attack in this direction
-					isDiagonal := i == 0 || i == 2 || i == 5 || i == 7
-					isOrthogonal := i == 1 || i == 3 || i == 4 || i == 6
-
-					if (isDiagonal && (piece.Type == Bishop || piece.Type == Queen)) ||
-						(isOrthogonal && (piece.Type == Rook || piece.Type == Queen)) {
+					if (direction.isDiagonal && (piece.Type == Bishop || piece.Type == Queen)) ||
+						(!direction.isDiagonal && (piece.Type == Rook || piece.Type == Queen)) {
 						return true
 					}
 				}
@@ -225,6 +256,8 @@ func (gs *GameState) Clone() *GameState {
 		Board:           gs.Board,
 		ActiveColor:     gs.ActiveColor,
 		CastlingRights:  gs.CastlingRights,
+		CastlingConfig:  gs.CastlingConfig,
+		Chess960Mode:    gs.Chess960Mode,
 		HalfmoveClock:   gs.HalfmoveClock,
 		FullmoveNumber:  gs.FullmoveNumber,
 		MoveHistory:     make([]Move, len(gs.MoveHistory)),
@@ -241,6 +274,75 @@ func (gs *GameState) Clone() *GameState {
 	}
 
 	return clone
+}
+
+func (gs *GameState) FindHomeRankPiece(color Color, pieceType PieceType) (int, bool) {
+	rank := 0
+	if color == Black {
+		rank = 7
+	}
+	for file := 0; file < 8; file++ {
+		piece := gs.Board[rank][file]
+		if piece.Type == pieceType && piece.Color == color {
+			return file, true
+		}
+	}
+	return 0, false
+}
+
+func (gs *GameState) ConfigureChess960() {
+	whiteKingFile, whiteOK := gs.FindHomeRankPiece(White, King)
+	blackKingFile, blackOK := gs.FindHomeRankPiece(Black, King)
+	if !whiteOK || !blackOK {
+		gs.CastlingConfig = DefaultCastlingConfig()
+		gs.Chess960Mode = false
+		return
+	}
+
+	whiteRooks := make([]int, 0, 2)
+	blackRooks := make([]int, 0, 2)
+	for file := 0; file < 8; file++ {
+		if piece := gs.Board[0][file]; piece.Type == Rook && piece.Color == White {
+			whiteRooks = append(whiteRooks, file)
+		}
+		if piece := gs.Board[7][file]; piece.Type == Rook && piece.Color == Black {
+			blackRooks = append(blackRooks, file)
+		}
+	}
+	if len(whiteRooks) == 0 || len(blackRooks) == 0 {
+		gs.CastlingConfig = DefaultCastlingConfig()
+		gs.Chess960Mode = false
+		return
+	}
+
+	config := DefaultCastlingConfig()
+	config.KingFile[White] = whiteKingFile
+	config.KingFile[Black] = blackKingFile
+	config.RookFile[White][KingsideCastle] = selectRookFile(whiteRooks, whiteKingFile, true, 7)
+	config.RookFile[White][QueensideCastle] = selectRookFile(whiteRooks, whiteKingFile, false, 0)
+	config.RookFile[Black][KingsideCastle] = selectRookFile(blackRooks, blackKingFile, true, 7)
+	config.RookFile[Black][QueensideCastle] = selectRookFile(blackRooks, blackKingFile, false, 0)
+	gs.CastlingConfig = config
+	gs.Chess960Mode = !config.IsClassical()
+}
+
+func selectRookFile(rookFiles []int, kingFile int, kingside bool, fallback int) int {
+	selected := fallback
+	found := false
+	for _, file := range rookFiles {
+		if kingside {
+			if file > kingFile && (!found || file > selected) {
+				selected = file
+				found = true
+			}
+		} else {
+			if file < kingFile && (!found || file < selected) {
+				selected = file
+				found = true
+			}
+		}
+	}
+	return selected
 }
 
 func (gs *GameState) IsDrawByRepetition() bool {

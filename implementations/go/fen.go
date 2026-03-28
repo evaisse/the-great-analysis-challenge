@@ -6,6 +6,71 @@ import (
 	"strings"
 )
 
+func (gs *GameState) castlingFEN() string {
+	if gs.Chess960Mode {
+		whiteFiles := make([]int, 0, 2)
+		blackFiles := make([]int, 0, 2)
+		if gs.CastlingRights[White][QueensideCastle] {
+			whiteFiles = append(whiteFiles, gs.CastlingConfig.RookFile[White][QueensideCastle])
+		}
+		if gs.CastlingRights[White][KingsideCastle] {
+			whiteFiles = append(whiteFiles, gs.CastlingConfig.RookFile[White][KingsideCastle])
+		}
+		if gs.CastlingRights[Black][QueensideCastle] {
+			blackFiles = append(blackFiles, gs.CastlingConfig.RookFile[Black][QueensideCastle])
+		}
+		if gs.CastlingRights[Black][KingsideCastle] {
+			blackFiles = append(blackFiles, gs.CastlingConfig.RookFile[Black][KingsideCastle])
+		}
+
+		var b strings.Builder
+		for _, file := range sortedInts(whiteFiles) {
+			b.WriteByte(byte('A' + file))
+		}
+		for _, file := range sortedInts(blackFiles) {
+			b.WriteByte(byte('a' + file))
+		}
+		if b.Len() == 0 {
+			return "-"
+		}
+		return b.String()
+	}
+
+	var castling strings.Builder
+	if gs.CastlingRights[White][KingsideCastle] {
+		castling.WriteRune('K')
+	}
+	if gs.CastlingRights[White][QueensideCastle] {
+		castling.WriteRune('Q')
+	}
+	if gs.CastlingRights[Black][KingsideCastle] {
+		castling.WriteRune('k')
+	}
+	if gs.CastlingRights[Black][QueensideCastle] {
+		castling.WriteRune('q')
+	}
+	if castling.Len() == 0 {
+		return "-"
+	}
+	return castling.String()
+}
+
+func sortedInts(values []int) []int {
+	if len(values) == 0 {
+		return values
+	}
+	cloned := make([]int, len(values))
+	copy(cloned, values)
+	for i := 0; i < len(cloned); i++ {
+		for j := i + 1; j < len(cloned); j++ {
+			if cloned[j] < cloned[i] {
+				cloned[i], cloned[j] = cloned[j], cloned[i]
+			}
+		}
+	}
+	return cloned
+}
+
 func (gs *GameState) ToFEN() string {
 	var fenParts []string
 
@@ -42,23 +107,7 @@ func (gs *GameState) ToFEN() string {
 	}
 
 	// Castling availability
-	var castling strings.Builder
-	if gs.CastlingRights[White][KingsideCastle] {
-		castling.WriteRune('K')
-	}
-	if gs.CastlingRights[White][QueensideCastle] {
-		castling.WriteRune('Q')
-	}
-	if gs.CastlingRights[Black][KingsideCastle] {
-		castling.WriteRune('k')
-	}
-	if gs.CastlingRights[Black][QueensideCastle] {
-		castling.WriteRune('q')
-	}
-	if castling.Len() == 0 {
-		castling.WriteRune('-')
-	}
-	fenParts = append(fenParts, castling.String())
+	fenParts = append(fenParts, gs.castlingFEN())
 
 	// En passant target
 	if gs.EnPassantTarget != nil {
@@ -135,6 +184,14 @@ func (gs *GameState) FromFEN(fen string) error {
 
 	// Parse castling rights
 	gs.CastlingRights = [2][2]bool{{false, false}, {false, false}}
+	gs.CastlingConfig = DefaultCastlingConfig()
+	gs.Chess960Mode = false
+	if file, ok := gs.FindHomeRankPiece(White, King); ok {
+		gs.CastlingConfig.KingFile[White] = file
+	}
+	if file, ok := gs.FindHomeRankPiece(Black, King); ok {
+		gs.CastlingConfig.KingFile[Black] = file
+	}
 	if parts[2] != "-" {
 		for _, char := range parts[2] {
 			switch char {
@@ -146,6 +203,26 @@ func (gs *GameState) FromFEN(fen string) error {
 				gs.CastlingRights[Black][KingsideCastle] = true
 			case 'q':
 				gs.CastlingRights[Black][QueensideCastle] = true
+			case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H':
+				rookFile := int(char - 'A')
+				gs.Chess960Mode = true
+				if rookFile > gs.CastlingConfig.KingFile[White] {
+					gs.CastlingRights[White][KingsideCastle] = true
+					gs.CastlingConfig.RookFile[White][KingsideCastle] = rookFile
+				} else {
+					gs.CastlingRights[White][QueensideCastle] = true
+					gs.CastlingConfig.RookFile[White][QueensideCastle] = rookFile
+				}
+			case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h':
+				rookFile := int(char - 'a')
+				gs.Chess960Mode = true
+				if rookFile > gs.CastlingConfig.KingFile[Black] {
+					gs.CastlingRights[Black][KingsideCastle] = true
+					gs.CastlingConfig.RookFile[Black][KingsideCastle] = rookFile
+				} else {
+					gs.CastlingRights[Black][QueensideCastle] = true
+					gs.CastlingConfig.RookFile[Black][QueensideCastle] = rookFile
+				}
 			default:
 				return fmt.Errorf("invalid castling rights in FEN: %c", char)
 			}
@@ -176,6 +253,7 @@ func (gs *GameState) FromFEN(fen string) error {
 		return fmt.Errorf("invalid fullmove number in FEN: %s", parts[5])
 	}
 	gs.FullmoveNumber = fullmove
+	gs.ZobristHash = computeZobristHash(gs)
 
 	return nil
 }
