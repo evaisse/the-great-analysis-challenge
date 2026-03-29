@@ -1,0 +1,9 @@
+# Go PGN variation navigation script
+new
+pgn load /repo/test/fixtures/pgn/variation_with_comments.pgn
+pgn variation enter
+pgn moves
+pgn comment "counterplay"
+pgn show
+pgn variation exit
+pgn show
