@@ -35,7 +35,7 @@ jobs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -76,7 +76,7 @@ jobs:
       total-count: ${{ steps.verify.outputs.total_count }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -103,7 +103,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -141,11 +141,11 @@ jobs:
           echo "value=${profile}" >> "$GITHUB_OUTPUT"
           echo "Using stress profile ${profile}"
 
-      - name: Run v2 stress benchmark (non-blocking)
+      - name: Run v2 stress benchmark (best-effort)
         continue-on-error: true
         run: ./workflow benchmark-stress ${{ matrix.engine }} --track v2-full --profile ${{ steps.stress-profile.outputs.value }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }}
 
-      - name: Run concurrency benchmark (non-blocking)
+      - name: Run concurrency benchmark (best-effort)
         continue-on-error: true
         run: ./workflow benchmark-concurrency ${{ matrix.engine }} --profile ${{ steps.stress-profile.outputs.value }}
 
@@ -171,7 +171,7 @@ jobs:
       build-error-languages: ${{ steps.update.outputs.build-error-languages }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -191,7 +191,7 @@ jobs:
       - name: Combine benchmark results
         run: ./workflow combine-results --expected all
 
-      - name: Validate benchmark results
+      - name: Validate benchmark results (informational)
         run: ./workflow validate-results --expected all || true
 
       - name: Update README status table
@@ -205,7 +205,7 @@ jobs:
     if: needs.combine-results.outputs.readme-changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
