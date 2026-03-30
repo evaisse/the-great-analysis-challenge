@@ -46,10 +46,12 @@ const DEFAULT_PROFILE_SPECS = {
 
 const CHECKSUM_RE = /^[0-9a-f]{8,16}$/;
 
-function extractConcurrencyPayload(output: string): [boolean, Record<string, any>, string] {
+export function extractConcurrencyPayload(output: string): [boolean, Record<string, any>, string] {
+  const marker = "CONCURRENCY:";
   for (const line of output.split("\n")) {
-    if (line.trim().toUpperCase().startsWith("CONCURRENCY:")) {
-      const payloadRaw = line.split(":", 2)[1]?.trim() ?? "";
+    const trimmed = line.trim();
+    if (trimmed.toUpperCase().startsWith(marker)) {
+      const payloadRaw = trimmed.slice(marker.length).trim();
       try {
         return [true, JSON.parse(payloadRaw), ""];
       } catch (error) {
