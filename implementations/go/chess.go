@@ -117,6 +117,13 @@ func NewChessEngine() *ChessEngine {
 	}
 }
 
+func (engine *ChessEngine) configureAITraceMetrics() {
+	if engine.ai == nil {
+		return
+	}
+	engine.ai.SetTraceMetricsEnabled(engine.traceEnabled)
+}
+
 func (engine *ChessEngine) Run() {
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -298,6 +305,7 @@ func parseUCICheckValue(raw string) (bool, bool) {
 func (engine *ChessEngine) handleNew() {
 	engine.gameState = NewGameState()
 	engine.ai = NewAI()
+	engine.configureAITraceMetrics()
 	engine.pgnPath = ""
 	engine.pgnGame = newPgnGameFromHistory(nil, pgnStartFEN, "current-game")
 	engine.pgnVariationStack = nil
@@ -418,6 +426,7 @@ func (engine *ChessEngine) handleFEN(fen string) {
 	} else {
 		engine.gameState = gs
 		engine.ai = NewAI()
+		engine.configureAITraceMetrics()
 		startFEN := engine.gameState.ToFEN()
 		engine.pgnPath = ""
 		engine.pgnGame = newPgnGameFromHistory(nil, startFEN, "current-game")
@@ -1553,6 +1562,7 @@ func (engine *ChessEngine) handleSetOption(args []string) {
 func (engine *ChessEngine) handleUCINewGame() {
 	engine.gameState = NewGameState()
 	engine.ai = NewAI()
+	engine.configureAITraceMetrics()
 	engine.pgnPath = ""
 	engine.pgnGame = newPgnGameFromHistory(nil, pgnStartFEN, "current-game")
 	engine.pgnVariationStack = nil
@@ -1575,6 +1585,7 @@ func (engine *ChessEngine) handlePosition(args []string) {
 	case "startpos":
 		engine.gameState = NewGameState()
 		engine.ai = NewAI()
+		engine.configureAITraceMetrics()
 		i = 1
 	case "fen":
 		i = 1
@@ -1784,11 +1795,13 @@ func (engine *ChessEngine) handleTrace(args []string) {
 	switch strings.ToLower(args[0]) {
 	case "on":
 		engine.traceEnabled = true
+		engine.configureAITraceMetrics()
 		engine.trace("trace", "enabled")
 		fmt.Printf("TRACE: enabled=true; level=%s; events=%d\n", engine.traceLevel, len(engine.traceEvents))
 	case "off":
 		engine.trace("trace", "disabled")
 		engine.traceEnabled = false
+		engine.configureAITraceMetrics()
 		fmt.Printf("TRACE: enabled=false; level=%s; events=%d\n", engine.traceLevel, len(engine.traceEvents))
 	case "level":
 		if len(args) < 2 || strings.TrimSpace(args[1]) == "" {
@@ -2559,10 +2572,12 @@ func (engine *ChessEngine) syncRuntimeToPGNCursor() {
 	if err != nil {
 		engine.gameState = NewGameState()
 		engine.ai = NewAI()
+		engine.configureAITraceMetrics()
 		return
 	}
 	engine.gameState = gs
 	engine.ai = NewAI()
+	engine.configureAITraceMetrics()
 	line := make([]*PgnMoveNode, 0)
 	seq := engine.pgnGame.Moves
 	for _, entry := range engine.pgnVariationStack {

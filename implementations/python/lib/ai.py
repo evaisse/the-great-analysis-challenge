@@ -100,9 +100,10 @@ class AI:
         [20, 30, 10,  0,  0, 10, 30, 20]
     ]
     
-    def __init__(self, board: Board, move_generator: MoveGenerator):
+    def __init__(self, board: Board, move_generator: MoveGenerator, trace_metrics_enabled: bool = False):
         self.board = board
         self.move_generator = move_generator
+        self._trace_metrics_enabled = trace_metrics_enabled
         self._tt: Dict[int, TTEntry] = {}
         self._deadline: Optional[float] = None
         self._timed_out = False
@@ -128,6 +129,9 @@ class AI:
         """Cooperative stop flag for ongoing search."""
         self._stop_requested = True
 
+    def set_trace_metrics_enabled(self, enabled: bool) -> None:
+        self._trace_metrics_enabled = enabled
+
     def search(
         self,
         max_depth: int,
@@ -138,17 +142,6 @@ class AI:
             max_depth = 1
         if max_depth > 5:
             max_depth = 5
-
-        legal_moves = self.move_generator.generate_legal_moves()
-        if not legal_moves:
-            self._last_trace_snapshot = self.trace_snapshot(
-                elapsed_ms=0,
-                best_move=None,
-                best_score=0,
-                depth_reached=0,
-                timed_out=False,
-            )
-            return None, 0, 0, 0, False, 0, 0, 0, 0, 0
 
         self._timed_out = False
         self._stop_requested = False
@@ -162,8 +155,21 @@ class AI:
         self._move_gen_total_moves = 0
         self._eval_time_ns = 0
         self._depth_summaries = []
+        self._last_trace_snapshot = None
         start = time.monotonic()
         self._deadline = start + (movetime_ms / 1000.0) if movetime_ms > 0 else None
+
+        legal_moves = self._generate_legal_moves_timed()
+        if not legal_moves:
+            elapsed_ms = int((time.monotonic() - start) * 1000)
+            self._last_trace_snapshot = self.trace_snapshot(
+                elapsed_ms=elapsed_ms,
+                best_move=None,
+                best_score=0,
+                depth_reached=0,
+                timed_out=False,
+            )
+            return None, 0, 0, elapsed_ms, False, 0, 0, 0, 0, 0
 
         best_move = legal_moves[0]
         best_score = self.evaluate_position()
@@ -364,7 +370,7 @@ class AI:
     
     def evaluate_position(self) -> int:
         """Evaluate the current position."""
-        start_ns = time.perf_counter_ns()
+        start_ns = time.perf_counter_ns() if self._trace_metrics_enabled else 0
         self._eval_calls += 1
         score = 0
         
@@ -382,11 +388,15 @@ class AI:
         # Add positional bonuses
         score += self._evaluate_position_factors()
 
-        self._eval_time_ns += time.perf_counter_ns() - start_ns
+        if self._trace_metrics_enabled:
+            self._eval_time_ns += time.perf_counter_ns() - start_ns
         
         return score
 
     def _generate_legal_moves_timed(self) -> List[Move]:
+        if not self._trace_metrics_enabled:
+            return self.move_generator.generate_legal_moves()
+
         start_ns = time.perf_counter_ns()
         moves = self.move_generator.generate_legal_moves()
         self._move_gen_calls += 1

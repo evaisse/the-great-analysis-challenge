@@ -99,6 +99,7 @@ type AI struct {
 	moveGenTimeNS  int64
 	moveGenTotal   int
 	evalTimeNS     int64
+	traceMetricsOn bool
 	tt             map[uint64]TTEntry
 	deadline       time.Time
 	timedOut       bool
@@ -183,6 +184,10 @@ func (ai *AI) FindBestMove(gs *GameState, depth int) Move {
 	return result.Move
 }
 
+func (ai *AI) SetTraceMetricsEnabled(enabled bool) {
+	ai.traceMetricsOn = enabled
+}
+
 func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 	ai.nodesEvaluated = 0
 	ai.evalCalls = 0
@@ -210,13 +215,14 @@ func (ai *AI) Search(gs *GameState, depth int, movetimeMs int) SearchResult {
 
 	legalMoves := ai.generateLegalMovesTimed(gs)
 	if len(legalMoves) == 0 {
-		ai.lastSnapshot = ai.buildTraceSnapshot(0, "", DRAW_VALUE, 0, false)
+		elapsedMS := time.Since(start).Milliseconds()
+		ai.lastSnapshot = ai.buildTraceSnapshot(elapsedMS, "", DRAW_VALUE, 0, false)
 		return SearchResult{
 			Move:        Move{},
 			Score:       DRAW_VALUE,
 			Depth:       0,
 			TimedOut:    false,
-			ElapsedMS:   time.Since(start).Milliseconds(),
+			ElapsedMS:   elapsedMS,
 			Nodes:       0,
 			EvalCalls:   0,
 			TTHits:      0,
@@ -556,7 +562,10 @@ func (ai *AI) minimax(gs *GameState, depth int, alpha, beta int, maximizingPlaye
 }
 
 func (ai *AI) evaluate(gs *GameState) int {
-	start := time.Now()
+	var start time.Time
+	if ai.traceMetricsOn {
+		start = time.Now()
+	}
 	ai.evalCalls++
 	score := 0
 
@@ -581,38 +590,43 @@ func (ai *AI) evaluate(gs *GameState) int {
 
 	// Count white moves
 	if gs.ActiveColor == White {
-		whiteMoves = len(ai.generateLegalMovesTimed(gs))
+		whiteMoves = len(gs.GenerateLegalMoves())
 	} else {
 		// Switch to white temporarily to count moves
 		tempState := gs.Clone()
 		tempState.ActiveColor = White
-		whiteMoves = len(ai.generateLegalMovesTimed(tempState))
+		whiteMoves = len(tempState.GenerateLegalMoves())
 	}
 
 	// Count black moves
 	if gs.ActiveColor == Black {
-		blackMoves = len(ai.generateLegalMovesTimed(gs))
+		blackMoves = len(gs.GenerateLegalMoves())
 	} else {
 		// Switch to black temporarily to count moves
 		tempState := gs.Clone()
 		tempState.ActiveColor = Black
-		blackMoves = len(ai.generateLegalMovesTimed(tempState))
+		blackMoves = len(tempState.GenerateLegalMoves())
 	}
 
 	// Mobility bonus (each legal move is worth a small amount)
 	score += (whiteMoves - blackMoves) * 3
 
 	// Return score from current player's perspective
-	if gs.ActiveColor == White {
+	if ai.traceMetricsOn {
 		ai.evalTimeNS += time.Since(start).Nanoseconds()
+	}
+	if gs.ActiveColor == White {
 		return score
 	} else {
-		ai.evalTimeNS += time.Since(start).Nanoseconds()
 		return -score
 	}
 }
 
 func (ai *AI) generateLegalMovesTimed(gs *GameState) []Move {
+	if !ai.traceMetricsOn {
+		return gs.GenerateLegalMoves()
+	}
+
 	start := time.Now()
 	moves := gs.GenerateLegalMoves()
 	ai.moveGenCalls++

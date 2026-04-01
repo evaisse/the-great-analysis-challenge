@@ -79,7 +79,7 @@ class ChessEngine:
         self.board = Board()
         self.move_generator = MoveGenerator(self.board)
         self.fen_parser = FenParser(self.board)
-        self.ai = AI(self.board, self.move_generator)
+        self.ai = AI(self.board, self.move_generator, trace_metrics_enabled=False)
         self.perft = Perft(self.board, self.move_generator)
         self.move_history = []
         self._go_infinite = False
@@ -1021,7 +1021,7 @@ class ChessEngine:
         self.board = Board()
         self.move_generator = MoveGenerator(self.board)
         self.fen_parser = FenParser(self.board)
-        self.ai = AI(self.board, self.move_generator)
+        self.ai = AI(self.board, self.move_generator, trace_metrics_enabled=self._trace_enabled)
         self.perft = Perft(self.board, self.move_generator)
         self.move_history = []
         self.fen_parser.parse(fen)
@@ -1093,6 +1093,7 @@ class ChessEngine:
         subcommand = args[0].lower()
         if subcommand == 'on':
             self._trace_enabled = True
+            self.ai.set_trace_metrics_enabled(True)
             self._trace('trace', 'enabled')
             print(f'TRACE: enabled=true; level={self._trace_level}; events={len(self._trace_events)}')
             return
@@ -1100,6 +1101,7 @@ class ChessEngine:
         if subcommand == 'off':
             self._trace('trace', 'disabled')
             self._trace_enabled = False
+            self.ai.set_trace_metrics_enabled(False)
             print(f'TRACE: enabled=false; level={self._trace_level}; events={len(self._trace_events)}')
             return
 
@@ -2009,7 +2011,7 @@ Available commands:
         self.fen_parser = FenParser(self.board)
         if start_fen != START_FEN:
             self.fen_parser.parse(start_fen)
-        self.ai = AI(self.board, self.move_generator)
+        self.ai = AI(self.board, self.move_generator, trace_metrics_enabled=self._trace_enabled)
         self.perft = Perft(self.board, self.move_generator)
         self.move_history = []
 
