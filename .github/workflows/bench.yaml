@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [detect-changes, validation]
     if: needs.detect-changes.outputs.has-changes == 'true'
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     strategy:
       fail-fast: false
@@ -119,7 +119,10 @@ jobs:
       - name: Resolve benchmark timeout
         id: benchmark-timeout
         run: |
-          timeout_seconds=300
+          timeout_seconds=180
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            timeout_seconds=240
+          fi
           echo "seconds=${timeout_seconds}" >> "$GITHUB_OUTPUT"
           echo "Using timeout ${timeout_seconds}s for ${{ matrix.engine }}"
 
@@ -147,7 +150,7 @@ jobs:
 
       - name: Run concurrency benchmark (best-effort)
         continue-on-error: true
-        run: ./workflow benchmark-concurrency ${{ matrix.engine }} --profile ${{ steps.stress-profile.outputs.value }}
+        run: ./workflow benchmark-concurrency ${{ matrix.engine }} --profile ${{ steps.stress-profile.outputs.value }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }}
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

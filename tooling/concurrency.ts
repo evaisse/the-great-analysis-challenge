@@ -144,6 +144,17 @@ export interface ConcurrencyOptions {
   skipBuild?: boolean;
   fixture?: string;
   output?: string;
+  timeout?: number;
+}
+
+export function applyConcurrencyTimeoutCap(profileSpec: Record<string, any>, timeout?: number): Record<string, any> {
+  if (!timeout || !Number.isFinite(timeout) || timeout <= 0) {
+    return profileSpec;
+  }
+  return {
+    ...profileSpec,
+    timeout_seconds: Math.min(Number(profileSpec.timeout_seconds ?? timeout), Number(timeout)),
+  };
 }
 
 export async function runConcurrencyHarness(options: ConcurrencyOptions): Promise<number> {
@@ -151,7 +162,7 @@ export async function runConcurrencyHarness(options: ConcurrencyOptions): Promis
   const profileSpecs = options.fixture
     ? (await readJsonFile<Record<string, any>>(resolve(options.fixture))).profiles ?? DEFAULT_PROFILE_SPECS
     : DEFAULT_PROFILE_SPECS;
-  const profileSpec = profileSpecs[profile] ?? DEFAULT_PROFILE_SPECS[profile];
+  const profileSpec = applyConcurrencyTimeoutCap(profileSpecs[profile] ?? DEFAULT_PROFILE_SPECS[profile], options.timeout);
   const implementations = options.impl
     ? [resolveImplPath(options.impl)]
     : (await import("./shared.ts")).discoverImplementationDirs(resolve(options.dir ?? join(process.cwd(), "implementations")));
