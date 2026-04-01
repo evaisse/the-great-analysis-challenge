@@ -5,18 +5,20 @@ import { copyFileSync } from "node:fs";
 import {
   IMPLEMENTATIONS_DIR,
   REPO_ROOT,
+  collectImplMetricsFromMetadata,
+  ensureDir,
   discoverImplementationDirs,
   getMetadata,
   normalizeFeatureName,
-  parseJsonOrNull,
   readJsonFile,
+  removePath,
   runCommand,
   writeGithubOutput,
   writeJsonFile,
 } from "./shared.ts";
+import { collectSemanticMetrics, toSemanticMetricsSubset } from "./semantic-tokens.ts";
 import { runPerformanceBenchmarks } from "./performance.ts";
 import { runConcurrencyHarness } from "./concurrency.ts";
-import { runTestHarness } from "./chess.ts";
 
 export async function detectChanges(
   eventName: string,
@@ -86,34 +88,217 @@ export async function generateMatrix(changedImplementations = "all"): Promise<Re
   return matrix;
 }
 
-export async function combineResults(): Promise<boolean> {
-  console.log("=== Combining Benchmark Results ===");
-  await Bun.$`mkdir -p reports`.quiet();
-  const glob = new Bun.Glob("benchmark_artifacts/**/*.{txt,json}");
-  const allResults: Record<string, any>[] = [];
+function isConcurrencyReportFile(fileName: string): boolean {
+  return fileName.endsWith("-concurrency.json");
+}
 
-  for await (const file of glob.scan({ cwd: REPO_ROOT, onlyFiles: true })) {
-    const src = join(REPO_ROOT, file);
-    const dest = join(REPO_ROOT, "reports", basename(file));
+async function resolveExpectedImplementations(expectedImplementations?: string[]): Promise<Set<string>> {
+  const expectedSet = new Set(
+    (expectedImplementations ?? [])
+      .map((item) => basename(String(item).trim()).toLowerCase())
+      .filter(Boolean),
+  );
+
+  if (expectedSet.has("all")) {
+    expectedSet.clear();
+    for (const implPath of await discoverImplementationDirs(IMPLEMENTATIONS_DIR)) {
+      expectedSet.add(basename(implPath).toLowerCase());
+    }
+  }
+
+  return expectedSet;
+}
+
+async function clearGeneratedReportFiles(reportDir: string): Promise<void> {
+  if (!existsSync(reportDir)) {
+    return;
+  }
+
+  const glob = new Bun.Glob("*.{json,txt}");
+  for await (const file of glob.scan({ cwd: reportDir, onlyFiles: true })) {
+    await removePath(join(reportDir, file));
+  }
+}
+
+async function buildSyntheticBenchmarkError(implName: string, reason: string): Promise<Record<string, any>> {
+  const implPath = join(IMPLEMENTATIONS_DIR, implName);
+  const metadata = await getMetadata(implPath);
+  let size = { source_loc: 0, source_files: 0 };
+  let metrics: Record<string, unknown> = {
+    tokens_count: null,
+    metric_version: null,
+  };
+  let semanticMetrics: Record<string, unknown> | undefined;
+
+  try {
+    const localMetrics = await collectImplMetricsFromMetadata(implPath, metadata);
+    size = {
+      source_loc: Number(localMetrics.source_loc ?? 0),
+      source_files: Number(localMetrics.source_files ?? 0),
+    };
+    metrics = {
+      tokens_count: localMetrics.tokens_count ?? null,
+      metric_version: localMetrics.metric_version ?? null,
+    };
+  } catch (error) {
+    console.log(`⚠️ ${implName}: unable to compute local metrics for synthetic report: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  try {
+    const semantic = await collectSemanticMetrics(implPath);
+    if (semantic) {
+      semanticMetrics = toSemanticMetricsSubset(semantic);
+    }
+  } catch (error) {
+    console.log(`⚠️ ${implName}: unable to compute semantic metrics for synthetic report: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  return {
+    language: implName,
+    path: implPath,
+    metadata,
+    track: "v2-full",
+    profile: "quick",
+    report_status: "missing",
+    timings: {
+      image_build_seconds: null,
+      build_seconds: null,
+      analyze_seconds: null,
+      test_seconds: null,
+      test_chess_engine_seconds: null,
+    },
+    memory: {},
+    size,
+    metrics,
+    normalized: {},
+    docker: {},
+    task_results: {
+      make_build: false,
+      make_analyze: false,
+      make_test: false,
+      make_test_chess_engine: false,
+    },
+    scores: {},
+    test_results: {
+      passed: [],
+      failed: ["make_build", "make_analyze", "make_test", "make_test_chess_engine"],
+    },
+    errors: [reason],
+    status: "failed",
+    ...(semanticMetrics ? { semantic_metrics: semanticMetrics } : {}),
+  };
+}
+
+async function writeSyntheticBenchmarkErrorReport(reportsDir: string, implName: string, reason: string): Promise<Record<string, any>> {
+  const synthetic = await buildSyntheticBenchmarkError(implName, reason);
+  await writeJsonFile(join(reportsDir, `${implName}.json`), synthetic);
+  return synthetic;
+}
+
+async function normalizeInvalidBenchmarkReport(reportFile: string, data: any): Promise<any> {
+  const [isValid, issues] = await validateResultJson(reportFile);
+  if (isValid) {
+    return data;
+  }
+
+  const normalizeOne = (item: any): any => {
+    const normalized = typeof item === "object" && item ? { ...item } : { language: basename(reportFile, ".json") };
+    normalized.report_status = "failed";
+    const existingErrors = Array.isArray(normalized.errors) ? normalized.errors.filter((entry: unknown) => typeof entry === "string") : [];
+    const validationErrors = issues.map((issue) => `build error: ${issue}`);
+    normalized.errors = [...new Set([...existingErrors, ...validationErrors])];
+    return normalized;
+  };
+
+  const normalized = Array.isArray(data) ? data.map((item) => normalizeOne(item)) : normalizeOne(data);
+  await writeJsonFile(reportFile, normalized);
+  return normalized;
+}
+
+export async function combineResults(
+  options: { artifactsDir?: string; reportsDir?: string; expectedImplementations?: string[] } = {},
+): Promise<boolean> {
+  console.log("=== Combining Benchmark Results ===");
+  const artifactsDir = options.artifactsDir ?? join(REPO_ROOT, "benchmark_artifacts");
+  const reportsDir = options.reportsDir ?? join(REPO_ROOT, "reports");
+
+  if (!existsSync(artifactsDir)) {
+    console.log(`❌ Benchmark artifacts directory not found: ${artifactsDir}`);
+    return false;
+  }
+
+  await ensureDir(reportsDir);
+  await clearGeneratedReportFiles(reportsDir);
+
+  const glob = new Bun.Glob("**/*.{txt,json}");
+  const allResults: Record<string, any>[] = [];
+  let copiedBenchmarkJsonCount = 0;
+
+  for await (const file of glob.scan({ cwd: artifactsDir, onlyFiles: true })) {
+    const src = join(artifactsDir, file);
+    const destName = basename(file);
+    const dest = join(reportsDir, destName);
     copyFileSync(src, dest);
+    if (destName.endsWith(".json") && destName !== "performance_data.json" && !isConcurrencyReportFile(destName)) {
+      copiedBenchmarkJsonCount += 1;
+    }
+  }
+
+  if (copiedBenchmarkJsonCount === 0) {
+    console.log("⚠️ No benchmark result JSON artifacts were copied");
+    const expectedSet = await resolveExpectedImplementations(options.expectedImplementations);
+    if (expectedSet.size === 0) {
+      return false;
+    }
+    for (const implName of [...expectedSet].sort()) {
+      const synthetic = await writeSyntheticBenchmarkErrorReport(reportsDir, implName, "build error: benchmark report missing");
+      allResults.push(synthetic);
+    }
+    await writeJsonFile(join(reportsDir, "performance_data.json"), allResults);
+    console.log(`Created ${allResults.length} synthetic benchmark error report(s)`);
+    console.log("✅ Benchmark results combined");
+    return true;
+  }
+
+  const expectedSet = await resolveExpectedImplementations(options.expectedImplementations);
+  if (expectedSet.size > 0) {
+    const actualSet = new Set<string>();
+    const reportsGlob = new Bun.Glob("*.json");
+    for await (const file of reportsGlob.scan({ cwd: reportsDir, onlyFiles: true })) {
+      if (file !== "performance_data.json" && !isConcurrencyReportFile(file)) {
+        actualSet.add(basename(file, ".json").toLowerCase());
+      }
+    }
+    const missing = [...expectedSet].filter((impl) => !actualSet.has(impl)).sort();
+    if (missing.length > 0) {
+      console.log(`⚠️ Missing expected benchmark artifacts: ${missing.join(", ")}`);
+      for (const implName of missing) {
+        await writeSyntheticBenchmarkErrorReport(reportsDir, implName, "build error: benchmark report missing");
+      }
+    }
   }
 
   const reportsGlob = new Bun.Glob("*.json");
-  for await (const file of reportsGlob.scan({ cwd: join(REPO_ROOT, "reports"), onlyFiles: true })) {
-    if (file.endsWith("performance_data.json")) continue;
+  for await (const file of reportsGlob.scan({ cwd: reportsDir, onlyFiles: true })) {
+    if (file === "performance_data.json" || isConcurrencyReportFile(file)) continue;
     try {
-      const data = await readJsonFile<any>(join(REPO_ROOT, "reports", file));
-      if (Array.isArray(data)) allResults.push(...data);
-      else allResults.push(data);
+      const reportFile = join(reportsDir, file);
+      const data = await readJsonFile<any>(reportFile);
+      const normalized = await normalizeInvalidBenchmarkReport(reportFile, data);
+      if (Array.isArray(normalized)) allResults.push(...normalized);
+      else allResults.push(normalized);
     } catch (error) {
       console.log(`Error reading ${file}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  if (allResults.length > 0) {
-    await writeJsonFile(join(REPO_ROOT, "reports", "performance_data.json"), allResults);
-    console.log(`Combined ${allResults.length} implementation results`);
+  if (allResults.length === 0) {
+    console.log("❌ No benchmark result payloads were available to combine");
+    return false;
   }
+
+  await writeJsonFile(join(reportsDir, "performance_data.json"), allResults);
+  console.log(`Combined ${allResults.length} implementation results`);
 
   console.log("✅ Benchmark results combined");
   return true;
@@ -194,7 +379,10 @@ export async function validateResultJson(resultFile: string): Promise<[boolean, 
   return [issues.length === 0, issues, warnings];
 }
 
-export async function validateAllResults(benchmarkDir = join(REPO_ROOT, "reports")): Promise<number> {
+export async function validateAllResults(
+  benchmarkDir = join(REPO_ROOT, "reports"),
+  expectedImplementations?: string[],
+): Promise<number> {
   console.log("=".repeat(60));
   console.log("Validating Benchmark Result Files");
   console.log("=".repeat(60));
@@ -208,14 +396,23 @@ export async function validateAllResults(benchmarkDir = join(REPO_ROOT, "reports
   const glob = new Bun.Glob("*.json");
   const files: string[] = [];
   for await (const file of glob.scan({ cwd: benchmarkDir, onlyFiles: true })) {
-    if (!file.endsWith("performance_data.json")) {
+    if (file !== "performance_data.json" && !isConcurrencyReportFile(file)) {
       files.push(join(benchmarkDir, file));
     }
   }
+  const expectedSet = await resolveExpectedImplementations(expectedImplementations);
   if (files.length === 0) {
     console.log("⚠️  No result files found in reports/");
     console.log("   This is acceptable if no benchmarks have been run yet.");
     return 0;
+  }
+
+  if (expectedSet.size > 0) {
+    const actualSet = new Set(files.map((file) => basename(file, ".json").toLowerCase()));
+    const missing = [...expectedSet].filter((impl) => !actualSet.has(impl)).sort();
+    if (missing.length > 0) {
+      console.log(`⚠️ Missing benchmark result files: ${missing.join(", ")}`);
+    }
   }
 
   let allValid = true;

@@ -59,6 +59,7 @@ export interface PhaseExecution {
   stderr: string;
   skipped: boolean;
   skipReason: string | null;
+  treatAsSuccessForValidation?: boolean;
 }
 
 export interface RunCommandOptions {
@@ -481,6 +482,7 @@ export async function executePhase(
       stderr: "",
       skipped: true,
       skipReason: `Skipping build phase for ${implName} (metadata benchmark/runtime flag)`,
+      treatAsSuccessForValidation: true,
     };
   }
 
@@ -511,6 +513,7 @@ export async function executePhase(
     stderr: result.stderr,
     skipped: false,
     skipReason: null,
+    treatAsSuccessForValidation: false,
   };
 }
 
