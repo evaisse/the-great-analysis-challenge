@@ -537,32 +537,32 @@ func parsePGNSequence(tokens []pgnToken, idx *int, gs *GameState, startFEN strin
 		case "RPAREN":
 			return variation, result, nil
 		case "RESULT":
-			*idx++
+			*idx += 1
 			if isRoot {
 				return variation, tok.Value, nil
 			}
 			variation.Result = tok.Value
 			return variation, tok.Value, nil
 		case "MOVE_NO":
-			*idx++
+			*idx += 1
 		case "COMMENT":
 			if len(variation.Moves) == 0 {
 				variation.LeadingComments = append(variation.LeadingComments, tok.Value)
 			} else {
 				variation.Moves[len(variation.Moves)-1].Comments = append(variation.Moves[len(variation.Moves)-1].Comments, tok.Value)
 			}
-			*idx++
+			*idx += 1
 		case "NAG":
 			if len(variation.Moves) == 0 {
 				return nil, "", fmt.Errorf("NAG without move")
 			}
 			variation.Moves[len(variation.Moves)-1].NAGs = append(variation.Moves[len(variation.Moves)-1].NAGs, tok.Value)
-			*idx++
+			*idx += 1
 		case "LPAREN":
 			if len(variation.Moves) == 0 {
 				return nil, "", fmt.Errorf("variation without anchor move")
 			}
-			*idx++
+			*idx += 1
 			anchor := variation.Moves[len(variation.Moves)-1]
 			variationGS, err := gameStateFromFEN(anchor.FenBefore)
 			if err != nil {
@@ -597,7 +597,7 @@ func parsePGNSequence(tokens []pgnToken, idx *int, gs *GameState, startFEN strin
 			}
 			gs.MakeMove(move)
 			variation.Moves = append(variation.Moves, &PgnMoveNode{SAN: san, Move: cloneMove(move), FenBefore: fenBefore, FenAfter: gs.ToFEN()})
-			*idx++
+			*idx += 1
 		default:
 			return nil, "", fmt.Errorf("unexpected PGN token: %s", tok.Kind)
 		}

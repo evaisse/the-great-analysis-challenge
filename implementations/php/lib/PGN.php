@@ -251,7 +251,7 @@ class PgnSupport {
 
         $initialFen = $tags['FEN'] ?? self::START_FEN;
         [$board, $fenParser] = self::stateFromFen($initialFen);
-        [$mainline, $result] = self::parseSequence($tokens, $index, $board, $fenParser, $initialFen, true);
+        [$mainline, $result] = self::parseSequence($tokens, $index, $board, $fenParser, $initialFen);
 
         if ($result === '*' && isset($tags['Result'])) {
             $result = $tags['Result'];
@@ -488,7 +488,7 @@ class PgnSupport {
     }
 
     /** @return array{0:PgnVariation,1:string} */
-    private static function parseSequence(array $tokens, int &$index, Board $board, FenParser $fenParser, string $startFen, bool $isRoot): array {
+    private static function parseSequence(array $tokens, int &$index, Board $board, FenParser $fenParser, string $startFen): array {
         $variation = new PgnVariation($startFen);
         $result = '*';
         $count = count($tokens);
@@ -531,7 +531,7 @@ class PgnSupport {
                 $index++;
                 $anchor = $variation->moves[count($variation->moves) - 1];
                 [$variationBoard, $variationParser] = self::stateFromFen($anchor->fen_before);
-                [$child, $variationResult] = self::parseSequence($tokens, $index, $variationBoard, $variationParser, $anchor->fen_before, false);
+                [$child, $variationResult] = self::parseSequence($tokens, $index, $variationBoard, $variationParser, $anchor->fen_before);
                 if ($index >= $count || $tokens[$index]['kind'] !== 'RPAREN') {
                     throw new \RuntimeException('unterminated PGN variation');
                 }
