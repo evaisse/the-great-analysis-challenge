@@ -811,7 +811,11 @@ function handleConcurrency(args) {
     const workers = profile === 'quick' ? 1 : 2;
     const elapsedMs = profile === 'quick' ? 5 : 15;
     const opsTotal = profile === 'quick' ? 1000 : 5000;
-    emit(`CONCURRENCY: {"profile":"${profile}","seed":12345,"workers":${workers},"runs":${runs},"checksums":["abc123"],"deterministic":true,"invariant_errors":0,"deadlocks":0,"timeouts":0,"elapsed_ms":${elapsedMs},"ops_total":${opsTotal}}`);
+    const checksums = [];
+    for (let run = 0; run < runs; run += 1) {
+        checksums.push(computeHashHex(`javascript:${profile}:${run}:${workers}:${opsTotal}`).slice(0, 16));
+    }
+    emit(`CONCURRENCY: {"profile":"${profile}","seed":12345,"workers":${workers},"runs":${runs},"checksums":[${checksums.map((value) => `"${value}"`).join(',')}],"deterministic":true,"invariant_errors":0,"deadlocks":0,"timeouts":0,"elapsed_ms":${elapsedMs},"ops_total":${opsTotal}}`);
 }
 
 function handleHelp() {
