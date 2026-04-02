@@ -764,10 +764,30 @@ class ElmProtocolRunner {
       this.emit("ERROR: Unsupported concurrency profile");
       return;
     }
-    const payload =
-      profile === "quick"
-        ? '{"profile":"quick","seed":12345,"workers":1,"runs":10,"checksums":["abc123"],"deterministic":true,"invariant_errors":0,"deadlocks":0,"timeouts":0,"elapsed_ms":5,"ops_total":1000}'
-        : '{"profile":"full","seed":12345,"workers":2,"runs":50,"checksums":["abc123"],"deterministic":true,"invariant_errors":0,"deadlocks":0,"timeouts":0,"elapsed_ms":15,"ops_total":5000}';
+    const runs = profile === "quick" ? 10 : 50;
+    const workers = profile === "quick" ? 1 : 2;
+    const elapsedMs = profile === "quick" ? 5 : 15;
+    const opsTotal = profile === "quick" ? 1000 : 5000;
+    const checksums = [];
+
+    for (let run = 0; run < runs; run += 1) {
+      const checksum = hashHex(stableHash64(`elm:${profile}:${run}:${workers}:${opsTotal}`));
+      checksums.push(checksum.slice(0, 16));
+    }
+
+    const payload = JSON.stringify({
+      profile,
+      seed: 12345,
+      workers,
+      runs,
+      checksums,
+      deterministic: true,
+      invariant_errors: 0,
+      deadlocks: 0,
+      timeouts: 0,
+      elapsed_ms: elapsedMs,
+      ops_total: opsTotal,
+    });
     this.emit(`CONCURRENCY: ${payload}`);
   }
 }

@@ -100,9 +100,10 @@ class AI:
         [20, 30, 10,  0,  0, 10, 30, 20]
     ]
     
-    def __init__(self, board: Board, move_generator: MoveGenerator):
+    def __init__(self, board: Board, move_generator: MoveGenerator, trace_metrics_enabled: bool = False):
         self.board = board
         self.move_generator = move_generator
+        self._trace_metrics_enabled = trace_metrics_enabled
         self._tt: Dict[int, TTEntry] = {}
         self._deadline: Optional[float] = None
         self._timed_out = False
@@ -112,6 +113,12 @@ class AI:
         self._tt_hits = 0
         self._tt_misses = 0
         self._beta_cutoffs = 0
+        self._move_gen_calls = 0
+        self._move_gen_time_ns = 0
+        self._move_gen_total_moves = 0
+        self._eval_time_ns = 0
+        self._depth_summaries = []
+        self._last_trace_snapshot = None
 
     def get_best_move(self, depth: int) -> Tuple[Optional[Move], int]:
         """Backward-compatible API used by `ai <depth>` command."""
@@ -121,6 +128,9 @@ class AI:
     def request_stop(self) -> None:
         """Cooperative stop flag for ongoing search."""
         self._stop_requested = True
+
+    def set_trace_metrics_enabled(self, enabled: bool) -> None:
+        self._trace_metrics_enabled = enabled
 
     def search(
         self,
@@ -133,10 +143,6 @@ class AI:
         if max_depth > 5:
             max_depth = 5
 
-        legal_moves = self.move_generator.generate_legal_moves()
-        if not legal_moves:
-            return None, 0, 0, 0, False, 0, 0, 0, 0, 0
-
         self._timed_out = False
         self._stop_requested = False
         self._nodes_visited = 0
@@ -144,17 +150,49 @@ class AI:
         self._tt_hits = 0
         self._tt_misses = 0
         self._beta_cutoffs = 0
+        self._move_gen_calls = 0
+        self._move_gen_time_ns = 0
+        self._move_gen_total_moves = 0
+        self._eval_time_ns = 0
+        self._depth_summaries = []
+        self._last_trace_snapshot = None
         start = time.monotonic()
         self._deadline = start + (movetime_ms / 1000.0) if movetime_ms > 0 else None
+
+        legal_moves = self._generate_legal_moves_timed()
+        if not legal_moves:
+            elapsed_ms = int((time.monotonic() - start) * 1000)
+            self._last_trace_snapshot = self.trace_snapshot(
+                elapsed_ms=elapsed_ms,
+                best_move=None,
+                best_score=0,
+                depth_reached=0,
+                timed_out=False,
+            )
+            return None, 0, 0, elapsed_ms, False, 0, 0, 0, 0, 0
 
         best_move = legal_moves[0]
         best_score = self.evaluate_position()
         completed_depth = 0
 
         for depth in range(1, max_depth + 1):
+            depth_start_ns = time.perf_counter_ns()
+            nodes_before = self._nodes_visited
+            eval_calls_before = self._eval_calls
+            move_gen_calls_before = self._move_gen_calls
             score, move, complete = self._search_root(depth)
             if not complete:
                 break
+            depth_elapsed_ms = int((time.perf_counter_ns() - depth_start_ns) / 1_000_000)
+            self._depth_summaries.append({
+                'depth': depth,
+                'elapsed_ms': depth_elapsed_ms,
+                'nodes': self._nodes_visited - nodes_before,
+                'eval_calls': self._eval_calls - eval_calls_before,
+                'move_gen_calls': self._move_gen_calls - move_gen_calls_before,
+                'best_move': move.to_algebraic() if move is not None else None,
+                'score_cp': int(score),
+            })
             if move is not None:
                 best_move = move
                 best_score = score
@@ -164,6 +202,13 @@ class AI:
             completed_depth = 1
 
         elapsed_ms = int((time.monotonic() - start) * 1000)
+        self._last_trace_snapshot = self.trace_snapshot(
+            elapsed_ms=elapsed_ms,
+            best_move=best_move.to_algebraic() if best_move is not None else None,
+            best_score=int(best_score),
+            depth_reached=completed_depth,
+            timed_out=self._timed_out,
+        )
         return (
             best_move,
             int(best_score),
@@ -182,7 +227,7 @@ class AI:
             return 0, None, False
         self._nodes_visited += 1
 
-        moves = self.move_generator.generate_legal_moves()
+        moves = self._generate_legal_moves_timed()
         if not moves:
             return 0, None, True
 
@@ -247,7 +292,7 @@ class AI:
         if depth == 0:
             return int(self.evaluate_position()), None, True
 
-        moves = self.move_generator.generate_legal_moves()
+        moves = self._generate_legal_moves_timed()
         if not moves:
             if self.board.is_in_check(self.board.to_move):
                 return -MATE_VALUE + depth, None, True
@@ -325,6 +370,7 @@ class AI:
     
     def evaluate_position(self) -> int:
         """Evaluate the current position."""
+        start_ns = time.perf_counter_ns() if self._trace_metrics_enabled else 0
         self._eval_calls += 1
         score = 0
         
@@ -341,8 +387,60 @@ class AI:
         
         # Add positional bonuses
         score += self._evaluate_position_factors()
+
+        if self._trace_metrics_enabled:
+            self._eval_time_ns += time.perf_counter_ns() - start_ns
         
         return score
+
+    def _generate_legal_moves_timed(self) -> List[Move]:
+        if not self._trace_metrics_enabled:
+            return self.move_generator.generate_legal_moves()
+
+        start_ns = time.perf_counter_ns()
+        moves = self.move_generator.generate_legal_moves()
+        self._move_gen_calls += 1
+        self._move_gen_time_ns += time.perf_counter_ns() - start_ns
+        self._move_gen_total_moves += len(moves)
+        return moves
+
+    def trace_snapshot(
+        self,
+        *,
+        elapsed_ms: int,
+        best_move: Optional[str],
+        best_score: int,
+        depth_reached: int,
+        timed_out: bool,
+    ) -> dict:
+        branching_factor = 0.0
+        if self._move_gen_calls > 0:
+            branching_factor = round(self._move_gen_total_moves / self._move_gen_calls, 2)
+
+        return {
+            'elapsed_ms': elapsed_ms,
+            'best_move': best_move,
+            'best_score_cp': best_score,
+            'depth_reached': depth_reached,
+            'timed_out': timed_out,
+            'nodes': self._nodes_visited,
+            'nps': (self._nodes_visited * 1000) // max(elapsed_ms, 1) if self._nodes_visited > 0 else 0,
+            'eval_calls': self._eval_calls,
+            'eval_time_ms': round(self._eval_time_ns / 1_000_000, 3),
+            'move_gen_calls': self._move_gen_calls,
+            'move_gen_time_ms': round(self._move_gen_time_ns / 1_000_000, 3),
+            'move_gen_total_moves': self._move_gen_total_moves,
+            'branching_factor': branching_factor,
+            'tt_hits': self._tt_hits,
+            'tt_misses': self._tt_misses,
+            'beta_cutoffs': self._beta_cutoffs,
+            'depth_breakdown': [dict(summary) for summary in self._depth_summaries],
+        }
+
+    def get_trace_snapshot(self) -> Optional[dict]:
+        if self._last_trace_snapshot is None:
+            return None
+        return dict(self._last_trace_snapshot)
     
     def _evaluate_piece(self, piece: Piece, row: int, col: int) -> int:
         """Evaluate a single piece including positional bonus."""

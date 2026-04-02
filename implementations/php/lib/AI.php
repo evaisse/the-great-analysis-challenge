@@ -26,6 +26,14 @@ class AI {
     private int $tt_hits = 0;
     private int $tt_misses = 0;
     private int $beta_cutoffs = 0;
+    private int $move_gen_calls = 0;
+    private int $move_gen_total_moves = 0;
+    private int $move_gen_time_ns = 0;
+    private int $eval_time_ns = 0;
+    /** @var array<int,array<string,int|string|null>> */
+    private array $depth_summaries = [];
+    /** @var array<string,mixed>|null */
+    private ?array $last_trace_snapshot = null;
     private bool $rich_eval_enabled;
     private Eval\RichEvaluator $rich_evaluator;
 
@@ -73,6 +81,7 @@ class AI {
 
         $moves = $this->move_gen->generate_moves();
         if (empty($moves)) {
+            $this->last_trace_snapshot = $this->build_trace_snapshot(0, null, 0, 0, false);
             return [null, 0, 0, 0, false, 0, 0, 0, 0, 0];
         }
 
@@ -83,6 +92,12 @@ class AI {
         $this->tt_hits = 0;
         $this->tt_misses = 0;
         $this->beta_cutoffs = 0;
+        $this->move_gen_calls = 0;
+        $this->move_gen_total_moves = 0;
+        $this->move_gen_time_ns = 0;
+        $this->eval_time_ns = 0;
+        $this->depth_summaries = [];
+        $this->last_trace_snapshot = null;
         $start = microtime(true);
         $this->deadline = $movetime_ms > 0 ? ($start + ($movetime_ms / 1000.0)) : null;
 
@@ -91,10 +106,23 @@ class AI {
         $completed_depth = 0;
 
         for ($depth = 1; $depth <= $max_depth; $depth++) {
+            $depth_start = hrtime(true);
+            $nodes_before = $this->nodes_visited;
+            $eval_calls_before = $this->eval_calls;
+            $move_gen_calls_before = $this->move_gen_calls;
             [$score, $move, $complete] = $this->search_root($depth);
             if (!$complete) {
                 break;
             }
+            $this->depth_summaries[] = [
+                'depth' => $depth,
+                'elapsed_ms' => (int) floor((hrtime(true) - $depth_start) / 1_000_000),
+                'nodes' => $this->nodes_visited - $nodes_before,
+                'eval_calls' => $this->eval_calls - $eval_calls_before,
+                'move_gen_calls' => $this->move_gen_calls - $move_gen_calls_before,
+                'best_move' => $move?->to_string(),
+                'score_cp' => $score,
+            ];
             if ($move !== null) {
                 $best_move = $move;
                 $best_score = $score;
@@ -107,6 +135,13 @@ class AI {
         }
 
         $elapsed_ms = (int) round((microtime(true) - $start) * 1000);
+        $this->last_trace_snapshot = $this->build_trace_snapshot(
+            $elapsed_ms,
+            $best_move?->to_string(),
+            $best_score,
+            $completed_depth,
+            $this->timed_out
+        );
         return [
             $best_move,
             $best_score,
@@ -130,7 +165,7 @@ class AI {
         }
         $this->nodes_visited++;
 
-        $moves = $this->move_gen->generate_moves();
+        $moves = $this->generate_moves_timed();
         if (empty($moves)) {
             return [0, null, true];
         }
@@ -214,7 +249,7 @@ class AI {
             return [$this->evaluate(), null, true];
         }
 
-        $moves = $this->move_gen->generate_moves();
+        $moves = $this->generate_moves_timed();
         if (empty($moves)) {
             if ($this->move_gen->is_in_check()) {
                 return [-self::MATE_VALUE + $depth, null, true];
@@ -332,13 +367,72 @@ class AI {
     }
     
     public function evaluate(): int {
+        $start = hrtime(true);
         $this->eval_calls++;
         if ($this->rich_eval_enabled) {
             $score = $this->rich_evaluator->evaluate();
-            return $this->board->current_player === CHESS_WHITE ? $score : -$score;
+            $resolved = $this->board->current_player === CHESS_WHITE ? $score : -$score;
+            $this->eval_time_ns += hrtime(true) - $start;
+            return $resolved;
         }
 
-        return $this->evaluate_simple();
+        $score = $this->evaluate_simple();
+        $this->eval_time_ns += hrtime(true) - $start;
+        return $score;
+    }
+
+    /**
+     * @return Move[]
+     */
+    private function generate_moves_timed(): array {
+        $start = hrtime(true);
+        $moves = $this->move_gen->generate_moves();
+        $this->move_gen_calls++;
+        $this->move_gen_total_moves += count($moves);
+        $this->move_gen_time_ns += hrtime(true) - $start;
+        return $moves;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function build_trace_snapshot(
+        int $elapsed_ms,
+        ?string $best_move,
+        int $best_score_cp,
+        int $depth_reached,
+        bool $timed_out
+    ): array {
+        $branching_factor = $this->move_gen_calls > 0
+            ? round($this->move_gen_total_moves / $this->move_gen_calls, 2)
+            : 0.0;
+
+        return [
+            'elapsed_ms' => $elapsed_ms,
+            'best_move' => $best_move,
+            'best_score_cp' => $best_score_cp,
+            'depth_reached' => $depth_reached,
+            'timed_out' => $timed_out,
+            'nodes' => $this->nodes_visited,
+            'nps' => $this->nodes_visited > 0 ? (int) floor(($this->nodes_visited * 1000) / max($elapsed_ms, 1)) : 0,
+            'eval_calls' => $this->eval_calls,
+            'eval_time_ms' => round($this->eval_time_ns / 1_000_000, 3),
+            'move_gen_calls' => $this->move_gen_calls,
+            'move_gen_time_ms' => round($this->move_gen_time_ns / 1_000_000, 3),
+            'move_gen_total_moves' => $this->move_gen_total_moves,
+            'branching_factor' => $branching_factor,
+            'tt_hits' => $this->tt_hits,
+            'tt_misses' => $this->tt_misses,
+            'beta_cutoffs' => $this->beta_cutoffs,
+            'depth_breakdown' => array_values($this->depth_summaries),
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    public function get_trace_snapshot(): ?array {
+        return $this->last_trace_snapshot;
     }
 
     private function evaluate_simple(): int {

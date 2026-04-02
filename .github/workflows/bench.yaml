@@ -91,11 +91,11 @@ jobs:
         run: ./workflow verify-implementations
 
   benchmark:
-    name: Run Benchmarks
+    name: Run Core Benchmarks
     runs-on: ubuntu-latest
     needs: [detect-changes, validation]
     if: needs.detect-changes.outputs.has-changes == 'true'
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     strategy:
       fail-fast: false
@@ -119,7 +119,10 @@ jobs:
       - name: Resolve benchmark timeout
         id: benchmark-timeout
         run: |
-          timeout_seconds=300
+          timeout_seconds=180
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            timeout_seconds=240
+          fi
           echo "seconds=${timeout_seconds}" >> "$GITHUB_OUTPUT"
           echo "Using timeout ${timeout_seconds}s for ${{ matrix.engine }}"
 
@@ -131,6 +134,52 @@ jobs:
       - name: Run benchmark for ${{ matrix.name }}
         run: ./workflow run-benchmark ${{ matrix.engine }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }}
 
+      - name: Upload core benchmark results
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: benchmark-${{ matrix.engine }}-${{ github.sha }}
+          path: |
+            reports/${{ matrix.engine }}.json
+            reports/${{ matrix.engine }}.out.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+  benchmark-stress:
+    name: Run Stress Benchmarks
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    timeout-minutes: 12
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install Bun dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Resolve benchmark timeout
+        id: benchmark-timeout
+        run: |
+          timeout_seconds=180
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            timeout_seconds=240
+          fi
+          echo "seconds=${timeout_seconds}" >> "$GITHUB_OUTPUT"
+          echo "Using timeout ${timeout_seconds}s for ${{ matrix.engine }}"
+
       - name: Resolve stress profile
         id: stress-profile
         run: |
@@ -141,22 +190,86 @@ jobs:
           echo "value=${profile}" >> "$GITHUB_OUTPUT"
           echo "Using stress profile ${profile}"
 
-      - name: Run v2 stress benchmark (best-effort)
-        continue-on-error: true
-        run: ./workflow benchmark-stress ${{ matrix.engine }} --track v2-full --profile ${{ steps.stress-profile.outputs.value }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }}
+      - name: Reset reports workspace
+        run: |
+          rm -rf reports
+          mkdir -p reports
 
-      - name: Run concurrency benchmark (best-effort)
-        continue-on-error: true
-        run: ./workflow benchmark-concurrency ${{ matrix.engine }} --profile ${{ steps.stress-profile.outputs.value }}
+      - name: Run v2 stress benchmark
+        run: ./workflow benchmark-stress ${{ matrix.engine }} --track v2-full --profile ${{ steps.stress-profile.outputs.value }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }} --output reports/${{ matrix.engine }}-stress.out.txt
 
-      - name: Upload benchmark results
+      - name: Upload stress benchmark logs
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: benchmark-${{ matrix.engine }}-${{ github.sha }}
-          path: |
-            reports/${{ matrix.engine }}.json
-            reports/${{ matrix.engine }}.out.txt
-            reports/${{ matrix.engine }}-concurrency.json
+          name: benchmark-stress-${{ matrix.engine }}-${{ github.sha }}
+          path: reports/${{ matrix.engine }}-stress.out.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+  benchmark-concurrency:
+    name: Run Concurrency Benchmarks
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install Bun dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Resolve benchmark timeout
+        id: benchmark-timeout
+        run: |
+          timeout_seconds=180
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            timeout_seconds=240
+          fi
+          echo "seconds=${timeout_seconds}" >> "$GITHUB_OUTPUT"
+          echo "Using timeout ${timeout_seconds}s for ${{ matrix.engine }}"
+
+      - name: Resolve stress profile
+        id: stress-profile
+        run: |
+          profile="quick"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            profile="full"
+          fi
+          echo "value=${profile}" >> "$GITHUB_OUTPUT"
+          echo "Using stress profile ${profile}"
+
+      - name: Reset reports workspace
+        run: |
+          rm -rf reports
+          mkdir -p reports
+
+      - name: Build Docker image for concurrency harness
+        run: make image DIR=${{ matrix.engine }}
+
+      - name: Run concurrency benchmark
+        run: ./workflow benchmark-concurrency ${{ matrix.engine }} --profile ${{ steps.stress-profile.outputs.value }} --skip-build --timeout ${{ steps.benchmark-timeout.outputs.seconds }} --output reports/${{ matrix.engine }}-concurrency.json
+
+      - name: Upload concurrency benchmark results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: benchmark-concurrency-${{ matrix.engine }}-${{ github.sha }}
+          path: reports/${{ matrix.engine }}-concurrency.json
           if-no-files-found: warn
           retention-days: 30
 
@@ -164,7 +277,7 @@ jobs:
     name: Combine Benchmark Results
     runs-on: ubuntu-latest
     needs: [detect-changes, validation, benchmark]
-    if: needs.detect-changes.outputs.has-changes == 'true'
+    if: always() && needs.detect-changes.outputs.has-changes == 'true'
     outputs:
       readme-changed: ${{ steps.update.outputs.changed }}
       build-error-count: ${{ steps.update.outputs.build-error-count }}
@@ -288,7 +401,7 @@ jobs:
   summary:
     name: Benchmark Summary
     runs-on: ubuntu-latest
-    needs: [detect-changes, validation, benchmark, combine-results, release]
+    needs: [detect-changes, validation, benchmark, benchmark-stress, benchmark-concurrency, combine-results, release]
     if: always()
 
     steps:
@@ -309,6 +422,9 @@ jobs:
             echo "- 🟢 **Excellent**: ${{ needs.validation.outputs.excellent-count }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🟡 **Good**: ${{ needs.validation.outputs.good-count }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🔴 **Needs work**: ${{ needs.validation.outputs.needs-work-count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- ⚙️ **Core benchmark matrix**: ${{ needs.benchmark.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "- 🔥 **Stress benchmark matrix**: ${{ needs.benchmark-stress.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "- 🧵 **Concurrency benchmark matrix**: ${{ needs.benchmark-concurrency.result }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🚨 **Build errors in README benchmark table**: ${{ needs.combine-results.outputs.build-error-count }}" >> $GITHUB_STEP_SUMMARY
             if [[ -n "${{ needs.combine-results.outputs.build-error-languages }}" ]]; then
               echo "- **Build error implementations**: ${{ needs.combine-results.outputs.build-error-languages }}" >> $GITHUB_STEP_SUMMARY

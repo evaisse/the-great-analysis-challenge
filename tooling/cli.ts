@@ -372,6 +372,7 @@ export async function main(argv: string[]): Promise<number> {
         "skip-build": { type: "boolean" },
         fixture: { type: "string" },
         output: { type: "string" },
+        timeout: { type: "string" },
       },
     });
     const engine = positionals[0];
@@ -383,6 +384,7 @@ export async function main(argv: string[]): Promise<number> {
       skipBuild: Boolean(values["skip-build"]),
       fixture: values.fixture,
       output: values.output,
+      timeout: values.timeout ? Number(values.timeout) : undefined,
     });
   }
 
