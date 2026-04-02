@@ -39,9 +39,8 @@ class ChessEngine {
     private ?string $uci_last_bestmove = null;
     private ?string $pgn_path = null;
     private PgnGame $pgn_game;
-    /** @var array<int,array{int,int}> */
-    private array $pgn_variation_stack = [];
-    private array $pgn_invalid_sequence = [];
+    /** @var string[] */
+    private array $pgn_moves = [];
     private ?string $book_path = null;
     private bool $book_enabled = false;
     /** @var array<string,array<int,array{move:string,weight:int}>> */
@@ -83,6 +82,7 @@ class ChessEngine {
         $this->ai = new AI($this->board, $this->move_gen, $this->rich_eval_enabled);
         $this->perft = new Perft($this->board, $this->move_gen);
         $this->pgn_game = PgnSupport::buildGameFromHistory([], PgnSupport::START_FEN, 'current-game');
+        $this->refresh_pgn_move_cache();
         $this->reset_trace_export_state();
         $this->reset_trace_search_state();
     }
@@ -457,25 +457,13 @@ class ChessEngine {
     }
     
     private function handle_undo(): void {
-        if (empty($this->pgn_variation_stack)) {
-            if (!$this->board->undo_move()) {
-                echo "ERROR: No moves to undo\n";
-                return;
-            }
-            array_pop($this->pgn_game->moves);
-            echo "OK: Undo\n";
-            echo $this->board->display();
-            return;
-        }
-
-        $sequence =& $this->current_pgn_sequence_ref();
-        if (empty($sequence)) {
+        if (!$this->pgn_game->rewind_last_move()) {
             echo "ERROR: No moves to undo\n";
             return;
         }
-
-        array_pop($sequence);
         $this->sync_runtime_to_pgn_cursor();
+        $this->refresh_pgn_move_cache();
+        $this->sync_pgn_result_with_position();
         echo "OK: Undo\n";
         echo $this->board->display();
     }
@@ -484,7 +472,7 @@ class ChessEngine {
         $this->reset_position(PgnSupport::START_FEN);
         $this->pgn_path = null;
         $this->pgn_game = PgnSupport::buildGameFromHistory([], PgnSupport::START_FEN, 'current-game');
-        $this->pgn_variation_stack = [];
+        $this->refresh_pgn_move_cache();
         echo "OK: New game started\n";
         echo $this->board->display();
     }
@@ -571,7 +559,7 @@ class ChessEngine {
             $startFen = $this->fen_parser->export_fen();
             $this->pgn_path = null;
             $this->pgn_game = PgnSupport::buildGameFromHistory([], $startFen, 'current-game');
-            $this->pgn_variation_stack = [];
+            $this->refresh_pgn_move_cache();
             echo "OK: FEN loaded\n";
             echo $this->board->display();
         } catch (\Throwable $e) {
@@ -837,11 +825,12 @@ class ChessEngine {
 
             try {
                 $game = PgnSupport::parsePgn($content, $path);
-                $game->source = $path;
+                $game->set_source($path);
                 $this->pgn_game = $game;
                 $this->pgn_path = $path;
-                $this->pgn_variation_stack = [];
+                $this->pgn_game->reset_cursor();
                 $this->sync_runtime_to_pgn_cursor();
+                $this->refresh_pgn_move_cache();
                 echo "PGN: loaded source={$path}\n";
             } catch (\Throwable $e) {
                 echo "ERROR: pgn load failed: " . $e->getMessage() . "\n";
@@ -861,7 +850,7 @@ class ChessEngine {
                 return;
             }
             $this->pgn_path = $path;
-            $this->pgn_game->source = $path;
+            $this->pgn_game->set_source($path);
             echo "PGN: saved path=\"{$path}\"\n";
             return;
         }
@@ -891,29 +880,25 @@ class ChessEngine {
             }
             $action = strtolower($args[1]);
             if ($action === 'enter') {
-                $sequence =& $this->current_pgn_sequence_ref();
-                if (empty($sequence)) {
-                    echo "ERROR: No variation available\n";
+                $result = $this->pgn_game->enter_variation();
+                if (!$result['ok']) {
+                    echo $result['message'] . "\n";
                     return;
                 }
-                $anchorIndex = count($sequence) - 1;
-                $target = $sequence[$anchorIndex];
-                if (empty($target->variations)) {
-                    $target->variations[] = [];
-                }
-                $this->pgn_variation_stack[] = [$anchorIndex, count($target->variations) - 1];
                 $this->sync_runtime_to_pgn_cursor();
-                echo 'PGN: variation depth=' . count($this->pgn_variation_stack) . "\n";
+                $this->refresh_pgn_move_cache();
+                echo $result['message'] . "\n";
                 return;
             }
             if ($action === 'exit') {
-                if (empty($this->pgn_variation_stack)) {
-                    echo "ERROR: Not inside a variation\n";
+                $result = $this->pgn_game->exit_variation();
+                if (!$result['ok']) {
+                    echo $result['message'] . "\n";
                     return;
                 }
-                array_pop($this->pgn_variation_stack);
                 $this->sync_runtime_to_pgn_cursor();
-                echo 'PGN: variation depth=' . count($this->pgn_variation_stack) . "\n";
+                $this->refresh_pgn_move_cache();
+                echo $result['message'] . "\n";
                 return;
             }
             echo "ERROR: Unsupported pgn variation command\n";
@@ -921,17 +906,12 @@ class ChessEngine {
         }
 
         if ($sub === 'comment') {
-            $text = trim(implode(' ', array_slice($args, 1)));
+            $text = $this->extract_pgn_comment_text('pgn ' . implode(' ', $args));
             if ($text === '') {
                 echo "ERROR: pgn comment requires text\n";
                 return;
             }
-            $sequence =& $this->current_pgn_sequence_ref();
-            if (empty($sequence)) {
-                $this->pgn_game->initial_comments[] = $text;
-            } else {
-                $sequence[count($sequence) - 1]->comments[] = $text;
-            }
+            $this->pgn_game->add_comment($text);
             echo "PGN: comment added\n";
             return;
         }
@@ -1119,7 +1099,7 @@ class ChessEngine {
         $this->reset_position(PgnSupport::START_FEN);
         $this->pgn_path = null;
         $this->pgn_game = PgnSupport::buildGameFromHistory([], PgnSupport::START_FEN, 'current-game');
-        $this->pgn_variation_stack = [];
+        $this->refresh_pgn_move_cache();
         $this->uci_last_bestmove = null;
         if ($this->protocol_mode === 'uci') {
             $this->set_uci_state('idle');
@@ -1173,9 +1153,9 @@ class ChessEngine {
         }
 
         $this->pgn_path = null;
-        $this->pgn_variation_stack = [];
         $currentStartFen = count($this->board->game_history) === 0 ? $this->fen_parser->export_fen() : $startFen;
         $this->pgn_game = PgnSupport::buildGameFromHistory($this->board->game_history, $currentStartFen, 'current-game');
+        $this->refresh_pgn_move_cache();
         if ($this->protocol_mode === 'uci') {
             $this->set_uci_state('idle');
         }
@@ -1214,6 +1194,9 @@ class ChessEngine {
         $this->ai = new AI($this->board, $this->move_gen);
         $this->perft = new Perft($this->board, $this->move_gen);
         $this->fen_parser->load_fen($fen);
+        $this->pgn_path = null;
+        $this->pgn_game = PgnSupport::buildGameFromHistory([], $this->fen_parser->export_fen(), 'current-game');
+        $this->refresh_pgn_move_cache();
 
         echo "OK: New game started\n";
         echo $this->board->display();
@@ -2312,65 +2295,22 @@ HELP;
 
     /** @return string[] */
     private function current_pgn_moves(): array {
-        return array_map(static fn(PgnMoveNode $node): string => $node->san, $this->current_pgn_sequence());
-    }
-
-    /** @return array<int,PgnMoveNode> */
-    private function current_pgn_sequence(): array {
-        $sequence =& $this->current_pgn_sequence_ref();
-        return $sequence;
-    }
-
-    /** @return array<int,PgnMoveNode> */
-    private function &current_pgn_sequence_ref(): array {
-        $sequence =& $this->pgn_game->moves;
-        foreach ($this->pgn_variation_stack as [$anchorIndex, $variationIndex]) {
-            if (!isset($sequence[$anchorIndex])) {
-                $this->pgn_invalid_sequence = [];
-                return $this->pgn_invalid_sequence;
-            }
-            if (!isset($sequence[$anchorIndex]->variations[$variationIndex])) {
-                $this->pgn_invalid_sequence = [];
-                return $this->pgn_invalid_sequence;
-            }
-            $sequence =& $sequence[$anchorIndex]->variations[$variationIndex];
+        if ($this->pgn_game->current_variation() === $this->pgn_game->mainline && !empty($this->pgn_moves)) {
+            return $this->pgn_moves;
         }
-        return $sequence;
-    }
-
-    /** @return array<int,PgnMoveNode> */
-    private function active_line_nodes(): array {
-        $nodes = [];
-        $sequence = $this->pgn_game->moves;
-        foreach ($this->pgn_variation_stack as [$anchorIndex, $variationIndex]) {
-            if (!isset($sequence[$anchorIndex])) {
-                break;
-            }
-            for ($i = 0; $i <= $anchorIndex; $i++) {
-                if (isset($sequence[$i])) {
-                    $nodes[] = $sequence[$i];
-                }
-            }
-            $anchor = $sequence[$anchorIndex];
-            if (!isset($anchor->variations[$variationIndex])) {
-                break;
-            }
-            $sequence = $anchor->variations[$variationIndex];
-        }
-        foreach ($sequence as $node) {
-            $nodes[] = $node;
-        }
-        return $nodes;
+        return $this->pgn_game->current_sans();
     }
 
     private function sync_runtime_to_pgn_cursor(): void {
-        $this->reset_position($this->pgn_game->initial_fen);
-        foreach ($this->active_line_nodes() as $node) {
+        $variation = $this->pgn_game->current_variation();
+        $this->reset_position($variation->start_fen);
+        foreach ($variation->moves as $node) {
             $error = $this->apply_move_object_silent($node->move);
             if ($error !== null) {
                 throw new \RuntimeException('failed to replay PGN move ' . $node->san . ': ' . $error);
             }
         }
+        $this->sync_pgn_result_with_position();
     }
 
     private function resolve_legal_move(Move $requestedMove): ?Move {
@@ -2406,8 +2346,40 @@ HELP;
         $fenBefore = $this->fen_parser->export_fen();
         $this->board->make_move($move);
         $fenAfter = $this->fen_parser->export_fen();
-        $sequence =& $this->current_pgn_sequence_ref();
-        $sequence[] = new PgnMoveNode($san, PgnSupport::copyMove($move), $fenBefore, $fenAfter);
+        $this->pgn_game->append_move(new PgnMoveNode($san, PgnSupport::copyMove($move), $fenBefore, $fenAfter));
+        $this->refresh_pgn_move_cache();
+        $this->sync_pgn_result_with_position();
+    }
+
+    private function refresh_pgn_move_cache(): void {
+        $this->pgn_moves = $this->pgn_game->mainline_sans();
+    }
+
+    private function sync_pgn_result_with_position(): void {
+        if ($this->move_gen->is_checkmate()) {
+            $this->pgn_game->set_result($this->board->current_player === CHESS_WHITE ? '0-1' : '1-0');
+            return;
+        }
+        if ($this->move_gen->is_stalemate()) {
+            $this->pgn_game->set_result('1/2-1/2');
+            return;
+        }
+        require_once __DIR__ . '/lib/DrawDetection.php';
+        if (DrawDetection::is_draw($this->board)) {
+            $this->pgn_game->set_result('1/2-1/2');
+            return;
+        }
+        $this->pgn_game->set_result('*');
+    }
+
+    private function extract_pgn_comment_text(string $command): string {
+        if (preg_match('/^pgn\s+comment\s+"((?:\\.|[^"])*)"\s*$/i', $command, $matches) === 1) {
+            return stripcslashes($matches[1]);
+        }
+        if (preg_match('/^pgn\s+comment\s+(.+)$/i', $command, $matches) === 1) {
+            return trim($matches[1]);
+        }
+        return '';
     }
 }
 
