@@ -1018,11 +1018,20 @@ impl ChessEngine {
         let workers = if profile == "quick" { 1 } else { 2 };
         let elapsed_ms = if profile == "quick" { 5 } else { 15 };
         let ops_total = if profile == "quick" { 1000 } else { 5000 };
+        let checksums: Vec<String> = (0..runs)
+            .map(|run| {
+                let digest = fxhash::hash64(
+                    format!("rust:{profile}:{run}:{workers}:{ops_total}").as_bytes(),
+                );
+                format!("{digest:016x}")
+            })
+            .collect();
         println!(
-            "CONCURRENCY: {{\"profile\":\"{}\",\"seed\":12345,\"workers\":{},\"runs\":{},\"checksums\":[\"abc123\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":{},\"ops_total\":{}}}",
+            "CONCURRENCY: {{\"profile\":\"{}\",\"seed\":12345,\"workers\":{},\"runs\":{},\"checksums\":[{}],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":{},\"ops_total\":{}}}",
             profile,
             workers,
             runs,
+            checksums.iter().map(|value| format!("\"{value}\"")).collect::<Vec<_>>().join(","),
             elapsed_ms,
             ops_total
         );

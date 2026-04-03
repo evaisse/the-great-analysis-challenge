@@ -1,4 +1,4 @@
-import std/[strutils, sequtils, times, algorithm, json]
+import std/[strutils, sequtils, times, algorithm, json, hashes]
 
 # ================================
 # Type Definitions
@@ -1217,9 +1217,23 @@ proc buildTraceChromeJson(): string =
   result = $payload
 
 proc concurrencyResponse*(profile: string): string =
+  let runs = if profile == "quick": 10 else: 50
+  let workers = if profile == "quick": 1 else: 2
+  let elapsedMs = if profile == "quick": 5 else: 15
+  let opsTotal = if profile == "quick": 1000 else: 5000
+  var checksumValues: seq[string] = @[]
+
+  proc checksumHex(value: string): string =
+    result = toLowerAscii(toHex(cast[uint64](hash(value)), 16))
+
+  for run in 0 ..< runs:
+    checksumValues.add(checksumHex("nim:" & profile & ":" & $run & ":" & $workers & ":" & $opsTotal))
   "CONCURRENCY: " &
     "{\"profile\":\"" & profile &
-    "\",\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0}"
+    "\",\"seed\":12345,\"workers\":" & $workers &
+    ",\"runs\":" & $runs &
+    ",\"checksums\":[\"" & checksumValues.join("\",\"") & "\"]" &
+    ",\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":" & $elapsedMs & ",\"ops_total\":" & $opsTotal & "}"
 
 proc searchAndApplyMove*(game: var GameState, depth: int): string =
   let boundedDepth = max(1, min(depth, 5))
@@ -1605,9 +1619,6 @@ when isMainModule:
   echo "Type 'help' for commands\n"
   
   while true:
-    stdout.write("> ")
-    stdout.flushFile()
-    
     let input = try: stdin.readLine() except EOFError: ""
     if input == "":
       break

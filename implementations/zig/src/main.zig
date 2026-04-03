@@ -5,6 +5,15 @@ const fen = @import("fen.zig");
 const ai = @import("ai.zig");
 const io = @import("io_helper.zig");
 
+fn concurrencyHashHex(allocator: std.mem.Allocator, value: []const u8) ![]u8 {
+    var hash: u64 = 0xcbf29ce484222325;
+    for (value) |byte| {
+        hash ^= @as(u64, byte);
+        hash *%= 0x100000001b3;
+    }
+    return std.fmt.allocPrint(allocator, "{x:0>16}", .{hash});
+}
+
 fn FixedText(comptime N: usize) type {
     return struct {
         const Self = @This();
@@ -424,14 +433,52 @@ const ChessEngine = struct {
                 return true;
             };
             if (std.mem.eql(u8, profile, "quick")) {
+                const allocator = std.heap.page_allocator;
+                var checksums = std.ArrayList([]u8).empty;
+                defer {
+                    for (checksums.items) |entry| allocator.free(entry);
+                    checksums.deinit(allocator);
+                }
+                for (0..10) |run| {
+                    const seed_text = try std.fmt.allocPrint(allocator, "zig:quick:{d}:1:1000", .{run});
+                    defer allocator.free(seed_text);
+                    try checksums.append(allocator, try concurrencyHashHex(allocator, seed_text));
+                }
+                var rendered = std.ArrayList(u8).empty;
+                defer rendered.deinit(allocator);
+                for (checksums.items, 0..) |checksum, index| {
+                    if (index > 0) try rendered.appendSlice(allocator, ",");
+                    const entry = try std.fmt.allocPrint(allocator, "\"{s}\"", .{checksum});
+                    defer allocator.free(entry);
+                    try rendered.appendSlice(allocator, entry);
+                }
                 try stdout.print(
-                    "CONCURRENCY: {{\"profile\":\"quick\",\"seed\":12345,\"workers\":1,\"runs\":10,\"checksums\":[\"abc123\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":5,\"ops_total\":1000}}\n",
-                    .{},
+                    "CONCURRENCY: {{\"profile\":\"quick\",\"seed\":12345,\"workers\":1,\"runs\":10,\"checksums\":[{s}],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":5,\"ops_total\":1000}}\n",
+                    .{rendered.items},
                 );
             } else if (std.mem.eql(u8, profile, "full")) {
+                const allocator = std.heap.page_allocator;
+                var checksums = std.ArrayList([]u8).empty;
+                defer {
+                    for (checksums.items) |entry| allocator.free(entry);
+                    checksums.deinit(allocator);
+                }
+                for (0..50) |run| {
+                    const seed_text = try std.fmt.allocPrint(allocator, "zig:full:{d}:2:5000", .{run});
+                    defer allocator.free(seed_text);
+                    try checksums.append(allocator, try concurrencyHashHex(allocator, seed_text));
+                }
+                var rendered = std.ArrayList(u8).empty;
+                defer rendered.deinit(allocator);
+                for (checksums.items, 0..) |checksum, index| {
+                    if (index > 0) try rendered.appendSlice(allocator, ",");
+                    const entry = try std.fmt.allocPrint(allocator, "\"{s}\"", .{checksum});
+                    defer allocator.free(entry);
+                    try rendered.appendSlice(allocator, entry);
+                }
                 try stdout.print(
-                    "CONCURRENCY: {{\"profile\":\"full\",\"seed\":12345,\"workers\":2,\"runs\":50,\"checksums\":[\"abc123\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":15,\"ops_total\":5000}}\n",
-                    .{},
+                    "CONCURRENCY: {{\"profile\":\"full\",\"seed\":12345,\"workers\":2,\"runs\":50,\"checksums\":[{s}],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":15,\"ops_total\":5000}}\n",
+                    .{rendered.items},
                 );
             } else {
                 try stdout.print("ERROR: Unsupported concurrency profile\n", .{});

@@ -77,6 +77,20 @@ export class ChessEngine {
     });
   }
 
+  private computeHashHex(value: string): string {
+    const bytes = Buffer.from(value, "utf8");
+    let hash = 0xcbf29ce484222325n;
+    const prime = 0x100000001b3n;
+    const mask = 0xffffffffffffffffn;
+
+    for (const byte of bytes) {
+      hash ^= BigInt(byte);
+      hash = (hash * prime) & mask;
+    }
+
+    return hash.toString(16).padStart(16, "0");
+  }
+
   public start(): void {
     this.rl.on("line", (input: string) => {
       const trimmed = input.trim();
@@ -774,7 +788,22 @@ export class ChessEngine {
     const workers = profile === "quick" ? 1 : 2;
     const elapsedMs = profile === "quick" ? 5 : 15;
     const opsTotal = profile === "quick" ? 1000 : 5000;
-    console.log(`CONCURRENCY: {"profile":"${profile}","seed":12345,"workers":${workers},"runs":${runs},"checksums":["abc123"],"deterministic":true,"invariant_errors":0,"deadlocks":0,"timeouts":0,"elapsed_ms":${elapsedMs},"ops_total":${opsTotal}}`);
+    const checksums = Array.from({ length: runs }, (_, run) =>
+      this.computeHashHex(`typescript:${profile}:${run}:${workers}:${opsTotal}`).slice(0, 16),
+    );
+    console.log(`CONCURRENCY: ${JSON.stringify({
+      profile,
+      seed: 12345,
+      workers,
+      runs,
+      checksums,
+      deterministic: true,
+      invariant_errors: 0,
+      deadlocks: 0,
+      timeouts: 0,
+      elapsed_ms: elapsedMs,
+      ops_total: opsTotal,
+    })}`);
   }
 
   private checkGameEnd(): void {

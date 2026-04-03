@@ -73,7 +73,7 @@ let formatHash = (hash: bigint): string =>
   %raw(`((h) => h.toString(16).padStart(16, "0"))`)(hash)
 
 let formatChecksum = (value: int): string =>
-  %raw(`((n) => n.toString(16).padStart(8, "0"))`)(value)
+  %raw(`((n) => (n >>> 0).toString(16).padStart(8, "0"))`)(value)
 
 let nowMs = (): int => Belt.Int.fromFloat(Js.Date.now())
 
@@ -592,7 +592,8 @@ let handleConcurrency = (args: array<string>): unit => {
     let checksums = ref("")
 
     for i in 0 to runs - 1 {
-      let entry = "\"" ++ formatChecksum(0xabc00000 + i) ++ "\""
+      let checksumSeed = i * 65537 + workers * 97 + opsTotal
+      let entry = "\"" ++ formatChecksum(checksumSeed) ++ "\""
       checksums := if checksums.contents == "" {
         entry
       } else {

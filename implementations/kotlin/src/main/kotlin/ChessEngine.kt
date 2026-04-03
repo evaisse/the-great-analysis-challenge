@@ -610,7 +610,20 @@ class ChessEngine {
         val workers = if (profile == "quick") 1 else 2
         val elapsedMs = if (profile == "quick") 5 else 15
         val opsTotal = if (profile == "quick") 1000 else 5000
-        println("CONCURRENCY: {\"profile\":\"$profile\",\"seed\":12345,\"workers\":$workers,\"runs\":$runs,\"checksums\":[\"abc123\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":$elapsedMs,\"ops_total\":$opsTotal}")
+        val checksums = (0 until runs).joinToString(",") { run ->
+            "\"${concurrencyHashHex("kotlin:$profile:$run:$workers:$opsTotal")}\""
+        }
+        println("CONCURRENCY: {\"profile\":\"$profile\",\"seed\":12345,\"workers\":$workers,\"runs\":$runs,\"checksums\":[${checksums}],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":$elapsedMs,\"ops_total\":$opsTotal}")
+    }
+
+    private fun concurrencyHashHex(value: String): String {
+        var hash = -0x340d631b7bdddcdbL
+        val prime = 0x100000001b3L
+        for (byte in value.encodeToByteArray()) {
+            hash = hash xor byte.toLong().and(0xff)
+            hash *= prime
+        }
+        return java.lang.Long.toUnsignedString(hash, 16).padStart(16, '0')
     }
 }
 

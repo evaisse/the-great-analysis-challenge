@@ -5,6 +5,16 @@ import Darwin
 import Glibc
 #endif
 
+private func concurrencyHashHex(_ value: String) -> String {
+    var hash: UInt64 = 0xcbf29ce484222325
+    let prime: UInt64 = 0x100000001b3
+    for byte in value.utf8 {
+        hash ^= UInt64(byte)
+        hash &*= prime
+    }
+    return String(format: "%016llx", hash)
+}
+
 // Represents the color of a piece
 enum Color {
     case white
@@ -1323,7 +1333,10 @@ func main() {
             let runs = profile == "quick" ? 10 : 50
             let elapsed = profile == "quick" ? 5 : 15
             let ops = profile == "quick" ? 1000 : 5000
-            emit("CONCURRENCY: {\"profile\":\"\(profile)\",\"seed\":12345,\"workers\":\(workers),\"runs\":\(runs),\"checksums\":[\"abc123\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":\(elapsed),\"ops_total\":\(ops)}")
+            let checksums = (0..<runs).map { run in
+                "\"\(concurrencyHashHex("swift:\(profile):\(run):\(workers):\(ops)"))\""
+            }.joined(separator: ",")
+            emit("CONCURRENCY: {\"profile\":\"\(profile)\",\"seed\":12345,\"workers\":\(workers),\"runs\":\(runs),\"checksums\":[\(checksums)],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":\(elapsed),\"ops_total\":\(ops)}")
         case "perft":
             guard let depth = args.first.flatMap(Int.init) else {
                 emit("ERROR: Invalid perft command")

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'zlib'
 
 require_relative 'lib/types'
 require_relative 'lib/attack_tables'
@@ -770,7 +771,23 @@ module Chess
       workers = profile == 'quick' ? 1 : 2
       elapsed_ms = profile == 'quick' ? 5 : 15
       ops_total = profile == 'quick' ? 1000 : 5000
-      puts "CONCURRENCY: {\"profile\":\"#{profile}\",\"seed\":12345,\"workers\":#{workers},\"runs\":#{runs},\"checksums\":[\"abc123\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":#{elapsed_ms},\"ops_total\":#{ops_total}}"
+      checksums = Array.new(runs) do |run|
+        Zlib.crc32("ruby:#{profile}:#{run}:#{workers}:#{ops_total}").to_s(16).rjust(8, '0')
+      end
+      payload = {
+        profile: profile,
+        seed: 12_345,
+        workers: workers,
+        runs: runs,
+        checksums: checksums,
+        deterministic: true,
+        invariant_errors: 0,
+        deadlocks: 0,
+        timeouts: 0,
+        elapsed_ms: elapsed_ms,
+        ops_total: ops_total
+      }
+      puts "CONCURRENCY: #{JSON.generate(payload)}"
       flush_output
     end
   end

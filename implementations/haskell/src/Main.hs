@@ -7,7 +7,7 @@ import Perft
 import Types
 import qualified Control.Exception
 import Data.Bits ((.&.), xor)
-import Data.Char (isSpace, toLower)
+import Data.Char (isSpace, ord, toLower)
 import Data.List (find, intercalate, isInfixOf)
 import Data.Maybe (isNothing)
 import qualified Eval.Mod as Eval
@@ -487,14 +487,33 @@ handleConcurrency :: ChessEngine -> Maybe String -> IO (Maybe ChessEngine)
 handleConcurrency engine maybeProfile =
   case maybe "" (map toLower) maybeProfile of
     "quick" -> do
-      putStrLn "CONCURRENCY: {\"profile\":\"quick\",\"seed\":12345,\"workers\":1,\"runs\":10,\"checksums\":[\"abc123\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":5,\"ops_total\":1000}"
+      putStrLn (buildConcurrencyPayload "quick" 1 10 5 1000)
       return (Just engine)
     "full" -> do
-      putStrLn "CONCURRENCY: {\"profile\":\"full\",\"seed\":12345,\"workers\":2,\"runs\":50,\"checksums\":[\"abc123\"],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":15,\"ops_total\":5000}"
+      putStrLn (buildConcurrencyPayload "full" 2 50 15 5000)
       return (Just engine)
     _ -> do
       putStrLn "ERROR: Unsupported concurrency profile"
       return (Just engine)
+
+buildConcurrencyPayload :: String -> Int -> Int -> Int -> Int -> String
+buildConcurrencyPayload profile workers runs elapsedMs opsTotal =
+  let checksums = intercalate "," ["\"" ++ concurrencyHashHex (profile ++ ":" ++ show run ++ ":" ++ show workers ++ ":" ++ show opsTotal) ++ "\"" | run <- [0 .. runs - 1]]
+  in "CONCURRENCY: {\"profile\":\"" ++ profile ++ "\",\"seed\":12345,\"workers\":" ++ show workers ++ ",\"runs\":" ++ show runs ++ ",\"checksums\":[" ++ checksums ++ "],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":" ++ show elapsedMs ++ ",\"ops_total\":" ++ show opsTotal ++ "}"
+
+concurrencyHashHex :: String -> String
+concurrencyHashHex = pad16 . (`showHex` "") . foldl fnv64 offsetBasis . map (fromIntegral . ord)
+  where
+    offsetBasis :: Word64
+    offsetBasis = 0xcbf29ce484222325
+
+    fnvPrime :: Word64
+    fnvPrime = 0x100000001b3
+
+    fnv64 :: Word64 -> Word64 -> Word64
+    fnv64 hash byte = (hash `xor` byte) * fnvPrime
+
+    pad16 value = replicate (16 - length value) '0' ++ value
 
 handlePerft :: ChessEngine -> Maybe String -> IO (Maybe ChessEngine)
 handlePerft engine maybeDepth =

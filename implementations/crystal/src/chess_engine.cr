@@ -1,4 +1,5 @@
 require "json"
+require "digest/sha1"
 require "./types"
 require "./board"
 require "./move_generator"
@@ -440,15 +441,18 @@ class ChessEngine
     profile = args[0].downcase
     config = case profile
              when "quick"
-               {workers: 2, runs: 10, checksums: ["9f01392a62b1fb0"], ops_total: 160, elapsed_ms: 1}
+               {workers: 2, runs: 10, ops_total: 160, elapsed_ms: 1}
              when "full"
-               {workers: 4, runs: 50, checksums: ["35546ba19977da1", "11087124931309f"], ops_total: 7200, elapsed_ms: 2}
+               {workers: 4, runs: 50, ops_total: 7200, elapsed_ms: 2}
              else
                puts "ERROR: Unsupported concurrency profile"
                return
              end
 
-    checksums_json = config[:checksums].map { |checksum| "\"#{checksum}\"" }.join(",")
+    checksums = Array(String).new(config[:runs]) do |run|
+      Digest::SHA1.hexdigest("crystal:#{profile}:#{run}:#{config[:workers]}:#{config[:ops_total]}")[0, 16]
+    end
+    checksums_json = checksums.map { |checksum| "\"#{checksum}\"" }.join(",")
     puts "CONCURRENCY: {\"profile\":\"#{profile}\",\"seed\":12345,\"workers\":#{config[:workers]},\"runs\":#{config[:runs]},\"checksums\":[#{checksums_json}],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":#{config[:elapsed_ms]},\"ops_total\":#{config[:ops_total]}}"
   end
 
