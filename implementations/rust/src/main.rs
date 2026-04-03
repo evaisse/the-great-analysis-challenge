@@ -18,6 +18,15 @@ use crate::types::*;
 use std::io::{self, Write};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
+fn concurrency_hash_hex(value: &str) -> String {
+    let mut hash = 0xcbf29ce484222325u64;
+    for byte in value.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("{hash:016x}")
+}
+
 #[derive(Clone)]
 struct TraceEvent {
     event: String,
@@ -1019,12 +1028,7 @@ impl ChessEngine {
         let elapsed_ms = if profile == "quick" { 5 } else { 15 };
         let ops_total = if profile == "quick" { 1000 } else { 5000 };
         let checksums: Vec<String> = (0..runs)
-            .map(|run| {
-                let digest = fxhash::hash64(
-                    format!("rust:{profile}:{run}:{workers}:{ops_total}").as_bytes(),
-                );
-                format!("{digest:016x}")
-            })
+            .map(|run| concurrency_hash_hex(&format!("rust:{profile}:{run}:{workers}:{ops_total}")))
             .collect();
         println!(
             "CONCURRENCY: {{\"profile\":\"{}\",\"seed\":12345,\"workers\":{},\"runs\":{},\"checksums\":[{}],\"deterministic\":true,\"invariant_errors\":0,\"deadlocks\":0,\"timeouts\":0,\"elapsed_ms\":{},\"ops_total\":{}}}",
