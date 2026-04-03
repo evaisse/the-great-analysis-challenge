@@ -20,16 +20,67 @@ type PgnMoveNode struct {
 	FenAfter   string
 	NAGs       []string
 	Comments   []string
-	Variations [][]*PgnMoveNode
+	Variations []*PgnVariation
+}
+
+type PgnVariation struct {
+	StartFEN        string
+	LeadingComments []string
+	Moves           []*PgnMoveNode
+	Result          string
+}
+
+type pgnCursor struct {
+	variation *PgnVariation
 }
 
 type PgnGame struct {
-	Tags            map[string]string
-	Moves           []*PgnMoveNode
-	Result          string
-	Source          string
-	InitialFEN      string
-	InitialComments []string
+	Tags        map[string]string
+	Mainline    *PgnVariation
+	Result      string
+	Source      string
+	cursorStack []pgnCursor
+}
+
+func newPgnGame(source string, tags map[string]string, mainline *PgnVariation, result string) *PgnGame {
+	if mainline == nil {
+		mainline = &PgnVariation{StartFEN: pgnStartFEN}
+	}
+	if mainline.StartFEN == "" {
+		mainline.StartFEN = pgnStartFEN
+	}
+	if mainline.Moves == nil {
+		mainline.Moves = make([]*PgnMoveNode, 0)
+	}
+	if mainline.LeadingComments == nil {
+		mainline.LeadingComments = make([]string, 0)
+	}
+	game := &PgnGame{
+		Tags:     tags,
+		Mainline: mainline,
+		Result:   result,
+		Source:   source,
+	}
+	game.syncResultTag()
+	game.ResetCursor()
+	return game
+}
+
+func (game *PgnGame) syncResultTag() {
+	if game.Tags == nil {
+		game.Tags = map[string]string{}
+	}
+	game.Tags["Result"] = game.Result
+}
+
+func (game *PgnGame) ResetCursor() {
+	if game.Mainline == nil {
+		game.Mainline = &PgnVariation{StartFEN: pgnStartFEN}
+	}
+	if game.Mainline.StartFEN == "" {
+		game.Mainline.StartFEN = pgnStartFEN
+	}
+	game.cursorStack = []pgnCursor{{variation: game.Mainline}}
 }
 
 func (game *PgnGame) SetSource(source string) {
@@ -38,13 +89,112 @@ func (game *PgnGame) SetSource(source string) {
 
 func (game *PgnGame) SetResult(result string) {
 	game.Result = result
-	if game.Tags == nil {
-		game.Tags = map[string]string{}
+	game.syncResultTag()
+	if game.Mainline != nil {
+		game.Mainline.Result = result
 	}
-	game.Tags["Result"] = result
-	if result == "*" && len(game.Tags) == 1 {
+}
+
+func (game *PgnGame) CurrentVariation() *PgnVariation {
+	if len(game.cursorStack) == 0 {
+		game.ResetCursor()
+	}
+	return game.cursorStack[len(game.cursorStack)-1].variation
+}
+
+func (game *PgnGame) CurrentMove() *PgnMoveNode {
+	variation := game.CurrentVariation()
+	if variation == nil || len(variation.Moves) == 0 {
+		return nil
+	}
+	return variation.Moves[len(variation.Moves)-1]
+}
+
+func (game *PgnGame) CurrentMoves() []string {
+	variation := game.CurrentVariation()
+	if variation == nil {
+		return nil
+	}
+	moves := make([]string, 0, len(variation.Moves))
+	for _, move := range variation.Moves {
+		moves = append(moves, move.SAN)
+	}
+	return moves
+}
+
+func (game *PgnGame) MainlineMoves() []string {
+	if game.Mainline == nil {
+		return nil
+	}
+	moves := make([]string, 0, len(game.Mainline.Moves))
+	for _, move := range game.Mainline.Moves {
+		moves = append(moves, move.SAN)
+	}
+	return moves
+}
+
+func (game *PgnGame) AppendMove(node *PgnMoveNode) {
+	variation := game.CurrentVariation()
+	if variation == nil {
 		return
 	}
+	variation.Moves = append(variation.Moves, node)
+}
+
+func (game *PgnGame) RewindLastMove() bool {
+	variation := game.CurrentVariation()
+	if variation == nil || len(variation.Moves) == 0 {
+		return false
+	}
+	variation.Moves = variation.Moves[:len(variation.Moves)-1]
+	game.SetResult("*")
+	return true
+}
+
+func (game *PgnGame) AddComment(text string) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return
+	}
+	move := game.CurrentMove()
+	if move != nil {
+		move.Comments = append(move.Comments, text)
+		return
+	}
+	variation := game.CurrentVariation()
+	if variation != nil {
+		variation.LeadingComments = append(variation.LeadingComments, text)
+	}
+}
+
+func (game *PgnGame) EnterVariation() (bool, string) {
+	move := game.CurrentMove()
+	if move == nil {
+		return false, "ERROR: pgn variation enter requires a current move"
+	}
+	if len(move.Variations) == 0 {
+		move.Variations = append(move.Variations, &PgnVariation{StartFEN: move.FenBefore, Moves: make([]*PgnMoveNode, 0), LeadingComments: make([]string, 0)})
+	}
+	variation := move.Variations[0]
+	if variation.StartFEN == "" {
+		variation.StartFEN = move.FenBefore
+	}
+	if variation.Moves == nil {
+		variation.Moves = make([]*PgnMoveNode, 0)
+	}
+	if variation.LeadingComments == nil {
+		variation.LeadingComments = make([]string, 0)
+	}
+	game.cursorStack = append(game.cursorStack, pgnCursor{variation: variation})
+	return true, fmt.Sprintf("PGN: variation depth=%d; moves=%d", len(game.cursorStack)-1, len(variation.Moves))
+}
+
+func (game *PgnGame) ExitVariation() (bool, string) {
+	if len(game.cursorStack) <= 1 {
+		return false, "ERROR: already at mainline"
+	}
+	game.cursorStack = game.cursorStack[:len(game.cursorStack)-1]
+	return true, fmt.Sprintf("PGN: variation depth=%d; moves=%d", len(game.cursorStack)-1, len(game.CurrentVariation().Moves))
 }
 
 func newPgnGameFromHistory(history []Move, startFEN, source string) *PgnGame {
@@ -56,17 +206,11 @@ func newPgnGameFromHistory(history []Move, startFEN, source string) *PgnGame {
 		gs = NewGameState()
 		startFEN = gs.ToFEN()
 	}
-	game := &PgnGame{
-		Tags: map[string]string{
-			"Event":  "CLI Game",
-			"Site":   "Local",
-			"Result": "*",
-		},
-		Moves:      make([]*PgnMoveNode, 0, len(history)),
-		Result:     "*",
-		Source:     source,
-		InitialFEN: startFEN,
-	}
+	game := newPgnGame(source, map[string]string{
+		"Event":  "CLI Game",
+		"Site":   "Local",
+		"Result": "*",
+	}, &PgnVariation{StartFEN: startFEN, Moves: make([]*PgnMoveNode, 0, len(history)), LeadingComments: make([]string, 0)}, "*")
 	if startFEN != pgnStartFEN {
 		game.Tags["SetUp"] = "1"
 		game.Tags["FEN"] = startFEN
@@ -80,8 +224,9 @@ func newPgnGameFromHistory(history []Move, startFEN, source string) *PgnGame {
 		}
 		gs.MakeMove(move)
 		fenAfter := gs.ToFEN()
-		game.Moves = append(game.Moves, &PgnMoveNode{SAN: san, Move: cloneMove(move), FenBefore: fenBefore, FenAfter: fenAfter})
+		game.Mainline.Moves = append(game.Mainline.Moves, &PgnMoveNode{SAN: san, Move: cloneMove(move), FenBefore: fenBefore, FenAfter: fenAfter})
 	}
+	game.ResetCursor()
 	return game
 }
 
@@ -359,7 +504,7 @@ func parsePGN(content, source string) (*PgnGame, error) {
 	if err != nil {
 		return nil, err
 	}
-	moves, result, initialComments, err := parsePGNSequence(tokens, &idx, gs)
+	mainline, result, err := parsePGNSequence(tokens, &idx, gs, initialFEN, true)
 	if err != nil {
 		return nil, err
 	}
@@ -372,79 +517,92 @@ func parsePGN(content, source string) (*PgnGame, error) {
 	if _, ok := tags["Result"]; !ok {
 		tags["Result"] = result
 	}
-	return &PgnGame{Tags: tags, Moves: moves, Result: result, Source: source, InitialFEN: initialFEN, InitialComments: initialComments}, nil
+	if mainline == nil {
+		mainline = &PgnVariation{StartFEN: initialFEN, Moves: make([]*PgnMoveNode, 0), LeadingComments: make([]string, 0)}
+	}
+	mainline.Result = result
+	return newPgnGame(source, tags, mainline, result), nil
 }
 
-func parsePGNSequence(tokens []pgnToken, idx *int, gs *GameState) ([]*PgnMoveNode, string, []string, error) {
-	moves := make([]*PgnMoveNode, 0)
-	leading := make([]string, 0)
+func parsePGNSequence(tokens []pgnToken, idx *int, gs *GameState, startFEN string, isRoot bool) (*PgnVariation, string, error) {
+	variation := &PgnVariation{
+		StartFEN:        startFEN,
+		LeadingComments: make([]string, 0),
+		Moves:           make([]*PgnMoveNode, 0),
+	}
 	result := ""
 	for *idx < len(tokens) {
 		tok := tokens[*idx]
 		switch tok.Kind {
 		case "RPAREN":
-			return moves, result, leading, nil
+			return variation, result, nil
 		case "RESULT":
-			*idx++
-			return moves, tok.Value, leading, nil
+			*idx += 1
+			if isRoot {
+				return variation, tok.Value, nil
+			}
+			variation.Result = tok.Value
+			return variation, tok.Value, nil
 		case "MOVE_NO":
-			*idx++
+			*idx += 1
 		case "COMMENT":
-			if len(moves) == 0 {
-				leading = append(leading, tok.Value)
+			if len(variation.Moves) == 0 {
+				variation.LeadingComments = append(variation.LeadingComments, tok.Value)
 			} else {
-				moves[len(moves)-1].Comments = append(moves[len(moves)-1].Comments, tok.Value)
+				variation.Moves[len(variation.Moves)-1].Comments = append(variation.Moves[len(variation.Moves)-1].Comments, tok.Value)
 			}
-			*idx++
+			*idx += 1
 		case "NAG":
-			if len(moves) == 0 {
-				return nil, "", nil, fmt.Errorf("NAG without move")
+			if len(variation.Moves) == 0 {
+				return nil, "", fmt.Errorf("NAG without move")
 			}
-			moves[len(moves)-1].NAGs = append(moves[len(moves)-1].NAGs, tok.Value)
-			*idx++
+			variation.Moves[len(variation.Moves)-1].NAGs = append(variation.Moves[len(variation.Moves)-1].NAGs, tok.Value)
+			*idx += 1
 		case "LPAREN":
-			if len(moves) == 0 {
-				return nil, "", nil, fmt.Errorf("variation without anchor move")
+			if len(variation.Moves) == 0 {
+				return nil, "", fmt.Errorf("variation without anchor move")
 			}
-			*idx++
-			anchor := moves[len(moves)-1]
+			*idx += 1
+			anchor := variation.Moves[len(variation.Moves)-1]
 			variationGS, err := gameStateFromFEN(anchor.FenBefore)
 			if err != nil {
-				return nil, "", nil, err
+				return nil, "", err
 			}
-			variationMoves, variationResult, pending, err := parsePGNSequence(tokens, idx, variationGS)
+			child, variationResult, err := parsePGNSequence(tokens, idx, variationGS, anchor.FenBefore, false)
 			if err != nil {
-				return nil, "", nil, err
+				return nil, "", err
 			}
 			if *idx >= len(tokens) || tokens[*idx].Kind != "RPAREN" {
-				return nil, "", nil, fmt.Errorf("unterminated PGN variation")
+				return nil, "", fmt.Errorf("unterminated PGN variation")
 			}
 			*idx++
-			if len(variationMoves) > 0 && len(pending) > 0 {
-				variationMoves[len(variationMoves)-1].Comments = append(variationMoves[len(variationMoves)-1].Comments, pending...)
+			if child != nil {
+				if child.StartFEN == "" {
+					child.StartFEN = anchor.FenBefore
+				}
+				if variationResult != "" {
+					child.Result = variationResult
+				}
+				anchor.Variations = append(anchor.Variations, child)
 			}
-			if variationResult != "" && variationResult != "*" && len(variationMoves) > 0 {
-				variationMoves[len(variationMoves)-1].Comments = append(variationMoves[len(variationMoves)-1].Comments, "result "+variationResult)
-			}
-			anchor.Variations = append(anchor.Variations, variationMoves)
 		case "SAN":
 			fenBefore := gs.ToFEN()
 			move, err := sanToMove(gs, tok.Value)
 			if err != nil {
-				return nil, "", nil, err
+				return nil, "", err
 			}
 			san, err := moveToSAN(gs, move)
 			if err != nil {
-				return nil, "", nil, err
+				return nil, "", err
 			}
 			gs.MakeMove(move)
-			moves = append(moves, &PgnMoveNode{SAN: san, Move: cloneMove(move), FenBefore: fenBefore, FenAfter: gs.ToFEN()})
-			*idx++
+			variation.Moves = append(variation.Moves, &PgnMoveNode{SAN: san, Move: cloneMove(move), FenBefore: fenBefore, FenAfter: gs.ToFEN()})
+			*idx += 1
 		default:
-			return nil, "", nil, fmt.Errorf("unexpected PGN token: %s", tok.Kind)
+			return nil, "", fmt.Errorf("unexpected PGN token: %s", tok.Kind)
 		}
 	}
-	return moves, result, leading, nil
+	return variation, result, nil
 }
 
 func serializePGN(game *PgnGame) string {
@@ -468,15 +626,12 @@ func serializePGN(game *PgnGame) string {
 	if len(lines) > 0 {
 		lines = append(lines, "")
 	}
-	moveNumber, color := startingPly(game.InitialFEN)
-	moveText := serializePGNSequence(game.Moves, moveNumber, color)
-	if len(game.InitialComments) > 0 {
-		commentParts := make([]string, 0, len(game.InitialComments))
-		for _, comment := range game.InitialComments {
-			commentParts = append(commentParts, "{"+comment+"}")
-		}
-		moveText = strings.TrimSpace(strings.Join(commentParts, " ") + " " + moveText)
+	startFEN := pgnStartFEN
+	if game.Mainline != nil && strings.TrimSpace(game.Mainline.StartFEN) != "" {
+		startFEN = strings.TrimSpace(game.Mainline.StartFEN)
 	}
+	moveNumber, color := startingPly(startFEN)
+	moveText := serializePGNVariation(game.Mainline, moveNumber, color, true)
 	if game.Result != "" {
 		moveText = strings.TrimSpace(moveText + " " + game.Result)
 	}
@@ -499,11 +654,17 @@ func startingPly(fen string) (int, Color) {
 	return 1, White
 }
 
-func serializePGNSequence(moves []*PgnMoveNode, moveNumber int, color Color) string {
+func serializePGNVariation(variation *PgnVariation, moveNumber int, color Color, isRoot bool) string {
+	if variation == nil {
+		return ""
+	}
 	parts := make([]string, 0)
+	for _, comment := range variation.LeadingComments {
+		parts = append(parts, "{"+comment+"}")
+	}
 	currentMoveNumber := moveNumber
 	currentColor := color
-	for _, node := range moves {
+	for _, node := range variation.Moves {
 		if currentColor == White {
 			parts = append(parts, fmt.Sprintf("%d. %s", currentMoveNumber, node.SAN))
 		} else {
@@ -518,7 +679,7 @@ func serializePGNSequence(moves []*PgnMoveNode, moveNumber int, color Color) str
 			parts = append(parts, "{"+comment+"}")
 		}
 		for _, variation := range node.Variations {
-			parts = append(parts, "("+serializePGNSequence(variation, currentMoveNumber, currentColor)+")")
+			parts = append(parts, "("+serializePGNVariation(variation, currentMoveNumber, currentColor, false)+")")
 		}
 		if currentColor == Black {
 			currentMoveNumber++
@@ -526,6 +687,9 @@ func serializePGNSequence(moves []*PgnMoveNode, moveNumber int, color Color) str
 		} else {
 			currentColor = Black
 		}
+	}
+	if !isRoot && strings.TrimSpace(variation.Result) != "" {
+		parts = append(parts, variation.Result)
 	}
 	return strings.TrimSpace(strings.Join(parts, " "))
 }

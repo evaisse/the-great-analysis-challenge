@@ -16,7 +16,7 @@ class PgnMoveNode {
     public array $nags;
     /** @var string[] */
     public array $comments;
-    /** @var array<int,array<int,PgnMoveNode>> */
+    /** @var PgnVariation[] */
     public array $variations;
 
     public function __construct(string $san, Move $move, string $fen_before, string $fen_after) {
@@ -30,30 +30,145 @@ class PgnMoveNode {
     }
 }
 
-class PgnGame {
-    /** @var array<string,string> */
-    public array $tags;
+class PgnVariation {
+    public string $start_fen;
+    /** @var string[] */
+    public array $leading_comments;
     /** @var PgnMoveNode[] */
     public array $moves;
     public string $result;
-    public string $source;
-    public string $initial_fen;
-    /** @var string[] */
-    public array $initial_comments;
 
-    /** @param PgnMoveNode[] $moves */
-    public function __construct(array $tags, array $moves, string $result = '*', string $source = 'current-game', string $initial_fen = PgnSupport::START_FEN) {
+    public function __construct(string $start_fen) {
+        $this->start_fen = $start_fen;
+        $this->leading_comments = [];
+        $this->moves = [];
+        $this->result = '';
+    }
+}
+
+class PgnGame {
+    /** @var array<string,string> */
+    public array $tags;
+    public PgnVariation $mainline;
+    public string $result;
+    public string $source;
+    /** @var array<int,array{variation:PgnVariation}> */
+    private array $cursor_stack;
+
+    /** @param array<string,string> $tags */
+    public function __construct(array $tags, PgnVariation $mainline, string $result = '*', string $source = 'current-game') {
         $this->tags = $tags;
-        $this->moves = $moves;
+        $this->mainline = $mainline;
         $this->result = $result;
         $this->source = $source;
-        $this->initial_fen = $initial_fen;
-        $this->initial_comments = [];
+        $this->cursor_stack = [];
+        $this->sync_result_tag();
+        $this->reset_cursor();
     }
 
     /** @return string[] */
     public function mainline_sans(): array {
-        return array_map(static fn(PgnMoveNode $node): string => $node->san, $this->moves);
+        return array_map(static fn(PgnMoveNode $node): string => $node->san, $this->mainline->moves);
+    }
+
+    public function set_source(string $source): void {
+        $this->source = $source;
+    }
+
+    public function set_result(string $result): void {
+        $this->result = $result;
+        $this->mainline->result = $result;
+        $this->sync_result_tag();
+    }
+
+    public function reset_cursor(): void {
+        $this->cursor_stack = [
+            ['variation' => $this->mainline],
+        ];
+    }
+
+    public function current_variation(): PgnVariation {
+        if (empty($this->cursor_stack)) {
+            $this->reset_cursor();
+        }
+        return $this->cursor_stack[count($this->cursor_stack) - 1]['variation'];
+    }
+
+    public function current_move(): ?PgnMoveNode {
+        $variation = $this->current_variation();
+        if (empty($variation->moves)) {
+            return null;
+        }
+        return $variation->moves[count($variation->moves) - 1];
+    }
+
+    /** @return string[] */
+    public function current_sans(): array {
+        return array_map(static fn(PgnMoveNode $node): string => $node->san, $this->current_variation()->moves);
+    }
+
+    public function append_move(PgnMoveNode $node): void {
+        $variation = $this->current_variation();
+        $variation->moves[] = $node;
+    }
+
+    public function rewind_last_move(): bool {
+        $variation = $this->current_variation();
+        if (empty($variation->moves)) {
+            return false;
+        }
+        array_pop($variation->moves);
+        $this->set_result('*');
+        return true;
+    }
+
+    public function add_comment(string $text): void {
+        $text = trim($text);
+        if ($text === '') {
+            return;
+        }
+        $move = $this->current_move();
+        if ($move !== null) {
+            $move->comments[] = $text;
+            return;
+        }
+        $this->current_variation()->leading_comments[] = $text;
+    }
+
+    /** @return array{ok:bool,message:string} */
+    public function enter_variation(): array {
+        $move = $this->current_move();
+        if ($move === null) {
+            return ['ok' => false, 'message' => 'ERROR: pgn variation enter requires a current move'];
+        }
+        if (empty($move->variations)) {
+            $move->variations[] = new PgnVariation($move->fen_before);
+        }
+        $variation = $move->variations[0];
+        if ($variation->start_fen === '') {
+            $variation->start_fen = $move->fen_before;
+        }
+        $this->cursor_stack[] = ['variation' => $variation];
+        return [
+            'ok' => true,
+            'message' => 'PGN: variation depth=' . (count($this->cursor_stack) - 1) . '; moves=' . count($variation->moves),
+        ];
+    }
+
+    /** @return array{ok:bool,message:string} */
+    public function exit_variation(): array {
+        if (count($this->cursor_stack) <= 1) {
+            return ['ok' => false, 'message' => 'ERROR: already at mainline'];
+        }
+        array_pop($this->cursor_stack);
+        return [
+            'ok' => true,
+            'message' => 'PGN: variation depth=' . (count($this->cursor_stack) - 1) . '; moves=' . count($this->current_variation()->moves),
+        ];
+    }
+
+    private function sync_result_tag(): void {
+        $this->tags['Result'] = $this->result;
     }
 }
 
@@ -127,7 +242,6 @@ class PgnSupport {
         $tokens = self::tokenize($content);
         $index = 0;
         $tags = [];
-        $initialComments = [];
 
         while ($index < count($tokens) && $tokens[$index]['kind'] === 'TAG') {
             [$name, $value] = explode("\n", $tokens[$index]['value'], 2);
@@ -137,8 +251,7 @@ class PgnSupport {
 
         $initialFen = $tags['FEN'] ?? self::START_FEN;
         [$board, $fenParser] = self::stateFromFen($initialFen);
-        [$moves, $result, $pending] = self::parseSequence($tokens, $index, $board, $fenParser);
-        $initialComments = array_merge($initialComments, $pending);
+        [$mainline, $result] = self::parseSequence($tokens, $index, $board, $fenParser, $initialFen);
 
         if ($result === '*' && isset($tags['Result'])) {
             $result = $tags['Result'];
@@ -147,9 +260,8 @@ class PgnSupport {
             $tags['Result'] = $result;
         }
 
-        $game = new PgnGame($tags, $moves, $result, $source, $initialFen);
-        $game->initial_comments = $initialComments;
-        return $game;
+        $mainline->result = $result;
+        return new PgnGame($tags, $mainline, $result, $source);
     }
 
     public static function serializeGame(PgnGame $game): string {
@@ -162,12 +274,8 @@ class PgnSupport {
             $lines[] = '';
         }
 
-        [$moveNumber, $color] = self::startingPly($game->initial_fen);
-        $moveText = self::serializeSequence($game->moves, $moveNumber, $color);
-        if (!empty($game->initial_comments)) {
-            $prefix = implode(' ', array_map(static fn(string $comment): string => '{' . $comment . '}', $game->initial_comments));
-            $moveText = trim($prefix . ' ' . $moveText);
-        }
+        [$moveNumber, $color] = self::startingPly($game->mainline->start_fen);
+        $moveText = self::serializeVariation($game->mainline, $moveNumber, $color, true);
         if ($game->result !== '') {
             $moveText = trim($moveText . ' ' . $game->result);
         }
@@ -179,14 +287,14 @@ class PgnSupport {
     /** @param Move[] $moveHistory */
     public static function buildGameFromHistory(array $moveHistory, string $startFen = self::START_FEN, string $source = 'current-game'): PgnGame {
         [$board, $fenParser] = self::stateFromFen($startFen);
-        $moves = [];
+        $mainline = new PgnVariation($startFen);
         foreach ($moveHistory as $rawMove) {
             $move = self::copyMove($rawMove);
             $fenBefore = $fenParser->export_fen();
             $san = self::moveToSan($board, $move);
             $board->make_move($move);
             $fenAfter = $fenParser->export_fen();
-            $moves[] = new PgnMoveNode($san, $move, $fenBefore, $fenAfter);
+            $mainline->moves[] = new PgnMoveNode($san, $move, $fenBefore, $fenAfter);
         }
 
         $tags = [
@@ -199,7 +307,7 @@ class PgnSupport {
             $tags['FEN'] = $startFen;
         }
 
-        return new PgnGame($tags, $moves, '*', $source, $startFen);
+        return new PgnGame($tags, $mainline, '*', $source);
     }
 
     private static function squareName(int $row, int $col): string {
@@ -379,10 +487,9 @@ class PgnSupport {
         return $tokens;
     }
 
-    /** @return array{0:array<int,PgnMoveNode>,1:string,2:array<int,string>} */
-    private static function parseSequence(array $tokens, int &$index, Board $board, FenParser $fenParser): array {
-        $moves = [];
-        $trailingComments = [];
+    /** @return array{0:PgnVariation,1:string} */
+    private static function parseSequence(array $tokens, int &$index, Board $board, FenParser $fenParser, string $startFen): array {
+        $variation = new PgnVariation($startFen);
         $result = '*';
         $count = count($tokens);
 
@@ -401,41 +508,38 @@ class PgnSupport {
                 continue;
             }
             if ($token['kind'] === 'COMMENT') {
-                if (!empty($moves)) {
-                    $moves[count($moves) - 1]->comments[] = $token['value'];
+                if (!empty($variation->moves)) {
+                    $variation->moves[count($variation->moves) - 1]->comments[] = $token['value'];
                 } else {
-                    $trailingComments[] = $token['value'];
+                    $variation->leading_comments[] = $token['value'];
                 }
                 $index++;
                 continue;
             }
             if ($token['kind'] === 'NAG') {
-                if (empty($moves)) {
+                if (empty($variation->moves)) {
                     throw new \RuntimeException('NAG without move');
                 }
-                $moves[count($moves) - 1]->nags[] = $token['value'];
+                $variation->moves[count($variation->moves) - 1]->nags[] = $token['value'];
                 $index++;
                 continue;
             }
             if ($token['kind'] === 'LPAREN') {
-                if (empty($moves)) {
+                if (empty($variation->moves)) {
                     throw new \RuntimeException('variation without anchor move');
                 }
                 $index++;
-                $anchor = $moves[count($moves) - 1];
+                $anchor = $variation->moves[count($variation->moves) - 1];
                 [$variationBoard, $variationParser] = self::stateFromFen($anchor->fen_before);
-                [$variationMoves, $variationResult, $pending] = self::parseSequence($tokens, $index, $variationBoard, $variationParser);
+                [$child, $variationResult] = self::parseSequence($tokens, $index, $variationBoard, $variationParser, $anchor->fen_before);
                 if ($index >= $count || $tokens[$index]['kind'] !== 'RPAREN') {
                     throw new \RuntimeException('unterminated PGN variation');
                 }
                 $index++;
-                if (!empty($pending) && !empty($variationMoves)) {
-                    $variationMoves[count($variationMoves) - 1]->comments = array_merge($variationMoves[count($variationMoves) - 1]->comments, $pending);
+                if ($variationResult !== '' && $variationResult !== '*') {
+                    $child->result = $variationResult;
                 }
-                if ($variationResult !== '*' && !empty($variationMoves)) {
-                    $variationMoves[count($variationMoves) - 1]->comments[] = 'result ' . $variationResult;
-                }
-                $anchor->variations[] = $variationMoves;
+                $anchor->variations[] = $child;
                 continue;
             }
             if ($token['kind'] !== 'SAN') {
@@ -447,11 +551,11 @@ class PgnSupport {
             $canonical = self::moveToSan($board, $move);
             $board->make_move($move);
             $fenAfter = $fenParser->export_fen();
-            $moves[] = new PgnMoveNode($canonical, self::copyMove($move), $fenBefore, $fenAfter);
+            $variation->moves[] = new PgnMoveNode($canonical, self::copyMove($move), $fenBefore, $fenAfter);
             $index++;
         }
 
-        return [$moves, $result, $trailingComments];
+        return [$variation, $result];
     }
 
     /** @return array{0:int,1:int} */
@@ -465,13 +569,15 @@ class PgnSupport {
         return [1, CHESS_WHITE];
     }
 
-    /** @param PgnMoveNode[] $moves */
-    private static function serializeSequence(array $moves, int $moveNumber, int $color): string {
+    private static function serializeVariation(PgnVariation $variation, int $moveNumber, int $color, bool $isRoot): string {
         $parts = [];
+        foreach ($variation->leading_comments as $comment) {
+            $parts[] = '{' . $comment . '}';
+        }
         $currentNumber = $moveNumber;
         $currentColor = $color;
 
-        foreach ($moves as $node) {
+        foreach ($variation->moves as $node) {
             if ($currentColor === CHESS_WHITE) {
                 $parts[] = $currentNumber . '. ' . $node->san;
             } else {
@@ -489,7 +595,7 @@ class PgnSupport {
                 $parts[] = '{' . $comment . '}';
             }
             foreach ($node->variations as $variation) {
-                $parts[] = '(' . self::serializeSequence($variation, $currentNumber, $currentColor) . ')';
+                $parts[] = '(' . self::serializeVariation($variation, $currentNumber, $currentColor, false) . ')';
             }
 
             if ($currentColor === CHESS_BLACK) {
@@ -498,6 +604,10 @@ class PgnSupport {
             } else {
                 $currentColor = CHESS_BLACK;
             }
+        }
+
+        if (!$isRoot && $variation->result !== '' && $variation->result !== '*') {
+            $parts[] = $variation->result;
         }
 
         return trim(implode(' ', array_filter($parts, static fn($part): bool => $part !== '')));

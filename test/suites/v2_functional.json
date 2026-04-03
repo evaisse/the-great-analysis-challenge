@@ -56,6 +56,16 @@
           "expected_patterns": ["CHECKMATE:", "[Result \"0-1\"]", "Qh4# 0-1"],
           "timeout": 8000,
           "optional": true
+        },
+        {
+          "id": "pgn_variation_navigation",
+          "name": "PGN Variation Navigation",
+          "commands": [
+            {"fixture_file": "test/fixtures/pgn/commands_variation_navigation.txt"}
+          ],
+          "expected_patterns": ["PGN: variation depth=1; moves=1", "PGN: moves c5", "{sideline} 1... c5 {sicilian} {counterplay}", "PGN: variation depth=0; moves=2"],
+          "timeout": 8000,
+          "optional": true
         }
       ]
     },
