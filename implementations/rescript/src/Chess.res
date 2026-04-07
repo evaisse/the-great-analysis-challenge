@@ -141,7 +141,7 @@ let buildTraceExportPayload = (engine: gameEngine): string =>
         summary: lastAi.summary,
       };
     }
-    return JSON.stringify(payload) + "\\n";
+    return JSON.stringify(payload);
   })`)(
     engine.traceEvents,
     engine.traceLastAi,
@@ -173,7 +173,7 @@ let buildTraceChromePayload = (engine: gameEngine): string =>
         ts_ms: event.ts_ms,
       },
     })),
-  }) + "\\n")`)(
+  }))`)(
     engine.traceEvents,
     engine.traceEnabled,
     engine.traceLevel,
