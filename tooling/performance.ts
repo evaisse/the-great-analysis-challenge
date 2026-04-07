@@ -98,12 +98,13 @@ async function runTrackSuiteStructured(
   metadata: Record<string, unknown>,
   imageName: string,
   track: string,
-): Promise<{ success: boolean; seconds: number; score: Record<string, number>; errors: string[] }> {
+): Promise<{ success: boolean; seconds: number; score: Record<string, number>; errors: string[]; failedTests: string[] }> {
   const suite = new TestSuite(TRACK_TO_SUITE[track] ?? TRACK_TO_SUITE.v1);
   await suite.loadTests();
   const tester = new ChessEngineTester(implPath, metadata, imageName);
   const started = Bun.nanoseconds();
   const errors: string[] = [];
+  const failedTests: string[] = [];
   let passed = 0;
   let failed = 0;
 
@@ -114,6 +115,7 @@ async function runTrackSuiteStructured(
       seconds: Number(Bun.nanoseconds() - started) / 1_000_000_000,
       score: { passed: 0, failed: 1, errors: tester.results.errors.length || 1, total: 1 },
       errors,
+      failedTests,
     };
   }
 
@@ -128,11 +130,20 @@ async function runTrackSuiteStructured(
           continue;
         }
       }
+      const previousFailureCount = tester.results.failed.length;
       const success = await suite.runTest(tester, test);
       if (success) {
         passed += 1;
       } else {
         failed += 1;
+        const newFailures = tester.results.failed.slice(previousFailureCount);
+        if (newFailures.length > 0) {
+          for (const failure of newFailures) {
+            failedTests.push(String(failure.test ?? test.name));
+          }
+        } else {
+          failedTests.push(test.name);
+        }
       }
     }
     errors.push(...tester.results.errors);
@@ -145,6 +156,7 @@ async function runTrackSuiteStructured(
     seconds: Number(Bun.nanoseconds() - started) / 1_000_000_000,
     score: { passed, failed: failed + errors.length, errors: errors.length, total: passed + failed + errors.length },
     errors,
+    failedTests,
   };
 }
 
@@ -244,6 +256,9 @@ async function runSingleBenchmark(
     result.errors.push(
       `track ${track} suite failed: ${trackResult.score.passed}/${trackResult.score.total} checks passed`,
     );
+    if (trackResult.failedTests.length > 0) {
+      result.errors.push(`track ${track} failing checks: ${trackResult.failedTests.join(", ")}`);
+    }
   }
   if (trackResult.errors.length > 0) {
     result.errors.push(...trackResult.errors.map((error) => `track ${track} suite: ${error}`));
