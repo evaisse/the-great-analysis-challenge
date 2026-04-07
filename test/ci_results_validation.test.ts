@@ -175,4 +175,43 @@ describe("benchmark result safety checks", () => {
     const exitCode = await validateAllResults(reportsDir, ["python"]);
     expect(exitCode).toBe(0);
   });
+
+  test("combineResults marks reports invalid when a task result indicates failure", async () => {
+    const root = makeTempDir("tgac-ci-task-failure-");
+    tempDirs.push(root);
+
+    const artifactsDir = join(root, "benchmark_artifacts");
+    const reportsDir = join(root, "reports");
+    const nestedArtifactDir = join(artifactsDir, "benchmark-crystal-123");
+
+    await writeJsonFile(join(nestedArtifactDir, "crystal.json"), {
+      ...benchmarkPayload("crystal"),
+      task_results: {
+        make_build: true,
+        make_analyze: true,
+        make_test: true,
+        make_test_chess_engine: false,
+      },
+      scores: {
+        make_test_chess_engine: {
+          passed: 23,
+          failed: 3,
+          errors: 0,
+          total: 26,
+        },
+      },
+    });
+
+    const combined = await combineResults({
+      artifactsDir,
+      reportsDir,
+      expectedImplementations: ["crystal"],
+    });
+
+    expect(combined).toBe(true);
+
+    const normalizedCrystal = await readJsonFile<any>(join(reportsDir, "crystal.json"));
+    expect(normalizedCrystal.report_status).toBe("failed");
+    expect(normalizedCrystal.errors).toContain("build error: Task result indicates failure: make_test_chess_engine");
+  });
 });

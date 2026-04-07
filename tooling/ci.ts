@@ -330,6 +330,13 @@ export async function validateResultJson(resultFile: string): Promise<[boolean, 
       issues.push(`Status is not 'completed': ${data.status}`);
     }
 
+    const taskResults = typeof data.task_results === "object" && data.task_results ? data.task_results : {};
+    for (const [taskName, taskOk] of Object.entries(taskResults)) {
+      if (taskOk === false) {
+        issues.push(`Task result indicates failure: ${taskName}`);
+      }
+    }
+
     const timings = data.timings ?? {};
     const docker = typeof data.docker === "object" ? data.docker : {};
     const makeBuildSkipped = Boolean(docker.make_build_skipped);

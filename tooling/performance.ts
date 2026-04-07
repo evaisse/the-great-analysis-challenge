@@ -240,6 +240,11 @@ async function runSingleBenchmark(
   result.docker.test_chess_engine_time = trackResult.seconds;
   result.task_results.make_test_chess_engine = trackResult.success;
   result.scores.make_test_chess_engine = trackResult.score;
+  if (!trackResult.success) {
+    result.errors.push(
+      `track ${track} suite failed: ${trackResult.score.passed}/${trackResult.score.total} checks passed`,
+    );
+  }
   if (trackResult.errors.length > 0) {
     result.errors.push(...trackResult.errors.map((error) => `track ${track} suite: ${error}`));
   }
@@ -256,7 +261,8 @@ async function runSingleBenchmark(
   };
 
   computeNormalizedMetrics(result);
-  result.status = result.errors.length === 0 ? "completed" : "failed";
+  const allTasksSucceeded = Object.values(result.task_results).every(Boolean);
+  result.status = result.errors.length === 0 && allTasksSucceeded ? "completed" : "failed";
   return result;
 }
 

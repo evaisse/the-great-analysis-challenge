@@ -45,9 +45,36 @@ const END_KEYWORDS = [
   "INFO ",
   "ID NAME",
   "ID AUTHOR",
+  "BOOK:",
   "PGN",
   "TRACE",
 ];
+
+const COMMAND_OUTPUT_QUIET_WINDOW_MS = 200;
+
+export function normalizeCommandOutputLines(output: string): string[] {
+  return output
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+export function outputHasTerminalKeyword(lines: string[]): boolean {
+  return lines.some((line) => END_KEYWORDS.some((keyword) => line.toUpperCase().includes(keyword)));
+}
+
+export function commandOutputSettled(output: string, idleMs: number, quietWindowMs = COMMAND_OUTPUT_QUIET_WINDOW_MS): boolean {
+  const lines = normalizeCommandOutputLines(output);
+  if (lines.length === 0) {
+    return false;
+  }
+
+  if (outputHasTerminalKeyword(lines)) {
+    return idleMs >= quietWindowMs;
+  }
+
+  return idleMs >= quietWindowMs;
+}
 
 const HARNESS_CONTAINER_PREFIX = "tgac-harness";
 const MAX_CONTAINER_NAME_LENGTH = 80;
@@ -401,17 +428,21 @@ export class ChessEngineTester {
         }
 
         const output = this.stdoutLog.slice(startIndex);
-        const lines = output
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
+        const lines = normalizeCommandOutputLines(output);
 
-        if (lines.some((line) => END_KEYWORDS.some((keyword) => line.toUpperCase().includes(keyword)))) {
-          endSeenAt = Date.now();
-        }
+        if (lines.length > 0) {
+          const idleMs = Math.max(0, Date.now() - Math.max(this.lastStdoutAt || startTime, startTime));
+          if (outputHasTerminalKeyword(lines)) {
+            endSeenAt = Date.now();
+          }
 
-        if (endSeenAt !== null && Date.now() - endSeenAt >= 120) {
-          return lines.join("\n");
+          if (commandOutputSettled(output, idleMs)) {
+            return lines.join("\n");
+          }
+
+          if (endSeenAt !== null && idleMs >= COMMAND_OUTPUT_QUIET_WINDOW_MS) {
+            return lines.join("\n");
+          }
         }
 
         await sleep(50);
