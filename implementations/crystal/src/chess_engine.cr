@@ -134,6 +134,8 @@ class ChessEngine
                    "none"
                  end
         puts "DRAWS: repetition=#{repetition}; halfmove=#{halfmove}; draw=#{draw ? "true" : "false"}; reason=#{reason}"
+      when "history"
+        puts "HISTORY: count=#{@game_state.position_history.size + 1}; current=#{@game_state.hash.to_s(16).rjust(16, '0')}"
       when "eval"
         puts "EVALUATION: #{@ai.search(@game_state, 0).evaluation}"
       when "perft"
@@ -871,6 +873,7 @@ perft <depth> - Count positions at depth
 status - Show game status
 hash - Show position hash
 draws - Show draw status
+history - Show position history summary
 new960 [id] - Start Chess960 position (0-959)
 position960 - Show current Chess960 metadata
 pgn load|save|show|moves|variation|comment - PGN command family
