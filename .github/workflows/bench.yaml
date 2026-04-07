@@ -196,14 +196,30 @@ jobs:
           mkdir -p reports
 
       - name: Run v2 stress benchmark
+        id: stress-run
+        continue-on-error: true
         run: ./workflow benchmark-stress ${{ matrix.engine }} --track v2-full --profile ${{ steps.stress-profile.outputs.value }} --timeout ${{ steps.benchmark-timeout.outputs.seconds }} --output reports/${{ matrix.engine }}-stress.out.txt
+
+      - name: Record stress benchmark status
+        if: always()
+        run: |
+          cat > reports/${{ matrix.engine }}-stress.status.json <<'EOF'
+          {
+            "engine": "${{ matrix.engine }}",
+            "profile": "${{ steps.stress-profile.outputs.value }}",
+            "outcome": "${{ steps.stress-run.outcome }}",
+            "conclusion": "${{ steps.stress-run.conclusion }}"
+          }
+          EOF
 
       - name: Upload stress benchmark logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: benchmark-stress-${{ matrix.engine }}-${{ github.sha }}
-          path: reports/${{ matrix.engine }}-stress.out.txt
+          path: |
+            reports/${{ matrix.engine }}-stress.out.txt
+            reports/${{ matrix.engine }}-stress.status.json
           if-no-files-found: warn
           retention-days: 30
 
@@ -259,17 +275,38 @@ jobs:
           mkdir -p reports
 
       - name: Build Docker image for concurrency harness
+        id: concurrency-build
+        continue-on-error: true
         run: make image DIR=${{ matrix.engine }}
 
       - name: Run concurrency benchmark
+        id: concurrency-run
+        if: always() && steps.concurrency-build.outcome == 'success'
+        continue-on-error: true
         run: ./workflow benchmark-concurrency ${{ matrix.engine }} --profile ${{ steps.stress-profile.outputs.value }} --skip-build --timeout ${{ steps.benchmark-timeout.outputs.seconds }} --output reports/${{ matrix.engine }}-concurrency.json
+
+      - name: Record concurrency benchmark status
+        if: always()
+        run: |
+          cat > reports/${{ matrix.engine }}-concurrency.status.json <<'EOF'
+          {
+            "engine": "${{ matrix.engine }}",
+            "profile": "${{ steps.stress-profile.outputs.value }}",
+            "build_outcome": "${{ steps.concurrency-build.outcome }}",
+            "build_conclusion": "${{ steps.concurrency-build.conclusion }}",
+            "run_outcome": "${{ steps.concurrency-run.outcome || 'skipped' }}",
+            "run_conclusion": "${{ steps.concurrency-run.conclusion || 'skipped' }}"
+          }
+          EOF
 
       - name: Upload concurrency benchmark results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: benchmark-concurrency-${{ matrix.engine }}-${{ github.sha }}
-          path: reports/${{ matrix.engine }}-concurrency.json
+          path: |
+            reports/${{ matrix.engine }}-concurrency.json
+            reports/${{ matrix.engine }}-concurrency.status.json
           if-no-files-found: warn
           retention-days: 30
 
@@ -405,8 +442,66 @@ jobs:
     if: always()
 
     steps:
+      - name: Download stress benchmark artifacts
+        if: always() && needs.detect-changes.outputs.has-changes == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: benchmark-stress-*-${{ github.sha }}
+          path: stress_artifacts/
+          merge-multiple: true
+
+      - name: Download concurrency benchmark artifacts
+        if: always() && needs.detect-changes.outputs.has-changes == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: benchmark-concurrency-*-${{ github.sha }}
+          path: concurrency_artifacts/
+          merge-multiple: true
+
       - name: Workflow summary
         run: |
+          collect_failures() {
+            local mode="$1"
+            local dir="$2"
+            local failures=()
+            local file
+
+            if [[ ! -d "$dir" ]]; then
+              echo "0|"
+              return
+            fi
+
+            while IFS= read -r file; do
+              if [[ "$mode" == "stress" ]]; then
+                outcome=$(jq -r '.outcome // "unknown"' "$file")
+                engine=$(jq -r '.engine // "unknown"' "$file")
+                if [[ "$outcome" != "success" ]]; then
+                  failures+=("${engine} (${outcome})")
+                fi
+              else
+                build_outcome=$(jq -r '.build_outcome // "unknown"' "$file")
+                run_outcome=$(jq -r '.run_outcome // "unknown"' "$file")
+                engine=$(jq -r '.engine // "unknown"' "$file")
+                if [[ "$build_outcome" != "success" ]]; then
+                  failures+=("${engine} (build:${build_outcome})")
+                elif [[ "$run_outcome" != "success" ]]; then
+                  failures+=("${engine} (run:${run_outcome})")
+                fi
+              fi
+            done < <(find "$dir" -type f -name "*.status.json" | sort)
+
+            local joined=""
+            if (( ${#failures[@]} > 0 )); then
+              joined=$(printf '%s, ' "${failures[@]}")
+              joined=${joined%, }
+            fi
+
+            echo "${#failures[@]}|${joined}"
+          }
+
+          IFS='|' read -r STRESS_FAILURE_COUNT STRESS_FAILURES <<< "$(collect_failures stress stress_artifacts)"
+          IFS='|' read -r CONCURRENCY_FAILURE_COUNT CONCURRENCY_FAILURES <<< "$(collect_failures concurrency concurrency_artifacts)"
+
           echo "# 🏁 Benchmark Suite Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
@@ -423,16 +518,26 @@ jobs:
             echo "- 🟡 **Good**: ${{ needs.validation.outputs.good-count }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🔴 **Needs work**: ${{ needs.validation.outputs.needs-work-count }}" >> $GITHUB_STEP_SUMMARY
             echo "- ⚙️ **Core benchmark matrix**: ${{ needs.benchmark.result }}" >> $GITHUB_STEP_SUMMARY
-            echo "- 🔥 **Stress benchmark matrix**: ${{ needs.benchmark-stress.result }}" >> $GITHUB_STEP_SUMMARY
-            echo "- 🧵 **Concurrency benchmark matrix**: ${{ needs.benchmark-concurrency.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "- 🔥 **Stress benchmark lane**: informational" >> $GITHUB_STEP_SUMMARY
+            echo "- 🔥 **Stress benchmark failures**: ${STRESS_FAILURE_COUNT}" >> $GITHUB_STEP_SUMMARY
+            if [[ -n "$STRESS_FAILURES" ]]; then
+              echo "- **Failing stress implementations**: ${STRESS_FAILURES}" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "- 🧵 **Concurrency benchmark lane**: informational" >> $GITHUB_STEP_SUMMARY
+            echo "- 🧵 **Concurrency benchmark failures**: ${CONCURRENCY_FAILURE_COUNT}" >> $GITHUB_STEP_SUMMARY
+            if [[ -n "$CONCURRENCY_FAILURES" ]]; then
+              echo "- **Failing concurrency implementations**: ${CONCURRENCY_FAILURES}" >> $GITHUB_STEP_SUMMARY
+            fi
             echo "- 🚨 **Build errors in README benchmark table**: ${{ needs.combine-results.outputs.build-error-count }}" >> $GITHUB_STEP_SUMMARY
             if [[ -n "${{ needs.combine-results.outputs.build-error-languages }}" ]]; then
               echo "- **Build error implementations**: ${{ needs.combine-results.outputs.build-error-languages }}" >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ needs.combine-results.outputs.build-error-count }}" != "0" && -n "${{ needs.combine-results.outputs.build-error-count }}" ]]; then
-              echo "⚠️ Matrix-based benchmarking completed with build errors reported in the README table." >> $GITHUB_STEP_SUMMARY
+              echo "⚠️ Core benchmark publication succeeded, with build errors reported in the README table." >> $GITHUB_STEP_SUMMARY
+            elif [[ "$STRESS_FAILURE_COUNT" != "0" || "$CONCURRENCY_FAILURE_COUNT" != "0" ]]; then
+              echo "⚠️ Core benchmark publication succeeded, with informational stress/concurrency failures listed above." >> $GITHUB_STEP_SUMMARY
             else
-              echo "✅ Matrix-based benchmarking completed successfully!" >> $GITHUB_STEP_SUMMARY
+              echo "✅ Core benchmark publication and informational benchmark lanes completed successfully!" >> $GITHUB_STEP_SUMMARY
             fi
           fi
