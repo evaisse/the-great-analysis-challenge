@@ -1643,6 +1643,8 @@ rl.on('line') do(line)
 				process.stdout.write("OK: FEN\n")
 		when 'export'
 			process.stdout.write("FEN: {engine.export-fen!}\n")
+		when 'history'
+			process.stdout.write("HISTORY: count={engine.history.length + 1}; current={engine.hash-string!}\n")
 		when 'ai'
 			const depth = parseInt(tokens[1] or '3')
 			if Number.isNaN(depth) or depth < 1 or depth > 5
@@ -1698,7 +1700,7 @@ rl.on('line') do(line)
 			const n = engine.perft(d)
 			process.stdout.write("Nodes: {n}, Time: {Date.now! - s}ms\n")
 		when 'help'
-			process.stdout.write("Commands: new, move, undo, fen, export, ai, draws, go, pgn, book, uci, isready, setoption, ucinewgame, position, new960, position960, status, eval, hash, perft, trace, concurrency, help, quit\n")
+			process.stdout.write("Commands: new, move, undo, fen, export, history, ai, draws, go, pgn, book, uci, isready, setoption, ucinewgame, position, new960, position960, status, eval, hash, perft, trace, concurrency, help, quit\n")
 		when 'quit'
 			process.exit(0)
 		else

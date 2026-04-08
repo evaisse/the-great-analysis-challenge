@@ -306,7 +306,6 @@ function process_command(engine::ChessEngine, command::String)
         setup_starting_position!(engine.board)
         reset_runtime_state!(engine)
         println("OK: New game started")
-        println("HASH: ", @sprintf("%016x", engine.board.zobrist_hash))
     elseif cmd == "move"
         if length(parts) != 2
             println("ERROR: Invalid move format")
@@ -395,11 +394,13 @@ function process_command(engine::ChessEngine, command::String)
     elseif cmd == "hash"
         println("HASH: ", @sprintf("%016x", engine.board.zobrist_hash))
     elseif cmd == "draws"
-        repetition = is_draw_by_repetition(engine.board)
-        fifty = is_draw_by_fifty_moves(engine.board)
-        println(
-            "DRAWS: repetition=$(bool_text(repetition)) count=$(repetition_count(engine.board)) fifty_move=$(bool_text(fifty)) halfmove_clock=$(engine.board.state.halfmove_clock)"
-        )
+        repetition = repetition_count(engine.board)
+        halfmove = engine.board.state.halfmove_clock
+        draw = repetition >= 3 || halfmove >= 100
+        reason = halfmove >= 100 ? "fifty_moves" : repetition >= 3 ? "repetition" : "none"
+        println("DRAWS: repetition=$repetition; halfmove=$halfmove; draw=$(bool_text(draw)); reason=$reason")
+    elseif cmd == "history"
+        println("HISTORY: count=$(length(engine.board.position_history) + 1); current=$(@sprintf("%016x", engine.board.zobrist_hash))")
     elseif cmd == "fen"
         if length(parts) < 2
             println("ERROR: FEN string required")
@@ -616,6 +617,7 @@ function process_command(engine::ChessEngine, command::String)
         println("  eval               - Display position evaluation")
         println("  hash               - Show Zobrist hash")
         println("  draws              - Show draw state")
+        println("  history            - Show position history summary")
         println("  pgn <cmd>          - PGN command surface")
         println("  book <cmd>         - Opening book command surface")
         println("  uci                - UCI handshake")
@@ -636,10 +638,9 @@ function process_command(engine::ChessEngine, command::String)
 end
 
 function warmup_engine!(engine::ChessEngine)
-    process_command(engine, "new")
-    process_command(engine, "hash")
     setup_starting_position!(engine.board)
     reset_runtime_state!(engine)
+    @sprintf("%016x", engine.board.zobrist_hash)
 end
 
 function main()

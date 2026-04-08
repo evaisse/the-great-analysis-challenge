@@ -516,9 +516,7 @@ function handleAi(depthText) {
         gameMoves.push(bookMove.moveStr);
         bookPlayed++;
         traceLastAi = `book:${bookMove.moveStr}`;
-        if (traceEnabled) {
-            traceEvents++;
-        }
+        recordTrace('ai', traceLastAi);
         emit(`AI: ${bookMove.moveStr} (book)`);
         return;
     }
@@ -538,9 +536,7 @@ function handleAi(depthText) {
     engine.makeMove(result.move);
     gameMoves.push(moveStr);
     traceLastAi = `search:${moveStr}`;
-    if (traceEnabled) {
-        traceEvents++;
-    }
+    recordTrace('ai', traceLastAi);
 
     const drawInfo = engine.getDrawInfo();
     if (drawInfo) {
