@@ -22,6 +22,7 @@ const CUSTOM_EMOJIS: Record<string, string> = {
   python: "🐍",
   crystal: "💠",
   dart: "🎯",
+  elixir: "💧",
   elm: "🌳",
   gleam: "✨",
   go: "🐹",

@@ -22,6 +22,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 | 📦 C | - | 1,511 | - | - | - | - | 🟢 6/9 |
 | 💠 Crystal | [5,399.5](implementations/crystal/src/chess_engine.cr) | 2,232 | 4.2s, - MB | 890ms, - MB | 7.4s, - MB | 6m 01s, - MB | 🟢 9/9 |
 | 🎯 Dart | [10,100.25](implementations/dart/bin/main.dart) | 3,308 | 195ms, 5 MB | 185ms, 5 MB | 190ms, 5 MB | 10.5s, 62 MB | 🟡 9/9 |
+| 💧 Elixir | - | 1,348 | - | - | - | - | 🟢 6/9 |
 | 🌳 Elm | [4,481.25](implementations/elm/src/ChessEngine.elm) | 1,543 | 756ms, - MB | 566ms, - MB | 821ms, - MB | 6m 01s, - MB | 🟢 9/9 |
 | ✨ Gleam | [27,937](implementations/gleam/src/chess_engine.gleam) | 14,964 | 265ms, 6 MB | 335ms, 7 MB | 770ms, 56 MB | 10s, 63 MB | 🟢 9/9 |
 | 🐹 Go | [9,967.5](implementations/go/chess.go) | 3,919 | 546ms, 87 MB | 1.2s, 112 MB | 1.1s, 128 MB | 10.5s, 62 MB | 🟢 9/9 |
