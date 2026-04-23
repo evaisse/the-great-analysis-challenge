@@ -1,4 +1,4 @@
-FROM gcc:14
+FROM ghcr.io/evaisse/tgac-c-toolchain:latest
 
 WORKDIR /app
 COPY . .
@@ -15,6 +15,8 @@ LABEL org.chess.source_exts=".c,.h"
 LABEL org.chess.build="make build"
 LABEL org.chess.test="make test"
 LABEL org.chess.analyze="make analyze"
+LABEL org.chess.bugit="if [ -f .bugit/chess.c.bak ]; then echo 'bugit already active for c'; else mkdir -p .bugit && cp src/chess.c .bugit/chess.c.bak && printf '\nint __bugit__(\n' >> src/chess.c; fi"
+LABEL org.chess.fix="if [ -f .bugit/chess.c.bak ]; then mv .bugit/chess.c.bak src/chess.c && rmdir .bugit 2>/dev/null || true; else echo 'no c bugit backup to restore'; fi"
 LABEL org.chess.run="./chess"
 
 CMD ["./chess"]

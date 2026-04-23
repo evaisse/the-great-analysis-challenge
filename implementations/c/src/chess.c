@@ -1,6 +1,9 @@
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -140,6 +143,29 @@ static long long current_time_ms(void) {
     return (long long) tv.tv_sec * 1000LL + (long long) tv.tv_usec / 1000LL;
 }
 
+static void append_format(char **cursor, size_t *remaining, const char *format, ...) {
+    if (*remaining == 0) {
+        return;
+    }
+
+    va_list args;
+    va_start(args, format);
+    int written = vsnprintf(*cursor, *remaining, format, args);
+    va_end(args);
+
+    if (written < 0) {
+        return;
+    }
+
+    size_t advance = (size_t) written;
+    if (advance >= *remaining) {
+        advance = *remaining - 1;
+    }
+
+    *cursor += advance;
+    *remaining -= advance;
+}
+
 static bool in_bounds(int row, int col) {
     return row >= 0 && row < 8 && col >= 0 && col < 8;
 }
@@ -242,6 +268,11 @@ static void board_export_fen(const Board *board, char *buffer, size_t buffer_siz
     char *cursor = buffer;
     size_t remaining = buffer_size;
 
+    if (buffer_size == 0) {
+        return;
+    }
+    buffer[0] = '\0';
+
     for (int rank = 7; rank >= 0; --rank) {
         int empty_count = 0;
         for (int file = 0; file < 8; ++file) {
@@ -252,60 +283,55 @@ static void board_export_fen(const Board *board, char *buffer, size_t buffer_siz
             }
 
             if (empty_count > 0) {
-                *cursor++ = (char) ('0' + empty_count);
-                remaining -= 1;
+                append_format(&cursor, &remaining, "%c", (char) ('0' + empty_count));
                 empty_count = 0;
             }
 
-            *cursor++ = piece;
-            remaining -= 1;
+            append_format(&cursor, &remaining, "%c", piece);
         }
 
         if (empty_count > 0) {
-            *cursor++ = (char) ('0' + empty_count);
-            remaining -= 1;
+            append_format(&cursor, &remaining, "%c", (char) ('0' + empty_count));
         }
 
         if (rank > 0) {
-            *cursor++ = '/';
-            remaining -= 1;
+            append_format(&cursor, &remaining, "/");
         }
     }
 
-    *cursor++ = ' ';
-    *cursor++ = board->white_to_move ? 'w' : 'b';
-    *cursor++ = ' ';
+    append_format(&cursor, &remaining, " %c ", board->white_to_move ? 'w' : 'b');
 
     bool any_castling = false;
     if (board->white_kingside) {
-        *cursor++ = 'K';
+        append_format(&cursor, &remaining, "K");
         any_castling = true;
     }
     if (board->white_queenside) {
-        *cursor++ = 'Q';
+        append_format(&cursor, &remaining, "Q");
         any_castling = true;
     }
     if (board->black_kingside) {
-        *cursor++ = 'k';
+        append_format(&cursor, &remaining, "k");
         any_castling = true;
     }
     if (board->black_queenside) {
-        *cursor++ = 'q';
+        append_format(&cursor, &remaining, "q");
         any_castling = true;
     }
     if (!any_castling) {
-        *cursor++ = '-';
+        append_format(&cursor, &remaining, "-");
     }
 
-    *cursor++ = ' ';
+    append_format(&cursor, &remaining, " ");
     if (board->en_passant >= 0) {
-        *cursor++ = (char) ('a' + square_col(board->en_passant));
-        *cursor++ = (char) ('1' + square_row(board->en_passant));
+        append_format(&cursor, &remaining, "%c%c",
+                      (char) ('a' + square_col(board->en_passant)),
+                      (char) ('1' + square_row(board->en_passant)));
     } else {
-        *cursor++ = '-';
+        append_format(&cursor, &remaining, "-");
     }
 
-    snprintf(cursor, remaining > 0 ? remaining : 1, " %d %d", board->halfmove_clock, board->fullmove_number);
+    append_format(&cursor, &remaining, " %d %d", board->halfmove_clock, board->fullmove_number);
 }
 
 static void board_export_position_key(const Board *board, char *buffer, size_t buffer_size) {
@@ -870,25 +896,31 @@ static void move_to_string(const Move *move, char buffer[6]) {
     buffer[2] = (char) ('a' + square_col(move->to));
     buffer[3] = (char) ('1' + square_row(move->to));
     if (move->promotion != '\0') {
-        buffer[4] = move->promotion;
+        buffer[4] = (char) tolower((unsigned char) move->promotion);
         buffer[5] = '\0';
     } else {
         buffer[4] = '\0';
     }
 }
 
+static bool is_center_square(int square) {
+    int row = square_row(square);
+    int col = square_col(square);
+    return (row == 3 || row == 4) && (col == 3 || col == 4);
+}
+
 static int move_order_score(const Board *board, const Move *move) {
     char piece = board->squares[move->from];
     int score = 0;
 
-    if (move->promotion != '\0') {
-        score += 1000 + piece_value(move->promotion);
-    }
     if (move->captured != '.') {
         score += 10 * piece_value(move->captured) - piece_value(piece);
     }
-    if (move->is_en_passant) {
-        score += 90;
+    if (move->promotion != '\0') {
+        score += piece_value(move->promotion) * 10;
+    }
+    if (is_center_square(move->to)) {
+        score += 10;
     }
     if (move->is_castling) {
         score += 50;
@@ -1263,8 +1295,15 @@ static bool resolve_user_move(const Engine *engine, const char *move_text, Move 
 
 static bool parse_int_argument(const char *text, int *value) {
     char *end = NULL;
-    long parsed = strtol(text, &end, 10);
-    if (text == NULL || *text == '\0' || *end != '\0') {
+    long parsed = 0;
+
+    if (text == NULL || *text == '\0') {
+        return false;
+    }
+
+    errno = 0;
+    parsed = strtol(text, &end, 10);
+    if (end == text || *end != '\0' || errno == ERANGE || parsed < INT_MIN || parsed > INT_MAX) {
         return false;
     }
     *value = (int) parsed;
