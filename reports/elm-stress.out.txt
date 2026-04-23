@@ -1,0 +1,26 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2026-04-23T22:38:39.336Z
+================================================================================
+
+PERFORMANCE SUMMARY
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+elm          completed  7504       1811     186ms, - MB        178ms, - MB        177ms, - MB        20.6s, - MB               1/1              26/26             
+
+============================================================
+DETAILED RESULTS: ELM
+============================================================
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/elm
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 3.6s
+  - build_seconds: 186ms
+  - analyze_seconds: 178ms
+  - test_seconds: 177ms
+  - test_chess_engine_seconds: 20.6s
+  - test_v2_full_seconds: 20.6s
+Metrics: TOKENS=7,504, LOC=1,811

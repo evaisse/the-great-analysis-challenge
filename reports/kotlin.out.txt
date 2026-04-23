@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-17T01:17:40.450Z
+Generated: 2026-04-23T22:40:13.141Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-kotlin       completed  11039      1708     37.2s, - MB        34s, - MB          947ms, - MB        6m 01s, - MB              1/1              16/16             
+kotlin       completed  13402      1974     7.1s, - MB         6.7s, - MB         171ms, - MB        21.1s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: KOTLIN
 ============================================================
-Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/kotlin
-Track: v2-full
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/kotlin
+Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 46.2s
-  - build_seconds: 37.2s
-  - analyze_seconds: 34s
-  - test_seconds: 947ms
-  - test_chess_engine_seconds: 6m 01s
-  - test_v2_full_seconds: 6m 01s
-Metrics: TOKENS=11,039, LOC=1,708
+  - image_build_seconds: 19.1s
+  - build_seconds: 7.1s
+  - analyze_seconds: 6.7s
+  - test_seconds: 171ms
+  - test_chess_engine_seconds: 21.1s
+  - test_v1_seconds: 21.1s
+Metrics: TOKENS=13,402, LOC=1,974

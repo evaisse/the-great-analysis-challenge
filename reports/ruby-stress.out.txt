@@ -1,0 +1,26 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2026-04-23T22:39:30.675Z
+================================================================================
+
+PERFORMANCE SUMMARY
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ruby         completed  13079      2469     <1ms, - MB         2s, - MB           272ms, - MB        19.7s, - MB               1/1              26/26             
+
+============================================================
+DETAILED RESULTS: RUBY
+============================================================
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/ruby
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 16.7s
+  - build_seconds: <1ms
+  - analyze_seconds: 2s
+  - test_seconds: 272ms
+  - test_chess_engine_seconds: 19.7s
+  - test_v2_full_seconds: 19.7s
+Metrics: TOKENS=13,079, LOC=2,469

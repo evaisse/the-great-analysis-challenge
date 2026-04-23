@@ -1,164 +1,156 @@
-[
-  {
+{
+  "language": "nim",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/nim",
+  "metadata": {
     "language": "nim",
-    "path": "implementations/nim",
-    "metadata": {
-      "language": "nim",
-      "version": "2.0",
-      "author": "Nim Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
-      "source_exts": [
-        ".nim"
-      ],
-      "build": "nim c -d:release chess.nim",
-      "test": "./chess --test",
-      "analyze": "nim check chess.nim",
-      "bugit": "if [ -f .bugit/chess.nim.bak ]; then echo 'bugit already active for nim'; else mkdir -p .bugit && cp chess.nim .bugit/chess.nim.bak && printf '\\n)\\n' >> chess.nim; fi",
-      "fix": "if [ -f .bugit/chess.nim.bak ]; then mv .bugit/chess.nim.bak chess.nim && rmdir .bugit 2>/dev/null || true; else echo 'no nim bugit backup to restore'; fi",
-      "run": "./chess"
-    },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.3488616943359375,
-      "build_seconds": 0.209306001663208,
-      "analyze_seconds": 0.1930398941040039,
-      "test_seconds": 0.1993114948272705,
-      "test_internal_seconds": 0.1993114948272705,
-      "test_chess_engine_seconds": 9.753554582595825,
-      "test_v2_full_seconds": 9.753554582595825
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 111.53515625,
-        "peak_memory_mb": 111.53515625,
-        "avg_memory_mb": 90.8740234375,
-        "avg_cpu_percent": 0,
-        "samples": 4,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 6.578125,
-        "peak_memory_mb": 6.578125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "analyze": {
-        "memory_mb": 6.984375,
-        "peak_memory_mb": 6.984375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 6.75390625,
-        "peak_memory_mb": 6.75390625,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.3515625,
-        "peak_memory_mb": 62.12109375,
-        "avg_memory_mb": 60.121426196808514,
-        "avg_cpu_percent": 0,
-        "samples": 94,
-        "psutil_available": true
-      }
-    },
-    "size": {
-      "source_loc": 1339,
-      "source_files": 1
-    },
-    "metrics": {
-      "tokens_count": 10036,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 189.41719607530138,
-      "analyze_ms_per_kloc": 174.6967367457049,
-      "runtime_ms_per_kloc": 180.3723935088421
-    },
-    "docker": {
-      "build_time": 0.3488616943359375,
-      "build_success": true,
-      "image_build_time": 0.3488616943359375,
-      "image_build_success": true,
-      "make_build_skipped": false,
-      "make_build_time": 0.209306001663208,
-      "make_build_success": true,
-      "make_analyze_time": 0.1930398941040039,
-      "make_analyze_success": true,
-      "test_time": 0.1993114948272705,
-      "test_success": true,
-      "make_test_time": 0.1993114948272705,
-      "make_test_success": true,
-      "test_chess_engine_time": 9.753554582595825,
-      "test_chess_engine_success": false,
-      "track_test_time": 9.753554582595825,
-      "track_test_success": false
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": false
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 2,
-        "failed": 14,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [],
-      "failed": [
-        "make_test_chess_engine"
-      ]
-    },
-    "errors": [
-      "track v2-full suite failed: Found 1 implementation(s)\nLoaded 16 tests from test/suites/v2_full.json\n\nTesting nim implementation at implementations/nim\n----------------------------------------\nRunning test: Hash Command Baseline ✓\nRunning test: Hash Command After Move ✓\nRunning test: Draws Command ✗\nRunning test: Go Movetime ✗\nRunning test: PGN Show ✗\nRunning test: PGN Fixture Morphy ✗\nRunning test: PGN Fixture Byrne-Fischer ✗\nRunning test: Book Load Stats ✗\nRunning test: Book AI Move ✗\nRunning test: UCI Handshake ✗\nRunning"
+    "version": "2.0",
+    "author": "Nim Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
     ],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 5748,
-      "total_tokens": 7345,
-      "semantic_tokens": 7252,
-      "by_category": {
-        "keyword": 1064,
-        "identifier": 2932,
-        "type": 248,
-        "operator": 1939,
-        "literal": 1069,
-        "punctuation": 0,
-        "comment": 93,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.147,
-        "comment_ratio": 0.013,
-        "punctuation_ratio": 0,
-        "complexity_per_loc": 4.29,
-        "complexity_per_file": 5748
-      }
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 1000,
+    "source_exts": [
+      ".nim"
+    ],
+    "build": "nim c -d:release chess.nim",
+    "test": "./chess --test",
+    "analyze": "nim check chess.nim",
+    "bugit": "if [ -f .bugit/chess.nim.bak ]; then echo 'bugit already active for nim'; else mkdir -p .bugit && cp chess.nim .bugit/chess.nim.bak && printf '\\n)\\n' >> chess.nim; fi",
+    "fix": "if [ -f .bugit/chess.nim.bak ]; then mv .bugit/chess.nim.bak chess.nim && rmdir .bugit 2>/dev/null || true; else echo 'no nim bugit backup to restore'; fi",
+    "run": "./chess"
+  },
+  "track": "v1",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 10.887687188,
+    "build_seconds": 0.978742193,
+    "analyze_seconds": 0.912267898,
+    "test_seconds": 0.146817105,
+    "test_chess_engine_seconds": 18.50774861,
+    "test_v1_seconds": 18.50774861
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 1636,
+    "source_files": 1
+  },
+  "metrics": {
+    "tokens_count": 12412,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 598.253174205379,
+    "analyze_ms_per_kloc": 557.6209645476773,
+    "runtime_ms_per_kloc": 89.74150672371638
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 10.887687188,
+    "make_build_success": true,
+    "make_build_time": 0.978742193,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.912267898,
+    "make_test_success": true,
+    "make_test_time": 0.146817105,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 18.50774861
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 27,
+      "failed": 0,
+      "errors": 0,
+      "total": 27
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 7067,
+    "total_tokens": 9037,
+    "semantic_tokens": 8948,
+    "by_category": {
+      "keyword": 1276,
+      "identifier": 3625,
+      "type": 285,
+      "operator": 2453,
+      "literal": 1309,
+      "punctuation": 0,
+      "comment": 89,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.143,
+      "comment_ratio": 0.01,
+      "punctuation_ratio": 0,
+      "complexity_per_loc": 4.32,
+      "complexity_per_file": 7067
     }
   }
-]
+}

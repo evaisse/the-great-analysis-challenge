@@ -1,6 +1,6 @@
 {
   "language": "crystal",
-  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/crystal",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/crystal",
   "metadata": {
     "language": "crystal",
     "version": "1.14.0",
@@ -28,15 +28,15 @@
     "bugit": "if [ -f .bugit/chess_engine.cr.bak ]; then echo 'bugit already active for crystal'; else mkdir -p .bugit && cp src/chess_engine.cr .bugit/chess_engine.cr.bak && printf '\\n)\\n' >> src/chess_engine.cr; fi",
     "fix": "if [ -f .bugit/chess_engine.cr.bak ]; then mv .bugit/chess_engine.cr.bak src/chess_engine.cr && rmdir .bugit 2>/dev/null || true; else echo 'no crystal bugit backup to restore'; fi"
   },
-  "track": "v2-full",
+  "track": "v1",
   "profile": "quick",
   "timings": {
-    "image_build_seconds": 34.568172583,
-    "build_seconds": 4.158885375,
-    "analyze_seconds": 0.889638708,
-    "test_seconds": 7.449642958,
-    "test_chess_engine_seconds": 360.603812959,
-    "test_v2_full_seconds": 360.603812959
+    "image_build_seconds": 26.80778616,
+    "build_seconds": 1.465189144,
+    "analyze_seconds": 0.212438671,
+    "test_seconds": 4.466520371,
+    "test_chess_engine_seconds": 19.069039375,
+    "test_v1_seconds": 19.069039375
   },
   "memory": {
     "image": {
@@ -76,29 +76,29 @@
     }
   },
   "size": {
-    "source_loc": 2232,
-    "source_files": 10
+    "source_loc": 3308,
+    "source_files": 12
   },
   "metrics": {
-    "tokens_count": 12802,
+    "tokens_count": 19116,
     "metric_version": "tokens-v2"
   },
   "normalized": {
-    "build_ms_per_kloc": 1863.299899193548,
-    "analyze_ms_per_kloc": 398.58365053763436,
-    "runtime_ms_per_kloc": 3337.653655017921
+    "build_ms_per_kloc": 442.9229576783555,
+    "analyze_ms_per_kloc": 64.2196707980653,
+    "runtime_ms_per_kloc": 1350.2177663240627
   },
   "docker": {
     "image_build_success": true,
-    "image_build_time": 34.568172583,
+    "image_build_time": 26.80778616,
     "make_build_success": true,
-    "make_build_time": 4.158885375,
+    "make_build_time": 1.465189144,
     "make_analyze_success": true,
-    "make_analyze_time": 0.889638708,
+    "make_analyze_time": 0.212438671,
     "make_test_success": true,
-    "make_test_time": 7.449642958,
+    "make_test_time": 4.466520371,
     "test_chess_engine_success": true,
-    "test_chess_engine_time": 360.603812959
+    "test_chess_engine_time": 19.069039375
   },
   "task_results": {
     "make_build": true,
@@ -108,10 +108,10 @@
   },
   "scores": {
     "make_test_chess_engine": {
-      "passed": 16,
+      "passed": 27,
       "failed": 0,
       "errors": 0,
-      "total": 16
+      "total": 27
     },
     "make_test": {
       "passed": 1,
@@ -132,25 +132,25 @@
   "status": "completed",
   "semantic_metrics": {
     "metric_version": "tokens-v3",
-    "complexity_score": 5399.5,
-    "total_tokens": 8055,
-    "semantic_tokens": 7989,
+    "complexity_score": 8040.5,
+    "total_tokens": 11666,
+    "semantic_tokens": 11599,
     "by_category": {
-      "keyword": 981,
-      "identifier": 2590,
-      "type": 19,
-      "operator": 1033,
-      "literal": 1806,
-      "punctuation": 1560,
-      "comment": 66,
+      "keyword": 1549,
+      "identifier": 4020,
+      "type": 28,
+      "operator": 1398,
+      "literal": 2374,
+      "punctuation": 2230,
+      "comment": 67,
       "unknown": 0
     },
     "ratios": {
-      "keyword_density": 0.123,
-      "comment_ratio": 0.008,
-      "punctuation_ratio": 0.195,
-      "complexity_per_loc": 2.42,
-      "complexity_per_file": 539.95
+      "keyword_density": 0.134,
+      "comment_ratio": 0.006,
+      "punctuation_ratio": 0.192,
+      "complexity_per_loc": 2.43,
+      "complexity_per_file": 670.04
     }
   }
 }

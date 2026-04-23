@@ -1,33 +1,31 @@
-[
-  {
-    "implementation": "lua",
-    "docker_image": "chess-lua",
+{
+  "implementation": "lua",
+  "docker_image": "chess-lua",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "passed",
-    "issues": [],
-    "payload": {
-      "profile": "quick",
-      "seed": 12345,
-      "workers": 1,
-      "runs": 10,
-      "checksums": [
-        "74faa4411ee743fe",
-        "5f55178bda3aa78e",
-        "e46597443700f7f2",
-        "e12009c6f7907077",
-        "4a406d956d6bec36",
-        "5810b98a118088ed",
-        "699948937536ce15",
-        "b36e0ae684e80d7f",
-        "9f44b21582dba3f4",
-        "de56e26aa6c11d87"
-      ],
-      "deterministic": true,
-      "invariant_errors": 0,
-      "deadlocks": 0,
-      "timeouts": 0,
-      "elapsed_ms": 76,
-      "ops_total": 2400
-    }
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "74faa4411ee743fe",
+      "5f55178bda3aa78e",
+      "e46597443700f7f2",
+      "e12009c6f7907077",
+      "4a406d956d6bec36",
+      "5810b98a118088ed",
+      "699948937536ce15",
+      "b36e0ae684e80d7f",
+      "9f44b21582dba3f4",
+      "de56e26aa6c11d87"
+    ],
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 93,
+    "ops_total": 2400
   }
-]
+}

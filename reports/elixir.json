@@ -1,0 +1,157 @@
+{
+  "language": "elixir",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/elixir",
+  "metadata": {
+    "language": "elixir",
+    "version": "1.17",
+    "author": "AI Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
+    ],
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 1500,
+    "source_exts": [
+      ".ex",
+      ".exs"
+    ],
+    "build": "mix compile --warnings-as-errors",
+    "test": "mix run --no-compile -e \"ChessEngine.SelfTest.main()\"",
+    "analyze": "mix format --check-formatted && mix compile --warnings-as-errors",
+    "bugit": "if [ -f .bugit/chess_engine.ex.bak ]; then echo 'bugit already active for elixir'; else mkdir -p .bugit && cp lib/chess_engine.ex .bugit/chess_engine.ex.bak && printf '\\n  def __bugit__( do\\n' >> lib/chess_engine.ex; fi",
+    "fix": "if [ -f .bugit/chess_engine.ex.bak ]; then mv .bugit/chess_engine.ex.bak lib/chess_engine.ex && rmdir .bugit 2>/dev/null || true; else echo 'no elixir bugit backup to restore'; fi",
+    "run": "mix run --no-compile -e \"ChessEngine.CLI.main()\""
+  },
+  "track": "v1",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 21.707736248,
+    "build_seconds": 0.576671752,
+    "analyze_seconds": 0.966490618,
+    "test_seconds": 0.584242181,
+    "test_chess_engine_seconds": 21.106843847,
+    "test_v1_seconds": 21.106843847
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 2084,
+    "source_files": 5
+  },
+  "metrics": {
+    "tokens_count": 13759,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 276.71389251439535,
+    "analyze_ms_per_kloc": 463.7670911708253,
+    "runtime_ms_per_kloc": 280.3465359884837
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 21.707736248,
+    "make_build_success": true,
+    "make_build_time": 0.576671752,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.966490618,
+    "make_test_success": true,
+    "make_test_time": 0.584242181,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 21.106843847
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 27,
+      "failed": 0,
+      "errors": 0,
+      "total": 27
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 5312.75,
+    "total_tokens": 8492,
+    "semantic_tokens": 8418,
+    "by_category": {
+      "keyword": 1130,
+      "identifier": 1976,
+      "type": 288,
+      "operator": 1242,
+      "literal": 1409,
+      "punctuation": 2373,
+      "comment": 74,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.134,
+      "comment_ratio": 0.009,
+      "punctuation_ratio": 0.282,
+      "complexity_per_loc": 2.55,
+      "complexity_per_file": 1062.55
+    }
+  }
+}

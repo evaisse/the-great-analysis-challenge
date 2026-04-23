@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "haskell",
-    "docker_image": "chess-haskell",
+{
+  "implementation": "haskell",
+  "docker_image": "chess-haskell",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "b209e8c57fc39fde",
+      "5b0f1b8e70e871b7",
+      "640340b3ecb63b54",
+      "8301ebc9d6085b8d",
+      "0266c6aceae022a2",
+      "9d11ff52274c6fbb",
+      "e11c2dc8c1fcef28",
+      "11c615a56864a0e1",
+      "9e42e11c9cd93c86",
+      "48b3a7073cd4bcbf"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

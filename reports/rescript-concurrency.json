@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "rescript",
-    "docker_image": "chess-rescript",
+{
+  "implementation": "rescript",
+  "docker_image": "chess-rescript",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "00000449",
+      "0001044a",
+      "0002044b",
+      "0003044c",
+      "0004044d",
+      "0005044e",
+      "0006044f",
+      "00070450",
+      "00080451",
+      "00090452"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

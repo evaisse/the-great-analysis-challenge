@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "rust",
-    "docker_image": "chess-rust",
+{
+  "implementation": "rust",
+  "docker_image": "chess-rust",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "91dec5c17a713ec4",
+      "af29f0d76250f0fd",
+      "e03728a7ae244bce",
+      "88eaa09bfea37527",
+      "62c81d9534029218",
+      "3fa19ab2f61fa451",
+      "db7ab250b607ac12",
+      "82b7219241ebb6ab",
+      "c0a96c10bf17e1cc",
+      "c970361b43410605"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

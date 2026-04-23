@@ -1,0 +1,18 @@
+{
+  "engine": "typescript",
+  "profile": "quick",
+  "outcome": "success",
+  "conclusion": "success",
+  "report_status": "failed",
+  "errors": [
+    "build error: Missing critical field: language",
+    "build error: Missing critical field: timings",
+    "build error: Missing critical field: metadata",
+    "build error: Missing critical field: status",
+    "build error: Status is not 'completed': undefined",
+    "build error: Required timing field 'build_seconds' is missing",
+    "build error: Required timing field 'test_seconds' is missing",
+    "build error: Metadata is empty",
+    "build error: Features list is empty"
+  ]
+}

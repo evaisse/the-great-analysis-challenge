@@ -1,165 +1,159 @@
-[
-  {
+{
+  "language": "go",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/go",
+  "metadata": {
     "language": "go",
-    "path": "implementations/go",
-    "metadata": {
-      "language": "go",
-      "version": "1.23",
-      "author": "AI Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 800,
-      "source_exts": [
-        ".go"
-      ],
-      "build": "go build -o chess .",
-      "test": "go test ./...",
-      "analyze": "go vet ./... && gofmt -d .",
-      "bugit": "if [ -f .bugit/types.go.bak ]; then echo 'bugit already active for go'; else mkdir -p .bugit && cp types.go .bugit/types.go.bak && printf '\\nfunc __bugit__( {\\n' >> types.go; fi",
-      "fix": "if [ -f .bugit/types.go.bak ]; then mv .bugit/types.go.bak types.go && rmdir .bugit 2>/dev/null || true; else echo 'no go bugit backup to restore'; fi",
-      "run": "./chess"
+    "version": "1.23",
+    "author": "AI Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960",
+      "PGN Comment Show",
+      "PGN Result Checkmate Show",
+      "PGN Variation Navigation"
+    ],
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 800,
+    "source_exts": [
+      ".go"
+    ],
+    "build": "go build -o chess .",
+    "test": "go test ./...",
+    "analyze": "go vet ./... && gofmt -d .",
+    "bugit": "if [ -f .bugit/types.go.bak ]; then echo 'bugit already active for go'; else mkdir -p .bugit && cp types.go .bugit/types.go.bak && printf '\\nfunc __bugit__( {\\n' >> types.go; fi",
+    "fix": "if [ -f .bugit/types.go.bak ]; then mv .bugit/types.go.bak types.go && rmdir .bugit 2>/dev/null || true; else echo 'no go bugit backup to restore'; fi",
+    "run": "./chess"
+  },
+  "track": "v1",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 18.881501415,
+    "build_seconds": 0.568118337,
+    "analyze_seconds": 0.985557092,
+    "test_seconds": 1.101678303,
+    "test_chess_engine_seconds": 24.526716648,
+    "test_v1_seconds": 24.526716648
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.5804862976074219,
-      "build_seconds": 0.5464305877685547,
-      "analyze_seconds": 1.1901381015777588,
-      "test_seconds": 1.1192512512207031,
-      "test_internal_seconds": 1.1192512512207031,
-      "test_chess_engine_seconds": 10.493664026260376,
-      "test_v2_full_seconds": 10.493664026260376
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "memory": {
-      "image": {
-        "memory_mb": 116.265625,
-        "peak_memory_mb": 116.265625,
-        "avg_memory_mb": 101.0078125,
-        "avg_cpu_percent": 0,
-        "samples": 6,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 87.30078125,
-        "peak_memory_mb": 87.30078125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "analyze": {
-        "memory_mb": 112.26953125,
-        "peak_memory_mb": 112.26953125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 127.609375,
-        "peak_memory_mb": 127.609375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.5234375,
-        "peak_memory_mb": 62.3671875,
-        "avg_memory_mb": 60.51392326732673,
-        "avg_cpu_percent": 0,
-        "samples": 101,
-        "psutil_available": true
-      }
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "size": {
-      "source_loc": 3919,
-      "source_files": 7
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "metrics": {
-      "tokens_count": 24803,
-      "metric_version": "tokens-v2"
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 5703,
+    "source_files": 9
+  },
+  "metrics": {
+    "tokens_count": 37235,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 99.61745344555497,
+    "analyze_ms_per_kloc": 172.81379835174468,
+    "runtime_ms_per_kloc": 193.17522409258282
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 18.881501415,
+    "make_build_success": true,
+    "make_build_time": 0.568118337,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.985557092,
+    "make_test_success": true,
+    "make_test_time": 1.101678303,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 24.526716648
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 27,
+      "failed": 0,
+      "errors": 0,
+      "total": 27
     },
-    "normalized": {
-      "build_ms_per_kloc": 139.64492404000887,
-      "analyze_ms_per_kloc": 304.14978317857367,
-      "runtime_ms_per_kloc": 286.0340534681071
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 15016.25,
+    "total_tokens": 21878,
+    "semantic_tokens": 21773,
+    "by_category": {
+      "keyword": 2219,
+      "identifier": 7765,
+      "type": 571,
+      "operator": 2966,
+      "literal": 3661,
+      "punctuation": 4591,
+      "comment": 105,
+      "unknown": 0
     },
-    "docker": {
-      "build_time": 0.5804862976074219,
-      "build_success": true,
-      "image_build_time": 0.5804862976074219,
-      "image_build_success": true,
-      "make_build_skipped": false,
-      "make_build_time": 0.5464305877685547,
-      "make_build_success": true,
-      "make_analyze_time": 1.1901381015777588,
-      "make_analyze_success": true,
-      "test_time": 1.1192512512207031,
-      "test_success": true,
-      "make_test_time": 1.1192512512207031,
-      "make_test_success": true,
-      "test_chess_engine_time": 10.493664026260376,
-      "test_chess_engine_success": true,
-      "track_test_time": 10.493664026260376,
-      "track_test_success": true
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 16,
-        "failed": 0,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 9967.5,
-      "total_tokens": 14666,
-      "semantic_tokens": 14552,
-      "by_category": {
-        "keyword": 1445,
-        "identifier": 5126,
-        "type": 396,
-        "operator": 1955,
-        "literal": 2462,
-        "punctuation": 3168,
-        "comment": 114,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.099,
-        "comment_ratio": 0.008,
-        "punctuation_ratio": 0.218,
-        "complexity_per_loc": 2.54,
-        "complexity_per_file": 1423.93
-      }
+    "ratios": {
+      "keyword_density": 0.102,
+      "comment_ratio": 0.005,
+      "punctuation_ratio": 0.211,
+      "complexity_per_loc": 2.63,
+      "complexity_per_file": 1668.47
     }
   }
-]
+}

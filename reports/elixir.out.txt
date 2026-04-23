@@ -1,0 +1,26 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2026-04-23T22:39:33.810Z
+================================================================================
+
+PERFORMANCE SUMMARY
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+elixir       completed  13759      2084     577ms, - MB        966ms, - MB        584ms, - MB        21.1s, - MB               1/1              27/27             
+
+============================================================
+DETAILED RESULTS: ELIXIR
+============================================================
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/elixir
+Track: v1
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 21.7s
+  - build_seconds: 577ms
+  - analyze_seconds: 966ms
+  - test_seconds: 584ms
+  - test_chess_engine_seconds: 21.1s
+  - test_v1_seconds: 21.1s
+Metrics: TOKENS=13,759, LOC=2,084

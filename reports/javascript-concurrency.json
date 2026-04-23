@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "javascript",
-    "docker_image": "chess-javascript",
+{
+  "implementation": "javascript",
+  "docker_image": "chess-javascript",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "79671db98ea2419b",
+      "28ece94f18d4c982",
+      "402eb83a5e9810c1",
+      "597819bc80b91d08",
+      "ddf78349dd052017",
+      "d6e6a4cefad9fd3e",
+      "a7dea7d3511eb8ed",
+      "8985bdbdaad7ecb4",
+      "90f8cdc13bdba123",
+      "154b14c7e3abaeca"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-17T01:15:43.552Z
+Generated: 2026-04-23T22:39:57.368Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-javascript   completed  10558      1330     -, - MB            630ms, - MB        795ms, - MB        6m 01s, - MB              1/1              16/16             
+javascript   completed  11914      1602     <1ms, - MB         140ms, - MB        162ms, - MB        40s, - MB                 1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: JAVASCRIPT
 ============================================================
-Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/javascript
-Track: v2-full
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/javascript
+Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 637ms
-  - build_seconds: -
-  - analyze_seconds: 630ms
-  - test_seconds: 795ms
-  - test_chess_engine_seconds: 6m 01s
-  - test_v2_full_seconds: 6m 01s
-Metrics: TOKENS=10,558, LOC=1,330
+  - image_build_seconds: 2.2s
+  - build_seconds: <1ms
+  - analyze_seconds: 140ms
+  - test_seconds: 162ms
+  - test_chess_engine_seconds: 40s
+  - test_v1_seconds: 40s
+Metrics: TOKENS=11,914, LOC=1,602

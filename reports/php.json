@@ -1,166 +1,161 @@
-[
-  {
+{
+  "language": "php",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/php",
+  "metadata": {
     "language": "php",
-    "path": "implementations/php",
-    "metadata": {
-      "language": "php",
-      "version": "8.3",
-      "author": "PHP Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1500,
-      "source_exts": [
-        ".php"
-      ],
-      "benchmark.build": "skip",
-      "build": "php -l chess.php",
-      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | php chess.php",
-      "analyze": "find . -name '*.php' -exec php -l {} \\;",
-      "bugit": "if [ -f .bugit/chess.php.bak ]; then echo 'bugit already active for php'; else mkdir -p .bugit && cp chess.php .bugit/chess.php.bak && printf '\\n)\\n' >> chess.php; fi",
-      "fix": "if [ -f .bugit/chess.php.bak ]; then mv .bugit/chess.php.bak chess.php && rmdir .bugit 2>/dev/null || true; else echo 'no php bugit backup to restore'; fi",
-      "run": "php chess.php"
+    "version": "8.3",
+    "author": "PHP Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960",
+      "PGN Comment Show",
+      "PGN Result Checkmate Show",
+      "PGN Variation Navigation"
+    ],
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 1500,
+    "source_exts": [
+      ".php"
+    ],
+    "benchmark.build": "skip",
+    "build": "php -l chess.php",
+    "test": "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | php chess.php",
+    "analyze": "find . -name '*.php' -exec php -l {} \\;",
+    "bugit": "if [ -f .bugit/chess.php.bak ]; then echo 'bugit already active for php'; else mkdir -p .bugit && cp chess.php .bugit/chess.php.bak && printf '\\n)\\n' >> chess.php; fi",
+    "fix": "if [ -f .bugit/chess.php.bak ]; then mv .bugit/chess.php.bak chess.php && rmdir .bugit 2>/dev/null || true; else echo 'no php bugit backup to restore'; fi",
+    "run": "php chess.php"
+  },
+  "track": "v1",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 7.528355601,
+    "build_seconds": 0,
+    "analyze_seconds": 0.394193909,
+    "test_seconds": 0.167548813,
+    "test_chess_engine_seconds": 24.194652041,
+    "test_v1_seconds": 24.194652041
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.3999290466308594,
-      "build_seconds": null,
-      "analyze_seconds": 0.28066158294677734,
-      "test_seconds": 0.167649507522583,
-      "test_internal_seconds": 0.167649507522583,
-      "test_chess_engine_seconds": 13.087386131286621,
-      "test_v2_full_seconds": 13.087386131286621
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "skipped"
     },
-    "memory": {
-      "image": {
-        "memory_mb": 116.51171875,
-        "peak_memory_mb": 116.51171875,
-        "avg_memory_mb": 92.1982421875,
-        "avg_cpu_percent": 0,
-        "samples": 4,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "skipped"
-      },
-      "analyze": {
-        "memory_mb": 9.07421875,
-        "peak_memory_mb": 9.07421875,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 8.91015625,
-        "peak_memory_mb": 8.91015625,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.78125,
-        "peak_memory_mb": 62.55078125,
-        "avg_memory_mb": 61.08642578125,
-        "avg_cpu_percent": 0,
-        "samples": 128,
-        "psutil_available": true
-      }
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "size": {
-      "source_loc": 3445,
-      "source_files": 10
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "metrics": {
-      "tokens_count": 26871,
-      "metric_version": "tokens-v2"
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 5879,
+    "source_files": 19
+  },
+  "metrics": {
+    "tokens_count": 48097,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 0,
+    "analyze_ms_per_kloc": 67.05118370471169,
+    "runtime_ms_per_kloc": 28.499542949481206
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 7.528355601,
+    "make_build_success": true,
+    "make_build_time": null,
+    "make_build_skipped": true,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.394193909,
+    "make_test_success": true,
+    "make_test_time": 0.167548813,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 24.194652041
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 27,
+      "failed": 0,
+      "errors": 0,
+      "total": 27
     },
-    "normalized": {
-      "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 81.70642880546647,
-      "runtime_ms_per_kloc": 48.80626128750597
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 18067.25,
+    "total_tokens": 28461,
+    "semantic_tokens": 28034,
+    "by_category": {
+      "keyword": 2932,
+      "identifier": 8216,
+      "type": 43,
+      "operator": 5749,
+      "literal": 4913,
+      "punctuation": 6181,
+      "comment": 427,
+      "unknown": 0
     },
-    "docker": {
-      "build_time": 0.3999290466308594,
-      "build_success": true,
-      "image_build_time": 0.3999290466308594,
-      "image_build_success": true,
-      "make_build_skipped": true,
-      "make_build_time": null,
-      "make_build_success": true,
-      "make_analyze_time": 0.28066158294677734,
-      "make_analyze_success": true,
-      "test_time": 0.167649507522583,
-      "test_success": true,
-      "make_test_time": 0.167649507522583,
-      "make_test_success": true,
-      "test_chess_engine_time": 13.087386131286621,
-      "test_chess_engine_success": true,
-      "track_test_time": 13.087386131286621,
-      "track_test_success": true
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 16,
-        "failed": 0,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 9808.25,
-      "total_tokens": 15321,
-      "semantic_tokens": 15076,
-      "by_category": {
-        "keyword": 1535,
-        "identifier": 4571,
-        "type": 21,
-        "operator": 3200,
-        "literal": 2576,
-        "punctuation": 3173,
-        "comment": 245,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.102,
-        "comment_ratio": 0.016,
-        "punctuation_ratio": 0.21,
-        "complexity_per_loc": 2.85,
-        "complexity_per_file": 980.83
-      }
+    "ratios": {
+      "keyword_density": 0.105,
+      "comment_ratio": 0.015,
+      "punctuation_ratio": 0.22,
+      "complexity_per_loc": 3.07,
+      "complexity_per_file": 950.91
     }
   }
-]
+}

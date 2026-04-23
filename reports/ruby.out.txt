@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-17T01:24:27.052Z
+Generated: 2026-04-23T22:39:38.022Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ruby         completed  10817      2117     -, - MB            3.4s, - MB         698ms, - MB        6m 01s, - MB              1/1              16/16             
+ruby         completed  13079      2469     <1ms, - MB         2.1s, - MB         283ms, - MB        19.3s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: RUBY
 ============================================================
-Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/ruby
-Track: v2-full
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/ruby
+Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 4.5s
-  - build_seconds: -
-  - analyze_seconds: 3.4s
-  - test_seconds: 698ms
-  - test_chess_engine_seconds: 6m 01s
-  - test_v2_full_seconds: 6m 01s
-Metrics: TOKENS=10,817, LOC=2,117
+  - image_build_seconds: 16s
+  - build_seconds: <1ms
+  - analyze_seconds: 2.1s
+  - test_seconds: 283ms
+  - test_chess_engine_seconds: 19.3s
+  - test_v1_seconds: 19.3s
+Metrics: TOKENS=13,079, LOC=2,469

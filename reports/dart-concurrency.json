@@ -1,29 +1,27 @@
-[
-  {
-    "implementation": "dart",
-    "docker_image": "chess-dart",
+{
+  "implementation": "dart",
+  "docker_image": "chess-dart",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "passed",
-    "issues": [],
-    "payload": {
-      "profile": "quick",
-      "seed": 12345,
-      "workers": 2,
-      "runs": 6,
-      "checksums": [
-        "9943b6d1",
-        "88aa2aee",
-        "cfd63644",
-        "9b8ec8b5",
-        "37e6d3b8",
-        "2f73e4e7"
-      ],
-      "deterministic": true,
-      "invariant_errors": 0,
-      "deadlocks": 0,
-      "timeouts": 0,
-      "elapsed_ms": 133,
-      "ops_total": 780
-    }
+    "seed": 12345,
+    "workers": 2,
+    "runs": 6,
+    "checksums": [
+      "9943b6d1",
+      "88aa2aee",
+      "cfd63644",
+      "9b8ec8b5",
+      "37e6d3b8",
+      "2f73e4e7"
+    ],
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 132,
+    "ops_total": 780
   }
-]
+}

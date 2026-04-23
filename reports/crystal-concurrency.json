@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "crystal",
-    "docker_image": "chess-crystal",
+{
+  "implementation": "crystal",
+  "docker_image": "chess-crystal",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 2,
+    "runs": 10,
+    "checksums": [
+      "e1fbd1f42dda199a",
+      "65c288b63e7a1570",
+      "4e1edb746d87553b",
+      "9a5ac89c2af9538f",
+      "3eb54454ff21ca69",
+      "b400846c8166c89c",
+      "f1db653e02ec6928",
+      "6209f5f626b25b93",
+      "cc1e15aef991283e",
+      "b48c7dc166b4def7"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 1,
+    "ops_total": 160
   }
-]
+}

@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "kotlin",
-    "docker_image": "chess-kotlin",
+{
+  "implementation": "kotlin",
+  "docker_image": "chess-kotlin",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "a3cc6bb183c31e39",
+      "73221c6fe34c1720",
+      "5e638afe3ccf9513",
+      "39780cdbfab6353a",
+      "41a8fba10668efe5",
+      "e31772944fda35ac",
+      "9b01ed6cfd69510f",
+      "f090a7825d6cf756",
+      "b6276038b7d5f9b1",
+      "3369f42e8290a9f8"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

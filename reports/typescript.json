@@ -1,6 +1,6 @@
 {
   "language": "typescript",
-  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/typescript",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/typescript",
   "metadata": {
     "language": "typescript",
     "version": "5.0",
@@ -29,15 +29,15 @@
     "fix": "if [ -f .bugit/chess.ts.bak ]; then mv .bugit/chess.ts.bak src/chess.ts && rmdir .bugit 2>/dev/null || true; else echo 'no typescript bugit backup to restore'; fi",
     "run": "bun run dist/chess.js"
   },
-  "track": "v2-full",
+  "track": "v1",
   "profile": "quick",
   "timings": {
-    "image_build_seconds": 6.830122625,
-    "build_seconds": 1.945532375,
-    "analyze_seconds": 1.554176916,
-    "test_seconds": 1.652081916,
-    "test_chess_engine_seconds": 360.712024458,
-    "test_v2_full_seconds": 360.712024458
+    "image_build_seconds": 3.619986612,
+    "build_seconds": 1.985310843,
+    "analyze_seconds": 4.169775574,
+    "test_seconds": 2.180333377,
+    "test_chess_engine_seconds": 24.221611016,
+    "test_v1_seconds": 24.221611016
   },
   "memory": {
     "image": {
@@ -77,29 +77,29 @@
     }
   },
   "size": {
-    "source_loc": 2052,
-    "source_files": 11
+    "source_loc": 2586,
+    "source_files": 12
   },
   "metrics": {
-    "tokens_count": 14874,
+    "tokens_count": 18333,
     "metric_version": "tokens-v2"
   },
   "normalized": {
-    "build_ms_per_kloc": 868.1536702365015,
-    "analyze_ms_per_kloc": 693.5193734939759,
-    "runtime_ms_per_kloc": 737.2074591700134
+    "build_ms_per_kloc": 767.7149431554525,
+    "analyze_ms_per_kloc": 1612.4422173240528,
+    "runtime_ms_per_kloc": 843.1296894818254
   },
   "docker": {
     "image_build_success": true,
-    "image_build_time": 6.830122625,
+    "image_build_time": 3.619986612,
     "make_build_success": true,
-    "make_build_time": 1.945532375,
+    "make_build_time": 1.985310843,
     "make_analyze_success": true,
-    "make_analyze_time": 1.554176916,
+    "make_analyze_time": 4.169775574,
     "make_test_success": true,
-    "make_test_time": 1.652081916,
+    "make_test_time": 2.180333377,
     "test_chess_engine_success": true,
-    "test_chess_engine_time": 360.712024458
+    "test_chess_engine_time": 24.221611016
   },
   "task_results": {
     "make_build": true,
@@ -109,10 +109,10 @@
   },
   "scores": {
     "make_test_chess_engine": {
-      "passed": 16,
+      "passed": 27,
       "failed": 0,
       "errors": 0,
-      "total": 16
+      "total": 27
     },
     "make_test": {
       "passed": 1,
@@ -133,25 +133,25 @@
   "status": "completed",
   "semantic_metrics": {
     "metric_version": "tokens-v3",
-    "complexity_score": 6194,
-    "total_tokens": 9523,
-    "semantic_tokens": 9509,
+    "complexity_score": 7773.5,
+    "total_tokens": 11941,
+    "semantic_tokens": 11926,
     "by_category": {
-      "keyword": 953,
-      "identifier": 2820,
-      "type": 313,
-      "operator": 1439,
-      "literal": 1570,
-      "punctuation": 2414,
-      "comment": 14,
+      "keyword": 1163,
+      "identifier": 3446,
+      "type": 504,
+      "operator": 1704,
+      "literal": 2125,
+      "punctuation": 2984,
+      "comment": 15,
       "unknown": 0
     },
     "ratios": {
-      "keyword_density": 0.1,
+      "keyword_density": 0.098,
       "comment_ratio": 0.001,
-      "punctuation_ratio": 0.254,
-      "complexity_per_loc": 3.02,
-      "complexity_per_file": 563.09
+      "punctuation_ratio": 0.25,
+      "complexity_per_loc": 3.01,
+      "complexity_per_file": 647.79
     }
   }
 }

@@ -1,0 +1,10 @@
+{
+  "implementation": "c",
+  "docker_image": "chess-c",
+  "profile": "quick",
+  "status": "failed",
+  "issues": [
+    "Missing CONCURRENCY: payload"
+  ],
+  "payload": null
+}

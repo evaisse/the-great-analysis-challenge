@@ -1,0 +1,26 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2026-04-23T22:39:03.976Z
+================================================================================
+
+PERFORMANCE SUMMARY
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+php          completed  48097      5879     <1ms, - MB         411ms, - MB        178ms, - MB        24.2s, - MB               1/1              26/26             
+
+============================================================
+DETAILED RESULTS: PHP
+============================================================
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/php
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 7.5s
+  - build_seconds: <1ms
+  - analyze_seconds: 411ms
+  - test_seconds: 178ms
+  - test_chess_engine_seconds: 24.2s
+  - test_v2_full_seconds: 24.2s
+Metrics: TOKENS=48,097, LOC=5,879

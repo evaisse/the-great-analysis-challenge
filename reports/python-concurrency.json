@@ -1,33 +1,31 @@
-[
-  {
-    "implementation": "python",
-    "docker_image": "chess-python",
+{
+  "implementation": "python",
+  "docker_image": "chess-python",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "passed",
-    "issues": [],
-    "payload": {
-      "profile": "quick",
-      "seed": 12345,
-      "workers": 2,
-      "runs": 10,
-      "checksums": [
-        "28516546",
-        "9b6eee41",
-        "7faf2ac8",
-        "99a84f2e",
-        "e47a1639",
-        "9a76f2eb",
-        "e55eb104",
-        "3d4b0d2c",
-        "ce187fb5",
-        "39881c49"
-      ],
-      "deterministic": true,
-      "invariant_errors": 0,
-      "deadlocks": 0,
-      "timeouts": 0,
-      "elapsed_ms": 282,
-      "ops_total": 320
-    }
+    "seed": 12345,
+    "workers": 2,
+    "runs": 10,
+    "checksums": [
+      "28516546",
+      "9b6eee41",
+      "7faf2ac8",
+      "99a84f2e",
+      "e47a1639",
+      "9a76f2eb",
+      "e55eb104",
+      "3d4b0d2c",
+      "ce187fb5",
+      "39881c49"
+    ],
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 291,
+    "ops_total": 320
   }
-]
+}

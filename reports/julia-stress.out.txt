@@ -1,0 +1,26 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2026-04-23T22:39:31.856Z
+================================================================================
+
+PERFORMANCE SUMMARY
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+julia        completed  13680      2083     <1ms, - MB         1s, - MB           4s, - MB           23.6s, - MB               1/1              26/26             
+
+============================================================
+DETAILED RESULTS: JULIA
+============================================================
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/julia
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 11.3s
+  - build_seconds: <1ms
+  - analyze_seconds: 1s
+  - test_seconds: 4s
+  - test_chess_engine_seconds: 23.6s
+  - test_v2_full_seconds: 23.6s
+Metrics: TOKENS=13,680, LOC=2,083

@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "elm",
-    "docker_image": "chess-elm",
+{
+  "implementation": "elm",
+  "docker_image": "chess-elm",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "83e8b72fa37bea48",
+      "6a9f55ad815ade01",
+      "535d86c23b9796c2",
+      "a3d7bb2cb1650edb",
+      "b3f65b30cd9ab9f4",
+      "d24f454673e1862d",
+      "015742421d9cca7e",
+      "086820bcffc7ed57",
+      "24e57ca8791a45f0",
+      "00d24be7a591f789"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

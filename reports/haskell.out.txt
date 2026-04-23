@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-18T19:29:59.746Z
+Generated: 2026-04-23T22:39:36.575Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-haskell      completed  15598      2018     897ms, - MB        1.6s, - MB         333ms, - MB        6m 01s, - MB              1/1              16/16             
+haskell      completed  17541      2312     282ms, - MB        495ms, - MB        157ms, - MB        21.9s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: HASKELL
 ============================================================
-Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-141-elm-haskell-v2-full-9-of-9/implementations/haskell
-Track: v2-full
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/haskell
+Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 14.6s
-  - build_seconds: 897ms
-  - analyze_seconds: 1.6s
-  - test_seconds: 333ms
-  - test_chess_engine_seconds: 6m 01s
-  - test_v2_full_seconds: 6m 01s
-Metrics: TOKENS=15,598, LOC=2,018
+  - image_build_seconds: 28.3s
+  - build_seconds: 282ms
+  - analyze_seconds: 495ms
+  - test_seconds: 157ms
+  - test_chess_engine_seconds: 21.9s
+  - test_v1_seconds: 21.9s
+Metrics: TOKENS=17,541, LOC=2,312

@@ -1,167 +1,159 @@
-[
-  {
+{
+  "language": "python",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/python",
+  "metadata": {
     "language": "python",
-    "path": "implementations/python",
-    "metadata": {
-      "language": "python",
-      "version": "3.11",
-      "author": "Python Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
-      "source_exts": [
-        ".py"
-      ],
-      "benchmark.build": "skip",
-      "build": "python3 -m py_compile chess.py",
-      "test": "python3 test_engine.py",
-      "test_contract": "python3 test_contract_runner.py",
-      "analyze": "python3 -m py_compile chess.py lib/*.py",
-      "bugit": "if [ -f .bugit/chess.py.bak ]; then echo 'bugit already active for python'; else mkdir -p .bugit && cp chess.py .bugit/chess.py.bak && printf '\\ndef __bugit__(:\\n' >> chess.py; fi",
-      "fix": "if [ -f .bugit/chess.py.bak ]; then mv .bugit/chess.py.bak chess.py && rmdir .bugit 2>/dev/null || true; else echo 'no python bugit backup to restore'; fi",
-      "run": "python3 chess.py"
+    "version": "3.11",
+    "author": "Python Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
+    ],
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 1000,
+    "source_exts": [
+      ".py"
+    ],
+    "benchmark.build": "skip",
+    "build": "python3 -m py_compile chess.py",
+    "test": "python3 test_engine.py",
+    "test_contract": "python3 test_contract_runner.py",
+    "analyze": "python3 -m py_compile chess.py lib/*.py",
+    "bugit": "if [ -f .bugit/chess.py.bak ]; then echo 'bugit already active for python'; else mkdir -p .bugit && cp chess.py .bugit/chess.py.bak && printf '\\ndef __bugit__(:\\n' >> chess.py; fi",
+    "fix": "if [ -f .bugit/chess.py.bak ]; then mv .bugit/chess.py.bak chess.py && rmdir .bugit 2>/dev/null || true; else echo 'no python bugit backup to restore'; fi",
+    "run": "python3 chess.py"
+  },
+  "track": "v1",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 4.85792788,
+    "build_seconds": 0,
+    "analyze_seconds": 0.213276352,
+    "test_seconds": 1.80069117,
+    "test_chess_engine_seconds": 42.624175364,
+    "test_v1_seconds": 42.624175364
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.6165039539337158,
-      "build_seconds": null,
-      "analyze_seconds": 0.21975326538085938,
-      "test_seconds": 0.19001507759094238,
-      "test_internal_seconds": 0.19001507759094238,
-      "test_chess_engine_seconds": 16.65550708770752,
-      "test_v2_full_seconds": 16.65550708770752
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "skipped"
     },
-    "memory": {
-      "image": {
-        "memory_mb": 116.7265625,
-        "peak_memory_mb": 116.7265625,
-        "avg_memory_mb": 100.17643229166667,
-        "avg_cpu_percent": 0,
-        "samples": 6,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "skipped"
-      },
-      "analyze": {
-        "memory_mb": 6.32421875,
-        "peak_memory_mb": 6.32421875,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 7.05078125,
-        "peak_memory_mb": 7.05078125,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.50390625,
-        "peak_memory_mb": 62.2421875,
-        "avg_memory_mb": 61.0767578125,
-        "avg_cpu_percent": 0,
-        "samples": 160,
-        "psutil_available": true
-      }
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "size": {
-      "source_loc": 3678,
-      "source_files": 13
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "metrics": {
-      "tokens_count": 26934,
-      "metric_version": "tokens-v2"
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 4978,
+    "source_files": 15
+  },
+  "metrics": {
+    "tokens_count": 36046,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 0,
+    "analyze_ms_per_kloc": 42.84378304539976,
+    "runtime_ms_per_kloc": 361.72984531940534
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 4.85792788,
+    "make_build_success": true,
+    "make_build_time": null,
+    "make_build_skipped": true,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.213276352,
+    "make_test_success": true,
+    "make_test_time": 1.80069117,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 42.624175364
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 27,
+      "failed": 0,
+      "errors": 0,
+      "total": 27
     },
-    "normalized": {
-      "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 59.84566050676998,
-      "runtime_ms_per_kloc": 51.7470254877294
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 12581.25,
+    "total_tokens": 19543,
+    "semantic_tokens": 19446,
+    "by_category": {
+      "keyword": 1890,
+      "identifier": 5504,
+      "type": 490,
+      "operator": 2703,
+      "literal": 4524,
+      "punctuation": 4335,
+      "comment": 97,
+      "unknown": 0
     },
-    "docker": {
-      "build_time": 0.6165039539337158,
-      "build_success": true,
-      "image_build_time": 0.6165039539337158,
-      "image_build_success": true,
-      "make_build_skipped": true,
-      "make_build_time": null,
-      "make_build_success": true,
-      "make_analyze_time": 0.21975326538085938,
-      "make_analyze_success": true,
-      "test_time": 0.19001507759094238,
-      "test_success": true,
-      "make_test_time": 0.19001507759094238,
-      "make_test_success": true,
-      "test_chess_engine_time": 16.65550708770752,
-      "test_chess_engine_success": true,
-      "track_test_time": 16.65550708770752,
-      "track_test_success": true
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 16,
-        "failed": 0,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 9146.5,
-      "total_tokens": 14587,
-      "semantic_tokens": 14477,
-      "by_category": {
-        "keyword": 1314,
-        "identifier": 3871,
-        "type": 304,
-        "operator": 2004,
-        "literal": 3638,
-        "punctuation": 3346,
-        "comment": 110,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.091,
-        "comment_ratio": 0.008,
-        "punctuation_ratio": 0.231,
-        "complexity_per_loc": 2.49,
-        "complexity_per_file": 703.58
-      }
+    "ratios": {
+      "keyword_density": 0.097,
+      "comment_ratio": 0.005,
+      "punctuation_ratio": 0.223,
+      "complexity_per_loc": 2.53,
+      "complexity_per_file": 838.75
     }
   }
-]
+}

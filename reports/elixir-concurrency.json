@@ -1,0 +1,10 @@
+{
+  "implementation": "elixir",
+  "docker_image": "chess-elixir",
+  "profile": "quick",
+  "status": "failed",
+  "issues": [
+    "Missing CONCURRENCY: payload"
+  ],
+  "payload": null
+}

@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-18T12:01:29.609Z
+Generated: 2026-04-23T22:40:13.874Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-zig          completed  18334      2194     738ms, - MB        352ms, - MB        286ms, - MB        6m 01s, - MB              1/1              16/16             
+zig          completed  21516      2509     205ms, - MB        156ms, - MB        141ms, - MB        33.6s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: ZIG
 ============================================================
-Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-139-swift-zig-v2-full-9-of-9/implementations/zig
-Track: v2-full
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/zig
+Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 37.7s
-  - build_seconds: 738ms
-  - analyze_seconds: 352ms
-  - test_seconds: 286ms
-  - test_chess_engine_seconds: 6m 01s
-  - test_v2_full_seconds: 6m 01s
-Metrics: TOKENS=18,334, LOC=2,194
+  - image_build_seconds: 37.3s
+  - build_seconds: 205ms
+  - analyze_seconds: 156ms
+  - test_seconds: 141ms
+  - test_chess_engine_seconds: 33.6s
+  - test_v1_seconds: 33.6s
+Metrics: TOKENS=21,516, LOC=2,509

@@ -1,0 +1,29 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2026-04-23T22:38:57.776Z
+================================================================================
+
+PERFORMANCE SUMMARY
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+c            failed     17898      2406     882ms, - MB        173ms, - MB        882ms, - MB        19s, - MB                 1/1              16/26             
+
+============================================================
+DETAILED RESULTS: C
+============================================================
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/c
+Track: v2-full
+Profile: quick
+Status: failed
+Errors:
+  - track v2-full suite failed: 16/26 checks passed
+  - track v2-full failing checks: Go Movetime, Book Load Stats, Book AI Move, Trace Level, Trace Report, Trace Export File, Trace Chrome File, Trace Reset, Concurrency Quick Fixture, Concurrency Full Fixture
+Timings:
+  - image_build_seconds: 18.9s
+  - build_seconds: 882ms
+  - analyze_seconds: 173ms
+  - test_seconds: 882ms
+  - test_chess_engine_seconds: 19s
+  - test_v2_full_seconds: 19s
+Metrics: TOKENS=17,898, LOC=2,406

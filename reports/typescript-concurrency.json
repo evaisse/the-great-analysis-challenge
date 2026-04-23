@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "typescript",
-    "docker_image": "chess-typescript",
+{
+  "implementation": "typescript",
+  "docker_image": "chess-typescript",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "adc94fe8a899b963",
+      "321b96ef5069c70a",
+      "f332309bef8d4289",
+      "1745615cc31590f0",
+      "93eccbc39fc644df",
+      "dd3c0a1150f7d626",
+      "857f1f2b550077b5",
+      "7daf50f5b487767c",
+      "96379fe0fb6059db",
+      "45bd6b768592e1c2"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

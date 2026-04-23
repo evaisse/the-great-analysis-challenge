@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-17T01:24:20.794Z
+Generated: 2026-04-23T22:39:49.516Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-julia        completed  12280      1949     -, - MB            3.6s, - MB         7.2s, - MB         6m 02s, - MB              1/1              16/16             
+julia        completed  13680      2083     <1ms, - MB         955ms, - MB        3.5s, - MB         22.6s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: JULIA
 ============================================================
-Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-137-v2-full-9-of-9-all-languages/implementations/julia
-Track: v2-full
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/julia
+Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 5.1s
-  - build_seconds: -
-  - analyze_seconds: 3.6s
-  - test_seconds: 7.2s
-  - test_chess_engine_seconds: 6m 02s
-  - test_v2_full_seconds: 6m 02s
-Metrics: TOKENS=12,280, LOC=1,949
+  - image_build_seconds: 11.4s
+  - build_seconds: <1ms
+  - analyze_seconds: 955ms
+  - test_seconds: 3.5s
+  - test_chess_engine_seconds: 22.6s
+  - test_v1_seconds: 22.6s
+Metrics: TOKENS=13,680, LOC=2,083

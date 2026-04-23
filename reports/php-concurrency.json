@@ -1,33 +1,31 @@
-[
-  {
-    "implementation": "php",
-    "docker_image": "chess-php",
+{
+  "implementation": "php",
+  "docker_image": "chess-php",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "passed",
-    "issues": [],
-    "payload": {
-      "profile": "quick",
-      "seed": 12345,
-      "workers": 2,
-      "runs": 10,
-      "checksums": [
-        "28516546",
-        "9b6eee41",
-        "7faf2ac8",
-        "99a84f2e",
-        "e47a1639",
-        "9a76f2eb",
-        "e55eb104",
-        "3d4b0d2c",
-        "ce187fb5",
-        "39881c49"
-      ],
-      "deterministic": true,
-      "invariant_errors": 0,
-      "deadlocks": 0,
-      "timeouts": 0,
-      "elapsed_ms": 132,
-      "ops_total": 320
-    }
+    "seed": 12345,
+    "workers": 2,
+    "runs": 10,
+    "checksums": [
+      "28516546",
+      "9b6eee41",
+      "7faf2ac8",
+      "4981d003",
+      "0d9bd2d5",
+      "38983253",
+      "454f7de3",
+      "3d4b0d2c",
+      "e958c9d4",
+      "61588542"
+    ],
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 140,
+    "ops_total": 320
   }
-]
+}

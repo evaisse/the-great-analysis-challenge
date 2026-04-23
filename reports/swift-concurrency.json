@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "swift",
-    "docker_image": "chess-swift",
+{
+  "implementation": "swift",
+  "docker_image": "chess-swift",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "80d0fceb1b483845",
+      "780a32e0971f140c",
+      "2c3cf2e4a1255def",
+      "2c0d97bb5ae640b6",
+      "39b627d2aeb81f99",
+      "5b1f5cbe9d1eb680",
+      "4faef6fc73a92ff3",
+      "d7af5f70706ec41a",
+      "668ab7a73a58233d",
+      "493f8c9152787104"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "zig",
-    "docker_image": "chess-zig",
+{
+  "implementation": "zig",
+  "docker_image": "chess-zig",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "dae01da113eeb512",
+      "821c8ce29fd2bfab",
+      "622d88e591e99b18",
+      "3f0706035406ad51",
+      "df9c93f80c0b54ce",
+      "88500bec5c8a7e27",
+      "91443111d85847c4",
+      "ae8f5c27c037f9fd",
+      "1fb403f0f64e9ada",
+      "97b39b7cf98906b3"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

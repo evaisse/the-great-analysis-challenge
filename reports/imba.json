@@ -1,165 +1,156 @@
-[
-  {
+{
+  "language": "imba",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/imba",
+  "metadata": {
     "language": "imba",
-    "path": "implementations/imba",
-    "metadata": {
-      "language": "imba",
-      "version": "2.0",
-      "author": "Imba Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
-      "source_exts": [
-        ".imba"
-      ],
-      "build": "imba build chess.imba --platform node --base . --outdir dist",
-      "run": "node dist/chess.js",
-      "test": "true",
-      "analyze": "imba build chess.imba --platform node --base . --outdir /tmp/tgac-imba-check",
-      "bugit": "if [ -f .bugit/chess.imba.bak ]; then echo 'bugit already active for imba'; else mkdir -p .bugit && cp chess.imba .bugit/chess.imba.bak && printf '\\n)\\n' >> chess.imba; fi",
-      "fix": "if [ -f .bugit/chess.imba.bak ]; then mv .bugit/chess.imba.bak chess.imba && rmdir .bugit 2>/dev/null || true; else echo 'no imba bugit backup to restore'; fi"
+    "version": "2.0",
+    "author": "Imba Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
+    ],
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 1000,
+    "source_exts": [
+      ".imba"
+    ],
+    "build": "imba build chess.imba --platform node --base . --outdir dist",
+    "run": "node dist/chess.js",
+    "test": "true",
+    "analyze": "imba build chess.imba --platform node --base . --outdir /tmp/tgac-imba-check",
+    "bugit": "if [ -f .bugit/chess.imba.bak ]; then echo 'bugit already active for imba'; else mkdir -p .bugit && cp chess.imba .bugit/chess.imba.bak && printf '\\n)\\n' >> chess.imba; fi",
+    "fix": "if [ -f .bugit/chess.imba.bak ]; then mv .bugit/chess.imba.bak chess.imba && rmdir .bugit 2>/dev/null || true; else echo 'no imba bugit backup to restore'; fi"
+  },
+  "track": "v1",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 4.578480614,
+    "build_seconds": 0.451307895,
+    "analyze_seconds": 0.453596845,
+    "test_seconds": 0.157249005,
+    "test_chess_engine_seconds": 19.371335908,
+    "test_v1_seconds": 19.371335908
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "track": "v2-full",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 0.2797698974609375,
-      "build_seconds": 0.1993401050567627,
-      "analyze_seconds": 0.18911170959472656,
-      "test_seconds": 0.1944878101348877,
-      "test_internal_seconds": 0.1944878101348877,
-      "test_chess_engine_seconds": 9.88847017288208,
-      "test_v2_full_seconds": 9.88847017288208
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "memory": {
-      "image": {
-        "memory_mb": 111.46484375,
-        "peak_memory_mb": 111.46484375,
-        "avg_memory_mb": 84.45442708333333,
-        "avg_cpu_percent": 0,
-        "samples": 3,
-        "psutil_available": true
-      },
-      "build": {
-        "memory_mb": 6.3359375,
-        "peak_memory_mb": 6.3359375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "analyze": {
-        "memory_mb": 7.40625,
-        "peak_memory_mb": 7.40625,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test": {
-        "memory_mb": 6.5859375,
-        "peak_memory_mb": 6.5859375,
-        "avg_cpu_percent": 0,
-        "psutil_available": true,
-        "source": "cgroup"
-      },
-      "test_chess_engine": {
-        "memory_mb": 32.4765625,
-        "peak_memory_mb": 62.3671875,
-        "avg_memory_mb": 60.385032894736845,
-        "avg_cpu_percent": 0,
-        "samples": 95,
-        "psutil_available": true
-      }
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "size": {
-      "source_loc": 1634,
-      "source_files": 1
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
     },
-    "metrics": {
-      "tokens_count": 13741,
-      "metric_version": "tokens-v2"
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 1708,
+    "source_files": 1
+  },
+  "metrics": {
+    "tokens_count": 13981,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 264.2317886416862,
+    "analyze_ms_per_kloc": 265.57192330210773,
+    "runtime_ms_per_kloc": 92.06616217798596
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 4.578480614,
+    "make_build_success": true,
+    "make_build_time": 0.451307895,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.453596845,
+    "make_test_success": true,
+    "make_test_time": 0.157249005,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 19.371335908
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 27,
+      "failed": 0,
+      "errors": 0,
+      "total": 27
     },
-    "normalized": {
-      "build_ms_per_kloc": 125.45003464868641,
-      "analyze_ms_per_kloc": 119.01303309926152,
-      "runtime_ms_per_kloc": 122.39635628375564
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 6167,
+    "total_tokens": 8879,
+    "semantic_tokens": 8879,
+    "by_category": {
+      "keyword": 704,
+      "identifier": 2630,
+      "type": 859,
+      "operator": 1573,
+      "literal": 1637,
+      "punctuation": 1476,
+      "comment": 0,
+      "unknown": 0
     },
-    "docker": {
-      "build_time": 0.2797698974609375,
-      "build_success": true,
-      "image_build_time": 0.2797698974609375,
-      "image_build_success": true,
-      "make_build_skipped": false,
-      "make_build_time": 0.1993401050567627,
-      "make_build_success": true,
-      "make_analyze_time": 0.18911170959472656,
-      "make_analyze_success": true,
-      "test_time": 0.1944878101348877,
-      "test_success": true,
-      "make_test_time": 0.1944878101348877,
-      "make_test_success": true,
-      "test_chess_engine_time": 9.88847017288208,
-      "test_chess_engine_success": true,
-      "track_test_time": 9.88847017288208,
-      "track_test_success": true
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      },
-      "make_test_chess_engine": {
-        "passed": 16,
-        "failed": 0,
-        "errors": 0,
-        "total": 16
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 6002,
-      "total_tokens": 8715,
-      "semantic_tokens": 8715,
-      "by_category": {
-        "keyword": 679,
-        "identifier": 2498,
-        "type": 849,
-        "operator": 1532,
-        "literal": 1683,
-        "punctuation": 1474,
-        "comment": 0,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.078,
-        "comment_ratio": 0,
-        "punctuation_ratio": 0.169,
-        "complexity_per_loc": 3.67,
-        "complexity_per_file": 6002
-      }
+    "ratios": {
+      "keyword_density": 0.079,
+      "comment_ratio": 0,
+      "punctuation_ratio": 0.166,
+      "complexity_per_loc": 3.61,
+      "complexity_per_file": 6167
     }
   }
-]
+}

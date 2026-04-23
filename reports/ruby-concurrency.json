@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "ruby",
-    "docker_image": "chess-ruby",
+{
+  "implementation": "ruby",
+  "docker_image": "chess-ruby",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "f3e81244",
+      "3f4212da",
+      "b1cd1539",
+      "7d6715a7",
+      "77a21cbe",
+      "bb081c20",
+      "35871bc3",
+      "f92d1b5d",
+      "200d09f1",
+      "eca7096f"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

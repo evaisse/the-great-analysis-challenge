@@ -1,33 +1,31 @@
-[
-  {
-    "implementation": "imba",
-    "docker_image": "chess-imba",
+{
+  "implementation": "imba",
+  "docker_image": "chess-imba",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "passed",
-    "issues": [],
-    "payload": {
-      "profile": "quick",
-      "seed": 12345,
-      "workers": 1,
-      "runs": 10,
-      "checksums": [
-        "1c0d57f10c894254",
-        "43f04a6ece53d614",
-        "3b0a35325cfc0ed5",
-        "eef66407390ac7c3",
-        "381605eb7fe55b9a",
-        "3b37c41943cc0166",
-        "a767f9a72f535a43",
-        "616352730fd49c1d",
-        "686578c3b21a5570",
-        "180b0aa1509b1608"
-      ],
-      "deterministic": true,
-      "invariant_errors": 0,
-      "deadlocks": 0,
-      "timeouts": 0,
-      "elapsed_ms": 0,
-      "ops_total": 100000
-    }
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "1c0d57f10c894254",
+      "43f04a6ece53d614",
+      "3b0a35325cfc0ed5",
+      "eef66407390ac7c3",
+      "381605eb7fe55b9a",
+      "3b37c41943cc0166",
+      "a767f9a72f535a43",
+      "616352730fd49c1d",
+      "686578c3b21a5570",
+      "180b0aa1509b1608"
+    ],
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 0,
+    "ops_total": 100000
   }
-]
+}

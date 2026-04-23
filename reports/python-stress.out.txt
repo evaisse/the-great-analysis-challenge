@@ -1,0 +1,26 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2026-04-23T22:39:11.403Z
+================================================================================
+
+PERFORMANCE SUMMARY
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+python       completed  36046      4978     <1ms, - MB         212ms, - MB        1.6s, - MB         26.5s, - MB               1/1              26/26             
+
+============================================================
+DETAILED RESULTS: PYTHON
+============================================================
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/python
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 3.6s
+  - build_seconds: <1ms
+  - analyze_seconds: 212ms
+  - test_seconds: 1.6s
+  - test_chess_engine_seconds: 26.5s
+  - test_v2_full_seconds: 26.5s
+Metrics: TOKENS=36,046, LOC=4,978

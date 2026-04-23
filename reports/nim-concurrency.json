@@ -1,12 +1,31 @@
-[
-  {
-    "implementation": "nim",
-    "docker_image": "chess-nim",
+{
+  "implementation": "nim",
+  "docker_image": "chess-nim",
+  "profile": "quick",
+  "status": "passed",
+  "issues": [],
+  "payload": {
     "profile": "quick",
-    "status": "failed",
-    "issues": [
-      "Missing CONCURRENCY: payload"
+    "seed": 12345,
+    "workers": 1,
+    "runs": 10,
+    "checksums": [
+      "7094fb0cdd0cf0c5",
+      "35bc9eadba6f40a1",
+      "5cbd03f38f4da75a",
+      "a819a613dbb190fe",
+      "e65340fdc2a69304",
+      "ad535abff6cacbf0",
+      "2d132bb0b66723ba",
+      "3ba0e816d0fe3d2e",
+      "320749a860443eb3",
+      "56f33e2a279af5c7"
     ],
-    "payload": null
+    "deterministic": true,
+    "invariant_errors": 0,
+    "deadlocks": 0,
+    "timeouts": 0,
+    "elapsed_ms": 5,
+    "ops_total": 1000
   }
-]
+}

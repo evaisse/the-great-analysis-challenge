@@ -1,0 +1,26 @@
+================================================================================
+CHESS ENGINE PERFORMANCE TEST REPORT
+Generated: 2026-04-23T22:39:16.953Z
+================================================================================
+
+PERFORMANCE SUMMARY
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+zig          completed  21516      2509     223ms, - MB        153ms, - MB        155ms, - MB        19s, - MB                 1/1              26/26             
+
+============================================================
+DETAILED RESULTS: ZIG
+============================================================
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/zig
+Track: v2-full
+Profile: quick
+Status: completed
+Timings:
+  - image_build_seconds: 39.7s
+  - build_seconds: 223ms
+  - analyze_seconds: 153ms
+  - test_seconds: 155ms
+  - test_chess_engine_seconds: 19s
+  - test_v2_full_seconds: 19s
+Metrics: TOKENS=21,516, LOC=2,509

@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-18T12:02:29.934Z
+Generated: 2026-04-23T22:40:35.653Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-swift        completed  10470      1258     19.6s, - MB        20.3s, - MB        30.7s, - MB        6m 01s, - MB              1/1              16/16             
+swift        completed  12470      1506     1.6s, - MB         7.7s, - MB         10.2s, - MB        18.2s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: SWIFT
 ============================================================
-Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-139-swift-zig-v2-full-9-of-9/implementations/swift
-Track: v2-full
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/swift
+Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 27.6s
-  - build_seconds: 19.6s
-  - analyze_seconds: 20.3s
-  - test_seconds: 30.7s
-  - test_chess_engine_seconds: 6m 01s
-  - test_v2_full_seconds: 6m 01s
-Metrics: TOKENS=10,470, LOC=1,258
+  - image_build_seconds: 44.3s
+  - build_seconds: 1.6s
+  - analyze_seconds: 7.7s
+  - test_seconds: 10.2s
+  - test_chess_engine_seconds: 18.2s
+  - test_v1_seconds: 18.2s
+Metrics: TOKENS=12,470, LOC=1,506

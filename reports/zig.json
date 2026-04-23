@@ -1,6 +1,6 @@
 {
   "language": "zig",
-  "path": "/Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-139-swift-zig-v2-full-9-of-9/implementations/zig",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/zig",
   "metadata": {
     "language": "zig",
     "version": "latest",
@@ -28,15 +28,15 @@
     "bugit": "if [ -f .bugit/main.zig.bak ]; then echo 'bugit already active for zig'; else mkdir -p .bugit && cp src/main.zig .bugit/main.zig.bak && printf '\\n)\\n' >> src/main.zig; fi",
     "fix": "if [ -f .bugit/main.zig.bak ]; then mv .bugit/main.zig.bak src/main.zig && rmdir .bugit 2>/dev/null || true; else echo 'no zig bugit backup to restore'; fi"
   },
-  "track": "v2-full",
+  "track": "v1",
   "profile": "quick",
   "timings": {
-    "image_build_seconds": 37.689932042,
-    "build_seconds": 0.737882584,
-    "analyze_seconds": 0.351793167,
-    "test_seconds": 0.286343625,
-    "test_chess_engine_seconds": 360.756076875,
-    "test_v2_full_seconds": 360.756076875
+    "image_build_seconds": 37.333091015,
+    "build_seconds": 0.20509255,
+    "analyze_seconds": 0.15601917,
+    "test_seconds": 0.140565455,
+    "test_chess_engine_seconds": 33.554159087,
+    "test_v1_seconds": 33.554159087
   },
   "memory": {
     "image": {
@@ -76,29 +76,29 @@
     }
   },
   "size": {
-    "source_loc": 2194,
-    "source_files": 8
+    "source_loc": 2509,
+    "source_files": 9
   },
   "metrics": {
-    "tokens_count": 18334,
+    "tokens_count": 21516,
     "metric_version": "tokens-v2"
   },
   "normalized": {
-    "build_ms_per_kloc": 336.3184065633546,
-    "analyze_ms_per_kloc": 160.34328486782135,
-    "runtime_ms_per_kloc": 130.51213536918868
+    "build_ms_per_kloc": 81.74274611398965,
+    "analyze_ms_per_kloc": 62.18380629732962,
+    "runtime_ms_per_kloc": 56.02449382223995
   },
   "docker": {
     "image_build_success": true,
-    "image_build_time": 37.689932042,
+    "image_build_time": 37.333091015,
     "make_build_success": true,
-    "make_build_time": 0.737882584,
+    "make_build_time": 0.20509255,
     "make_analyze_success": true,
-    "make_analyze_time": 0.351793167,
+    "make_analyze_time": 0.15601917,
     "make_test_success": true,
-    "make_test_time": 0.286343625,
+    "make_test_time": 0.140565455,
     "test_chess_engine_success": true,
-    "test_chess_engine_time": 360.756076875
+    "test_chess_engine_time": 33.554159087
   },
   "task_results": {
     "make_build": true,
@@ -108,10 +108,10 @@
   },
   "scores": {
     "make_test_chess_engine": {
-      "passed": 16,
+      "passed": 27,
       "failed": 0,
       "errors": 0,
-      "total": 16
+      "total": 27
     },
     "make_test": {
       "passed": 1,
@@ -132,25 +132,25 @@
   "status": "completed",
   "semantic_metrics": {
     "metric_version": "tokens-v3",
-    "complexity_score": 11357.75,
-    "total_tokens": 14865,
-    "semantic_tokens": 14763,
+    "complexity_score": 13193,
+    "total_tokens": 17278,
+    "semantic_tokens": 17176,
     "by_category": {
-      "keyword": 1918,
-      "identifier": 7454,
-      "type": 27,
-      "operator": 1386,
-      "literal": 1085,
-      "punctuation": 2893,
+      "keyword": 2146,
+      "identifier": 8720,
+      "type": 35,
+      "operator": 1506,
+      "literal": 1387,
+      "punctuation": 3382,
       "comment": 102,
       "unknown": 0
     },
     "ratios": {
-      "keyword_density": 0.13,
-      "comment_ratio": 0.007,
-      "punctuation_ratio": 0.196,
-      "complexity_per_loc": 5.18,
-      "complexity_per_file": 1419.72
+      "keyword_density": 0.125,
+      "comment_ratio": 0.006,
+      "punctuation_ratio": 0.197,
+      "complexity_per_loc": 5.26,
+      "complexity_per_file": 1465.89
     }
   }
 }

@@ -1,0 +1,157 @@
+{
+  "language": "c",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/c",
+  "metadata": {
+    "language": "c",
+    "version": "C11",
+    "author": "AI Implementation",
+    "features": [
+      "perft",
+      "fen",
+      "ai",
+      "castling",
+      "en_passant",
+      "promotion",
+      "pgn",
+      "uci",
+      "chess960"
+    ],
+    "max_ai_depth": 5,
+    "estimated_perft4_ms": 700,
+    "source_exts": [
+      ".c",
+      ".h"
+    ],
+    "build": "make build",
+    "test": "make test",
+    "analyze": "make analyze",
+    "bugit": "if [ -f .bugit/chess.c.bak ]; then echo 'bugit already active for c'; else mkdir -p .bugit && cp src/chess.c .bugit/chess.c.bak && printf '\\nint __bugit__(\\n' >> src/chess.c; fi",
+    "fix": "if [ -f .bugit/chess.c.bak ]; then mv .bugit/chess.c.bak src/chess.c && rmdir .bugit 2>/dev/null || true; else echo 'no c bugit backup to restore'; fi",
+    "run": "./chess"
+  },
+  "track": "v1",
+  "profile": "quick",
+  "timings": {
+    "image_build_seconds": 19.553581988,
+    "build_seconds": 0.889293634,
+    "analyze_seconds": 0.178730965,
+    "test_seconds": 0.8918329,
+    "test_chess_engine_seconds": 18.456101707,
+    "test_v1_seconds": 18.456101707
+  },
+  "memory": {
+    "image": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "build": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "analyze": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    },
+    "test_chess_engine": {
+      "memory_mb": 0,
+      "peak_memory_mb": 0,
+      "avg_cpu_percent": 0,
+      "psutil_available": false,
+      "source": "unavailable"
+    }
+  },
+  "size": {
+    "source_loc": 2406,
+    "source_files": 1
+  },
+  "metrics": {
+    "tokens_count": 17898,
+    "metric_version": "tokens-v2"
+  },
+  "normalized": {
+    "build_ms_per_kloc": 369.61497672485456,
+    "analyze_ms_per_kloc": 74.28552161263508,
+    "runtime_ms_per_kloc": 370.67036575228593
+  },
+  "docker": {
+    "image_build_success": true,
+    "image_build_time": 19.553581988,
+    "make_build_success": true,
+    "make_build_time": 0.889293634,
+    "make_analyze_success": true,
+    "make_analyze_time": 0.178730965,
+    "make_test_success": true,
+    "make_test_time": 0.8918329,
+    "test_chess_engine_success": true,
+    "test_chess_engine_time": 18.456101707
+  },
+  "task_results": {
+    "make_build": true,
+    "make_analyze": true,
+    "make_test": true,
+    "make_test_chess_engine": true
+  },
+  "scores": {
+    "make_test_chess_engine": {
+      "passed": 27,
+      "failed": 0,
+      "errors": 0,
+      "total": 27
+    },
+    "make_test": {
+      "passed": 1,
+      "failed": 0,
+      "total": 1
+    }
+  },
+  "test_results": {
+    "passed": [
+      "make_build",
+      "make_analyze",
+      "make_test",
+      "make_test_chess_engine"
+    ],
+    "failed": []
+  },
+  "errors": [],
+  "status": "completed",
+  "semantic_metrics": {
+    "metric_version": "tokens-v3",
+    "complexity_score": 7151.5,
+    "total_tokens": 11614,
+    "semantic_tokens": 11614,
+    "by_category": {
+      "keyword": 1486,
+      "identifier": 2803,
+      "type": 0,
+      "operator": 1968,
+      "literal": 2157,
+      "punctuation": 3200,
+      "comment": 0,
+      "unknown": 0
+    },
+    "ratios": {
+      "keyword_density": 0.128,
+      "comment_ratio": 0,
+      "punctuation_ratio": 0.276,
+      "complexity_per_loc": 2.97,
+      "complexity_per_file": 7151.5
+    }
+  }
+}

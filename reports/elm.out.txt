@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-03-18T19:23:40.352Z
+Generated: 2026-04-23T22:39:17.782Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-elm          completed  6567       1543     756ms, - MB        566ms, - MB        821ms, - MB        6m 01s, - MB              1/1              16/16             
+elm          completed  7504       1811     199ms, - MB        200ms, - MB        186ms, - MB        20.2s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: ELM
 ============================================================
-Implementation: /Users/evaisse/Sites/projects/the-great-analysis-challenge__feat-141-elm-haskell-v2-full-9-of-9/implementations/elm
-Track: v2-full
+Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/elm
+Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 33.6s
-  - build_seconds: 756ms
-  - analyze_seconds: 566ms
-  - test_seconds: 821ms
-  - test_chess_engine_seconds: 6m 01s
-  - test_v2_full_seconds: 6m 01s
-Metrics: TOKENS=6,567, LOC=1,543
+  - image_build_seconds: 5s
+  - build_seconds: 199ms
+  - analyze_seconds: 200ms
+  - test_seconds: 186ms
+  - test_chess_engine_seconds: 20.2s
+  - test_v1_seconds: 20.2s
+Metrics: TOKENS=7,504, LOC=1,811
