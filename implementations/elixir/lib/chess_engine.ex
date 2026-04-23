@@ -189,7 +189,7 @@ defmodule ChessEngine do
               case Enum.find(legal_moves, fn move ->
                      move.from == from and move.to == to and move.promotion == ?Q
                    end) do
-                nil -> :error
+                nil -> {:error, :illegal_move}
                 fallback -> {:ok, fallback}
               end
 
@@ -198,10 +198,10 @@ defmodule ChessEngine do
           end
 
         true ->
-          :error
+          {:error, :illegal_move}
       end
     else
-      _ -> :error
+      _ -> {:error, :invalid_move_format}
     end
   end
 
@@ -1215,7 +1215,11 @@ defmodule ChessEngine.CLI do
         IO.puts("OK: #{ChessEngine.move_to_string(move)}")
         {:continue, next_engine}
 
-      :error ->
+      {:error, :invalid_move_format} ->
+        IO.puts("ERROR: Invalid move format")
+        {:continue, engine}
+
+      {:error, :illegal_move} ->
         IO.puts("ERROR: Illegal move")
         {:continue, engine}
     end
@@ -1263,9 +1267,11 @@ defmodule ChessEngine.CLI do
   defp process_command(engine, <<"perft ", depth_text::binary>>) do
     case Integer.parse(depth_text) do
       {depth, ""} when depth >= 0 and depth <= 6 ->
-        IO.puts(
-          "NODES: depth=#{depth}; count=#{ChessEngine.perft(engine.board, depth)}; time=0ms"
-        )
+        started_at = System.monotonic_time(:millisecond)
+        count = ChessEngine.perft(engine.board, depth)
+        elapsed_ms = System.monotonic_time(:millisecond) - started_at
+
+        IO.puts("NODES: depth=#{depth}; count=#{count}; time=#{elapsed_ms}ms")
 
         {:continue, engine}
 
