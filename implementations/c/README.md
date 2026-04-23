@@ -1,6 +1,6 @@
 # C Chess Engine
 
-C implementation of the shared `v1` chess engine specification.
+C implementation of the shared `v1` chess engine specification with the current `v2-functional` extensions for PGN, UCI handshake, and Chess960 metadata commands.
 
 ## Highlights
 
@@ -9,6 +9,9 @@ C implementation of the shared `v1` chess engine specification.
 - FEN import/export
 - Alpha-beta minimax AI (depth 1..5)
 - Snapshot-based undo and repetition tracking
+- PGN `load`, `show`, and `moves`
+- UCI `uci` / `isready`
+- Chess960 `new960` / `position960`
 - Docker-first build and validation
 
 ## Repository Workflow
@@ -21,6 +24,7 @@ make build DIR=c
 make analyze DIR=c
 make test DIR=c
 make test-chess-engine DIR=c
+make test-chess-engine DIR=c TRACK=v2-functional
 ```
 
 ## Commands
@@ -37,6 +41,13 @@ make test-chess-engine DIR=c
 - `history`
 - `ai <depth>`
 - `perft <depth>`
+- `pgn load <file>`
+- `pgn show`
+- `pgn moves`
+- `uci`
+- `isready`
+- `new960 [id]`
+- `position960`
 - `help`
 - `quit`
 

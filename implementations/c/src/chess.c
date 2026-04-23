@@ -13,6 +13,13 @@
 #define MAX_HISTORY 2048
 #define MAX_POSITIONS 4096
 #define FEN_BUFFER_SIZE 128
+#define PGN_SAN_SIZE 32
+#define PGN_RESULT_SIZE 16
+#define PGN_TAG_NAME_SIZE 32
+#define PGN_TAG_VALUE_SIZE 256
+#define PGN_SOURCE_SIZE 512
+#define MAX_PGN_TAGS 32
+#define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 #define MATE_SCORE 100000
 #define INF_SCORE 1000000000
 
@@ -43,11 +50,39 @@ typedef struct {
 } MoveList;
 
 typedef struct {
+    char name[PGN_TAG_NAME_SIZE];
+    char value[PGN_TAG_VALUE_SIZE];
+} PgnTag;
+
+typedef struct {
+    char san[PGN_SAN_SIZE];
+    Move move;
+    char fen_before[FEN_BUFFER_SIZE];
+    char fen_after[FEN_BUFFER_SIZE];
+} PgnMoveNode;
+
+typedef struct {
+    PgnTag tags[MAX_PGN_TAGS];
+    int tag_count;
+    PgnMoveNode moves[MAX_HISTORY];
+    int move_count;
+    char result[PGN_RESULT_SIZE];
+    char source[PGN_SOURCE_SIZE];
+    char initial_fen[FEN_BUFFER_SIZE];
+} PgnGame;
+
+typedef struct {
     Board board;
     Board history[MAX_HISTORY];
     int history_len;
+    Move move_history[MAX_HISTORY];
+    int move_history_len;
     uint64_t position_history[MAX_POSITIONS];
     int position_count;
+    char initial_fen[FEN_BUFFER_SIZE];
+    PgnGame pgn_game;
+    int chess960_id;
+    bool chess960_mode;
 } Engine;
 
 typedef enum {
@@ -59,6 +94,13 @@ typedef enum {
     STATUS_DRAW_REPETITION,
     STATUS_DRAW_FIFTY,
 } GameStatus;
+
+static GameStatus engine_status(const Engine *engine);
+static void copy_text(char *destination, size_t destination_size, const char *source);
+static void pgn_init_game(PgnGame *game, const char *initial_fen, const char *source);
+static void pgn_set_result(PgnGame *game, const char *result);
+static bool pgn_build_from_history(PgnGame *game, const Move *move_history, int move_count, const char *initial_fen, const char *source);
+static void chess960_fen(int chess960_id, char buffer[FEN_BUFFER_SIZE]);
 
 static const int KNIGHT_DELTAS[8][2] = {
     {-2, -1}, {-2, 1}, {-1, -2}, {-1, 2},
@@ -1111,11 +1153,40 @@ static uint64_t perft(const Board *board, int depth) {
     return nodes;
 }
 
+static const char *result_for_status(GameStatus status) {
+    switch (status) {
+        case STATUS_CHECKMATE_WHITE:
+            return "1-0";
+        case STATUS_CHECKMATE_BLACK:
+            return "0-1";
+        case STATUS_STALEMATE:
+        case STATUS_DRAW_REPETITION:
+        case STATUS_DRAW_FIFTY:
+            return "1/2-1/2";
+        case STATUS_CHECK:
+        case STATUS_ONGOING:
+        default:
+            return "*";
+    }
+}
+
+static void engine_rebuild_pgn(Engine *engine) {
+    const char *source = engine->pgn_game.source[0] != '\0' ? engine->pgn_game.source : "current-game";
+    if (pgn_build_from_history(&engine->pgn_game, engine->move_history, engine->move_history_len, engine->initial_fen, source)) {
+        pgn_set_result(&engine->pgn_game, result_for_status(engine_status(engine)));
+    }
+}
+
 static void engine_init(Engine *engine) {
     board_set_starting_position(&engine->board);
     engine->history_len = 0;
+    engine->move_history_len = 0;
     engine->position_count = 1;
     engine->position_history[0] = board_hash(&engine->board);
+    copy_text(engine->initial_fen, sizeof(engine->initial_fen), START_FEN);
+    engine->chess960_id = 0;
+    engine->chess960_mode = false;
+    pgn_init_game(&engine->pgn_game, START_FEN, "current-game");
 }
 
 static bool engine_store_snapshot(Engine *engine) {
@@ -1127,12 +1198,17 @@ static bool engine_store_snapshot(Engine *engine) {
 }
 
 static bool engine_apply_move(Engine *engine, const Move *move) {
+    if (engine->move_history_len >= MAX_HISTORY) {
+        return false;
+    }
     if (!engine_store_snapshot(engine)) {
         return false;
     }
 
+    engine->move_history[engine->move_history_len++] = *move;
     apply_move(&engine->board, move);
     engine->position_history[engine->position_count++] = board_hash(&engine->board);
+    engine_rebuild_pgn(engine);
     return true;
 }
 
@@ -1143,17 +1219,26 @@ static bool engine_undo(Engine *engine) {
 
     engine->board = engine->history[engine->history_len - 1];
     engine->history_len -= 1;
+    if (engine->move_history_len > 0) {
+        engine->move_history_len -= 1;
+    }
     if (engine->position_count > 1) {
         engine->position_count -= 1;
     }
+    engine_rebuild_pgn(engine);
     return true;
 }
 
 static void engine_reset(Engine *engine) {
     board_set_starting_position(&engine->board);
     engine->history_len = 0;
+    engine->move_history_len = 0;
     engine->position_count = 1;
     engine->position_history[0] = board_hash(&engine->board);
+    copy_text(engine->initial_fen, sizeof(engine->initial_fen), START_FEN);
+    engine->chess960_id = 0;
+    engine->chess960_mode = false;
+    pgn_init_game(&engine->pgn_game, START_FEN, "current-game");
 }
 
 static bool engine_load_position(Engine *engine, const char *fen_string) {
@@ -1161,8 +1246,53 @@ static bool engine_load_position(Engine *engine, const char *fen_string) {
         return false;
     }
     engine->history_len = 0;
+    engine->move_history_len = 0;
     engine->position_count = 1;
     engine->position_history[0] = board_hash(&engine->board);
+    copy_text(engine->initial_fen, sizeof(engine->initial_fen), fen_string);
+    engine->chess960_id = 0;
+    engine->chess960_mode = false;
+    pgn_init_game(&engine->pgn_game, fen_string, "current-game");
+    return true;
+}
+
+static bool engine_load_pgn_game(Engine *engine, const PgnGame *game) {
+    if (!board_load_fen(&engine->board, game->initial_fen)) {
+        return false;
+    }
+
+    engine->history_len = 0;
+    engine->move_history_len = 0;
+    engine->position_count = 1;
+    engine->position_history[0] = board_hash(&engine->board);
+    copy_text(engine->initial_fen, sizeof(engine->initial_fen), game->initial_fen);
+    engine->pgn_game = *game;
+    engine->chess960_id = 0;
+    engine->chess960_mode = false;
+
+    for (int index = 0; index < game->move_count; ++index) {
+        if (engine->move_history_len >= MAX_HISTORY || !engine_store_snapshot(engine)) {
+            return false;
+        }
+        engine->move_history[engine->move_history_len++] = game->moves[index].move;
+        apply_move(&engine->board, &game->moves[index].move);
+        engine->position_history[engine->position_count++] = board_hash(&engine->board);
+    }
+
+    pgn_set_result(&engine->pgn_game, result_for_status(engine_status(engine)));
+    return true;
+}
+
+static bool engine_load_chess960(Engine *engine, int chess960_id) {
+    char fen[FEN_BUFFER_SIZE];
+
+    chess960_fen(chess960_id, fen);
+    if (!engine_load_position(engine, fen)) {
+        return false;
+    }
+
+    engine->chess960_id = chess960_id;
+    engine->chess960_mode = true;
     return true;
 }
 
@@ -1202,6 +1332,598 @@ static GameStatus engine_status(const Engine *engine) {
     }
 
     return in_check ? STATUS_CHECK : STATUS_ONGOING;
+}
+
+static void copy_text(char *destination, size_t destination_size, const char *source) {
+    if (destination_size == 0) {
+        return;
+    }
+    if (source == NULL) {
+        destination[0] = '\0';
+        return;
+    }
+    snprintf(destination, destination_size, "%s", source);
+}
+
+static bool same_move(const Move *first, const Move *second) {
+    return first->from == second->from &&
+           first->to == second->to &&
+           first->promotion == second->promotion &&
+           first->is_castling == second->is_castling &&
+           first->is_en_passant == second->is_en_passant;
+}
+
+static void square_to_text(int square, char buffer[3]) {
+    buffer[0] = (char) ('a' + square_col(square));
+    buffer[1] = (char) ('1' + square_row(square));
+    buffer[2] = '\0';
+}
+
+static void pgn_put_tag(PgnGame *game, const char *name, const char *value) {
+    for (int index = 0; index < game->tag_count; ++index) {
+        if (strcmp(game->tags[index].name, name) == 0) {
+            copy_text(game->tags[index].value, sizeof(game->tags[index].value), value);
+            return;
+        }
+    }
+
+    if (game->tag_count >= MAX_PGN_TAGS) {
+        return;
+    }
+
+    copy_text(game->tags[game->tag_count].name, sizeof(game->tags[game->tag_count].name), name);
+    copy_text(game->tags[game->tag_count].value, sizeof(game->tags[game->tag_count].value), value);
+    game->tag_count += 1;
+}
+
+static const char *pgn_get_tag(const PgnGame *game, const char *name) {
+    for (int index = 0; index < game->tag_count; ++index) {
+        if (strcmp(game->tags[index].name, name) == 0) {
+            return game->tags[index].value;
+        }
+    }
+    return NULL;
+}
+
+static void pgn_init_game(PgnGame *game, const char *initial_fen, const char *source) {
+    memset(game, 0, sizeof(*game));
+    copy_text(game->initial_fen, sizeof(game->initial_fen), initial_fen);
+    copy_text(game->source, sizeof(game->source), source != NULL ? source : "current-game");
+    copy_text(game->result, sizeof(game->result), "*");
+    pgn_put_tag(game, "Event", "CLI Game");
+    pgn_put_tag(game, "Site", "Local");
+    if (strcmp(initial_fen, START_FEN) != 0) {
+        pgn_put_tag(game, "SetUp", "1");
+        pgn_put_tag(game, "FEN", initial_fen);
+    }
+    pgn_put_tag(game, "Result", "*");
+}
+
+static void pgn_set_result(PgnGame *game, const char *result) {
+    copy_text(game->result, sizeof(game->result), result);
+    pgn_put_tag(game, "Result", result);
+}
+
+static void normalize_san(const char *san, char buffer[PGN_SAN_SIZE]) {
+    size_t length = strlen(san);
+    size_t cursor = 0;
+
+    while (cursor < length && isdigit((unsigned char) san[cursor])) {
+        cursor += 1;
+    }
+    while (cursor < length && san[cursor] == '.') {
+        cursor += 1;
+    }
+
+    size_t out = 0;
+    for (; cursor < length && out + 1 < PGN_SAN_SIZE; ++cursor) {
+        char value = san[cursor];
+        if (value == '0' && cursor + 2 < length && san[cursor + 1] == '-' && san[cursor + 2] == '0') {
+            buffer[out++] = 'O';
+        } else if (value != '!' && value != '?') {
+            buffer[out++] = value;
+        }
+    }
+    buffer[out] = '\0';
+
+    while (out > 0 && (buffer[out - 1] == '+' || buffer[out - 1] == '#')) {
+        buffer[--out] = '\0';
+    }
+    if (strcmp(buffer, "0-0") == 0) {
+        copy_text(buffer, PGN_SAN_SIZE, "O-O");
+    } else if (strcmp(buffer, "0-0-0") == 0) {
+        copy_text(buffer, PGN_SAN_SIZE, "O-O-O");
+    }
+}
+
+static void san_disambiguation(const Board *board, const Move *move, char buffer[3]) {
+    MoveList legal_moves;
+    char moving_piece = board->squares[move->from];
+    bool same_file = false;
+    bool same_rank = false;
+    int count = 0;
+
+    generate_legal_moves(board, &legal_moves);
+    for (int index = 0; index < legal_moves.count; ++index) {
+        Move candidate = legal_moves.moves[index];
+        if (same_move(&candidate, move) ||
+            candidate.to != move->to ||
+            board->squares[candidate.from] != moving_piece) {
+            continue;
+        }
+        count += 1;
+        if (square_col(candidate.from) == square_col(move->from)) {
+            same_file = true;
+        }
+        if (square_row(candidate.from) == square_row(move->from)) {
+            same_rank = true;
+        }
+    }
+
+    if (count == 0) {
+        buffer[0] = '\0';
+        return;
+    }
+
+    if (!same_file) {
+        buffer[0] = (char) ('a' + square_col(move->from));
+        buffer[1] = '\0';
+        return;
+    }
+    if (!same_rank) {
+        buffer[0] = (char) ('1' + square_row(move->from));
+        buffer[1] = '\0';
+        return;
+    }
+
+    buffer[0] = (char) ('a' + square_col(move->from));
+    buffer[1] = (char) ('1' + square_row(move->from));
+    buffer[2] = '\0';
+}
+
+static bool move_to_san(const Board *board, const Move *move, char buffer[PGN_SAN_SIZE]) {
+    char piece = board->squares[move->from];
+    char destination[3];
+    bool is_capture = board->squares[move->to] != '.' || move->is_en_passant;
+    char disambiguation[3] = "";
+    char promotion[3] = "";
+    Board next_board;
+    MoveList legal_moves;
+
+    if (piece == '.') {
+        return false;
+    }
+
+    square_to_text(move->to, destination);
+
+    if (move->promotion != '\0') {
+        promotion[0] = '=';
+        promotion[1] = (char) toupper((unsigned char) move->promotion);
+        promotion[2] = '\0';
+    }
+
+    if (move->is_castling) {
+        copy_text(buffer, PGN_SAN_SIZE, square_col(move->to) == 6 ? "O-O" : "O-O-O");
+    } else if (toupper((unsigned char) piece) == 'P') {
+        char prefix[3] = "";
+        if (is_capture) {
+            prefix[0] = (char) ('a' + square_col(move->from));
+            prefix[1] = 'x';
+            prefix[2] = '\0';
+        }
+        snprintf(buffer, PGN_SAN_SIZE, "%s%s%s", prefix, destination, promotion);
+    } else {
+        san_disambiguation(board, move, disambiguation);
+        snprintf(buffer, PGN_SAN_SIZE, "%c%s%s%s%s",
+                 (char) toupper((unsigned char) piece),
+                 disambiguation,
+                 is_capture ? "x" : "",
+                 destination,
+                 promotion);
+    }
+
+    next_board = *board;
+    apply_move(&next_board, move);
+    if (is_in_check(&next_board, next_board.white_to_move)) {
+        generate_legal_moves(&next_board, &legal_moves);
+        strncat(buffer, legal_moves.count == 0 ? "#" : "+", PGN_SAN_SIZE - strlen(buffer) - 1);
+    }
+    return true;
+}
+
+static bool san_to_move(const Board *board, const char *san, Move *resolved) {
+    MoveList legal_moves;
+    char expected[PGN_SAN_SIZE];
+    char actual[PGN_SAN_SIZE];
+
+    normalize_san(san, expected);
+    generate_legal_moves(board, &legal_moves);
+    for (int index = 0; index < legal_moves.count; ++index) {
+        if (!move_to_san(board, &legal_moves.moves[index], actual)) {
+            continue;
+        }
+        normalize_san(actual, actual);
+        if (strcmp(expected, actual) == 0) {
+            *resolved = legal_moves.moves[index];
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool is_result_token(const char *token) {
+    return strcmp(token, "1-0") == 0 ||
+           strcmp(token, "0-1") == 0 ||
+           strcmp(token, "1/2-1/2") == 0 ||
+           strcmp(token, "*") == 0;
+}
+
+static bool is_move_number_token(const char *token) {
+    size_t length = strlen(token);
+    size_t index = 0;
+
+    if (length == 0) {
+        return false;
+    }
+    while (index < length && isdigit((unsigned char) token[index])) {
+        index += 1;
+    }
+    if (index == 0) {
+        return false;
+    }
+    while (index < length && token[index] == '.') {
+        index += 1;
+    }
+    return index == length;
+}
+
+static bool is_nag_token(const char *token) {
+    if (token[0] != '$' || token[1] == '\0') {
+        return false;
+    }
+    for (size_t index = 1; token[index] != '\0'; ++index) {
+        if (!isdigit((unsigned char) token[index])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void strip_comments_and_variations(const char *input, char *output) {
+    int variation_depth = 0;
+    bool in_braces = false;
+    bool in_semicolon = false;
+    size_t out = 0;
+
+    for (size_t index = 0; input[index] != '\0'; ++index) {
+        char value = input[index];
+
+        if (in_semicolon) {
+            if (value == '\n') {
+                in_semicolon = false;
+                output[out++] = value;
+            }
+            continue;
+        }
+        if (in_braces) {
+            if (value == '}') {
+                in_braces = false;
+            }
+            continue;
+        }
+        if (variation_depth > 0) {
+            if (value == '(') {
+                variation_depth += 1;
+            } else if (value == ')') {
+                variation_depth -= 1;
+            }
+            continue;
+        }
+
+        if (value == '{') {
+            in_braces = true;
+            continue;
+        }
+        if (value == ';') {
+            in_semicolon = true;
+            continue;
+        }
+        if (value == '(') {
+            variation_depth = 1;
+            continue;
+        }
+        output[out++] = value;
+    }
+    output[out] = '\0';
+}
+
+static bool pgn_parse_tag_line(PgnGame *game, const char *line) {
+    const char *cursor = line;
+    const char *space = NULL;
+    const char *quote_start = NULL;
+    const char *quote_end = NULL;
+    char name[PGN_TAG_NAME_SIZE];
+    char value[PGN_TAG_VALUE_SIZE];
+
+    if (*cursor != '[') {
+        return false;
+    }
+    cursor += 1;
+    space = strchr(cursor, ' ');
+    if (space == NULL) {
+        return false;
+    }
+
+    size_t name_length = (size_t) (space - cursor);
+    if (name_length == 0 || name_length >= sizeof(name)) {
+        return false;
+    }
+    memcpy(name, cursor, name_length);
+    name[name_length] = '\0';
+
+    quote_start = strchr(space, '"');
+    quote_end = strrchr(space, '"');
+    if (quote_start == NULL || quote_end == NULL || quote_end <= quote_start) {
+        return false;
+    }
+    size_t value_length = (size_t) (quote_end - quote_start - 1);
+    if (value_length >= sizeof(value)) {
+        value_length = sizeof(value) - 1;
+    }
+    memcpy(value, quote_start + 1, value_length);
+    value[value_length] = '\0';
+
+    pgn_put_tag(game, name, value);
+    return true;
+}
+
+static bool pgn_build_from_history(PgnGame *game, const Move *move_history, int move_count, const char *initial_fen, const char *source) {
+    Board board;
+
+    if (!board_load_fen(&board, initial_fen)) {
+        return false;
+    }
+
+    pgn_init_game(game, initial_fen, source);
+    for (int index = 0; index < move_count && index < MAX_HISTORY; ++index) {
+        PgnMoveNode *node = &game->moves[game->move_count];
+        if (!move_to_san(&board, &move_history[index], node->san)) {
+            return false;
+        }
+        board_export_fen(&board, node->fen_before, sizeof(node->fen_before));
+        node->move = move_history[index];
+        apply_move(&board, &move_history[index]);
+        board_export_fen(&board, node->fen_after, sizeof(node->fen_after));
+        game->move_count += 1;
+    }
+    return true;
+}
+
+static void starting_ply_from_fen(const char *fen, int *move_number, bool *white_to_move) {
+    char board_part[80];
+    char side = 'w';
+    char castling[16];
+    char en_passant[16];
+    int halfmove = 0;
+    int fullmove = 1;
+
+    if (sscanf(fen, "%79s %c %15s %15s %d %d", board_part, &side, castling, en_passant, &halfmove, &fullmove) == 6) {
+        *move_number = fullmove > 0 ? fullmove : 1;
+        *white_to_move = side != 'b';
+        return;
+    }
+
+    *move_number = 1;
+    *white_to_move = true;
+}
+
+static void pgn_serialize(const PgnGame *game, char *buffer, size_t buffer_size) {
+    char *cursor = buffer;
+    size_t remaining = buffer_size;
+    int move_number = 1;
+    bool white_to_move = true;
+
+    if (buffer_size == 0) {
+        return;
+    }
+    buffer[0] = '\0';
+
+    for (int index = 0; index < game->tag_count; ++index) {
+        append_format(&cursor, &remaining, "[%s \"%s\"]\n", game->tags[index].name, game->tags[index].value);
+    }
+    if (game->tag_count > 0) {
+        append_format(&cursor, &remaining, "\n");
+    }
+
+    starting_ply_from_fen(game->initial_fen, &move_number, &white_to_move);
+    for (int index = 0; index < game->move_count; ++index) {
+        if (white_to_move) {
+            append_format(&cursor, &remaining, "%d. %s", move_number, game->moves[index].san);
+        } else if (index == 0) {
+            append_format(&cursor, &remaining, "%d... %s", move_number, game->moves[index].san);
+        } else {
+            append_format(&cursor, &remaining, "%s", game->moves[index].san);
+        }
+
+        if (index + 1 < game->move_count || game->result[0] != '\0') {
+            append_format(&cursor, &remaining, " ");
+        }
+
+        if (!white_to_move) {
+            move_number += 1;
+        }
+        white_to_move = !white_to_move;
+    }
+
+    append_format(&cursor, &remaining, "%s\n", game->result[0] != '\0' ? game->result : "*");
+}
+
+static bool pgn_parse(const char *content, const char *source, PgnGame *game, char *error, size_t error_size) {
+    size_t content_length = strlen(content);
+    char *movetext = calloc(content_length + 1, sizeof(char));
+    char *stripped = calloc(content_length + 1, sizeof(char));
+    Board board;
+    bool success = false;
+
+    if (movetext == NULL || stripped == NULL) {
+        copy_text(error, error_size, "out of memory");
+        goto cleanup;
+    }
+
+    pgn_init_game(game, START_FEN, source);
+
+    const char *cursor = content;
+    size_t movetext_length = 0;
+    while (*cursor != '\0') {
+        const char *line_end = cursor;
+        while (*line_end != '\0' && *line_end != '\n') {
+            line_end += 1;
+        }
+
+        size_t line_length = (size_t) (line_end - cursor);
+        while (line_length > 0 && (cursor[line_length - 1] == '\r' || isspace((unsigned char) cursor[line_length - 1]))) {
+            line_length -= 1;
+        }
+
+        size_t start = 0;
+        while (start < line_length && isspace((unsigned char) cursor[start])) {
+            start += 1;
+        }
+
+        if (start < line_length && cursor[start] == '[' && cursor[line_length - 1] == ']') {
+            char line_buffer[PGN_TAG_VALUE_SIZE + PGN_TAG_NAME_SIZE + 8];
+            size_t trimmed_length = line_length - start;
+            if (trimmed_length >= sizeof(line_buffer)) {
+                trimmed_length = sizeof(line_buffer) - 1;
+            }
+            memcpy(line_buffer, cursor + start, trimmed_length);
+            line_buffer[trimmed_length] = '\0';
+            if (!pgn_parse_tag_line(game, line_buffer)) {
+                copy_text(error, error_size, "invalid PGN tag");
+                goto cleanup;
+            }
+        } else if (start < line_length) {
+            size_t trimmed_length = line_length - start;
+            memcpy(movetext + movetext_length, cursor + start, trimmed_length);
+            movetext_length += trimmed_length;
+            movetext[movetext_length++] = ' ';
+        }
+
+        cursor = *line_end == '\n' ? line_end + 1 : line_end;
+    }
+    movetext[movetext_length] = '\0';
+
+    const char *initial_fen = pgn_get_tag(game, "FEN");
+    if (initial_fen == NULL) {
+        initial_fen = START_FEN;
+    }
+    copy_text(game->initial_fen, sizeof(game->initial_fen), initial_fen);
+
+    if (!board_load_fen(&board, initial_fen)) {
+        copy_text(error, error_size, "invalid PGN FEN");
+        goto cleanup;
+    }
+
+    strip_comments_and_variations(movetext, stripped);
+
+    for (char *token = strtok(stripped, " \t\r\n"); token != NULL; token = strtok(NULL, " \t\r\n")) {
+        if (is_move_number_token(token) || is_nag_token(token)) {
+            continue;
+        }
+        if (is_result_token(token)) {
+            pgn_set_result(game, token);
+            continue;
+        }
+
+        if (game->move_count >= MAX_HISTORY) {
+            copy_text(error, error_size, "PGN move limit exceeded");
+            goto cleanup;
+        }
+
+        PgnMoveNode *node = &game->moves[game->move_count];
+        if (!san_to_move(&board, token, &node->move) || !move_to_san(&board, &node->move, node->san)) {
+            copy_text(error, error_size, "unresolved SAN move");
+            goto cleanup;
+        }
+        board_export_fen(&board, node->fen_before, sizeof(node->fen_before));
+        apply_move(&board, &node->move);
+        board_export_fen(&board, node->fen_after, sizeof(node->fen_after));
+        game->move_count += 1;
+    }
+
+    if (pgn_get_tag(game, "Result") == NULL) {
+        pgn_put_tag(game, "Result", game->result[0] != '\0' ? game->result : "*");
+    }
+    if (game->result[0] == '\0') {
+        copy_text(game->result, sizeof(game->result), pgn_get_tag(game, "Result"));
+    }
+    success = true;
+
+cleanup:
+    free(movetext);
+    free(stripped);
+    return success;
+}
+
+static void chess960_backrank(int chess960_id, char buffer[9]) {
+    static const int knight_table[10][2] = {
+        {0, 1}, {0, 2}, {0, 3}, {0, 4}, {1, 2},
+        {1, 3}, {1, 4}, {2, 3}, {2, 4}, {3, 4},
+    };
+    char pieces[8] = {0};
+    int empty[8];
+    int empty_count = 0;
+    int remainder = chess960_id % 4;
+    int value = chess960_id / 4;
+
+    pieces[2 * remainder + 1] = 'b';
+    remainder = value % 4;
+    value /= 4;
+    pieces[2 * remainder] = 'b';
+
+    remainder = value % 6;
+    value /= 6;
+    for (int index = 0; index < 8; ++index) {
+        if (pieces[index] == 0) {
+            empty[empty_count++] = index;
+        }
+    }
+    pieces[empty[remainder]] = 'q';
+
+    empty_count = 0;
+    for (int index = 0; index < 8; ++index) {
+        if (pieces[index] == 0) {
+            empty[empty_count++] = index;
+        }
+    }
+    pieces[empty[knight_table[value][0]]] = 'n';
+    pieces[empty[knight_table[value][1]]] = 'n';
+
+    empty_count = 0;
+    for (int index = 0; index < 8; ++index) {
+        if (pieces[index] == 0) {
+            empty[empty_count++] = index;
+        }
+    }
+    pieces[empty[0]] = 'r';
+    pieces[empty[1]] = 'k';
+    pieces[empty[2]] = 'r';
+
+    for (int index = 0; index < 8; ++index) {
+        buffer[index] = pieces[index];
+    }
+    buffer[8] = '\0';
+}
+
+static void chess960_fen(int chess960_id, char buffer[FEN_BUFFER_SIZE]) {
+    char backrank[9];
+    char white_backrank[9];
+    chess960_backrank(chess960_id, backrank);
+    for (int index = 0; index < 8; ++index) {
+        white_backrank[index] = (char) toupper((unsigned char) backrank[index]);
+    }
+    white_backrank[8] = '\0';
+    snprintf(buffer, FEN_BUFFER_SIZE, "%s/pppppppp/8/8/8/8/PPPPPPPP/%s w - - 0 1", backrank, white_backrank);
 }
 
 static void print_status(const Engine *engine) {
@@ -1455,7 +2177,44 @@ static bool process_command(Engine *engine, char *line) {
     }
 
     if (strcmp(line, "help") == 0) {
-        printf("OK: commands=new move undo status fen export eval hash draws history ai perft help quit\n");
+        printf("OK: commands=new move undo status fen export eval hash draws history ai perft pgn uci isready new960 position960 help quit\n");
+        return true;
+    }
+
+    if (strcmp(line, "uci") == 0) {
+        printf("id name C Chess Engine\n");
+        printf("id author The Great Analysis Challenge\n");
+        printf("uciok\n");
+        return true;
+    }
+
+    if (strcmp(line, "isready") == 0) {
+        printf("readyok\n");
+        return true;
+    }
+
+    if (strcmp(line, "new960") == 0) {
+        char backrank[9];
+        if (!engine_load_chess960(engine, 0)) {
+            printf("ERROR: Could not load Chess960 position\n");
+            return true;
+        }
+        chess960_backrank(0, backrank);
+        printf("OK: New game started\n");
+        printf("960: new game id=0; backrank=%s\n", backrank);
+        return true;
+    }
+
+    if (strcmp(line, "position960") == 0) {
+        char backrank[9];
+        char fen[FEN_BUFFER_SIZE];
+        chess960_backrank(engine->chess960_id, backrank);
+        chess960_fen(engine->chess960_id, fen);
+        printf("960: id=%d; mode=%s; backrank=%s; fen=%s\n",
+               engine->chess960_id,
+               engine->chess960_mode ? "chess960" : "standard",
+               backrank,
+               fen);
         return true;
     }
 
@@ -1518,6 +2277,103 @@ static bool process_command(Engine *engine, char *line) {
         }
         printf("NODES: depth=%d; count=%llu; time=0ms\n",
                depth, (unsigned long long) perft(&engine->board, depth));
+        return true;
+    }
+
+    if (starts_with(line, "new960 ")) {
+        int chess960_id = 0;
+        char backrank[9];
+        if (!parse_int_argument(line + 7, &chess960_id) || chess960_id < 0 || chess960_id > 959) {
+            printf("ERROR: new960 id must be between 0 and 959\n");
+            return true;
+        }
+        if (!engine_load_chess960(engine, chess960_id)) {
+            printf("ERROR: Could not load Chess960 position\n");
+            return true;
+        }
+        chess960_backrank(chess960_id, backrank);
+        printf("OK: New game started\n");
+        printf("960: new game id=%d; backrank=%s\n", chess960_id, backrank);
+        return true;
+    }
+
+    if (starts_with(line, "pgn ")) {
+        if (starts_with(line, "pgn load ")) {
+            PgnGame game;
+            char error[128] = "";
+            char *content = NULL;
+            const char *path = line + 9;
+            FILE *handle = fopen(path, "rb");
+            if (handle == NULL) {
+                printf("ERROR: pgn load failed: file not found: %s\n", path);
+                return true;
+            }
+
+            if (fseek(handle, 0, SEEK_END) != 0) {
+                fclose(handle);
+                printf("ERROR: pgn load failed: could not seek\n");
+                return true;
+            }
+            long length = ftell(handle);
+            rewind(handle);
+            if (length < 0) {
+                fclose(handle);
+                printf("ERROR: pgn load failed: could not read size\n");
+                return true;
+            }
+
+            content = calloc((size_t) length + 1U, sizeof(char));
+            if (content == NULL) {
+                fclose(handle);
+                printf("ERROR: pgn load failed: out of memory\n");
+                return true;
+            }
+            if (fread(content, 1, (size_t) length, handle) != (size_t) length) {
+                free(content);
+                fclose(handle);
+                printf("ERROR: pgn load failed: could not read file\n");
+                return true;
+            }
+            fclose(handle);
+
+            if (!pgn_parse(content, path, &game, error, sizeof(error)) || !engine_load_pgn_game(engine, &game)) {
+                printf("ERROR: pgn load failed: %s\n", error[0] != '\0' ? error : "could not load PGN");
+                free(content);
+                return true;
+            }
+            free(content);
+            printf("PGN: loaded source=%s\n", path);
+            return true;
+        }
+
+        if (strcmp(line, "pgn show") == 0) {
+            size_t buffer_size = (size_t) engine->pgn_game.move_count * 96U + (size_t) engine->pgn_game.tag_count * 320U + 512U;
+            char *buffer = calloc(buffer_size, sizeof(char));
+            if (buffer == NULL) {
+                printf("ERROR: pgn show failed: out of memory\n");
+                return true;
+            }
+            pgn_serialize(&engine->pgn_game, buffer, buffer_size);
+            printf("PGN: source=%s; moves=%d\n", engine->pgn_game.source, engine->pgn_game.move_count);
+            fputs(buffer, stdout);
+            free(buffer);
+            return true;
+        }
+
+        if (strcmp(line, "pgn moves") == 0) {
+            if (engine->pgn_game.move_count == 0) {
+                printf("PGN: moves (none)\n");
+                return true;
+            }
+            printf("PGN: moves");
+            for (int index = 0; index < engine->pgn_game.move_count; ++index) {
+                printf(" %s", engine->pgn_game.moves[index].san);
+            }
+            printf("\n");
+            return true;
+        }
+
+        printf("ERROR: Unsupported pgn command\n");
         return true;
     }
 
