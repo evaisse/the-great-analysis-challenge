@@ -104,6 +104,20 @@ jobs:
       - name: Install Bun dependencies
         run: bun install --frozen-lockfile
 
+      - name: Prepare local toolchain image
+        run: |
+          ENGINE="${{ matrix.engine }}"
+          TOOLCHAIN_DIR="implementations/${ENGINE}/docker-images/toolchain"
+          TOOLCHAIN_DOCKERFILE="${TOOLCHAIN_DIR}/Dockerfile"
+          TOOLCHAIN_IMAGE="ghcr.io/${{ github.repository_owner }}/tgac-${ENGINE}-toolchain:latest"
+
+          if [[ -f "${TOOLCHAIN_DOCKERFILE}" ]]; then
+            echo "Building local toolchain image ${TOOLCHAIN_IMAGE} from ${TOOLCHAIN_DOCKERFILE}..."
+            docker build -t "${TOOLCHAIN_IMAGE}" "${TOOLCHAIN_DIR}"
+          else
+            echo "No local toolchain Dockerfile for ${ENGINE}; skipping local toolchain bootstrap."
+          fi
+
       - name: Build Docker image target
         run: ./workflow verify-make-target ${{ matrix.engine }} image --timeout 900
 
