@@ -8,11 +8,12 @@ defmodule ChessEngine.Move do
 end
 
 defmodule ChessEngine do
-  alias ChessEngine.Move
+  alias ChessEngine.{Chess960, Move, PGN}
 
   @empty ?.
   @mate_score 100_000
   @inf_score 1_000_000_000
+  @start_fen "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
   @knight_deltas [
     {-2, -1},
@@ -121,11 +122,17 @@ defmodule ChessEngine do
 
   def new_engine do
     board = new_board()
+    pgn_game = PGN.new_game(@start_fen, "current-game")
 
     %{
       board: board,
       history: [],
-      position_history: [board_hash_hex(board)]
+      move_history: [],
+      position_history: [board_hash_hex(board)],
+      initial_fen: @start_fen,
+      pgn_game: pgn_game,
+      chess960_id: 0,
+      chess960_mode: false
     }
   end
 
@@ -148,11 +155,18 @@ defmodule ChessEngine do
   def load_position(_engine, fen_string) do
     case board_load_fen(fen_string) do
       {:ok, board} ->
+        pgn_game = PGN.new_game(fen_string, "current-game")
+
         {:ok,
          %{
            board: board,
            history: [],
-           position_history: [board_hash_hex(board)]
+           move_history: [],
+           position_history: [board_hash_hex(board)],
+           initial_fen: fen_string,
+           pgn_game: pgn_game,
+           chess960_id: 0,
+           chess960_mode: false
          }}
 
       :error ->
@@ -162,8 +176,23 @@ defmodule ChessEngine do
 
   def undo(%{history: []} = _engine), do: :error
 
-  def undo(%{history: [previous_board | rest], position_history: [_current | positions]} = engine) do
-    {:ok, %{engine | board: previous_board, history: rest, position_history: positions}}
+  def undo(
+        %{
+          history: [previous_board | rest],
+          move_history: [_last_move | move_rest],
+          position_history: [_current | positions]
+        } =
+          engine
+      ) do
+    next_engine = %{
+      engine
+      | board: previous_board,
+        history: rest,
+        move_history: move_rest,
+        position_history: positions
+    }
+
+    {:ok, rebuild_pgn(next_engine)}
   end
 
   def resolve_user_move(engine, move_text) do
@@ -209,12 +238,79 @@ defmodule ChessEngine do
     next_board = apply_move(engine.board, move)
 
     {:ok,
-     %{
+     rebuild_pgn(%{
        engine
        | board: next_board,
          history: [engine.board | engine.history],
+         move_history: [move | engine.move_history],
          position_history: [board_hash_hex(next_board) | engine.position_history]
-     }}
+     })}
+  end
+
+  def load_pgn_game(engine, game) do
+    engine
+    |> Map.put(:pgn_game, game)
+    |> Map.put(:initial_fen, game.initial_fen)
+    |> Map.put(:chess960_mode, false)
+    |> Map.put(:pgn_game, game)
+    |> sync_runtime_to_pgn()
+  end
+
+  def sync_runtime_to_pgn(engine) do
+    with {:ok, base_board} <- board_load_fen(engine.pgn_game.initial_fen) do
+      {board, history, move_history, position_history} =
+        Enum.reduce(
+          PGN.mainline_moves(engine.pgn_game),
+          {base_board, [], [], [board_hash_hex(base_board)]},
+          fn node, {board, history, move_history, position_history} ->
+            next_board = apply_move(board, node.move)
+
+            {
+              next_board,
+              [board | history],
+              [node.move | move_history],
+              [board_hash_hex(next_board) | position_history]
+            }
+          end
+        )
+
+      %{
+        engine
+        | board: board,
+          history: history,
+          move_history: move_history,
+          position_history: position_history,
+          initial_fen: engine.pgn_game.initial_fen
+      }
+      |> rebuild_pgn_result()
+    else
+      :error -> engine
+    end
+  end
+
+  def load_chess960(engine, chess960_id) do
+    fen = Chess960.build_fen(chess960_id)
+
+    case board_load_fen(fen) do
+      {:ok, board} ->
+        pgn_game = PGN.new_game(fen, "current-game")
+
+        {:ok,
+         %{
+           engine
+           | board: board,
+             history: [],
+             move_history: [],
+             position_history: [board_hash_hex(board)],
+             initial_fen: fen,
+             pgn_game: pgn_game,
+             chess960_id: chess960_id,
+             chess960_mode: true
+         }}
+
+      :error ->
+        :error
+    end
   end
 
   def status(engine) do
@@ -375,6 +471,32 @@ defmodule ChessEngine do
 
     square_to_text(move.from) <> square_to_text(move.to) <> promotion
   end
+
+  defp rebuild_pgn(engine) do
+    engine
+    |> Map.put(
+      :pgn_game,
+      engine.move_history
+      |> Enum.reverse()
+      |> PGN.build_game_from_history(
+        start_fen: engine.initial_fen,
+        source: engine.pgn_game.source || "current-game"
+      )
+    )
+    |> rebuild_pgn_result()
+  end
+
+  defp rebuild_pgn_result(engine) do
+    result = result_for_status(status(engine))
+    %{engine | pgn_game: PGN.set_result(engine.pgn_game, result)}
+  end
+
+  defp result_for_status(:checkmate_white), do: "1-0"
+  defp result_for_status(:checkmate_black), do: "0-1"
+  defp result_for_status(:stalemate), do: "1/2-1/2"
+  defp result_for_status(:draw_repetition), do: "1/2-1/2"
+  defp result_for_status(:draw_fifty), do: "1/2-1/2"
+  defp result_for_status(_status), do: "*"
 
   def generate_legal_moves(board) do
     moving_white = board.white_to_move
@@ -1114,6 +1236,7 @@ end
 
 defmodule ChessEngine.CLI do
   alias ChessEngine
+  alias ChessEngine.{Chess960, PGN}
 
   def main do
     loop(ChessEngine.new_engine())
@@ -1202,10 +1325,67 @@ defmodule ChessEngine.CLI do
 
   defp process_command(engine, "help") do
     IO.puts(
-      "OK: commands=new move undo status fen export eval hash draws history ai perft help quit"
+      "OK: commands=new move undo status fen export eval hash draws history ai perft pgn uci isready new960 position960 help quit"
     )
 
     {:continue, engine}
+  end
+
+  defp process_command(engine, "uci") do
+    IO.puts("id name Elixir Chess Engine")
+    IO.puts("id author The Great Analysis Challenge")
+    IO.puts("uciok")
+    {:continue, engine}
+  end
+
+  defp process_command(engine, "isready") do
+    IO.puts("readyok")
+    {:continue, engine}
+  end
+
+  defp process_command(engine, "new960") do
+    case ChessEngine.load_chess960(engine, 0) do
+      {:ok, next_engine} ->
+        IO.puts("OK: New game started")
+        IO.puts("960: new game id=0; backrank=#{Chess960.backrank(0)}")
+        {:continue, next_engine}
+
+      :error ->
+        IO.puts("ERROR: Could not load Chess960 position")
+        {:continue, engine}
+    end
+  end
+
+  defp process_command(engine, <<"new960 ", id_text::binary>>) do
+    case Integer.parse(String.trim(id_text)) do
+      {chess960_id, ""} when chess960_id >= 0 and chess960_id <= 959 ->
+        case ChessEngine.load_chess960(engine, chess960_id) do
+          {:ok, next_engine} ->
+            IO.puts("OK: New game started")
+            IO.puts("960: new game id=#{chess960_id}; backrank=#{Chess960.backrank(chess960_id)}")
+            {:continue, next_engine}
+
+          :error ->
+            IO.puts("ERROR: Could not load Chess960 position")
+            {:continue, engine}
+        end
+
+      _ ->
+        IO.puts("ERROR: new960 id must be between 0 and 959")
+        {:continue, engine}
+    end
+  end
+
+  defp process_command(engine, "position960") do
+    IO.puts(
+      "960: id=#{engine.chess960_id}; mode=#{if(engine.chess960_mode, do: "chess960", else: "standard")}; backrank=#{Chess960.backrank(engine.chess960_id)}; fen=#{Chess960.build_fen(engine.chess960_id)}"
+    )
+
+    {:continue, engine}
+  end
+
+  defp process_command(engine, <<"pgn ", rest::binary>>) do
+    process_pgn_command(engine, String.trim(rest))
   end
 
   defp process_command(engine, <<"move ", move_text::binary>>) do
@@ -1283,6 +1463,50 @@ defmodule ChessEngine.CLI do
 
   defp process_command(engine, _unknown) do
     IO.puts("ERROR: Invalid command")
+    {:continue, engine}
+  end
+
+  defp process_pgn_command(engine, <<"load ", path::binary>>) do
+    case File.read(String.trim(path)) do
+      {:ok, content} ->
+        case PGN.parse(content, String.trim(path)) do
+          {:ok, game} ->
+            next_engine = ChessEngine.load_pgn_game(engine, game)
+            IO.puts("PGN: loaded source=#{String.trim(path)}")
+            {:continue, next_engine}
+
+          {:error, message} ->
+            IO.puts("ERROR: pgn load failed: #{message}")
+            {:continue, engine}
+        end
+
+      {:error, :enoent} ->
+        IO.puts("ERROR: pgn load failed: file not found: #{String.trim(path)}")
+        {:continue, engine}
+
+      {:error, reason} ->
+        IO.puts("ERROR: pgn load failed: #{:file.format_error(reason)}")
+        {:continue, engine}
+    end
+  end
+
+  defp process_pgn_command(engine, "show") do
+    IO.puts("PGN: source=#{engine.pgn_game.source}; moves=#{length(engine.pgn_game.moves)}")
+    IO.write(PGN.serialize(engine.pgn_game))
+    {:continue, engine}
+  end
+
+  defp process_pgn_command(engine, "moves") do
+    case PGN.mainline_sans(engine.pgn_game) do
+      [] -> IO.puts("PGN: moves (none)")
+      moves -> IO.puts("PGN: moves #{Enum.join(moves, " ")}")
+    end
+
+    {:continue, engine}
+  end
+
+  defp process_pgn_command(engine, _rest) do
+    IO.puts("ERROR: Unsupported pgn command")
     {:continue, engine}
   end
 end

@@ -1,6 +1,6 @@
 # Elixir Chess Engine
 
-Elixir implementation of the shared `v1` chess engine specification.
+Elixir implementation of the shared `v1` chess engine specification with the current `v2-functional` extensions for PGN, UCI handshake, and Chess960 metadata commands.
 
 ## Highlights
 
@@ -9,6 +9,9 @@ Elixir implementation of the shared `v1` chess engine specification.
 - FEN import/export
 - Alpha-beta minimax AI (depth 1..5)
 - Snapshot-based undo and repetition tracking
+- PGN `load`, `show`, and `moves`
+- UCI `uci` / `isready`
+- Chess960 `new960` / `position960`
 - Docker-first build and validation
 
 ## Repository Workflow
@@ -22,6 +25,7 @@ make build DIR=elixir
 make analyze DIR=elixir
 make test DIR=elixir
 make test-chess-engine DIR=elixir
+make test-chess-engine DIR=elixir TRACK=v2-functional
 ```
 
 ## Commands
@@ -38,6 +42,13 @@ make test-chess-engine DIR=elixir
 - `history`
 - `ai <depth>`
 - `perft <depth>`
+- `pgn load <file>`
+- `pgn show`
+- `pgn moves`
+- `uci`
+- `isready`
+- `new960 [id]`
+- `position960`
 - `help`
 - `quit`
 

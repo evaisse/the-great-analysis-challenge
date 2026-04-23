@@ -70,10 +70,10 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.has-changes == 'true'
     outputs:
-      excellent-count: ${{ steps.verify.outputs.excellent_count }}
-      good-count: ${{ steps.verify.outputs.good_count }}
-      needs-work-count: ${{ steps.verify.outputs.needs_work_count }}
-      total-count: ${{ steps.verify.outputs.total_count }}
+      excellent_count: ${{ steps.verify.outputs.excellent_count }}
+      good_count: ${{ steps.verify.outputs.good_count }}
+      needs_work_count: ${{ steps.verify.outputs.needs_work_count }}
+      total_count: ${{ steps.verify.outputs.total_count }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -316,9 +316,9 @@ jobs:
     needs: [detect-changes, validation, benchmark]
     if: always() && needs.detect-changes.outputs.has-changes == 'true'
     outputs:
-      readme-changed: ${{ steps.update.outputs.changed }}
-      build-error-count: ${{ steps.update.outputs.build-error-count }}
-      build-error-languages: ${{ steps.update.outputs.build-error-languages }}
+      readme_changed: ${{ steps.update.outputs.changed }}
+      build_error_count: ${{ steps.update.outputs.build-error-count }}
+      build_error_languages: ${{ steps.update.outputs.build-error-languages }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -352,7 +352,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     needs: [detect-changes, validation, combine-results]
-    if: needs.combine-results.outputs.readme-changed == 'true' || github.event_name == 'workflow_dispatch'
+    if: always() && (needs.combine-results.outputs.readme_changed == 'true' || github.event_name == 'workflow_dispatch')
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -391,17 +391,17 @@ jobs:
           if [ -z "$VERSION_TYPE" ]; then
             VERSION_TYPE="patch"
           fi
-          BUILD_ERROR_COUNT="${{ needs.combine-results.outputs.build-error-count }}"
+          BUILD_ERROR_COUNT="${{ needs.combine-results.outputs.build_error_count }}"
           if [ -z "$BUILD_ERROR_COUNT" ]; then
             BUILD_ERROR_COUNT="0"
           fi
           ./workflow create-release \
             --version-type "$VERSION_TYPE" \
             --readme-changed "${{ steps.update.outputs.changed }}" \
-            --excellent-count "${{ needs.validation.outputs.excellent-count }}" \
-            --good-count "${{ needs.validation.outputs.good-count }}" \
-            --needs-work-count "${{ needs.validation.outputs.needs-work-count }}" \
-            --total-count "${{ needs.validation.outputs.total-count }}"
+            --excellent-count "${{ needs.validation.outputs.excellent_count }}" \
+            --good-count "${{ needs.validation.outputs.good_count }}" \
+            --needs-work-count "${{ needs.validation.outputs.needs_work_count }}" \
+            --total-count "${{ needs.validation.outputs.total_count }}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
@@ -415,12 +415,12 @@ jobs:
 
             ## 📊 Implementation Status Overview
 
-            - 🟢 **Excellent**: ${{ needs.validation.outputs.excellent-count }} implementations
-            - 🟡 **Good**: ${{ needs.validation.outputs.good-count }} implementations  
-            - 🔴 **Needs Work**: ${{ needs.validation.outputs.needs-work-count }} implementations
-            - 🚨 **Build errors in benchmark table**: ${{ needs.combine-results.outputs.build-error-count }} implementations
+            - 🟢 **Excellent**: ${{ needs.validation.outputs.excellent_count }} implementations
+            - 🟡 **Good**: ${{ needs.validation.outputs.good_count }} implementations
+            - 🔴 **Needs Work**: ${{ needs.validation.outputs.needs_work_count }} implementations
+            - 🚨 **Build errors in benchmark table**: ${{ needs.combine-results.outputs.build_error_count }} implementations
 
-            **Total**: ${{ needs.validation.outputs.total-count }} implementations tested
+            **Total**: ${{ needs.validation.outputs.total_count }} implementations tested
 
             ## 🚀 What's Updated
 
@@ -513,10 +513,10 @@ jobs:
           else
             echo "## 📊 Results" >> $GITHUB_STEP_SUMMARY
             echo "- **Changed implementations**: $CHANGED_IMPLEMENTATIONS" >> $GITHUB_STEP_SUMMARY
-            echo "- **Total implementations**: ${{ needs.validation.outputs.total-count }}" >> $GITHUB_STEP_SUMMARY
-            echo "- 🟢 **Excellent**: ${{ needs.validation.outputs.excellent-count }}" >> $GITHUB_STEP_SUMMARY
-            echo "- 🟡 **Good**: ${{ needs.validation.outputs.good-count }}" >> $GITHUB_STEP_SUMMARY
-            echo "- 🔴 **Needs work**: ${{ needs.validation.outputs.needs-work-count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Total implementations**: ${{ needs.validation.outputs.total_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟢 **Excellent**: ${{ needs.validation.outputs.excellent_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟡 **Good**: ${{ needs.validation.outputs.good_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- 🔴 **Needs work**: ${{ needs.validation.outputs.needs_work_count }}" >> $GITHUB_STEP_SUMMARY
             echo "- ⚙️ **Core benchmark matrix**: ${{ needs.benchmark.result }}" >> $GITHUB_STEP_SUMMARY
             echo "- 🔥 **Stress benchmark lane**: informational" >> $GITHUB_STEP_SUMMARY
             echo "- 🔥 **Stress benchmark failures**: ${STRESS_FAILURE_COUNT}" >> $GITHUB_STEP_SUMMARY
@@ -528,12 +528,12 @@ jobs:
             if [[ -n "$CONCURRENCY_FAILURES" ]]; then
               echo "- **Failing concurrency implementations**: ${CONCURRENCY_FAILURES}" >> $GITHUB_STEP_SUMMARY
             fi
-            echo "- 🚨 **Build errors in README benchmark table**: ${{ needs.combine-results.outputs.build-error-count }}" >> $GITHUB_STEP_SUMMARY
-            if [[ -n "${{ needs.combine-results.outputs.build-error-languages }}" ]]; then
-              echo "- **Build error implementations**: ${{ needs.combine-results.outputs.build-error-languages }}" >> $GITHUB_STEP_SUMMARY
+            echo "- 🚨 **Build errors in README benchmark table**: ${{ needs.combine-results.outputs.build_error_count }}" >> $GITHUB_STEP_SUMMARY
+            if [[ -n "${{ needs.combine-results.outputs.build_error_languages }}" ]]; then
+              echo "- **Build error implementations**: ${{ needs.combine-results.outputs.build_error_languages }}" >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
-            if [[ "${{ needs.combine-results.outputs.build-error-count }}" != "0" && -n "${{ needs.combine-results.outputs.build-error-count }}" ]]; then
+            if [[ "${{ needs.combine-results.outputs.build_error_count }}" != "0" && -n "${{ needs.combine-results.outputs.build_error_count }}" ]]; then
               echo "⚠️ Core benchmark publication succeeded, with build errors reported in the README table." >> $GITHUB_STEP_SUMMARY
             elif [[ "$STRESS_FAILURE_COUNT" != "0" || "$CONCURRENCY_FAILURE_COUNT" != "0" ]]; then
               echo "⚠️ Core benchmark publication succeeded, with informational stress/concurrency failures listed above." >> $GITHUB_STEP_SUMMARY

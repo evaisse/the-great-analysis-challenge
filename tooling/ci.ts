@@ -527,6 +527,7 @@ export async function createRelease(options: {
   totalCount: number;
 }): Promise<number> {
   console.log("=== Creating Release ===");
+  let pushRef = process.env.GITHUB_REF_NAME?.trim() || "";
   let currentVersion = "v0.0.0";
   try {
     const result = await runCommand(["git", "tag", "--sort=-version:refname"], { check: true });
@@ -552,23 +553,28 @@ export async function createRelease(options: {
   }
   const newVersion = `v${nextMajor}.${nextMinor}.${nextPatch}`;
 
+  if (!pushRef) {
+    try {
+      const result = await runCommand(["git", "branch", "--show-current"], { cwd: REPO_ROOT, check: true });
+      pushRef = result.stdout.trim() || "main";
+    } catch {
+      pushRef = "main";
+    }
+  }
+
   if (options.readmeChanged === "true") {
     await combineResults();
     await runCommand(["git", "add", "reports/", "README.md"], { cwd: REPO_ROOT, check: true });
     const commitMessage = `chore: update implementation status from benchmark suite\n\nBenchmark results summary:\n- Total implementations: ${options.totalCount}\n- 🟢 Excellent: ${options.excellentCount}\n- 🟡 Good: ${options.goodCount}\n- 🔴 Needs work: ${options.needsWorkCount}\n\nPerformance testing completed with status updates.`;
     await runCommand(["git", "commit", "-m", commitMessage], { cwd: REPO_ROOT, check: true });
-    if (!process.env.GITHUB_ACTIONS) {
-      await runCommand(["git", "push", "origin", "master"], { cwd: REPO_ROOT, check: true });
-    }
+    await runCommand(["git", "push", "origin", `HEAD:${pushRef}`], { cwd: REPO_ROOT, check: true });
   }
 
   await runCommand(["git", "tag", "-a", newVersion, "-m", `Release ${newVersion} - Benchmark Update`], {
     cwd: REPO_ROOT,
     check: true,
   });
-  if (!process.env.GITHUB_ACTIONS) {
-    await runCommand(["git", "push", "origin", newVersion], { cwd: REPO_ROOT, check: true });
-  }
+  await runCommand(["git", "push", "origin", newVersion], { cwd: REPO_ROOT, check: true });
   writeGithubOutput("new_version", newVersion);
   console.log(`📤 Output: new_version=${newVersion}`);
   return 0;
