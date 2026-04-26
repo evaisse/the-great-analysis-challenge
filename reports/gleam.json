@@ -1,10 +1,10 @@
 {
-  "language": "nim",
-  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/nim",
+  "language": "gleam",
+  "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/gleam",
   "metadata": {
-    "language": "nim",
-    "version": "2.0",
-    "author": "Nim Implementation",
+    "language": "gleam",
+    "version": "1.3.1",
+    "author": "Gleam Implementation",
     "features": [
       "perft",
       "fen",
@@ -17,26 +17,26 @@
       "chess960"
     ],
     "max_ai_depth": 5,
-    "estimated_perft4_ms": 1000,
+    "estimated_perft4_ms": 800,
     "source_exts": [
-      ".nim"
+      ".gleam"
     ],
-    "build": "nim c -d:release chess.nim",
-    "test": "./chess --test",
-    "analyze": "nim check chess.nim",
-    "bugit": "if [ -f .bugit/chess.nim.bak ]; then echo 'bugit already active for nim'; else mkdir -p .bugit && cp chess.nim .bugit/chess.nim.bak && printf '\\n)\\n' >> chess.nim; fi",
-    "fix": "if [ -f .bugit/chess.nim.bak ]; then mv .bugit/chess.nim.bak chess.nim && rmdir .bugit 2>/dev/null || true; else echo 'no nim bugit backup to restore'; fi",
-    "run": "./chess"
+    "build": "gleam build",
+    "test": "gleam test",
+    "analyze": "gleam format --check && gleam check",
+    "bugit": "if [ -f .bugit/chess_engine.gleam.bak ]; then echo 'bugit already active for gleam'; else mkdir -p .bugit && cp src/chess_engine.gleam .bugit/chess_engine.gleam.bak && printf '\\n)\\n' >> src/chess_engine.gleam; fi",
+    "fix": "if [ -f .bugit/chess_engine.gleam.bak ]; then mv .bugit/chess_engine.gleam.bak src/chess_engine.gleam && rmdir .bugit 2>/dev/null || true; else echo 'no gleam bugit backup to restore'; fi",
+    "run": "gleam run"
   },
   "track": "v1",
   "profile": "quick",
   "timings": {
-    "image_build_seconds": 10.921024392,
-    "build_seconds": 0.937431993,
-    "analyze_seconds": 0.877468996,
-    "test_seconds": 0.144082861,
-    "test_chess_engine_seconds": 18.904073197,
-    "test_v1_seconds": 18.904073197
+    "image_build_seconds": 25.92704418,
+    "build_seconds": 0.189662015,
+    "analyze_seconds": 0.310645175,
+    "test_seconds": 0.456107463,
+    "test_chess_engine_seconds": 51.740993567,
+    "test_v1_seconds": 51.740993567
   },
   "memory": {
     "image": {
@@ -76,29 +76,29 @@
     }
   },
   "size": {
-    "source_loc": 1636,
-    "source_files": 1
+    "source_loc": 4211,
+    "source_files": 9
   },
   "metrics": {
-    "tokens_count": 12412,
+    "tokens_count": 44055,
     "metric_version": "tokens-v2"
   },
   "normalized": {
-    "build_ms_per_kloc": 573.0024407090465,
-    "analyze_ms_per_kloc": 536.3502420537898,
-    "runtime_ms_per_kloc": 88.07020843520783
+    "build_ms_per_kloc": 45.03966160056993,
+    "analyze_ms_per_kloc": 73.76992994538114,
+    "runtime_ms_per_kloc": 108.31333721206363
   },
   "docker": {
     "image_build_success": true,
-    "image_build_time": 10.921024392,
+    "image_build_time": 25.92704418,
     "make_build_success": true,
-    "make_build_time": 0.937431993,
+    "make_build_time": 0.189662015,
     "make_analyze_success": true,
-    "make_analyze_time": 0.877468996,
+    "make_analyze_time": 0.310645175,
     "make_test_success": true,
-    "make_test_time": 0.144082861,
+    "make_test_time": 0.456107463,
     "test_chess_engine_success": true,
-    "test_chess_engine_time": 18.904073197
+    "test_chess_engine_time": 51.740993567
   },
   "task_results": {
     "make_build": true,
@@ -132,25 +132,25 @@
   "status": "completed",
   "semantic_metrics": {
     "metric_version": "tokens-v3",
-    "complexity_score": 7067,
-    "total_tokens": 9037,
-    "semantic_tokens": 8948,
+    "complexity_score": 28044,
+    "total_tokens": 35349,
+    "semantic_tokens": 35245,
     "by_category": {
-      "keyword": 1276,
-      "identifier": 3625,
-      "type": 285,
-      "operator": 2453,
-      "literal": 1309,
+      "keyword": 784,
+      "identifier": 18473,
+      "type": 1586,
+      "operator": 1524,
+      "literal": 12878,
       "punctuation": 0,
-      "comment": 89,
+      "comment": 104,
       "unknown": 0
     },
     "ratios": {
-      "keyword_density": 0.143,
-      "comment_ratio": 0.01,
+      "keyword_density": 0.022,
+      "comment_ratio": 0.003,
       "punctuation_ratio": 0,
-      "complexity_per_loc": 4.32,
-      "complexity_per_file": 7067
+      "complexity_per_loc": 6.66,
+      "complexity_per_file": 3116
     }
   }
 }

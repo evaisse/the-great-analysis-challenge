@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-23T22:38:51.316Z
+Generated: 2026-04-26T06:38:01.635Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-nim          completed  12412      1636     939ms, - MB        885ms, - MB        147ms, - MB        19.3s, - MB               1/1              26/26             
+nim          completed  12412      1636     958ms, - MB        881ms, - MB        144ms, - MB        18.6s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: NIM
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/nim
 Track: v2-full
-Profile: quick
+Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 10.9s
-  - build_seconds: 939ms
-  - analyze_seconds: 885ms
-  - test_seconds: 147ms
-  - test_chess_engine_seconds: 19.3s
-  - test_v2_full_seconds: 19.3s
+  - image_build_seconds: 11.7s
+  - build_seconds: 958ms
+  - analyze_seconds: 881ms
+  - test_seconds: 144ms
+  - test_chess_engine_seconds: 18.6s
+  - test_v2_full_seconds: 18.6s
 Metrics: TOKENS=12,412, LOC=1,636

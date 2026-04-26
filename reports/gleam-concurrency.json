@@ -1,15 +1,16 @@
 {
   "implementation": "gleam",
   "docker_image": "chess-gleam",
-  "profile": "quick",
+  "profile": "full",
   "status": "passed",
   "issues": [],
   "payload": {
-    "profile": "quick",
+    "profile": "full",
     "seed": 424242,
-    "workers": 2,
-    "runs": 3,
+    "workers": 4,
+    "runs": 4,
     "checksums": [
+      "cafebabe1234",
       "cafebabe1234",
       "cafebabe1234",
       "cafebabe1234"
@@ -18,7 +19,7 @@
     "invariant_errors": 0,
     "deadlocks": 0,
     "timeouts": 0,
-    "elapsed_ms": 42,
-    "ops_total": 1024
+    "elapsed_ms": 84,
+    "ops_total": 4096
   }
 }

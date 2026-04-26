@@ -1,7 +1,7 @@
 {
   "implementation": "c",
   "docker_image": "chess-c",
-  "profile": "quick",
+  "profile": "full",
   "status": "failed",
   "issues": [
     "Missing CONCURRENCY: payload"

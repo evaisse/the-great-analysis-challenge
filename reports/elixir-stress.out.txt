@@ -1,29 +1,29 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-23T22:39:03.863Z
+Generated: 2026-04-26T06:38:18.850Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-elixir       failed     13759      2084     551ms, - MB        940ms, - MB        579ms, - MB        19.7s, - MB               1/1              16/26             
+elixir       failed     13759      2084     582ms, - MB        1s, - MB           611ms, - MB        19.5s, - MB               1/1              16/26             
 
 ============================================================
 DETAILED RESULTS: ELIXIR
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/elixir
 Track: v2-full
-Profile: quick
+Profile: full
 Status: failed
 Errors:
   - track v2-full suite failed: 16/26 checks passed
   - track v2-full failing checks: Go Movetime, Book Load Stats, Book AI Move, Trace Level, Trace Report, Trace Export File, Trace Chrome File, Trace Reset, Concurrency Quick Fixture, Concurrency Full Fixture
 Timings:
-  - image_build_seconds: 21.9s
-  - build_seconds: 551ms
-  - analyze_seconds: 940ms
-  - test_seconds: 579ms
-  - test_chess_engine_seconds: 19.7s
-  - test_v2_full_seconds: 19.7s
+  - image_build_seconds: 25.9s
+  - build_seconds: 582ms
+  - analyze_seconds: 1s
+  - test_seconds: 611ms
+  - test_chess_engine_seconds: 19.5s
+  - test_v2_full_seconds: 19.5s
 Metrics: TOKENS=13,759, LOC=2,084

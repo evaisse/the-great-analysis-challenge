@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-23T22:38:48.418Z
+Generated: 2026-04-26T06:38:01.057Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-dart         completed  31424      5006     509ms, - MB        241ms, - MB        531ms, - MB        21.1s, - MB               1/1              26/26             
+dart         completed  31424      5006     515ms, - MB        243ms, - MB        556ms, - MB        20.7s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: DART
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/dart
 Track: v2-full
-Profile: quick
+Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 8.3s
-  - build_seconds: 509ms
-  - analyze_seconds: 241ms
-  - test_seconds: 531ms
-  - test_chess_engine_seconds: 21.1s
-  - test_v2_full_seconds: 21.1s
+  - image_build_seconds: 8.7s
+  - build_seconds: 515ms
+  - analyze_seconds: 243ms
+  - test_seconds: 556ms
+  - test_chess_engine_seconds: 20.7s
+  - test_v2_full_seconds: 20.7s
 Metrics: TOKENS=31,424, LOC=5,006

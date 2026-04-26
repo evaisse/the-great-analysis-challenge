@@ -1,6 +1,6 @@
 {
   "engine": "typescript",
-  "profile": "quick",
+  "profile": "full",
   "outcome": "success",
   "conclusion": "success",
   "report_status": "failed",

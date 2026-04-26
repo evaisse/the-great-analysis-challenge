@@ -1,29 +1,37 @@
 {
   "implementation": "go",
   "docker_image": "chess-go",
-  "profile": "quick",
+  "profile": "full",
   "status": "passed",
   "issues": [],
   "payload": {
     "checksums": [
-      "1995b07ebc944ad6",
-      "8c863f6d00f3b211",
-      "54cf51ed5e3e3d66",
-      "edcaa282751bb503",
-      "3c56b83bd19930e4",
-      "e11196e61a45b380",
-      "71a431c0d85ea0a8",
-      "af36dc3cf54ac622"
+      "5ff10854a588b598",
+      "6cc30e796d660566",
+      "e7b3aa81e51a083b",
+      "6a4f3d37f1827bc5",
+      "e4aecdce4e6a6124",
+      "dee40e49591a3c9d",
+      "63e7c42cce6a2eb2",
+      "eb3d34fefad621e8",
+      "160ef815e66ecfb7",
+      "eeacaa302f2eb6b2",
+      "93d9e72a526f866e",
+      "0676054cdad73073",
+      "ba4521345dd13db9",
+      "502e7bf27edeeffb",
+      "b6eb4b175d7503f4",
+      "59fa03dcda1729da"
     ],
     "deadlocks": 0,
     "deterministic": true,
-    "elapsed_ms": 58,
+    "elapsed_ms": 321,
     "invariant_errors": 0,
-    "ops_total": 3904,
-    "profile": "quick",
-    "runs": 8,
+    "ops_total": 30976,
+    "profile": "full",
+    "runs": 16,
     "seed": 12345,
     "timeouts": 0,
-    "workers": 2
+    "workers": 4
   }
 }

@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-23T22:39:12.066Z
+Generated: 2026-04-26T06:38:25.300Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-kotlin       completed  13402      1974     9.2s, - MB         8.7s, - MB         212ms, - MB        19.8s, - MB               1/1              26/26             
+kotlin       completed  13402      1974     9.1s, - MB         9s, - MB           208ms, - MB        20s, - MB                 1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: KOTLIN
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/kotlin
 Track: v2-full
-Profile: quick
+Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 14.8s
-  - build_seconds: 9.2s
-  - analyze_seconds: 8.7s
-  - test_seconds: 212ms
-  - test_chess_engine_seconds: 19.8s
-  - test_v2_full_seconds: 19.8s
+  - image_build_seconds: 15.9s
+  - build_seconds: 9.1s
+  - analyze_seconds: 9s
+  - test_seconds: 208ms
+  - test_chess_engine_seconds: 20s
+  - test_v2_full_seconds: 20s
 Metrics: TOKENS=13,402, LOC=1,974
