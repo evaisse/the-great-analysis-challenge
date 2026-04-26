@@ -1,6 +1,6 @@
 {
   "engine": "gleam",
-  "profile": "full",
+  "profile": "quick",
   "outcome": "failure",
   "conclusion": "success",
   "report_status": "failed",

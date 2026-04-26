@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-26T06:37:50.351Z
+Generated: 2026-04-26T16:03:37.368Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-lua          completed  30082      4192     <1ms, - MB         150ms, - MB        142ms, - MB        22s, - MB                 1/1              26/26             
+lua          completed  30082      4192     <1ms, - MB         134ms, - MB        146ms, - MB        22.1s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: LUA
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/lua
 Track: v2-full
-Profile: full
+Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 1.3s
+  - image_build_seconds: 748ms
   - build_seconds: <1ms
-  - analyze_seconds: 150ms
-  - test_seconds: 142ms
-  - test_chess_engine_seconds: 22s
-  - test_v2_full_seconds: 22s
+  - analyze_seconds: 134ms
+  - test_seconds: 146ms
+  - test_chess_engine_seconds: 22.1s
+  - test_v2_full_seconds: 22.1s
 Metrics: TOKENS=30,082, LOC=4,192

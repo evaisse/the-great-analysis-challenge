@@ -1,29 +1,29 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-26T06:38:15.527Z
+Generated: 2026-04-26T16:04:25.872Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-gleam        failed     44055      4211     201ms, - MB        313ms, - MB        444ms, - MB        19.2s, - MB               1/1              20/26             
+gleam        failed     44372      4275     195ms, - MB        300ms, - MB        437ms, - MB        20.6s, - MB               1/1              20/26             
 
 ============================================================
 DETAILED RESULTS: GLEAM
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/gleam
 Track: v2-full
-Profile: full
+Profile: quick
 Status: failed
 Errors:
   - track v2-full suite failed: 20/26 checks passed
   - track v2-full failing checks: Draws Command, Draws Repetition Detection, Draws Fifty Move Detection, History Command, History After Move, History After Undo
 Timings:
-  - image_build_seconds: 24.8s
-  - build_seconds: 201ms
-  - analyze_seconds: 313ms
-  - test_seconds: 444ms
-  - test_chess_engine_seconds: 19.2s
-  - test_v2_full_seconds: 19.2s
-Metrics: TOKENS=44,055, LOC=4,211
+  - image_build_seconds: 25.7s
+  - build_seconds: 195ms
+  - analyze_seconds: 300ms
+  - test_seconds: 437ms
+  - test_chess_engine_seconds: 20.6s
+  - test_v2_full_seconds: 20.6s
+Metrics: TOKENS=44,372, LOC=4,275

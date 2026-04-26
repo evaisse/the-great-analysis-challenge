@@ -1,6 +1,6 @@
 {
   "engine": "c",
-  "profile": "full",
+  "profile": "quick",
   "build_outcome": "success",
   "build_conclusion": "success",
   "run_outcome": "failure",

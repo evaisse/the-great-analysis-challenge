@@ -1,6 +1,6 @@
 {
   "engine": "javascript",
-  "profile": "full",
+  "profile": "quick",
   "outcome": "success",
   "conclusion": "success",
   "report_status": "failed",

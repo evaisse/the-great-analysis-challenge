@@ -1,16 +1,15 @@
 {
   "implementation": "julia",
   "docker_image": "chess-julia",
-  "profile": "full",
+  "profile": "quick",
   "status": "passed",
   "issues": [],
   "payload": {
-    "profile": "full",
+    "profile": "quick",
     "seed": 424242,
-    "workers": 4,
-    "runs": 4,
+    "workers": 2,
+    "runs": 3,
     "checksums": [
-      "cafebabe1234",
       "cafebabe1234",
       "cafebabe1234",
       "cafebabe1234"
@@ -19,7 +18,7 @@
     "invariant_errors": 0,
     "deadlocks": 0,
     "timeouts": 0,
-    "elapsed_ms": 84,
-    "ops_total": 4096
+    "elapsed_ms": 42,
+    "ops_total": 1024
   }
 }

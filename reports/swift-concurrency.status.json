@@ -1,6 +1,6 @@
 {
   "engine": "swift",
-  "profile": "full",
+  "profile": "quick",
   "build_outcome": "success",
   "build_conclusion": "success",
   "run_outcome": "success",

@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-26T06:37:49.438Z
+Generated: 2026-04-26T16:03:58.026Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-javascript   completed  11914      1602     <1ms, - MB         162ms, - MB        179ms, - MB        19.1s, - MB               1/1              26/26             
+javascript   completed  11914      1602     <1ms, - MB         135ms, - MB        150ms, - MB        18.7s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: JAVASCRIPT
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/javascript
 Track: v2-full
-Profile: full
+Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 2.2s
+  - image_build_seconds: 1.4s
   - build_seconds: <1ms
-  - analyze_seconds: 162ms
-  - test_seconds: 179ms
-  - test_chess_engine_seconds: 19.1s
-  - test_v2_full_seconds: 19.1s
+  - analyze_seconds: 135ms
+  - test_seconds: 150ms
+  - test_chess_engine_seconds: 18.7s
+  - test_v2_full_seconds: 18.7s
 Metrics: TOKENS=11,914, LOC=1,602

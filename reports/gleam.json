@@ -26,17 +26,17 @@
     "analyze": "gleam format --check && gleam check",
     "bugit": "if [ -f .bugit/chess_engine.gleam.bak ]; then echo 'bugit already active for gleam'; else mkdir -p .bugit && cp src/chess_engine.gleam .bugit/chess_engine.gleam.bak && printf '\\n)\\n' >> src/chess_engine.gleam; fi",
     "fix": "if [ -f .bugit/chess_engine.gleam.bak ]; then mv .bugit/chess_engine.gleam.bak src/chess_engine.gleam && rmdir .bugit 2>/dev/null || true; else echo 'no gleam bugit backup to restore'; fi",
-    "run": "gleam run"
+    "run": "./run.sh"
   },
   "track": "v1",
   "profile": "quick",
   "timings": {
-    "image_build_seconds": 25.92704418,
-    "build_seconds": 0.189662015,
-    "analyze_seconds": 0.310645175,
-    "test_seconds": 0.456107463,
-    "test_chess_engine_seconds": 51.740993567,
-    "test_v1_seconds": 51.740993567
+    "image_build_seconds": 27.794469284,
+    "build_seconds": 0.195697796,
+    "analyze_seconds": 0.299078923,
+    "test_seconds": 0.443801559,
+    "test_chess_engine_seconds": 19.64150879,
+    "test_v1_seconds": 19.64150879
   },
   "memory": {
     "image": {
@@ -76,29 +76,29 @@
     }
   },
   "size": {
-    "source_loc": 4211,
+    "source_loc": 4275,
     "source_files": 9
   },
   "metrics": {
-    "tokens_count": 44055,
+    "tokens_count": 44372,
     "metric_version": "tokens-v2"
   },
   "normalized": {
-    "build_ms_per_kloc": 45.03966160056993,
-    "analyze_ms_per_kloc": 73.76992994538114,
-    "runtime_ms_per_kloc": 108.31333721206363
+    "build_ms_per_kloc": 45.77726222222222,
+    "analyze_ms_per_kloc": 69.95998198830408,
+    "runtime_ms_per_kloc": 103.81323017543859
   },
   "docker": {
     "image_build_success": true,
-    "image_build_time": 25.92704418,
+    "image_build_time": 27.794469284,
     "make_build_success": true,
-    "make_build_time": 0.189662015,
+    "make_build_time": 0.195697796,
     "make_analyze_success": true,
-    "make_analyze_time": 0.310645175,
+    "make_analyze_time": 0.299078923,
     "make_test_success": true,
-    "make_test_time": 0.456107463,
+    "make_test_time": 0.443801559,
     "test_chess_engine_success": true,
-    "test_chess_engine_time": 51.740993567
+    "test_chess_engine_time": 19.64150879
   },
   "task_results": {
     "make_build": true,
@@ -132,25 +132,25 @@
   "status": "completed",
   "semantic_metrics": {
     "metric_version": "tokens-v3",
-    "complexity_score": 28044,
-    "total_tokens": 35349,
-    "semantic_tokens": 35245,
+    "complexity_score": 28222.5,
+    "total_tokens": 35554,
+    "semantic_tokens": 35449,
     "by_category": {
-      "keyword": 784,
-      "identifier": 18473,
-      "type": 1586,
-      "operator": 1524,
-      "literal": 12878,
+      "keyword": 804,
+      "identifier": 18569,
+      "type": 1623,
+      "operator": 1557,
+      "literal": 12896,
       "punctuation": 0,
-      "comment": 104,
+      "comment": 105,
       "unknown": 0
     },
     "ratios": {
-      "keyword_density": 0.022,
+      "keyword_density": 0.023,
       "comment_ratio": 0.003,
       "punctuation_ratio": 0,
-      "complexity_per_loc": 6.66,
-      "complexity_per_file": 3116
+      "complexity_per_loc": 6.6,
+      "complexity_per_file": 3135.83
     }
   }
 }
