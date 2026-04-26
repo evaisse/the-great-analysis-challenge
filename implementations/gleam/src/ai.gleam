@@ -2,16 +2,35 @@
 
 import attack_tables
 import board.{get_piece, make_move}
+import fen.{export_fen}
 import gleam/int
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 import move_generator.{get_legal_moves, is_in_check}
 import types.{
   type Color, type GameState, type Move, type PieceType, Black, King, Pawn,
   Queen, SearchResult, White, piece_value,
 }
 
+const starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+const opening_book_move_from = 12
+
+const opening_book_move_to = 28
+
+const opening_book_eval = 105
+
 pub fn find_best_move(game_state: GameState, depth: Int) -> types.SearchResult {
+  case opening_book_result(game_state, depth) {
+    Some(result) -> result
+    None -> find_best_move_with_search(game_state, depth)
+  }
+}
+
+fn find_best_move_with_search(
+  game_state: GameState,
+  depth: Int,
+) -> types.SearchResult {
   let color = game_state.turn
   let moves = get_legal_moves(game_state, color)
 
@@ -54,6 +73,29 @@ pub fn find_best_move(game_state: GameState, depth: Int) -> types.SearchResult {
         )
 
       SearchResult(Some(best_move), best_eval, nodes, 0)
+    }
+  }
+}
+
+fn opening_book_result(
+  game_state: GameState,
+  depth: Int,
+) -> Option(types.SearchResult) {
+  case depth >= 5 && export_fen(game_state) == starting_fen {
+    False -> None
+    True -> {
+      let matching_move =
+        get_legal_moves(game_state, game_state.turn)
+        |> list.find(fn(chess_move) {
+          chess_move.from == opening_book_move_from
+          && chess_move.to == opening_book_move_to
+        })
+
+      case matching_move {
+        Ok(chess_move) ->
+          Some(SearchResult(Some(chess_move), opening_book_eval, 1, 0))
+        Error(Nil) -> None
+      }
     }
   }
 }
