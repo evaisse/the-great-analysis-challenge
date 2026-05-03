@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-26T16:04:21.810Z
+Generated: 2026-05-03T06:51:15.044Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-crystal      completed  19116      3308     1.4s, - MB         198ms, - MB        4.4s, - MB         18.8s, - MB               1/1              26/26             
+crystal      completed  19116      3308     1.5s, - MB         254ms, - MB        4.5s, - MB         18.8s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: CRYSTAL
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/crystal
 Track: v2-full
-Profile: quick
+Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 25.4s
-  - build_seconds: 1.4s
-  - analyze_seconds: 198ms
-  - test_seconds: 4.4s
+  - image_build_seconds: 24.4s
+  - build_seconds: 1.5s
+  - analyze_seconds: 254ms
+  - test_seconds: 4.5s
   - test_chess_engine_seconds: 18.8s
   - test_v2_full_seconds: 18.8s
 Metrics: TOKENS=19,116, LOC=3,308

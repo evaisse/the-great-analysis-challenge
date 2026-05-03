@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-26T16:04:59.276Z
+Generated: 2026-05-03T06:51:49.042Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-swift        completed  12470      1506     1.4s, - MB         6.6s, - MB         9s, - MB           19.2s, - MB               1/1              26/26             
+swift        completed  12470      1506     1.4s, - MB         6.8s, - MB         9.1s, - MB         18.7s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: SWIFT
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/swift
 Track: v2-full
-Profile: quick
+Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 36.7s
+  - image_build_seconds: 36.1s
   - build_seconds: 1.4s
-  - analyze_seconds: 6.6s
-  - test_seconds: 9s
-  - test_chess_engine_seconds: 19.2s
-  - test_v2_full_seconds: 19.2s
+  - analyze_seconds: 6.8s
+  - test_seconds: 9.1s
+  - test_chess_engine_seconds: 18.7s
+  - test_v2_full_seconds: 18.7s
 Metrics: TOKENS=12,470, LOC=1,506

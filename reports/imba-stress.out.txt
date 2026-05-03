@@ -1,26 +1,26 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-26T16:03:42.089Z
+Generated: 2026-05-03T06:50:47.532Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-imba         completed  13981      1708     453ms, - MB        452ms, - MB        152ms, - MB        19s, - MB                 1/1              26/26             
+imba         completed  13981      1708     441ms, - MB        449ms, - MB        148ms, - MB        19.5s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: IMBA
 ============================================================
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/imba
 Track: v2-full
-Profile: quick
+Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 4.5s
-  - build_seconds: 453ms
-  - analyze_seconds: 452ms
-  - test_seconds: 152ms
-  - test_chess_engine_seconds: 19s
-  - test_v2_full_seconds: 19s
+  - image_build_seconds: 4.2s
+  - build_seconds: 441ms
+  - analyze_seconds: 449ms
+  - test_seconds: 148ms
+  - test_chess_engine_seconds: 19.5s
+  - test_v2_full_seconds: 19.5s
 Metrics: TOKENS=13,981, LOC=1,708

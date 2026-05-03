@@ -1,6 +1,6 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-04-26T16:04:25.438Z
+Generated: 2026-05-03T06:51:42.459Z
 ================================================================================
 
 PERFORMANCE SUMMARY
@@ -17,7 +17,7 @@ Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 4.4s
+  - image_build_seconds: 4.8s
   - build_seconds: 2s
   - analyze_seconds: 3.5s
   - test_seconds: 2.2s
