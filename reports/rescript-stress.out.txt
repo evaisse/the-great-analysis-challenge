@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-05-03T06:50:59.046Z
+Generated: 2026-05-10T06:54:12.398Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-rescript     failed     15948      2381     362ms, - MB        576ms, - MB        224ms, - MB        18.7s, - MB               1/1              24/26             
+rescript     completed  15948      2381     366ms, - MB        594ms, - MB        221ms, - MB        19s, - MB                 1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: RESCRIPT
@@ -15,15 +15,12 @@ DETAILED RESULTS: RESCRIPT
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/rescript
 Track: v2-full
 Profile: full
-Status: failed
-Errors:
-  - track v2-full suite failed: 24/26 checks passed
-  - track v2-full failing checks: Trace Export File, Trace Chrome File
+Status: completed
 Timings:
-  - image_build_seconds: 6.7s
-  - build_seconds: 362ms
-  - analyze_seconds: 576ms
-  - test_seconds: 224ms
-  - test_chess_engine_seconds: 18.7s
-  - test_v2_full_seconds: 18.7s
+  - image_build_seconds: 5.2s
+  - build_seconds: 366ms
+  - analyze_seconds: 594ms
+  - test_seconds: 221ms
+  - test_chess_engine_seconds: 19s
+  - test_v2_full_seconds: 19s
 Metrics: TOKENS=15,948, LOC=2,381

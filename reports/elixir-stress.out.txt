@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-05-03T06:51:17.443Z
+Generated: 2026-05-10T06:54:29.314Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-elixir       failed     13759      2084     581ms, - MB        1s, - MB           610ms, - MB        20.1s, - MB               1/1              16/26             
+elixir       failed     13759      2084     592ms, - MB        1.1s, - MB         646ms, - MB        19.7s, - MB               1/1              16/26             
 
 ============================================================
 DETAILED RESULTS: ELIXIR
@@ -20,10 +20,10 @@ Errors:
   - track v2-full suite failed: 16/26 checks passed
   - track v2-full failing checks: Go Movetime, Book Load Stats, Book AI Move, Trace Level, Trace Report, Trace Export File, Trace Chrome File, Trace Reset, Concurrency Quick Fixture, Concurrency Full Fixture
 Timings:
-  - image_build_seconds: 26.1s
-  - build_seconds: 581ms
-  - analyze_seconds: 1s
-  - test_seconds: 610ms
-  - test_chess_engine_seconds: 20.1s
-  - test_v2_full_seconds: 20.1s
+  - image_build_seconds: 24.2s
+  - build_seconds: 592ms
+  - analyze_seconds: 1.1s
+  - test_seconds: 646ms
+  - test_chess_engine_seconds: 19.7s
+  - test_v2_full_seconds: 19.7s
 Metrics: TOKENS=13,759, LOC=2,084

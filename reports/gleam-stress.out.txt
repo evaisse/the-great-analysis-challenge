@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-05-03T06:51:13.766Z
+Generated: 2026-05-10T06:54:31.374Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-gleam        failed     44372      4275     198ms, - MB        312ms, - MB        439ms, - MB        20.5s, - MB               1/1              20/26             
+gleam        failed     44372      4275     186ms, - MB        309ms, - MB        430ms, - MB        20.1s, - MB               1/1              20/26             
 
 ============================================================
 DETAILED RESULTS: GLEAM
@@ -20,10 +20,10 @@ Errors:
   - track v2-full suite failed: 20/26 checks passed
   - track v2-full failing checks: Draws Command, Draws Repetition Detection, Draws Fifty Move Detection, History Command, History After Move, History After Undo
 Timings:
-  - image_build_seconds: 25.2s
-  - build_seconds: 198ms
-  - analyze_seconds: 312ms
-  - test_seconds: 439ms
-  - test_chess_engine_seconds: 20.5s
-  - test_v2_full_seconds: 20.5s
+  - image_build_seconds: 25s
+  - build_seconds: 186ms
+  - analyze_seconds: 309ms
+  - test_seconds: 430ms
+  - test_chess_engine_seconds: 20.1s
+  - test_v2_full_seconds: 20.1s
 Metrics: TOKENS=44,372, LOC=4,275

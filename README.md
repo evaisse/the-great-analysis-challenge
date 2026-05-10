@@ -19,28 +19,28 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 <!-- status-table-start -->
 | Language | Complexity | LOC | make build | make analyze | make test | make test-chess-engine | Features |
 |----------|------------|-----|------------|--------------|-----------|------------------------|----------|
-| 📦 C | [7,151.5](implementations/c/src/chess.c) | 2,406 | 925ms, - MB | 187ms, - MB | 913ms, - MB | 18.1s, - MB | 🟢 9/9 |
-| 💠 Crystal | [8,040.5](implementations/crystal/src/chess_engine.cr) | 3,308 | 1.4s, - MB | 198ms, - MB | 4.4s, - MB | 18.8s, - MB | 🟢 9/9 |
-| 🎯 Dart | [15,055.25](implementations/dart/bin/main.dart) | 5,006 | 634ms, - MB | 507ms, - MB | 564ms, - MB | 20.5s, - MB | 🟡 9/9 |
-| 💧 Elixir | [5,312.75](implementations/elixir/mix.exs) | 2,084 | 612ms, - MB | 1s, - MB | 627ms, - MB | 21.4s, - MB | 🟢 9/9 |
-| 🌳 Elm | [5,109.75](implementations/elm/src/ChessEngine.elm) | 1,811 | 184ms, - MB | 180ms, - MB | 187ms, - MB | 20.1s, - MB | 🟢 9/9 |
-| ✨ Gleam | [28,222.5](implementations/gleam/src/chess_engine.gleam) | 4,275 | 211ms, - MB | 301ms, - MB | 443ms, - MB | 19.7s, - MB | 🟢 9/9 |
-| 🐹 Go | [15,016.25](implementations/go/chess.go) | 5,703 | 586ms, - MB | 1s, - MB | 1.2s, - MB | 25.3s, - MB | 🟢 9/9 |
-| 📐 Haskell | [8,143.25](implementations/haskell/src/Main.hs) | 2,312 | 291ms, - MB | 496ms, - MB | 153ms, - MB | 21.1s, - MB | 🟢 9/9 |
-| 🪶 Imba | [6,167](implementations/imba/chess.imba) | 1,708 | 442ms, - MB | 455ms, - MB | 143ms, - MB | 19.7s, - MB | 🟡 9/9 |
-| 🟨 Javascript | [4,396.5](implementations/javascript/chess.js) | 1,602 | <1ms, - MB | 160ms, - MB | 188ms, - MB | 41s, - MB | 🟢 9/9 |
-| 🔮 Julia | [5,997.25](implementations/julia/chess.jl) | 2,083 | <1ms, - MB | 962ms, - MB | 3.4s, - MB | 22.2s, - MB | 🟡 9/9 |
-| 🧡 Kotlin | [6,774](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 1,974 | 8.7s, - MB | 8.5s, - MB | 214ms, - MB | 20.9s, - MB | 🟡 9/9 |
-| 🪐 Lua | [15,254.25](implementations/lua/chess.lua) | 4,192 | <1ms, - MB | 148ms, - MB | 161ms, - MB | 32.7s, - MB | 🟢 9/9 |
-| 🦊 Nim | [7,067](implementations/nim/chess.nim) | 1,636 | 798ms, - MB | 738ms, - MB | 128ms, - MB | 18.7s, - MB | 🟢 9/9 |
-| 🐘 Php | [18,067.25](implementations/php/chess.php) | 5,879 | <1ms, - MB | 410ms, - MB | 170ms, - MB | 24.7s, - MB | 🟢 9/9 |
-| 🐍 Python | [12,581.25](implementations/python/chess.py) | 4,978 | <1ms, - MB | 222ms, - MB | 1.9s, - MB | 42s, - MB | 🟡 9/9 |
-| 🧠 Rescript | [6,827.75](implementations/rescript/src/Chess.res) | 2,381 | 364ms, - MB | 586ms, - MB | 224ms, - MB | 22.3s, - MB | 🟡 9/9 |
-| ❤️ Ruby | [5,466](implementations/ruby/chess.rb) | 2,469 | <1ms, - MB | 2.5s, - MB | 315ms, - MB | 19.2s, - MB | 🟡 9/9 |
-| 🦀 Rust | [9,721.75](implementations/rust/src/main.rs) | 2,834 | 182ms, - MB | 512ms, - MB | 777ms, - MB | 18.2s, - MB | 🟢 9/9 |
-| 🐦 Swift | [5,497.5](implementations/swift/src/main.swift) | 1,506 | 1.7s, - MB | 7.9s, - MB | 10.3s, - MB | 18.3s, - MB | 🟢 9/9 |
-| 📘 Typescript | [7,773.5](implementations/typescript/src/chess.ts) | 2,586 | 2s, - MB | 3.5s, - MB | 2.2s, - MB | 24.7s, - MB | 🟡 9/9 |
-| ⚡ Zig | [13,193](implementations/zig/src/main.zig) | 2,509 | 208ms, - MB | 149ms, - MB | 142ms, - MB | 34.8s, - MB | 🟢 9/9 |
+| 📦 C | [7,151.5](implementations/c/src/chess.c) | 2,406 | 826ms, - MB | 156ms, - MB | 817ms, - MB | 18.1s, - MB | 🟢 9/9 |
+| 💠 Crystal | [8,040.5](implementations/crystal/src/chess_engine.cr) | 3,308 | 1.4s, - MB | 218ms, - MB | 4.4s, - MB | 18.6s, - MB | 🟢 9/9 |
+| 🎯 Dart | [15,055.25](implementations/dart/bin/main.dart) | 5,006 | 530ms, - MB | 247ms, - MB | 528ms, - MB | 20.5s, - MB | 🟡 9/9 |
+| 💧 Elixir | [5,312.75](implementations/elixir/mix.exs) | 2,084 | 622ms, - MB | 1s, - MB | 624ms, - MB | 20.8s, - MB | 🟢 9/9 |
+| 🌳 Elm | [5,109.75](implementations/elm/src/ChessEngine.elm) | 1,811 | 183ms, - MB | 193ms, - MB | 171ms, - MB | 20.1s, - MB | 🟢 9/9 |
+| ✨ Gleam | [28,222.5](implementations/gleam/src/chess_engine.gleam) | 4,275 | 160ms, - MB | 268ms, - MB | 368ms, - MB | 20.9s, - MB | 🟢 9/9 |
+| 🐹 Go | [15,016.25](implementations/go/chess.go) | 5,703 | 561ms, - MB | 996ms, - MB | 1.2s, - MB | 25.2s, - MB | 🟢 9/9 |
+| 📐 Haskell | [8,143.25](implementations/haskell/src/Main.hs) | 2,312 | 303ms, - MB | 552ms, - MB | 164ms, - MB | 21.3s, - MB | 🟢 9/9 |
+| 🪶 Imba | [6,167](implementations/imba/chess.imba) | 1,708 | 444ms, - MB | 453ms, - MB | 160ms, - MB | 18.9s, - MB | 🟡 9/9 |
+| 🟨 Javascript | [4,396.5](implementations/javascript/chess.js) | 1,602 | <1ms, - MB | 161ms, - MB | 177ms, - MB | 39.7s, - MB | 🟢 9/9 |
+| 🔮 Julia | [5,997.25](implementations/julia/chess.jl) | 2,083 | <1ms, - MB | 954ms, - MB | 3.4s, - MB | 22.2s, - MB | 🟡 9/9 |
+| 🧡 Kotlin | [6,774](implementations/kotlin/src/main/kotlin/ChessEngine.kt) | 1,974 | 9.6s, - MB | 9.3s, - MB | 214ms, - MB | 20s, - MB | 🟡 9/9 |
+| 🪐 Lua | [15,254.25](implementations/lua/chess.lua) | 4,192 | <1ms, - MB | 149ms, - MB | 166ms, - MB | 32.2s, - MB | 🟢 9/9 |
+| 🦊 Nim | [7,067](implementations/nim/chess.nim) | 1,636 | 1000ms, - MB | 935ms, - MB | 154ms, - MB | 18.6s, - MB | 🟢 9/9 |
+| 🐘 Php | [18,067.25](implementations/php/chess.php) | 5,879 | <1ms, - MB | 411ms, - MB | 187ms, - MB | 23.6s, - MB | 🟢 9/9 |
+| 🐍 Python | [12,581.25](implementations/python/chess.py) | 4,978 | <1ms, - MB | 242ms, - MB | 1.8s, - MB | 42.9s, - MB | 🟡 9/9 |
+| 🧠 Rescript | [6,827.75](implementations/rescript/src/Chess.res) | 2,381 | 357ms, - MB | 579ms, - MB | 209ms, - MB | 21.9s, - MB | 🟡 9/9 |
+| ❤️ Ruby | [5,466](implementations/ruby/chess.rb) | 2,469 | <1ms, - MB | 2s, - MB | 269ms, - MB | 19.4s, - MB | 🟡 9/9 |
+| 🦀 Rust | [9,721.75](implementations/rust/src/main.rs) | 2,834 | 196ms, - MB | 541ms, - MB | 769ms, - MB | 18.4s, - MB | 🟢 9/9 |
+| 🐦 Swift | [5,497.5](implementations/swift/src/main.swift) | 1,506 | 1.8s, - MB | 7.9s, - MB | 10.4s, - MB | 18.2s, - MB | 🟢 9/9 |
+| 📘 Typescript | [7,773.5](implementations/typescript/src/chess.ts) | 2,586 | 2s, - MB | 3.3s, - MB | 2.1s, - MB | 24.9s, - MB | 🟡 9/9 |
+| ⚡ Zig | [13,193](implementations/zig/src/main.zig) | 2,509 | 164ms, - MB | 130ms, - MB | 124ms, - MB | 29.2s, - MB | 🟢 9/9 |
 <!-- status-table-end -->
 
 Legend:
