@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-05-31T07:18:37.863Z
+Generated: 2026-06-07T07:24:12.240Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-rust         completed  19194      2834     201ms, - MB        527ms, - MB        738ms, - MB        18.4s, - MB               1/1              27/27             
+rust         completed  19194      2834     193ms, - MB        523ms, - MB        718ms, - MB        18.8s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: RUST
@@ -17,10 +17,10 @@ Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 9.3s
-  - build_seconds: 201ms
-  - analyze_seconds: 527ms
-  - test_seconds: 738ms
-  - test_chess_engine_seconds: 18.4s
-  - test_v1_seconds: 18.4s
+  - image_build_seconds: 10.5s
+  - build_seconds: 193ms
+  - analyze_seconds: 523ms
+  - test_seconds: 718ms
+  - test_chess_engine_seconds: 18.8s
+  - test_v1_seconds: 18.8s
 Metrics: TOKENS=19,194, LOC=2,834
