@@ -65,7 +65,7 @@
     "invariant_errors": 0,
     "deadlocks": 0,
     "timeouts": 0,
-    "elapsed_ms": 1,
+    "elapsed_ms": 0,
     "ops_total": 2000000
   }
 }

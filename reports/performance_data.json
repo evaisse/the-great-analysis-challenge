@@ -1,11 +1,881 @@
 [
   {
-    "language": "julia",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/julia",
+    "engine": "ruby",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "elm",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "kotlin",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "python",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "crystal",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/crystal",
     "metadata": {
-      "language": "julia",
-      "version": "1.11",
-      "author": "Julia Implementation",
+      "language": "crystal",
+      "version": "1.14.0",
+      "author": "Crystal Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "source_exts": [
+        ".cr"
+      ],
+      "build": "crystal build src/chess_engine.cr --release -o chess_engine",
+      "run": "./chess_engine",
+      "test": "crystal spec",
+      "analyze": "crystal tool format --check",
+      "bugit": "if [ -f .bugit/chess_engine.cr.bak ]; then echo 'bugit already active for crystal'; else mkdir -p .bugit && cp src/chess_engine.cr .bugit/chess_engine.cr.bak && printf '\\n)\\n' >> src/chess_engine.cr; fi",
+      "fix": "if [ -f .bugit/chess_engine.cr.bak ]; then mv .bugit/chess_engine.cr.bak src/chess_engine.cr && rmdir .bugit 2>/dev/null || true; else echo 'no crystal bugit backup to restore'; fi"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 25.479579717,
+      "build_seconds": 1.464895417,
+      "analyze_seconds": 0.195748266,
+      "test_seconds": 4.455194283,
+      "test_chess_engine_seconds": 18.755206008,
+      "test_v1_seconds": 18.755206008
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 3308,
+      "source_files": 12
+    },
+    "metrics": {
+      "tokens_count": 19116,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 442.83416475211607,
+      "analyze_ms_per_kloc": 59.174203748488516,
+      "runtime_ms_per_kloc": 1346.793918681983
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 25.479579717,
+      "make_build_success": true,
+      "make_build_time": 1.464895417,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.195748266,
+      "make_test_success": true,
+      "make_test_time": 4.455194283,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 18.755206008
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 8040.5,
+      "total_tokens": 11666,
+      "semantic_tokens": 11599,
+      "by_category": {
+        "keyword": 1549,
+        "identifier": 4020,
+        "type": 28,
+        "operator": 1398,
+        "literal": 2374,
+        "punctuation": 2230,
+        "comment": 67,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.134,
+        "comment_ratio": 0.006,
+        "punctuation_ratio": 0.192,
+        "complexity_per_loc": 2.43,
+        "complexity_per_file": 670.04
+      }
+    }
+  },
+  {
+    "language": "gleam",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/gleam",
+    "metadata": {
+      "language": "gleam",
+      "version": "1.3.1",
+      "author": "Gleam Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "source_exts": [
+        ".gleam"
+      ],
+      "build": "gleam build",
+      "test": "gleam test",
+      "analyze": "gleam format --check && gleam check",
+      "bugit": "if [ -f .bugit/chess_engine.gleam.bak ]; then echo 'bugit already active for gleam'; else mkdir -p .bugit && cp src/chess_engine.gleam .bugit/chess_engine.gleam.bak && printf '\\n)\\n' >> src/chess_engine.gleam; fi",
+      "fix": "if [ -f .bugit/chess_engine.gleam.bak ]; then mv .bugit/chess_engine.gleam.bak src/chess_engine.gleam && rmdir .bugit 2>/dev/null || true; else echo 'no gleam bugit backup to restore'; fi",
+      "run": "./run.sh"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 25.93061126,
+      "build_seconds": 0.182575843,
+      "analyze_seconds": 0.29039887,
+      "test_seconds": 0.42221405,
+      "test_chess_engine_seconds": 20.114470232,
+      "test_v1_seconds": 20.114470232
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 4275,
+      "source_files": 9
+    },
+    "metrics": {
+      "tokens_count": 44372,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 42.70779953216374,
+      "analyze_ms_per_kloc": 67.92956023391812,
+      "runtime_ms_per_kloc": 98.76352046783624
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 25.93061126,
+      "make_build_success": true,
+      "make_build_time": 0.182575843,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.29039887,
+      "make_test_success": true,
+      "make_test_time": 0.42221405,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 20.114470232
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 28222.5,
+      "total_tokens": 35554,
+      "semantic_tokens": 35449,
+      "by_category": {
+        "keyword": 804,
+        "identifier": 18569,
+        "type": 1623,
+        "operator": 1557,
+        "literal": 12896,
+        "punctuation": 0,
+        "comment": 105,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.023,
+        "comment_ratio": 0.003,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 6.6,
+        "complexity_per_file": 3135.83
+      }
+    }
+  },
+  {
+    "engine": "javascript",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "elm",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "dart",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/dart",
+    "metadata": {
+      "language": "dart",
+      "version": "3.0",
+      "author": "Dart Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 900,
+      "source_exts": [
+        ".dart"
+      ],
+      "build": "printf 'quit\\n' | dart --packages=package_config.json bin/main.dart",
+      "test": "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | dart --packages=package_config.json bin/main.dart",
+      "analyze": "dart format --output=none bin lib",
+      "bugit": "if [ -f .bugit/main.dart.bak ]; then echo 'bugit already active for dart'; else mkdir -p .bugit && cp bin/main.dart .bugit/main.dart.bak && printf '\\n)\\n' >> bin/main.dart; fi",
+      "fix": "if [ -f .bugit/main.dart.bak ]; then mv .bugit/main.dart.bak bin/main.dart && rmdir .bugit 2>/dev/null || true; else echo 'no dart bugit backup to restore'; fi",
+      "run": "dart --packages=package_config.json bin/main.dart"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 8.207509701,
+      "build_seconds": 0.513680507,
+      "analyze_seconds": 0.258685978,
+      "test_seconds": 0.533543435,
+      "test_chess_engine_seconds": 20.579329621,
+      "test_v1_seconds": 20.579329621
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 5006,
+      "source_files": 15
+    },
+    "metrics": {
+      "tokens_count": 31424,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 102.61296584099081,
+      "analyze_ms_per_kloc": 51.67518537754694,
+      "runtime_ms_per_kloc": 106.58079005193768
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 8.207509701,
+      "make_build_success": true,
+      "make_build_time": 0.513680507,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.258685978,
+      "make_test_success": true,
+      "make_test_time": 0.533543435,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 20.579329621
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 15055.25,
+      "total_tokens": 19259,
+      "semantic_tokens": 19253,
+      "by_category": {
+        "keyword": 1785,
+        "identifier": 9705,
+        "type": 133,
+        "operator": 2898,
+        "literal": 3201,
+        "punctuation": 1531,
+        "comment": 6,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.093,
+        "comment_ratio": 0,
+        "punctuation_ratio": 0.08,
+        "complexity_per_loc": 3.01,
+        "complexity_per_file": 1003.68
+      }
+    }
+  },
+  {
+    "engine": "julia",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "typescript",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "python",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "crystal",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "ruby",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "elixir",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "failure",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "gleam",
+    "profile": "full",
+    "outcome": "failure",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "kotlin",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/kotlin",
+    "metadata": {
+      "language": "kotlin",
+      "version": "1.9.10",
+      "author": "Kotlin Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 500,
+      "source_exts": [
+        ".kt"
+      ],
+      "run": "java -jar build/libs/chess-1.0.0.jar",
+      "build": "kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar",
+      "test": "java -jar build/libs/chess-1.0.0.jar --test",
+      "analyze": "kotlinc src/main/kotlin/*.kt",
+      "bugit": "if [ -f .bugit/ChessEngine.kt.bak ]; then echo 'bugit already active for kotlin'; else mkdir -p .bugit && cp src/main/kotlin/ChessEngine.kt .bugit/ChessEngine.kt.bak && printf '\\n)\\n' >> src/main/kotlin/ChessEngine.kt; fi",
+      "fix": "if [ -f .bugit/ChessEngine.kt.bak ]; then mv .bugit/ChessEngine.kt.bak src/main/kotlin/ChessEngine.kt && rmdir .bugit 2>/dev/null || true; else echo 'no kotlin bugit backup to restore'; fi"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 17.051027335,
+      "build_seconds": 8.955202183,
+      "analyze_seconds": 8.744638876,
+      "test_seconds": 0.213999826,
+      "test_chess_engine_seconds": 20.840244259,
+      "test_v1_seconds": 20.840244259
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 1974,
+      "source_files": 9
+    },
+    "metrics": {
+      "tokens_count": 13402,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 4536.576587132726,
+      "analyze_ms_per_kloc": 4429.9082451874365,
+      "runtime_ms_per_kloc": 108.40923302938198
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 17.051027335,
+      "make_build_success": true,
+      "make_build_time": 8.955202183,
+      "make_analyze_success": true,
+      "make_analyze_time": 8.744638876,
+      "make_test_success": true,
+      "make_test_time": 0.213999826,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 20.840244259
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6774,
+      "total_tokens": 7955,
+      "semantic_tokens": 7897,
+      "by_category": {
+        "keyword": 1171,
+        "identifier": 4145,
+        "type": 335,
+        "operator": 917,
+        "literal": 1329,
+        "punctuation": 0,
+        "comment": 58,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.148,
+        "comment_ratio": 0.007,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 3.43,
+        "complexity_per_file": 752.67
+      }
+    }
+  },
+  {
+    "language": "python",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/python",
+    "metadata": {
+      "language": "python",
+      "version": "3.11",
+      "author": "Python Implementation",
       "features": [
         "perft",
         "fen",
@@ -20,25 +890,26 @@
       "max_ai_depth": 5,
       "estimated_perft4_ms": 1000,
       "source_exts": [
-        ".jl"
+        ".py"
       ],
       "benchmark.build": "skip",
-      "run": "./run.sh",
-      "build": "/usr/local/julia/bin/julia --project=. -e 'include(\"chess.jl\")'",
-      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | /usr/local/julia/bin/julia --project=. chess.jl | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2'",
-      "analyze": "/usr/local/julia/bin/julia --project=. -e 'include(\"chess.jl\")'",
-      "bugit": "if [ -f .bugit/chess.jl.bak ]; then echo 'bugit already active for julia'; else mkdir -p .bugit && cp chess.jl .bugit/chess.jl.bak && printf '\\n)\\n' >> chess.jl; fi",
-      "fix": "if [ -f .bugit/chess.jl.bak ]; then mv .bugit/chess.jl.bak chess.jl && rmdir .bugit 2>/dev/null || true; else echo 'no julia bugit backup to restore'; fi"
+      "build": "python3 -m py_compile chess.py",
+      "test": "python3 test_engine.py",
+      "test_contract": "python3 test_contract_runner.py",
+      "analyze": "python3 -m py_compile chess.py lib/*.py",
+      "bugit": "if [ -f .bugit/chess.py.bak ]; then echo 'bugit already active for python'; else mkdir -p .bugit && cp chess.py .bugit/chess.py.bak && printf '\\ndef __bugit__(:\\n' >> chess.py; fi",
+      "fix": "if [ -f .bugit/chess.py.bak ]; then mv .bugit/chess.py.bak chess.py && rmdir .bugit 2>/dev/null || true; else echo 'no python bugit backup to restore'; fi",
+      "run": "python3 chess.py"
     },
     "track": "v1",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 10.729092868,
+      "image_build_seconds": 5.545747495,
       "build_seconds": 0,
-      "analyze_seconds": 0.962589828,
-      "test_seconds": 3.383350665,
-      "test_chess_engine_seconds": 22.235587791,
-      "test_v1_seconds": 22.235587791
+      "analyze_seconds": 0.21785183,
+      "test_seconds": 1.799723018,
+      "test_chess_engine_seconds": 42.875364084,
+      "test_v1_seconds": 42.875364084
     },
     "memory": {
       "image": {
@@ -78,30 +949,30 @@
       }
     },
     "size": {
-      "source_loc": 2083,
-      "source_files": 10
+      "source_loc": 4978,
+      "source_files": 15
     },
     "metrics": {
-      "tokens_count": 13680,
+      "tokens_count": 36046,
       "metric_version": "tokens-v2"
     },
     "normalized": {
       "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 462.117056168987,
-      "runtime_ms_per_kloc": 1624.2682021123378
+      "analyze_ms_per_kloc": 43.762922860586585,
+      "runtime_ms_per_kloc": 361.53535918039375
     },
     "docker": {
       "image_build_success": true,
-      "image_build_time": 10.729092868,
+      "image_build_time": 5.545747495,
       "make_build_success": true,
       "make_build_time": null,
       "make_build_skipped": true,
       "make_analyze_success": true,
-      "make_analyze_time": 0.962589828,
+      "make_analyze_time": 0.21785183,
       "make_test_success": true,
-      "make_test_time": 3.383350665,
+      "make_test_time": 1.799723018,
       "test_chess_engine_success": true,
-      "test_chess_engine_time": 22.235587791
+      "test_chess_engine_time": 42.875364084
     },
     "task_results": {
       "make_build": true,
@@ -135,27 +1006,416 @@
     "status": "completed",
     "semantic_metrics": {
       "metric_version": "tokens-v3",
-      "complexity_score": 5997.25,
-      "total_tokens": 9349,
-      "semantic_tokens": 9269,
+      "complexity_score": 12581.25,
+      "total_tokens": 19543,
+      "semantic_tokens": 19446,
       "by_category": {
-        "keyword": 861,
-        "identifier": 2543,
-        "type": 171,
-        "operator": 2036,
-        "literal": 1959,
-        "punctuation": 1699,
-        "comment": 80,
+        "keyword": 1890,
+        "identifier": 5504,
+        "type": 490,
+        "operator": 2703,
+        "literal": 4524,
+        "punctuation": 4335,
+        "comment": 97,
         "unknown": 0
       },
       "ratios": {
-        "keyword_density": 0.093,
-        "comment_ratio": 0.009,
-        "punctuation_ratio": 0.183,
-        "complexity_per_loc": 2.88,
-        "complexity_per_file": 599.73
+        "keyword_density": 0.097,
+        "comment_ratio": 0.005,
+        "punctuation_ratio": 0.223,
+        "complexity_per_loc": 2.53,
+        "complexity_per_file": 838.75
       }
     }
+  },
+  {
+    "engine": "imba",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "elixir",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/elixir",
+    "metadata": {
+      "language": "elixir",
+      "version": "1.17",
+      "author": "AI Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1500,
+      "source_exts": [
+        ".ex",
+        ".exs"
+      ],
+      "build": "mix compile --warnings-as-errors",
+      "test": "mix run --no-compile -e \"ChessEngine.SelfTest.main()\"",
+      "analyze": "mix format --check-formatted && mix compile --warnings-as-errors",
+      "bugit": "if [ -f .bugit/chess_engine.ex.bak ]; then echo 'bugit already active for elixir'; else mkdir -p .bugit && cp lib/chess_engine.ex .bugit/chess_engine.ex.bak && printf '\\n  def __bugit__( do\\n' >> lib/chess_engine.ex; fi",
+      "fix": "if [ -f .bugit/chess_engine.ex.bak ]; then mv .bugit/chess_engine.ex.bak lib/chess_engine.ex && rmdir .bugit 2>/dev/null || true; else echo 'no elixir bugit backup to restore'; fi",
+      "run": "mix run --no-compile -e \"ChessEngine.CLI.main()\""
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 25.008730803,
+      "build_seconds": 0.613067675,
+      "analyze_seconds": 1.006120305,
+      "test_seconds": 0.618358372,
+      "test_chess_engine_seconds": 21.618434022,
+      "test_v1_seconds": 21.618434022
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 2084,
+      "source_files": 5
+    },
+    "metrics": {
+      "tokens_count": 13759,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 294.1783469289827,
+      "analyze_ms_per_kloc": 482.7832557581574,
+      "runtime_ms_per_kloc": 296.71706909788867
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 25.008730803,
+      "make_build_success": true,
+      "make_build_time": 0.613067675,
+      "make_analyze_success": true,
+      "make_analyze_time": 1.006120305,
+      "make_test_success": true,
+      "make_test_time": 0.618358372,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 21.618434022
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5312.75,
+      "total_tokens": 8492,
+      "semantic_tokens": 8418,
+      "by_category": {
+        "keyword": 1130,
+        "identifier": 1976,
+        "type": 288,
+        "operator": 1242,
+        "literal": 1409,
+        "punctuation": 2373,
+        "comment": 74,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.134,
+        "comment_ratio": 0.009,
+        "punctuation_ratio": 0.282,
+        "complexity_per_loc": 2.55,
+        "complexity_per_file": 1062.55
+      }
+    }
+  },
+  {
+    "engine": "kotlin",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "imba",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/imba",
+    "metadata": {
+      "language": "imba",
+      "version": "2.0",
+      "author": "Imba Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "source_exts": [
+        ".imba"
+      ],
+      "build": "imba build chess.imba --platform node --base . --outdir dist",
+      "run": "node dist/chess.js",
+      "test": "true",
+      "analyze": "imba build chess.imba --platform node --base . --outdir /tmp/tgac-imba-check",
+      "bugit": "if [ -f .bugit/chess.imba.bak ]; then echo 'bugit already active for imba'; else mkdir -p .bugit && cp chess.imba .bugit/chess.imba.bak && printf '\\n)\\n' >> chess.imba; fi",
+      "fix": "if [ -f .bugit/chess.imba.bak ]; then mv .bugit/chess.imba.bak chess.imba && rmdir .bugit 2>/dev/null || true; else echo 'no imba bugit backup to restore'; fi"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 5.739251098,
+      "build_seconds": 0.478582068,
+      "analyze_seconds": 0.444518029,
+      "test_seconds": 0.149469661,
+      "test_chess_engine_seconds": 19.373509322,
+      "test_v1_seconds": 19.373509322
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 1708,
+      "source_files": 1
+    },
+    "metrics": {
+      "tokens_count": 13981,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 280.2002740046839,
+      "analyze_ms_per_kloc": 260.25645725995315,
+      "runtime_ms_per_kloc": 87.51151112412178
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 5.739251098,
+      "make_build_success": true,
+      "make_build_time": 0.478582068,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.444518029,
+      "make_test_success": true,
+      "make_test_time": 0.149469661,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 19.373509322
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6167,
+      "total_tokens": 8879,
+      "semantic_tokens": 8879,
+      "by_category": {
+        "keyword": 704,
+        "identifier": 2630,
+        "type": 859,
+        "operator": 1573,
+        "literal": 1637,
+        "punctuation": 1476,
+        "comment": 0,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.079,
+        "comment_ratio": 0,
+        "punctuation_ratio": 0.166,
+        "complexity_per_loc": 3.61,
+        "complexity_per_file": 6167
+      }
+    }
+  },
+  {
+    "engine": "haskell",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "rescript",
+    "profile": "full",
+    "outcome": "failure",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
   },
   {
     "engine": "nim",
@@ -178,32 +1438,12 @@
     ]
   },
   {
-    "engine": "rescript",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "lua",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/lua",
+    "language": "elm",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/elm",
     "metadata": {
-      "language": "lua",
-      "version": "5.4",
-      "author": "Lua Implementation",
+      "language": "elm",
+      "version": "0.19.1",
+      "author": "Elm Implementation with Node.js Bridge",
       "features": [
         "perft",
         "fen",
@@ -216,27 +1456,26 @@
         "chess960"
       ],
       "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
+      "estimated_perft4_ms": 1200,
       "source_exts": [
-        ".lua"
+        ".elm"
       ],
-      "benchmark.build": "skip",
-      "build": "lua -e \"assert(loadfile('chess.lua'))\"",
-      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | lua chess.lua",
-      "analyze": "lua -e \"assert(loadfile('chess.lua'))\"",
-      "bugit": "if [ -f .bugit/chess.lua.bak ]; then echo 'bugit already active for lua'; else mkdir -p .bugit && cp chess.lua .bugit/chess.lua.bak && printf '\\n)\\n' >> chess.lua; fi",
-      "fix": "if [ -f .bugit/chess.lua.bak ]; then mv .bugit/chess.lua.bak chess.lua && rmdir .bugit 2>/dev/null || true; else echo 'no lua bugit backup to restore'; fi",
-      "run": "lua chess.lua"
+      "run": "node chess-bridge.js",
+      "build": "elm make src/ChessEngine.elm --optimize --output=src/chess.js",
+      "test": "node chess-bridge.js --test",
+      "analyze": "elm make src/ChessEngine.elm --output=/tmp/tgac-elm-check.js",
+      "bugit": "if [ -f .bugit/ChessEngine.elm.bak ]; then echo 'bugit already active for elm'; else mkdir -p .bugit && cp src/ChessEngine.elm .bugit/ChessEngine.elm.bak && printf '\\n)\\n' >> src/ChessEngine.elm; fi",
+      "fix": "if [ -f .bugit/ChessEngine.elm.bak ]; then mv .bugit/ChessEngine.elm.bak src/ChessEngine.elm && rmdir .bugit 2>/dev/null || true; else echo 'no elm bugit backup to restore'; fi"
     },
     "track": "v1",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 1.81298453,
-      "build_seconds": 0,
-      "analyze_seconds": 0.154655936,
-      "test_seconds": 0.152808143,
-      "test_chess_engine_seconds": 32.334961239,
-      "test_v1_seconds": 32.334961239
+      "image_build_seconds": 4.127955366,
+      "build_seconds": 0.195473517,
+      "analyze_seconds": 0.188485499,
+      "test_seconds": 0.179510722,
+      "test_chess_engine_seconds": 19.906070988,
+      "test_v1_seconds": 19.906070988
     },
     "memory": {
       "image": {
@@ -251,7 +1490,7 @@
         "peak_memory_mb": 0,
         "avg_cpu_percent": 0,
         "psutil_available": false,
-        "source": "skipped"
+        "source": "unavailable"
       },
       "analyze": {
         "memory_mb": 0,
@@ -276,30 +1515,29 @@
       }
     },
     "size": {
-      "source_loc": 4192,
-      "source_files": 1
+      "source_loc": 1811,
+      "source_files": 8
     },
     "metrics": {
-      "tokens_count": 30082,
+      "tokens_count": 7504,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 36.89311450381679,
-      "runtime_ms_per_kloc": 36.4523241889313
+      "build_ms_per_kloc": 107.93678464936501,
+      "analyze_ms_per_kloc": 104.07813307564882,
+      "runtime_ms_per_kloc": 99.12243070127003
     },
     "docker": {
       "image_build_success": true,
-      "image_build_time": 1.81298453,
+      "image_build_time": 4.127955366,
       "make_build_success": true,
-      "make_build_time": null,
-      "make_build_skipped": true,
+      "make_build_time": 0.195473517,
       "make_analyze_success": true,
-      "make_analyze_time": 0.154655936,
+      "make_analyze_time": 0.188485499,
       "make_test_success": true,
-      "make_test_time": 0.152808143,
+      "make_test_time": 0.179510722,
       "test_chess_engine_success": true,
-      "test_chess_engine_time": 32.334961239
+      "test_chess_engine_time": 19.906070988
     },
     "task_results": {
       "make_build": true,
@@ -333,25 +1571,25 @@
     "status": "completed",
     "semantic_metrics": {
       "metric_version": "tokens-v3",
-      "complexity_score": 15254.25,
-      "total_tokens": 18763,
-      "semantic_tokens": 18676,
+      "complexity_score": 5109.75,
+      "total_tokens": 6000,
+      "semantic_tokens": 5988,
       "by_category": {
-        "keyword": 3323,
-        "identifier": 8497,
-        "type": 81,
-        "operator": 3496,
-        "literal": 3142,
-        "punctuation": 137,
-        "comment": 87,
+        "keyword": 1644,
+        "identifier": 2725,
+        "type": 0,
+        "operator": 940,
+        "literal": 404,
+        "punctuation": 275,
+        "comment": 12,
         "unknown": 0
       },
       "ratios": {
-        "keyword_density": 0.178,
-        "comment_ratio": 0.005,
-        "punctuation_ratio": 0.007,
-        "complexity_per_loc": 3.64,
-        "complexity_per_file": 15254.25
+        "keyword_density": 0.275,
+        "comment_ratio": 0.002,
+        "punctuation_ratio": 0.046,
+        "complexity_per_loc": 2.82,
+        "complexity_per_file": 638.72
       }
     }
   },
@@ -391,12 +1629,12 @@
     "track": "v1",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 18.716731885,
-      "build_seconds": 0.578039198,
-      "analyze_seconds": 0.964544094,
-      "test_seconds": 1.109001944,
-      "test_chess_engine_seconds": 24.980419097,
-      "test_v1_seconds": 24.980419097
+      "image_build_seconds": 18.895684337,
+      "build_seconds": 0.567534196,
+      "analyze_seconds": 0.970579613,
+      "test_seconds": 1.076854909,
+      "test_chess_engine_seconds": 24.325030118,
+      "test_v1_seconds": 24.325030118
     },
     "memory": {
       "image": {
@@ -444,21 +1682,21 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 101.35703980361214,
-      "analyze_ms_per_kloc": 169.1292467122567,
-      "runtime_ms_per_kloc": 194.45939751008243
+      "build_ms_per_kloc": 99.51502647729264,
+      "analyze_ms_per_kloc": 170.18755269156583,
+      "runtime_ms_per_kloc": 188.82253357881814
     },
     "docker": {
       "image_build_success": true,
-      "image_build_time": 18.716731885,
+      "image_build_time": 18.895684337,
       "make_build_success": true,
-      "make_build_time": 0.578039198,
+      "make_build_time": 0.567534196,
       "make_analyze_success": true,
-      "make_analyze_time": 0.964544094,
+      "make_analyze_time": 0.970579613,
       "make_test_success": true,
-      "make_test_time": 1.109001944,
+      "make_test_time": 1.076854909,
       "test_chess_engine_success": true,
-      "test_chess_engine_time": 24.980419097
+      "test_chess_engine_time": 24.325030118
     },
     "task_results": {
       "make_build": true,
@@ -517,44 +1755,6 @@
   {
     "engine": "lua",
     "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "gleam",
-    "profile": "full",
-    "outcome": "failure",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "elm",
-    "profile": "full",
     "outcome": "success",
     "conclusion": "success",
     "report_status": "failed",
@@ -569,558 +1769,6 @@
       "build error: Metadata is empty",
       "build error: Features list is empty"
     ]
-  },
-  {
-    "language": "elm",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/elm",
-    "metadata": {
-      "language": "elm",
-      "version": "0.19.1",
-      "author": "Elm Implementation with Node.js Bridge",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1200,
-      "source_exts": [
-        ".elm"
-      ],
-      "run": "node chess-bridge.js",
-      "build": "elm make src/ChessEngine.elm --optimize --output=src/chess.js",
-      "test": "node chess-bridge.js --test",
-      "analyze": "elm make src/ChessEngine.elm --output=/tmp/tgac-elm-check.js",
-      "bugit": "if [ -f .bugit/ChessEngine.elm.bak ]; then echo 'bugit already active for elm'; else mkdir -p .bugit && cp src/ChessEngine.elm .bugit/ChessEngine.elm.bak && printf '\\n)\\n' >> src/ChessEngine.elm; fi",
-      "fix": "if [ -f .bugit/ChessEngine.elm.bak ]; then mv .bugit/ChessEngine.elm.bak src/ChessEngine.elm && rmdir .bugit 2>/dev/null || true; else echo 'no elm bugit backup to restore'; fi"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 4.100796157,
-      "build_seconds": 0.199276251,
-      "analyze_seconds": 0.187086706,
-      "test_seconds": 0.191971997,
-      "test_chess_engine_seconds": 20.192839065,
-      "test_v1_seconds": 20.192839065
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 1811,
-      "source_files": 8
-    },
-    "metrics": {
-      "tokens_count": 7504,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 110.03658255107675,
-      "analyze_ms_per_kloc": 103.30574599668691,
-      "runtime_ms_per_kloc": 106.0033114301491
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 4.100796157,
-      "make_build_success": true,
-      "make_build_time": 0.199276251,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.187086706,
-      "make_test_success": true,
-      "make_test_time": 0.191971997,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 20.192839065
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 5109.75,
-      "total_tokens": 6000,
-      "semantic_tokens": 5988,
-      "by_category": {
-        "keyword": 1644,
-        "identifier": 2725,
-        "type": 0,
-        "operator": 940,
-        "literal": 404,
-        "punctuation": 275,
-        "comment": 12,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.275,
-        "comment_ratio": 0.002,
-        "punctuation_ratio": 0.046,
-        "complexity_per_loc": 2.82,
-        "complexity_per_file": 638.72
-      }
-    }
-  },
-  {
-    "engine": "javascript",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "elixir",
-    "profile": "full",
-    "outcome": "failure",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "typescript",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "kotlin",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "elixir",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/elixir",
-    "metadata": {
-      "language": "elixir",
-      "version": "1.17",
-      "author": "AI Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1500,
-      "source_exts": [
-        ".ex",
-        ".exs"
-      ],
-      "build": "mix compile --warnings-as-errors",
-      "test": "mix run --no-compile -e \"ChessEngine.SelfTest.main()\"",
-      "analyze": "mix format --check-formatted && mix compile --warnings-as-errors",
-      "bugit": "if [ -f .bugit/chess_engine.ex.bak ]; then echo 'bugit already active for elixir'; else mkdir -p .bugit && cp lib/chess_engine.ex .bugit/chess_engine.ex.bak && printf '\\n  def __bugit__( do\\n' >> lib/chess_engine.ex; fi",
-      "fix": "if [ -f .bugit/chess_engine.ex.bak ]; then mv .bugit/chess_engine.ex.bak lib/chess_engine.ex && rmdir .bugit 2>/dev/null || true; else echo 'no elixir bugit backup to restore'; fi",
-      "run": "mix run --no-compile -e \"ChessEngine.CLI.main()\""
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 21.263653871,
-      "build_seconds": 0.530386656,
-      "analyze_seconds": 0.937531085,
-      "test_seconds": 0.555943639,
-      "test_chess_engine_seconds": 20.889436998,
-      "test_v1_seconds": 20.889436998
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 2084,
-      "source_files": 5
-    },
-    "metrics": {
-      "tokens_count": 13759,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 254.50415355086372,
-      "analyze_ms_per_kloc": 449.8709620921305,
-      "runtime_ms_per_kloc": 266.7675810940499
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 21.263653871,
-      "make_build_success": true,
-      "make_build_time": 0.530386656,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.937531085,
-      "make_test_success": true,
-      "make_test_time": 0.555943639,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 20.889436998
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 5312.75,
-      "total_tokens": 8492,
-      "semantic_tokens": 8418,
-      "by_category": {
-        "keyword": 1130,
-        "identifier": 1976,
-        "type": 288,
-        "operator": 1242,
-        "literal": 1409,
-        "punctuation": 2373,
-        "comment": 74,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.134,
-        "comment_ratio": 0.009,
-        "punctuation_ratio": 0.282,
-        "complexity_per_loc": 2.55,
-        "complexity_per_file": 1062.55
-      }
-    }
-  },
-  {
-    "language": "php",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/php",
-    "metadata": {
-      "language": "php",
-      "version": "8.3",
-      "author": "PHP Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960",
-        "PGN Comment Show",
-        "PGN Result Checkmate Show",
-        "PGN Variation Navigation"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1500,
-      "source_exts": [
-        ".php"
-      ],
-      "benchmark.build": "skip",
-      "build": "php -l chess.php",
-      "test": "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | php chess.php",
-      "analyze": "find . -name '*.php' -exec php -l {} \\;",
-      "bugit": "if [ -f .bugit/chess.php.bak ]; then echo 'bugit already active for php'; else mkdir -p .bugit && cp chess.php .bugit/chess.php.bak && printf '\\n)\\n' >> chess.php; fi",
-      "fix": "if [ -f .bugit/chess.php.bak ]; then mv .bugit/chess.php.bak chess.php && rmdir .bugit 2>/dev/null || true; else echo 'no php bugit backup to restore'; fi",
-      "run": "php chess.php"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 7.777488284,
-      "build_seconds": 0,
-      "analyze_seconds": 0.425951905,
-      "test_seconds": 0.167374618,
-      "test_chess_engine_seconds": 24.564702784,
-      "test_v1_seconds": 24.564702784
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "skipped"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 5879,
-      "source_files": 19
-    },
-    "metrics": {
-      "tokens_count": 48097,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 72.45312212961389,
-      "runtime_ms_per_kloc": 28.469912910358907
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 7.777488284,
-      "make_build_success": true,
-      "make_build_time": null,
-      "make_build_skipped": true,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.425951905,
-      "make_test_success": true,
-      "make_test_time": 0.167374618,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 24.564702784
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 18067.25,
-      "total_tokens": 28461,
-      "semantic_tokens": 28034,
-      "by_category": {
-        "keyword": 2932,
-        "identifier": 8216,
-        "type": 43,
-        "operator": 5749,
-        "literal": 4913,
-        "punctuation": 6181,
-        "comment": 427,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.105,
-        "comment_ratio": 0.015,
-        "punctuation_ratio": 0.22,
-        "complexity_per_loc": 3.07,
-        "complexity_per_file": 950.91
-      }
-    }
   },
   {
     "language": "ruby",
@@ -1156,12 +1804,12 @@
     "track": "v1",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 16.656138544,
+      "image_build_seconds": 16.924439469,
       "build_seconds": 0,
-      "analyze_seconds": 2.001283362,
-      "test_seconds": 0.271624741,
-      "test_chess_engine_seconds": 19.403294662,
-      "test_v1_seconds": 19.403294662
+      "analyze_seconds": 1.944026612,
+      "test_seconds": 0.264819795,
+      "test_chess_engine_seconds": 19.387880403,
+      "test_v1_seconds": 19.387880403
     },
     "memory": {
       "image": {
@@ -1210,21 +1858,21 @@
     },
     "normalized": {
       "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 810.5643426488458,
-      "runtime_ms_per_kloc": 110.01407087889835
+      "analyze_ms_per_kloc": 787.374083434589,
+      "runtime_ms_per_kloc": 107.25791616038883
     },
     "docker": {
       "image_build_success": true,
-      "image_build_time": 16.656138544,
+      "image_build_time": 16.924439469,
       "make_build_success": true,
       "make_build_time": null,
       "make_build_skipped": true,
       "make_analyze_success": true,
-      "make_analyze_time": 2.001283362,
+      "make_analyze_time": 1.944026612,
       "make_test_success": true,
-      "make_test_time": 0.271624741,
+      "make_test_time": 0.264819795,
       "test_chess_engine_success": true,
-      "test_chess_engine_time": 19.403294662
+      "test_chess_engine_time": 19.387880403
     },
     "task_results": {
       "make_build": true,
@@ -1281,1013 +1929,6 @@
     }
   },
   {
-    "engine": "swift",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "kotlin",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/kotlin",
-    "metadata": {
-      "language": "kotlin",
-      "version": "1.9.10",
-      "author": "Kotlin Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 500,
-      "source_exts": [
-        ".kt"
-      ],
-      "run": "java -jar build/libs/chess-1.0.0.jar",
-      "build": "kotlinc src/main/kotlin/*.kt -include-runtime -d build/libs/chess-1.0.0.jar",
-      "test": "java -jar build/libs/chess-1.0.0.jar --test",
-      "analyze": "kotlinc src/main/kotlin/*.kt",
-      "bugit": "if [ -f .bugit/ChessEngine.kt.bak ]; then echo 'bugit already active for kotlin'; else mkdir -p .bugit && cp src/main/kotlin/ChessEngine.kt .bugit/ChessEngine.kt.bak && printf '\\n)\\n' >> src/main/kotlin/ChessEngine.kt; fi",
-      "fix": "if [ -f .bugit/ChessEngine.kt.bak ]; then mv .bugit/ChessEngine.kt.bak src/main/kotlin/ChessEngine.kt && rmdir .bugit 2>/dev/null || true; else echo 'no kotlin bugit backup to restore'; fi"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 14.983477679,
-      "build_seconds": 8.900344889,
-      "analyze_seconds": 8.2859375,
-      "test_seconds": 0.211926974,
-      "test_chess_engine_seconds": 20.141814678,
-      "test_v1_seconds": 20.141814678
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 1974,
-      "source_files": 9
-    },
-    "metrics": {
-      "tokens_count": 13402,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 4508.786671225937,
-      "analyze_ms_per_kloc": 4197.53672745694,
-      "runtime_ms_per_kloc": 107.3591560283688
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 14.983477679,
-      "make_build_success": true,
-      "make_build_time": 8.900344889,
-      "make_analyze_success": true,
-      "make_analyze_time": 8.2859375,
-      "make_test_success": true,
-      "make_test_time": 0.211926974,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 20.141814678
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 6774,
-      "total_tokens": 7955,
-      "semantic_tokens": 7897,
-      "by_category": {
-        "keyword": 1171,
-        "identifier": 4145,
-        "type": 335,
-        "operator": 917,
-        "literal": 1329,
-        "punctuation": 0,
-        "comment": 58,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.148,
-        "comment_ratio": 0.007,
-        "punctuation_ratio": 0,
-        "complexity_per_loc": 3.43,
-        "complexity_per_file": 752.67
-      }
-    }
-  },
-  {
-    "engine": "imba",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "zig",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "ruby",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "dart",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "typescript",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/typescript",
-    "metadata": {
-      "language": "typescript",
-      "version": "5.0",
-      "author": "TypeScript Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 800,
-      "source_exts": [
-        ".ts"
-      ],
-      "build": "bun run build",
-      "test": "bun run test",
-      "test_contract": "bun run unit_contract_runner.js",
-      "analyze": "bun run lint",
-      "bugit": "if [ -f .bugit/chess.ts.bak ]; then echo 'bugit already active for typescript'; else mkdir -p .bugit && cp src/chess.ts .bugit/chess.ts.bak && printf '\\n)\\n' >> src/chess.ts; fi",
-      "fix": "if [ -f .bugit/chess.ts.bak ]; then mv .bugit/chess.ts.bak src/chess.ts && rmdir .bugit 2>/dev/null || true; else echo 'no typescript bugit backup to restore'; fi",
-      "run": "bun run dist/chess.js"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 4.79200677,
-      "build_seconds": 2.01707222,
-      "analyze_seconds": 3.51651146,
-      "test_seconds": 2.17498123,
-      "test_chess_engine_seconds": 24.021390414,
-      "test_v1_seconds": 24.021390414
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 2586,
-      "source_files": 12
-    },
-    "metrics": {
-      "tokens_count": 18333,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 779.9969914926529,
-      "analyze_ms_per_kloc": 1359.826550657386,
-      "runtime_ms_per_kloc": 841.0600270688324
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 4.79200677,
-      "make_build_success": true,
-      "make_build_time": 2.01707222,
-      "make_analyze_success": true,
-      "make_analyze_time": 3.51651146,
-      "make_test_success": true,
-      "make_test_time": 2.17498123,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 24.021390414
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 7773.5,
-      "total_tokens": 11941,
-      "semantic_tokens": 11926,
-      "by_category": {
-        "keyword": 1163,
-        "identifier": 3446,
-        "type": 504,
-        "operator": 1704,
-        "literal": 2125,
-        "punctuation": 2984,
-        "comment": 15,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.098,
-        "comment_ratio": 0.001,
-        "punctuation_ratio": 0.25,
-        "complexity_per_loc": 3.01,
-        "complexity_per_file": 647.79
-      }
-    }
-  },
-  {
-    "engine": "elixir",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "failure",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "javascript",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "haskell",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "imba",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/imba",
-    "metadata": {
-      "language": "imba",
-      "version": "2.0",
-      "author": "Imba Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
-      "source_exts": [
-        ".imba"
-      ],
-      "build": "imba build chess.imba --platform node --base . --outdir dist",
-      "run": "node dist/chess.js",
-      "test": "true",
-      "analyze": "imba build chess.imba --platform node --base . --outdir /tmp/tgac-imba-check",
-      "bugit": "if [ -f .bugit/chess.imba.bak ]; then echo 'bugit already active for imba'; else mkdir -p .bugit && cp chess.imba .bugit/chess.imba.bak && printf '\\n)\\n' >> chess.imba; fi",
-      "fix": "if [ -f .bugit/chess.imba.bak ]; then mv .bugit/chess.imba.bak chess.imba && rmdir .bugit 2>/dev/null || true; else echo 'no imba bugit backup to restore'; fi"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 4.551514642,
-      "build_seconds": 0.452522853,
-      "analyze_seconds": 0.443787991,
-      "test_seconds": 0.141777863,
-      "test_chess_engine_seconds": 18.868430227,
-      "test_v1_seconds": 18.868430227
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 1708,
-      "source_files": 1
-    },
-    "metrics": {
-      "tokens_count": 13981,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 264.9431223653396,
-      "analyze_ms_per_kloc": 259.8290345433255,
-      "runtime_ms_per_kloc": 83.00811651053864
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 4.551514642,
-      "make_build_success": true,
-      "make_build_time": 0.452522853,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.443787991,
-      "make_test_success": true,
-      "make_test_time": 0.141777863,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 18.868430227
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 6167,
-      "total_tokens": 8879,
-      "semantic_tokens": 8879,
-      "by_category": {
-        "keyword": 704,
-        "identifier": 2630,
-        "type": 859,
-        "operator": 1573,
-        "literal": 1637,
-        "punctuation": 1476,
-        "comment": 0,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.079,
-        "comment_ratio": 0,
-        "punctuation_ratio": 0.166,
-        "complexity_per_loc": 3.61,
-        "complexity_per_file": 6167
-      }
-    }
-  },
-  {
-    "language": "rust",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/rust",
-    "metadata": {
-      "language": "rust",
-      "version": "1.70",
-      "author": "Rust Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 600,
-      "source_exts": [
-        ".rs"
-      ],
-      "build": "cargo build --release",
-      "test": "cargo test",
-      "analyze": "cargo check --all-targets",
-      "bugit": "if [ -f .bugit/main.rs.bak ]; then echo 'bugit already active for rust'; else mkdir -p .bugit && cp src/main.rs .bugit/main.rs.bak && printf '\\n)\\n' >> src/main.rs; fi",
-      "fix": "if [ -f .bugit/main.rs.bak ]; then mv .bugit/main.rs.bak src/main.rs && rmdir .bugit 2>/dev/null || true; else echo 'no rust bugit backup to restore'; fi",
-      "run": "./target/release/chess"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 10.520256036,
-      "build_seconds": 0.19279514,
-      "analyze_seconds": 0.523237912,
-      "test_seconds": 0.717737395,
-      "test_chess_engine_seconds": 18.770207596,
-      "test_v1_seconds": 18.770207596
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 2834,
-      "source_files": 10
-    },
-    "metrics": {
-      "tokens_count": 19194,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 68.02933662667607,
-      "analyze_ms_per_kloc": 184.62876217360622,
-      "runtime_ms_per_kloc": 253.25949011997176
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 10.520256036,
-      "make_build_success": true,
-      "make_build_time": 0.19279514,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.523237912,
-      "make_test_success": true,
-      "make_test_time": 0.717737395,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 18.770207596
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 9721.75,
-      "total_tokens": 14050,
-      "semantic_tokens": 13997,
-      "by_category": {
-        "keyword": 1221,
-        "identifier": 4508,
-        "type": 1062,
-        "operator": 3181,
-        "literal": 1336,
-        "punctuation": 2689,
-        "comment": 53,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.087,
-        "comment_ratio": 0.004,
-        "punctuation_ratio": 0.192,
-        "complexity_per_loc": 3.43,
-        "complexity_per_file": 972.18
-      }
-    }
-  },
-  {
-    "engine": "julia",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "imba",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "gleam",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/gleam",
-    "metadata": {
-      "language": "gleam",
-      "version": "1.3.1",
-      "author": "Gleam Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 800,
-      "source_exts": [
-        ".gleam"
-      ],
-      "build": "gleam build",
-      "test": "gleam test",
-      "analyze": "gleam format --check && gleam check",
-      "bugit": "if [ -f .bugit/chess_engine.gleam.bak ]; then echo 'bugit already active for gleam'; else mkdir -p .bugit && cp src/chess_engine.gleam .bugit/chess_engine.gleam.bak && printf '\\n)\\n' >> src/chess_engine.gleam; fi",
-      "fix": "if [ -f .bugit/chess_engine.gleam.bak ]; then mv .bugit/chess_engine.gleam.bak src/chess_engine.gleam && rmdir .bugit 2>/dev/null || true; else echo 'no gleam bugit backup to restore'; fi",
-      "run": "./run.sh"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 26.606566438,
-      "build_seconds": 0.199097879,
-      "analyze_seconds": 0.324790834,
-      "test_seconds": 0.447035606,
-      "test_chess_engine_seconds": 21.138933675,
-      "test_v1_seconds": 21.138933675
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 4275,
-      "source_files": 9
-    },
-    "metrics": {
-      "tokens_count": 44372,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 46.5726032748538,
-      "analyze_ms_per_kloc": 75.97446409356724,
-      "runtime_ms_per_kloc": 104.5697323976608
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 26.606566438,
-      "make_build_success": true,
-      "make_build_time": 0.199097879,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.324790834,
-      "make_test_success": true,
-      "make_test_time": 0.447035606,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 21.138933675
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 28222.5,
-      "total_tokens": 35554,
-      "semantic_tokens": 35449,
-      "by_category": {
-        "keyword": 804,
-        "identifier": 18569,
-        "type": 1623,
-        "operator": 1557,
-        "literal": 12896,
-        "punctuation": 0,
-        "comment": 105,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.023,
-        "comment_ratio": 0.003,
-        "punctuation_ratio": 0,
-        "complexity_per_loc": 6.6,
-        "complexity_per_file": 3135.83
-      }
-    }
-  },
-  {
-    "engine": "rescript",
-    "profile": "full",
-    "outcome": "failure",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "python",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
     "language": "c",
     "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/c",
     "metadata": {
@@ -2321,12 +1962,12 @@
     "track": "v1",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 20.927827011,
-      "build_seconds": 0.892173654,
-      "analyze_seconds": 0.172928269,
-      "test_seconds": 0.892046349,
-      "test_chess_engine_seconds": 18.054870799,
-      "test_v1_seconds": 18.054870799
+      "image_build_seconds": 19.914856658,
+      "build_seconds": 0.893767963,
+      "analyze_seconds": 0.164740542,
+      "test_seconds": 0.883082304,
+      "test_chess_engine_seconds": 18.260715609,
+      "test_v1_seconds": 18.260715609
     },
     "memory": {
       "image": {
@@ -2374,21 +2015,21 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 370.8119925187032,
-      "analyze_ms_per_kloc": 71.87376101413133,
-      "runtime_ms_per_kloc": 370.7590810473815
+      "build_ms_per_kloc": 371.4746313383208,
+      "analyze_ms_per_kloc": 68.47071571072318,
+      "runtime_ms_per_kloc": 367.0333765586035
     },
     "docker": {
       "image_build_success": true,
-      "image_build_time": 20.927827011,
+      "image_build_time": 19.914856658,
       "make_build_success": true,
-      "make_build_time": 0.892173654,
+      "make_build_time": 0.893767963,
       "make_analyze_success": true,
-      "make_analyze_time": 0.172928269,
+      "make_analyze_time": 0.164740542,
       "make_test_success": true,
-      "make_test_time": 0.892046349,
+      "make_test_time": 0.883082304,
       "test_chess_engine_success": true,
-      "test_chess_engine_time": 18.054870799
+      "test_chess_engine_time": 18.260715609
     },
     "task_results": {
       "make_build": true,
@@ -2445,44 +2086,6 @@
     }
   },
   {
-    "engine": "go",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "lua",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
     "engine": "rust",
     "profile": "full",
     "outcome": "success",
@@ -2499,961 +2102,6 @@
       "build error: Metadata is empty",
       "build error: Features list is empty"
     ]
-  },
-  {
-    "engine": "nim",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "typescript",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "crystal",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/crystal",
-    "metadata": {
-      "language": "crystal",
-      "version": "1.14.0",
-      "author": "Crystal Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 800,
-      "source_exts": [
-        ".cr"
-      ],
-      "build": "crystal build src/chess_engine.cr --release -o chess_engine",
-      "run": "./chess_engine",
-      "test": "crystal spec",
-      "analyze": "crystal tool format --check",
-      "bugit": "if [ -f .bugit/chess_engine.cr.bak ]; then echo 'bugit already active for crystal'; else mkdir -p .bugit && cp src/chess_engine.cr .bugit/chess_engine.cr.bak && printf '\\n)\\n' >> src/chess_engine.cr; fi",
-      "fix": "if [ -f .bugit/chess_engine.cr.bak ]; then mv .bugit/chess_engine.cr.bak src/chess_engine.cr && rmdir .bugit 2>/dev/null || true; else echo 'no crystal bugit backup to restore'; fi"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 24.022629074,
-      "build_seconds": 1.444409621,
-      "analyze_seconds": 0.186356982,
-      "test_seconds": 4.509993729,
-      "test_chess_engine_seconds": 18.763948447,
-      "test_v1_seconds": 18.763948447
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 3308,
-      "source_files": 12
-    },
-    "metrics": {
-      "tokens_count": 19116,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 436.64136064087063,
-      "analyze_ms_per_kloc": 56.33524244256349,
-      "runtime_ms_per_kloc": 1363.3596520556227
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 24.022629074,
-      "make_build_success": true,
-      "make_build_time": 1.444409621,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.186356982,
-      "make_test_success": true,
-      "make_test_time": 4.509993729,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 18.763948447
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 8040.5,
-      "total_tokens": 11666,
-      "semantic_tokens": 11599,
-      "by_category": {
-        "keyword": 1549,
-        "identifier": 4020,
-        "type": 28,
-        "operator": 1398,
-        "literal": 2374,
-        "punctuation": 2230,
-        "comment": 67,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.134,
-        "comment_ratio": 0.006,
-        "punctuation_ratio": 0.192,
-        "complexity_per_loc": 2.43,
-        "complexity_per_file": 670.04
-      }
-    }
-  },
-  {
-    "engine": "php",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "c",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "failure",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "julia",
-    "profile": "",
-    "build_outcome": "skipped",
-    "build_conclusion": "skipped",
-    "run_outcome": "skipped",
-    "run_conclusion": "skipped",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "elm",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "kotlin",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "nim",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/nim",
-    "metadata": {
-      "language": "nim",
-      "version": "2.0",
-      "author": "Nim Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
-      "source_exts": [
-        ".nim"
-      ],
-      "build": "nim c -d:release chess.nim",
-      "test": "./chess --test",
-      "analyze": "nim check chess.nim",
-      "bugit": "if [ -f .bugit/chess.nim.bak ]; then echo 'bugit already active for nim'; else mkdir -p .bugit && cp chess.nim .bugit/chess.nim.bak && printf '\\n)\\n' >> chess.nim; fi",
-      "fix": "if [ -f .bugit/chess.nim.bak ]; then mv .bugit/chess.nim.bak chess.nim && rmdir .bugit 2>/dev/null || true; else echo 'no nim bugit backup to restore'; fi",
-      "run": "./chess"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 10.746936338,
-      "build_seconds": 0.948443668,
-      "analyze_seconds": 0.881449756,
-      "test_seconds": 0.157095394,
-      "test_chess_engine_seconds": 19.117210122,
-      "test_v1_seconds": 19.117210122
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 1636,
-      "source_files": 1
-    },
-    "metrics": {
-      "tokens_count": 12412,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 579.7332933985331,
-      "analyze_ms_per_kloc": 538.7834694376528,
-      "runtime_ms_per_kloc": 96.02407946210269
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 10.746936338,
-      "make_build_success": true,
-      "make_build_time": 0.948443668,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.881449756,
-      "make_test_success": true,
-      "make_test_time": 0.157095394,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 19.117210122
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 7067,
-      "total_tokens": 9037,
-      "semantic_tokens": 8948,
-      "by_category": {
-        "keyword": 1276,
-        "identifier": 3625,
-        "type": 285,
-        "operator": 2453,
-        "literal": 1309,
-        "punctuation": 0,
-        "comment": 89,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.143,
-        "comment_ratio": 0.01,
-        "punctuation_ratio": 0,
-        "complexity_per_loc": 4.32,
-        "complexity_per_file": 7067
-      }
-    }
-  },
-  {
-    "engine": "zig",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "dart",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/dart",
-    "metadata": {
-      "language": "dart",
-      "version": "3.0",
-      "author": "Dart Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 900,
-      "source_exts": [
-        ".dart"
-      ],
-      "build": "printf 'quit\\n' | dart --packages=package_config.json bin/main.dart",
-      "test": "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | dart --packages=package_config.json bin/main.dart",
-      "analyze": "dart format --output=none bin lib",
-      "bugit": "if [ -f .bugit/main.dart.bak ]; then echo 'bugit already active for dart'; else mkdir -p .bugit && cp bin/main.dart .bugit/main.dart.bak && printf '\\n)\\n' >> bin/main.dart; fi",
-      "fix": "if [ -f .bugit/main.dart.bak ]; then mv .bugit/main.dart.bak bin/main.dart && rmdir .bugit 2>/dev/null || true; else echo 'no dart bugit backup to restore'; fi",
-      "run": "dart --packages=package_config.json bin/main.dart"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 8.383487852,
-      "build_seconds": 0.596365836,
-      "analyze_seconds": 0.262422726,
-      "test_seconds": 0.542584972,
-      "test_chess_engine_seconds": 20.167875282,
-      "test_v1_seconds": 20.167875282
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 5006,
-      "source_files": 15
-    },
-    "metrics": {
-      "tokens_count": 31424,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 119.13021094686377,
-      "analyze_ms_per_kloc": 52.4216392329205,
-      "runtime_ms_per_kloc": 108.38693008389932
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 8.383487852,
-      "make_build_success": true,
-      "make_build_time": 0.596365836,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.262422726,
-      "make_test_success": true,
-      "make_test_time": 0.542584972,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 20.167875282
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 15055.25,
-      "total_tokens": 19259,
-      "semantic_tokens": 19253,
-      "by_category": {
-        "keyword": 1785,
-        "identifier": 9705,
-        "type": 133,
-        "operator": 2898,
-        "literal": 3201,
-        "punctuation": 1531,
-        "comment": 6,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.093,
-        "comment_ratio": 0,
-        "punctuation_ratio": 0.08,
-        "complexity_per_loc": 3.01,
-        "complexity_per_file": 1003.68
-      }
-    }
-  },
-  {
-    "language": "rescript",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/rescript",
-    "metadata": {
-      "language": "rescript",
-      "version": "10.0",
-      "author": "ReScript Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1500,
-      "source_exts": [
-        ".res",
-        ".resi"
-      ],
-      "build": "npm run build",
-      "test": "node lib/es6/src/Chess.js --test",
-      "analyze": "npx rescript build",
-      "bugit": "if [ -f .bugit/Chess.res.bak ]; then echo 'bugit already active for rescript'; else mkdir -p .bugit && cp src/Chess.res .bugit/Chess.res.bak && printf '\\n)\\n' >> src/Chess.res; fi",
-      "fix": "if [ -f .bugit/Chess.res.bak ]; then mv .bugit/Chess.res.bak src/Chess.res && rmdir .bugit 2>/dev/null || true; else echo 'no rescript bugit backup to restore'; fi",
-      "run": "node lib/es6/src/Chess.js"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 5.455044059,
-      "build_seconds": 0.38069316,
-      "analyze_seconds": 0.605927619,
-      "test_seconds": 0.226818645,
-      "test_chess_engine_seconds": 22.452900788,
-      "test_v1_seconds": 22.452900788
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 2381,
-      "source_files": 12
-    },
-    "metrics": {
-      "tokens_count": 15948,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 159.8879294414112,
-      "analyze_ms_per_kloc": 254.48451028979426,
-      "runtime_ms_per_kloc": 95.26192566148679
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 5.455044059,
-      "make_build_success": true,
-      "make_build_time": 0.38069316,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.605927619,
-      "make_test_success": true,
-      "make_test_time": 0.226818645,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 22.452900788
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 6827.75,
-      "total_tokens": 9307,
-      "semantic_tokens": 9293,
-      "by_category": {
-        "keyword": 912,
-        "identifier": 3788,
-        "type": 460,
-        "operator": 1546,
-        "literal": 992,
-        "punctuation": 1595,
-        "comment": 14,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.098,
-        "comment_ratio": 0.002,
-        "punctuation_ratio": 0.172,
-        "complexity_per_loc": 2.87,
-        "complexity_per_file": 568.98
-      }
-    }
-  },
-  {
-    "engine": "rust",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "language": "javascript",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/javascript",
-    "metadata": {
-      "language": "javascript",
-      "version": "ES2023",
-      "author": "JavaScript Implementation",
-      "features": [
-        "perft",
-        "fen",
-        "ai",
-        "castling",
-        "en_passant",
-        "promotion",
-        "pgn",
-        "uci",
-        "chess960"
-      ],
-      "max_ai_depth": 5,
-      "estimated_perft4_ms": 1000,
-      "source_exts": [
-        ".js"
-      ],
-      "benchmark.build": "skip",
-      "build": "bun build chess.js --outdir dist --target bun",
-      "run": "bun run chess.js",
-      "test": "bun run test",
-      "analyze": "bun build chess.js --outdir /tmp/tgac-javascript-check --target bun",
-      "bugit": "if [ -f .bugit/chess.js.bak ]; then echo 'bugit already active for javascript'; else mkdir -p .bugit && cp chess.js .bugit/chess.js.bak && printf '\\nfunction __bugit__( {\\n' >> chess.js; fi",
-      "fix": "if [ -f .bugit/chess.js.bak ]; then mv .bugit/chess.js.bak chess.js && rmdir .bugit 2>/dev/null || true; else echo 'no javascript bugit backup to restore'; fi"
-    },
-    "track": "v1",
-    "profile": "quick",
-    "timings": {
-      "image_build_seconds": 1.997628543,
-      "build_seconds": 0,
-      "analyze_seconds": 0.167469946,
-      "test_seconds": 0.185139877,
-      "test_chess_engine_seconds": 40.258873496,
-      "test_v1_seconds": 40.258873496
-    },
-    "memory": {
-      "image": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "build": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "skipped"
-      },
-      "analyze": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      },
-      "test_chess_engine": {
-        "memory_mb": 0,
-        "peak_memory_mb": 0,
-        "avg_cpu_percent": 0,
-        "psutil_available": false,
-        "source": "unavailable"
-      }
-    },
-    "size": {
-      "source_loc": 1602,
-      "source_files": 5
-    },
-    "metrics": {
-      "tokens_count": 11914,
-      "metric_version": "tokens-v2"
-    },
-    "normalized": {
-      "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 104.53804369538078,
-      "runtime_ms_per_kloc": 115.56796317103621
-    },
-    "docker": {
-      "image_build_success": true,
-      "image_build_time": 1.997628543,
-      "make_build_success": true,
-      "make_build_time": null,
-      "make_build_skipped": true,
-      "make_analyze_success": true,
-      "make_analyze_time": 0.167469946,
-      "make_test_success": true,
-      "make_test_time": 0.185139877,
-      "test_chess_engine_success": true,
-      "test_chess_engine_time": 40.258873496
-    },
-    "task_results": {
-      "make_build": true,
-      "make_analyze": true,
-      "make_test": true,
-      "make_test_chess_engine": true
-    },
-    "scores": {
-      "make_test_chess_engine": {
-        "passed": 27,
-        "failed": 0,
-        "errors": 0,
-        "total": 27
-      },
-      "make_test": {
-        "passed": 1,
-        "failed": 0,
-        "total": 1
-      }
-    },
-    "test_results": {
-      "passed": [
-        "make_build",
-        "make_analyze",
-        "make_test",
-        "make_test_chess_engine"
-      ],
-      "failed": []
-    },
-    "errors": [],
-    "status": "completed",
-    "semantic_metrics": {
-      "metric_version": "tokens-v3",
-      "complexity_score": 4396.5,
-      "total_tokens": 7096,
-      "semantic_tokens": 6785,
-      "by_category": {
-        "keyword": 712,
-        "identifier": 2115,
-        "type": 2,
-        "operator": 994,
-        "literal": 1320,
-        "punctuation": 1642,
-        "comment": 311,
-        "unknown": 0
-      },
-      "ratios": {
-        "keyword_density": 0.105,
-        "comment_ratio": 0.044,
-        "punctuation_ratio": 0.242,
-        "complexity_per_loc": 2.74,
-        "complexity_per_file": 879.3
-      }
-    }
   },
   {
     "language": "haskell",
@@ -3488,12 +2136,12 @@
     "track": "v1",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 30.299884728,
-      "build_seconds": 0.306278078,
-      "analyze_seconds": 0.567862156,
-      "test_seconds": 0.164864423,
-      "test_chess_engine_seconds": 21.262759775,
-      "test_v1_seconds": 21.262759775
+      "image_build_seconds": 29.505502483,
+      "build_seconds": 0.298962652,
+      "analyze_seconds": 0.512994649,
+      "test_seconds": 0.158874295,
+      "test_chess_engine_seconds": 21.627184179,
+      "test_v1_seconds": 21.627184179
     },
     "memory": {
       "image": {
@@ -3541,21 +2189,21 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 132.4732171280277,
-      "analyze_ms_per_kloc": 245.61511937716267,
-      "runtime_ms_per_kloc": 71.30814143598617
+      "build_ms_per_kloc": 129.3091055363322,
+      "analyze_ms_per_kloc": 221.88349870242214,
+      "runtime_ms_per_kloc": 68.71725562283737
     },
     "docker": {
       "image_build_success": true,
-      "image_build_time": 30.299884728,
+      "image_build_time": 29.505502483,
       "make_build_success": true,
-      "make_build_time": 0.306278078,
+      "make_build_time": 0.298962652,
       "make_analyze_success": true,
-      "make_analyze_time": 0.567862156,
+      "make_analyze_time": 0.512994649,
       "make_test_success": true,
-      "make_test_time": 0.164864423,
+      "make_test_time": 0.158874295,
       "test_chess_engine_success": true,
-      "test_chess_engine_time": 21.262759775
+      "test_chess_engine_time": 21.627184179
     },
     "task_results": {
       "make_build": true,
@@ -3614,64 +2262,6 @@
   {
     "engine": "crystal",
     "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "ruby",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "python",
-    "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "php",
-    "profile": "full",
     "outcome": "success",
     "conclusion": "success",
     "report_status": "failed",
@@ -3706,10 +2296,168 @@
     ]
   },
   {
-    "engine": "crystal",
+    "language": "rust",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/rust",
+    "metadata": {
+      "language": "rust",
+      "version": "1.70",
+      "author": "Rust Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 600,
+      "source_exts": [
+        ".rs"
+      ],
+      "build": "cargo build --release",
+      "test": "cargo test",
+      "analyze": "cargo check --all-targets",
+      "bugit": "if [ -f .bugit/main.rs.bak ]; then echo 'bugit already active for rust'; else mkdir -p .bugit && cp src/main.rs .bugit/main.rs.bak && printf '\\n)\\n' >> src/main.rs; fi",
+      "fix": "if [ -f .bugit/main.rs.bak ]; then mv .bugit/main.rs.bak src/main.rs && rmdir .bugit 2>/dev/null || true; else echo 'no rust bugit backup to restore'; fi",
+      "run": "./target/release/chess"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 10.897401869,
+      "build_seconds": 0.203682614,
+      "analyze_seconds": 0.553557961,
+      "test_seconds": 0.785388356,
+      "test_chess_engine_seconds": 18.352623232,
+      "test_v1_seconds": 18.352623232
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 2834,
+      "source_files": 10
+    },
+    "metrics": {
+      "tokens_count": 19194,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 71.8710705716302,
+      "analyze_ms_per_kloc": 195.3274386026817,
+      "runtime_ms_per_kloc": 277.1306831333804
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 10.897401869,
+      "make_build_success": true,
+      "make_build_time": 0.203682614,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.553557961,
+      "make_test_success": true,
+      "make_test_time": 0.785388356,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 18.352623232
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 9721.75,
+      "total_tokens": 14050,
+      "semantic_tokens": 13997,
+      "by_category": {
+        "keyword": 1221,
+        "identifier": 4508,
+        "type": 1062,
+        "operator": 3181,
+        "literal": 1336,
+        "punctuation": 2689,
+        "comment": 53,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.087,
+        "comment_ratio": 0.004,
+        "punctuation_ratio": 0.192,
+        "complexity_per_loc": 3.43,
+        "complexity_per_file": 972.18
+      }
+    }
+  },
+  {
+    "engine": "rescript",
     "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
     "report_status": "failed",
     "errors": [
       "build error: Missing critical field: language",
@@ -3744,10 +2492,391 @@
     ]
   },
   {
+    "language": "julia",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/julia",
+    "metadata": {
+      "language": "julia",
+      "version": "1.11",
+      "author": "Julia Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "source_exts": [
+        ".jl"
+      ],
+      "benchmark.build": "skip",
+      "run": "./run.sh",
+      "build": "/usr/local/julia/bin/julia --project=. -e 'include(\"chess.jl\")'",
+      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | /usr/local/julia/bin/julia --project=. chess.jl | tail -1 | grep -q 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2'",
+      "analyze": "/usr/local/julia/bin/julia --project=. -e 'include(\"chess.jl\")'",
+      "bugit": "if [ -f .bugit/chess.jl.bak ]; then echo 'bugit already active for julia'; else mkdir -p .bugit && cp chess.jl .bugit/chess.jl.bak && printf '\\n)\\n' >> chess.jl; fi",
+      "fix": "if [ -f .bugit/chess.jl.bak ]; then mv .bugit/chess.jl.bak chess.jl && rmdir .bugit 2>/dev/null || true; else echo 'no julia bugit backup to restore'; fi"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 14.89083869,
+      "build_seconds": 0,
+      "analyze_seconds": 0.937884378,
+      "test_seconds": 3.211681032,
+      "test_chess_engine_seconds": 22.077459617,
+      "test_v1_seconds": 22.077459617
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "skipped"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 2083,
+      "source_files": 10
+    },
+    "metrics": {
+      "tokens_count": 13680,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 0,
+      "analyze_ms_per_kloc": 450.25654248679785,
+      "runtime_ms_per_kloc": 1541.8535919347094
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 14.89083869,
+      "make_build_success": true,
+      "make_build_time": null,
+      "make_build_skipped": true,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.937884378,
+      "make_test_success": true,
+      "make_test_time": 3.211681032,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 22.077459617
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 5997.25,
+      "total_tokens": 9349,
+      "semantic_tokens": 9269,
+      "by_category": {
+        "keyword": 861,
+        "identifier": 2543,
+        "type": 171,
+        "operator": 2036,
+        "literal": 1959,
+        "punctuation": 1699,
+        "comment": 80,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.093,
+        "comment_ratio": 0.009,
+        "punctuation_ratio": 0.183,
+        "complexity_per_loc": 2.88,
+        "complexity_per_file": 599.73
+      }
+    }
+  },
+  {
+    "engine": "php",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "zig",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
     "engine": "go",
     "profile": "full",
-    "outcome": "success",
-    "conclusion": "success",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "php",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/php",
+    "metadata": {
+      "language": "php",
+      "version": "8.3",
+      "author": "PHP Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960",
+        "PGN Comment Show",
+        "PGN Result Checkmate Show",
+        "PGN Variation Navigation"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1500,
+      "source_exts": [
+        ".php"
+      ],
+      "benchmark.build": "skip",
+      "build": "php -l chess.php",
+      "test": "printf 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit\\n' | php chess.php",
+      "analyze": "find . -name '*.php' -exec php -l {} \\;",
+      "bugit": "if [ -f .bugit/chess.php.bak ]; then echo 'bugit already active for php'; else mkdir -p .bugit && cp chess.php .bugit/chess.php.bak && printf '\\n)\\n' >> chess.php; fi",
+      "fix": "if [ -f .bugit/chess.php.bak ]; then mv .bugit/chess.php.bak chess.php && rmdir .bugit 2>/dev/null || true; else echo 'no php bugit backup to restore'; fi",
+      "run": "php chess.php"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 7.384110409,
+      "build_seconds": 0,
+      "analyze_seconds": 0.45801434,
+      "test_seconds": 0.190771262,
+      "test_chess_engine_seconds": 24.261147835,
+      "test_v1_seconds": 24.261147835
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "skipped"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 5879,
+      "source_files": 19
+    },
+    "metrics": {
+      "tokens_count": 48097,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 0,
+      "analyze_ms_per_kloc": 77.90684470147986,
+      "runtime_ms_per_kloc": 32.449610818166356
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 7.384110409,
+      "make_build_success": true,
+      "make_build_time": null,
+      "make_build_skipped": true,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.45801434,
+      "make_test_success": true,
+      "make_test_time": 0.190771262,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 24.261147835
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 18067.25,
+      "total_tokens": 28461,
+      "semantic_tokens": 28034,
+      "by_category": {
+        "keyword": 2932,
+        "identifier": 8216,
+        "type": 43,
+        "operator": 5749,
+        "literal": 4913,
+        "punctuation": 6181,
+        "comment": 427,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.105,
+        "comment_ratio": 0.015,
+        "punctuation_ratio": 0.22,
+        "complexity_per_loc": 3.07,
+        "complexity_per_file": 950.91
+      }
+    }
+  },
+  {
+    "engine": "rust",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
     "report_status": "failed",
     "errors": [
       "build error: Missing critical field: language",
@@ -3763,49 +2892,9 @@
   },
   {
     "engine": "haskell",
-    "profile": "",
-    "build_outcome": "skipped",
-    "build_conclusion": "skipped",
-    "run_outcome": "skipped",
-    "run_conclusion": "skipped",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "c",
     "profile": "full",
-    "outcome": "failure",
+    "outcome": "success",
     "conclusion": "success",
-    "report_status": "failed",
-    "errors": [
-      "build error: Missing critical field: language",
-      "build error: Missing critical field: timings",
-      "build error: Missing critical field: metadata",
-      "build error: Missing critical field: status",
-      "build error: Status is not 'completed': undefined",
-      "build error: Required timing field 'build_seconds' is missing",
-      "build error: Required timing field 'test_seconds' is missing",
-      "build error: Metadata is empty",
-      "build error: Features list is empty"
-    ]
-  },
-  {
-    "engine": "gleam",
-    "profile": "full",
-    "build_outcome": "success",
-    "build_conclusion": "success",
-    "run_outcome": "success",
-    "run_conclusion": "success",
     "report_status": "failed",
     "errors": [
       "build error: Missing critical field: language",
@@ -3852,12 +2941,12 @@
     "track": "v1",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 39.466221162,
-      "build_seconds": 0.202216781,
-      "analyze_seconds": 0.147117539,
-      "test_seconds": 0.144125246,
-      "test_chess_engine_seconds": 33.479455888,
-      "test_v1_seconds": 33.479455888
+      "image_build_seconds": 38.406431427,
+      "build_seconds": 0.206466571,
+      "analyze_seconds": 0.149213378,
+      "test_seconds": 0.138836167,
+      "test_chess_engine_seconds": 33.231688383,
+      "test_v1_seconds": 33.231688383
     },
     "memory": {
       "image": {
@@ -3905,21 +2994,21 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 80.59656476683939,
-      "analyze_ms_per_kloc": 58.6359262654444,
-      "runtime_ms_per_kloc": 57.44330251096055
+      "build_ms_per_kloc": 82.29038302112396,
+      "analyze_ms_per_kloc": 59.4712546831407,
+      "runtime_ms_per_kloc": 55.33525986448785
     },
     "docker": {
       "image_build_success": true,
-      "image_build_time": 39.466221162,
+      "image_build_time": 38.406431427,
       "make_build_success": true,
-      "make_build_time": 0.202216781,
+      "make_build_time": 0.206466571,
       "make_analyze_success": true,
-      "make_analyze_time": 0.147117539,
+      "make_analyze_time": 0.149213378,
       "make_test_success": true,
-      "make_test_time": 0.144125246,
+      "make_test_time": 0.138836167,
       "test_chess_engine_success": true,
-      "test_chess_engine_time": 33.479455888
+      "test_chess_engine_time": 33.231688383
     },
     "task_results": {
       "make_build": true,
@@ -3976,6 +3065,864 @@
     }
   },
   {
+    "engine": "zig",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "dart",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "julia",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "imba",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "javascript",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/javascript",
+    "metadata": {
+      "language": "javascript",
+      "version": "ES2023",
+      "author": "JavaScript Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "source_exts": [
+        ".js"
+      ],
+      "benchmark.build": "skip",
+      "build": "bun build chess.js --outdir dist --target bun",
+      "run": "bun run chess.js",
+      "test": "bun run test",
+      "analyze": "bun build chess.js --outdir /tmp/tgac-javascript-check --target bun",
+      "bugit": "if [ -f .bugit/chess.js.bak ]; then echo 'bugit already active for javascript'; else mkdir -p .bugit && cp chess.js .bugit/chess.js.bak && printf '\\nfunction __bugit__( {\\n' >> chess.js; fi",
+      "fix": "if [ -f .bugit/chess.js.bak ]; then mv .bugit/chess.js.bak chess.js && rmdir .bugit 2>/dev/null || true; else echo 'no javascript bugit backup to restore'; fi"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 2.347541129,
+      "build_seconds": 0,
+      "analyze_seconds": 0.174952114,
+      "test_seconds": 0.201665396,
+      "test_chess_engine_seconds": 40.414553089,
+      "test_v1_seconds": 40.414553089
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "skipped"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 1602,
+      "source_files": 5
+    },
+    "metrics": {
+      "tokens_count": 11914,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 0,
+      "analyze_ms_per_kloc": 109.20856054931335,
+      "runtime_ms_per_kloc": 125.88351810237202
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 2.347541129,
+      "make_build_success": true,
+      "make_build_time": null,
+      "make_build_skipped": true,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.174952114,
+      "make_test_success": true,
+      "make_test_time": 0.201665396,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 40.414553089
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 4396.5,
+      "total_tokens": 7096,
+      "semantic_tokens": 6785,
+      "by_category": {
+        "keyword": 712,
+        "identifier": 2115,
+        "type": 2,
+        "operator": 994,
+        "literal": 1320,
+        "punctuation": 1642,
+        "comment": 311,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.105,
+        "comment_ratio": 0.044,
+        "punctuation_ratio": 0.242,
+        "complexity_per_loc": 2.74,
+        "complexity_per_file": 879.3
+      }
+    }
+  },
+  {
+    "engine": "gleam",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "elixir",
+    "profile": "full",
+    "outcome": "failure",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "typescript",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/typescript",
+    "metadata": {
+      "language": "typescript",
+      "version": "5.0",
+      "author": "TypeScript Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 800,
+      "source_exts": [
+        ".ts"
+      ],
+      "build": "bun run build",
+      "test": "bun run test",
+      "test_contract": "bun run unit_contract_runner.js",
+      "analyze": "bun run lint",
+      "bugit": "if [ -f .bugit/chess.ts.bak ]; then echo 'bugit already active for typescript'; else mkdir -p .bugit && cp src/chess.ts .bugit/chess.ts.bak && printf '\\n)\\n' >> src/chess.ts; fi",
+      "fix": "if [ -f .bugit/chess.ts.bak ]; then mv .bugit/chess.ts.bak src/chess.ts && rmdir .bugit 2>/dev/null || true; else echo 'no typescript bugit backup to restore'; fi",
+      "run": "bun run dist/chess.js"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 5.897213718,
+      "build_seconds": 2.014120323,
+      "analyze_seconds": 3.455516205,
+      "test_seconds": 2.155025249,
+      "test_chess_engine_seconds": 25.270362863,
+      "test_v1_seconds": 25.270362863
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 2586,
+      "source_files": 12
+    },
+    "metrics": {
+      "tokens_count": 18333,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 778.8555000000001,
+      "analyze_ms_per_kloc": 1336.239831786543,
+      "runtime_ms_per_kloc": 833.3430970610982
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 5.897213718,
+      "make_build_success": true,
+      "make_build_time": 2.014120323,
+      "make_analyze_success": true,
+      "make_analyze_time": 3.455516205,
+      "make_test_success": true,
+      "make_test_time": 2.155025249,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 25.270362863
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 7773.5,
+      "total_tokens": 11941,
+      "semantic_tokens": 11926,
+      "by_category": {
+        "keyword": 1163,
+        "identifier": 3446,
+        "type": 504,
+        "operator": 1704,
+        "literal": 2125,
+        "punctuation": 2984,
+        "comment": 15,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.098,
+        "comment_ratio": 0.001,
+        "punctuation_ratio": 0.25,
+        "complexity_per_loc": 3.01,
+        "complexity_per_file": 647.79
+      }
+    }
+  },
+  {
+    "engine": "php",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "typescript",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "swift",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "lua",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/lua",
+    "metadata": {
+      "language": "lua",
+      "version": "5.4",
+      "author": "Lua Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1000,
+      "source_exts": [
+        ".lua"
+      ],
+      "benchmark.build": "skip",
+      "build": "lua -e \"assert(loadfile('chess.lua'))\"",
+      "test": "echo -e 'new\\nmove e2e4\\nmove e7e5\\nexport\\nquit' | lua chess.lua",
+      "analyze": "lua -e \"assert(loadfile('chess.lua'))\"",
+      "bugit": "if [ -f .bugit/chess.lua.bak ]; then echo 'bugit already active for lua'; else mkdir -p .bugit && cp chess.lua .bugit/chess.lua.bak && printf '\\n)\\n' >> chess.lua; fi",
+      "fix": "if [ -f .bugit/chess.lua.bak ]; then mv .bugit/chess.lua.bak chess.lua && rmdir .bugit 2>/dev/null || true; else echo 'no lua bugit backup to restore'; fi",
+      "run": "lua chess.lua"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 0.756035932,
+      "build_seconds": 0,
+      "analyze_seconds": 0.161440241,
+      "test_seconds": 0.162752954,
+      "test_chess_engine_seconds": 31.518152046,
+      "test_v1_seconds": 31.518152046
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "skipped"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 4192,
+      "source_files": 1
+    },
+    "metrics": {
+      "tokens_count": 30082,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 0,
+      "analyze_ms_per_kloc": 38.51150787213741,
+      "runtime_ms_per_kloc": 38.82465505725191
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 0.756035932,
+      "make_build_success": true,
+      "make_build_time": null,
+      "make_build_skipped": true,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.161440241,
+      "make_test_success": true,
+      "make_test_time": 0.162752954,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 31.518152046
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 15254.25,
+      "total_tokens": 18763,
+      "semantic_tokens": 18676,
+      "by_category": {
+        "keyword": 3323,
+        "identifier": 8497,
+        "type": 81,
+        "operator": 3496,
+        "literal": 3142,
+        "punctuation": 137,
+        "comment": 87,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.178,
+        "comment_ratio": 0.005,
+        "punctuation_ratio": 0.007,
+        "complexity_per_loc": 3.64,
+        "complexity_per_file": 15254.25
+      }
+    }
+  },
+  {
+    "language": "rescript",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/rescript",
+    "metadata": {
+      "language": "rescript",
+      "version": "10.0",
+      "author": "ReScript Implementation",
+      "features": [
+        "perft",
+        "fen",
+        "ai",
+        "castling",
+        "en_passant",
+        "promotion",
+        "pgn",
+        "uci",
+        "chess960"
+      ],
+      "max_ai_depth": 5,
+      "estimated_perft4_ms": 1500,
+      "source_exts": [
+        ".res",
+        ".resi"
+      ],
+      "build": "npm run build",
+      "test": "node lib/es6/src/Chess.js --test",
+      "analyze": "npx rescript build",
+      "bugit": "if [ -f .bugit/Chess.res.bak ]; then echo 'bugit already active for rescript'; else mkdir -p .bugit && cp src/Chess.res .bugit/Chess.res.bak && printf '\\n)\\n' >> src/Chess.res; fi",
+      "fix": "if [ -f .bugit/Chess.res.bak ]; then mv .bugit/Chess.res.bak src/Chess.res && rmdir .bugit 2>/dev/null || true; else echo 'no rescript bugit backup to restore'; fi",
+      "run": "node lib/es6/src/Chess.js"
+    },
+    "track": "v1",
+    "profile": "quick",
+    "timings": {
+      "image_build_seconds": 4.993758135,
+      "build_seconds": 0.357502883,
+      "analyze_seconds": 0.575113213,
+      "test_seconds": 0.222362063,
+      "test_chess_engine_seconds": 22.434429503,
+      "test_v1_seconds": 22.434429503
+    },
+    "memory": {
+      "image": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "build": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "analyze": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      },
+      "test_chess_engine": {
+        "memory_mb": 0,
+        "peak_memory_mb": 0,
+        "avg_cpu_percent": 0,
+        "psutil_available": false,
+        "source": "unavailable"
+      }
+    },
+    "size": {
+      "source_loc": 2381,
+      "source_files": 12
+    },
+    "metrics": {
+      "tokens_count": 15948,
+      "metric_version": "tokens-v2"
+    },
+    "normalized": {
+      "build_ms_per_kloc": 150.1482078958421,
+      "analyze_ms_per_kloc": 241.5427186056279,
+      "runtime_ms_per_kloc": 93.3901986560269
+    },
+    "docker": {
+      "image_build_success": true,
+      "image_build_time": 4.993758135,
+      "make_build_success": true,
+      "make_build_time": 0.357502883,
+      "make_analyze_success": true,
+      "make_analyze_time": 0.575113213,
+      "make_test_success": true,
+      "make_test_time": 0.222362063,
+      "test_chess_engine_success": true,
+      "test_chess_engine_time": 22.434429503
+    },
+    "task_results": {
+      "make_build": true,
+      "make_analyze": true,
+      "make_test": true,
+      "make_test_chess_engine": true
+    },
+    "scores": {
+      "make_test_chess_engine": {
+        "passed": 27,
+        "failed": 0,
+        "errors": 0,
+        "total": 27
+      },
+      "make_test": {
+        "passed": 1,
+        "failed": 0,
+        "total": 1
+      }
+    },
+    "test_results": {
+      "passed": [
+        "make_build",
+        "make_analyze",
+        "make_test",
+        "make_test_chess_engine"
+      ],
+      "failed": []
+    },
+    "errors": [],
+    "status": "completed",
+    "semantic_metrics": {
+      "metric_version": "tokens-v3",
+      "complexity_score": 6827.75,
+      "total_tokens": 9307,
+      "semantic_tokens": 9293,
+      "by_category": {
+        "keyword": 912,
+        "identifier": 3788,
+        "type": 460,
+        "operator": 1546,
+        "literal": 992,
+        "punctuation": 1595,
+        "comment": 14,
+        "unknown": 0
+      },
+      "ratios": {
+        "keyword_density": 0.098,
+        "comment_ratio": 0.002,
+        "punctuation_ratio": 0.172,
+        "complexity_per_loc": 2.87,
+        "complexity_per_file": 568.98
+      }
+    }
+  },
+  {
+    "engine": "c",
+    "profile": "full",
+    "outcome": "failure",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "lua",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "c",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "failure",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
     "language": "swift",
     "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/swift",
     "metadata": {
@@ -4008,12 +3955,12 @@
     "track": "v1",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 36.172699736,
-      "build_seconds": 1.635441088,
-      "analyze_seconds": 7.776417321,
-      "test_seconds": 10.05087079,
-      "test_chess_engine_seconds": 18.114451972,
-      "test_v1_seconds": 18.114451972
+      "image_build_seconds": 50.503024127,
+      "build_seconds": 1.597301336,
+      "analyze_seconds": 7.524255671,
+      "test_seconds": 9.941180016,
+      "test_chess_engine_seconds": 18.666658675,
+      "test_v1_seconds": 18.666658675
     },
     "memory": {
       "image": {
@@ -4061,21 +4008,21 @@
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 1085.9502576361222,
-      "analyze_ms_per_kloc": 5163.623719123506,
-      "runtime_ms_per_kloc": 6673.884986719787
+      "build_ms_per_kloc": 1060.6250571049136,
+      "analyze_ms_per_kloc": 4996.185704515272,
+      "runtime_ms_per_kloc": 6601.049147410358
     },
     "docker": {
       "image_build_success": true,
-      "image_build_time": 36.172699736,
+      "image_build_time": 50.503024127,
       "make_build_success": true,
-      "make_build_time": 1.635441088,
+      "make_build_time": 1.597301336,
       "make_analyze_success": true,
-      "make_analyze_time": 7.776417321,
+      "make_analyze_time": 7.524255671,
       "make_test_success": true,
-      "make_test_time": 10.05087079,
+      "make_test_time": 9.941180016,
       "test_chess_engine_success": true,
-      "test_chess_engine_time": 18.114451972
+      "test_chess_engine_time": 18.666658675
     },
     "task_results": {
       "make_build": true,
@@ -4132,12 +4079,32 @@
     }
   },
   {
-    "language": "python",
-    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/python",
+    "engine": "javascript",
+    "profile": "full",
+    "build_outcome": "success",
+    "build_conclusion": "success",
+    "run_outcome": "success",
+    "run_conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "language": "nim",
+    "path": "/home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/nim",
     "metadata": {
-      "language": "python",
-      "version": "3.11",
-      "author": "Python Implementation",
+      "language": "nim",
+      "version": "2.0",
+      "author": "Nim Implementation",
       "features": [
         "perft",
         "fen",
@@ -4152,26 +4119,24 @@
       "max_ai_depth": 5,
       "estimated_perft4_ms": 1000,
       "source_exts": [
-        ".py"
+        ".nim"
       ],
-      "benchmark.build": "skip",
-      "build": "python3 -m py_compile chess.py",
-      "test": "python3 test_engine.py",
-      "test_contract": "python3 test_contract_runner.py",
-      "analyze": "python3 -m py_compile chess.py lib/*.py",
-      "bugit": "if [ -f .bugit/chess.py.bak ]; then echo 'bugit already active for python'; else mkdir -p .bugit && cp chess.py .bugit/chess.py.bak && printf '\\ndef __bugit__(:\\n' >> chess.py; fi",
-      "fix": "if [ -f .bugit/chess.py.bak ]; then mv .bugit/chess.py.bak chess.py && rmdir .bugit 2>/dev/null || true; else echo 'no python bugit backup to restore'; fi",
-      "run": "python3 chess.py"
+      "build": "nim c -d:release chess.nim",
+      "test": "./chess --test",
+      "analyze": "nim check chess.nim",
+      "bugit": "if [ -f .bugit/chess.nim.bak ]; then echo 'bugit already active for nim'; else mkdir -p .bugit && cp chess.nim .bugit/chess.nim.bak && printf '\\n)\\n' >> chess.nim; fi",
+      "fix": "if [ -f .bugit/chess.nim.bak ]; then mv .bugit/chess.nim.bak chess.nim && rmdir .bugit 2>/dev/null || true; else echo 'no nim bugit backup to restore'; fi",
+      "run": "./chess"
     },
     "track": "v1",
     "profile": "quick",
     "timings": {
-      "image_build_seconds": 4.690397057,
-      "build_seconds": 0,
-      "analyze_seconds": 0.211222346,
-      "test_seconds": 1.799637985,
-      "test_chess_engine_seconds": 43.148373039,
-      "test_v1_seconds": 43.148373039
+      "image_build_seconds": 13.816319327,
+      "build_seconds": 0.975574144,
+      "analyze_seconds": 0.904840406,
+      "test_seconds": 0.145766297,
+      "test_chess_engine_seconds": 18.561375759,
+      "test_v1_seconds": 18.561375759
     },
     "memory": {
       "image": {
@@ -4186,7 +4151,7 @@
         "peak_memory_mb": 0,
         "avg_cpu_percent": 0,
         "psutil_available": false,
-        "source": "skipped"
+        "source": "unavailable"
       },
       "analyze": {
         "memory_mb": 0,
@@ -4211,30 +4176,29 @@
       }
     },
     "size": {
-      "source_loc": 4978,
-      "source_files": 15
+      "source_loc": 1636,
+      "source_files": 1
     },
     "metrics": {
-      "tokens_count": 36046,
+      "tokens_count": 12412,
       "metric_version": "tokens-v2"
     },
     "normalized": {
-      "build_ms_per_kloc": 0,
-      "analyze_ms_per_kloc": 42.43116633186019,
-      "runtime_ms_per_kloc": 361.51827742065086
+      "build_ms_per_kloc": 596.3167139364303,
+      "analyze_ms_per_kloc": 553.0809327628363,
+      "runtime_ms_per_kloc": 89.09920354523227
     },
     "docker": {
       "image_build_success": true,
-      "image_build_time": 4.690397057,
+      "image_build_time": 13.816319327,
       "make_build_success": true,
-      "make_build_time": null,
-      "make_build_skipped": true,
+      "make_build_time": 0.975574144,
       "make_analyze_success": true,
-      "make_analyze_time": 0.211222346,
+      "make_analyze_time": 0.904840406,
       "make_test_success": true,
-      "make_test_time": 1.799637985,
+      "make_test_time": 0.145766297,
       "test_chess_engine_success": true,
-      "test_chess_engine_time": 43.148373039
+      "test_chess_engine_time": 18.561375759
     },
     "task_results": {
       "make_build": true,
@@ -4268,26 +4232,62 @@
     "status": "completed",
     "semantic_metrics": {
       "metric_version": "tokens-v3",
-      "complexity_score": 12581.25,
-      "total_tokens": 19543,
-      "semantic_tokens": 19446,
+      "complexity_score": 7067,
+      "total_tokens": 9037,
+      "semantic_tokens": 8948,
       "by_category": {
-        "keyword": 1890,
-        "identifier": 5504,
-        "type": 490,
-        "operator": 2703,
-        "literal": 4524,
-        "punctuation": 4335,
-        "comment": 97,
+        "keyword": 1276,
+        "identifier": 3625,
+        "type": 285,
+        "operator": 2453,
+        "literal": 1309,
+        "punctuation": 0,
+        "comment": 89,
         "unknown": 0
       },
       "ratios": {
-        "keyword_density": 0.097,
-        "comment_ratio": 0.005,
-        "punctuation_ratio": 0.223,
-        "complexity_per_loc": 2.53,
-        "complexity_per_file": 838.75
+        "keyword_density": 0.143,
+        "comment_ratio": 0.01,
+        "punctuation_ratio": 0,
+        "complexity_per_loc": 4.32,
+        "complexity_per_file": 7067
       }
     }
+  },
+  {
+    "engine": "nim",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
+  },
+  {
+    "engine": "go",
+    "profile": "full",
+    "outcome": "success",
+    "conclusion": "success",
+    "report_status": "failed",
+    "errors": [
+      "build error: Missing critical field: language",
+      "build error: Missing critical field: timings",
+      "build error: Missing critical field: metadata",
+      "build error: Missing critical field: status",
+      "build error: Status is not 'completed': undefined",
+      "build error: Required timing field 'build_seconds' is missing",
+      "build error: Required timing field 'test_seconds' is missing",
+      "build error: Metadata is empty",
+      "build error: Features list is empty"
+    ]
   }
 ]

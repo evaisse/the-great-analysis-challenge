@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-06-07T07:23:21.791Z
+Generated: 2026-06-14T07:35:01.216Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-php          completed  48097      5879     <1ms, - MB         443ms, - MB        172ms, - MB        24.1s, - MB               1/1              26/26             
+php          completed  48097      5879     <1ms, - MB         424ms, - MB        171ms, - MB        23.3s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: PHP
@@ -17,10 +17,10 @@ Track: v2-full
 Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 6.9s
+  - image_build_seconds: 8.1s
   - build_seconds: <1ms
-  - analyze_seconds: 443ms
-  - test_seconds: 172ms
-  - test_chess_engine_seconds: 24.1s
-  - test_v2_full_seconds: 24.1s
+  - analyze_seconds: 424ms
+  - test_seconds: 171ms
+  - test_chess_engine_seconds: 23.3s
+  - test_v2_full_seconds: 23.3s
 Metrics: TOKENS=48,097, LOC=5,879
