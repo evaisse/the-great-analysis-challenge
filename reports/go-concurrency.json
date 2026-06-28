@@ -25,7 +25,7 @@
     ],
     "deadlocks": 0,
     "deterministic": true,
-    "elapsed_ms": 434,
+    "elapsed_ms": 453,
     "invariant_errors": 0,
     "ops_total": 30976,
     "profile": "full",
