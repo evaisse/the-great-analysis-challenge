@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-06-28T07:22:03.118Z
+Generated: 2026-07-05T07:06:48.265Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-gleam        completed  44372      4275     186ms, - MB        306ms, - MB        440ms, - MB        20.4s, - MB               1/1              27/27             
+gleam        completed  44372      4275     191ms, - MB        304ms, - MB        441ms, - MB        20.5s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: GLEAM
@@ -17,10 +17,10 @@ Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 27.7s
-  - build_seconds: 186ms
-  - analyze_seconds: 306ms
-  - test_seconds: 440ms
-  - test_chess_engine_seconds: 20.4s
-  - test_v1_seconds: 20.4s
+  - image_build_seconds: 25.9s
+  - build_seconds: 191ms
+  - analyze_seconds: 304ms
+  - test_seconds: 441ms
+  - test_chess_engine_seconds: 20.5s
+  - test_v1_seconds: 20.5s
 Metrics: TOKENS=44,372, LOC=4,275
