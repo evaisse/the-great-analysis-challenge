@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-07-05T07:05:47.189Z
+Generated: 2026-07-12T06:53:09.357Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-imba         completed  13981      1708     481ms, - MB        465ms, - MB        151ms, - MB        19.1s, - MB               1/1              26/26             
+imba         completed  13981      1708     469ms, - MB        470ms, - MB        157ms, - MB        19.2s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: IMBA
@@ -17,10 +17,10 @@ Track: v2-full
 Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 6.6s
-  - build_seconds: 481ms
-  - analyze_seconds: 465ms
-  - test_seconds: 151ms
-  - test_chess_engine_seconds: 19.1s
-  - test_v2_full_seconds: 19.1s
+  - image_build_seconds: 4.3s
+  - build_seconds: 469ms
+  - analyze_seconds: 470ms
+  - test_seconds: 157ms
+  - test_chess_engine_seconds: 19.2s
+  - test_v2_full_seconds: 19.2s
 Metrics: TOKENS=13,981, LOC=1,708
