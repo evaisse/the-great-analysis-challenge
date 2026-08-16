@@ -31,12 +31,12 @@
   "track": "v1",
   "profile": "quick",
   "timings": {
-    "image_build_seconds": 38.492148567,
-    "build_seconds": 0.213366466,
-    "analyze_seconds": 0.15785717,
-    "test_seconds": 0.148596747,
-    "test_chess_engine_seconds": 35.176706216,
-    "test_v1_seconds": 35.176706216
+    "image_build_seconds": 39.286470238,
+    "build_seconds": 0.199986815,
+    "analyze_seconds": 0.147678452,
+    "test_seconds": 0.137870596,
+    "test_chess_engine_seconds": 33.505820062,
+    "test_v1_seconds": 33.505820062
   },
   "memory": {
     "image": {
@@ -84,21 +84,21 @@
     "metric_version": "tokens-v2"
   },
   "normalized": {
-    "build_ms_per_kloc": 85.04044081307295,
-    "analyze_ms_per_kloc": 62.91636907134317,
-    "runtime_ms_per_kloc": 59.225487046632125
+    "build_ms_per_kloc": 79.70777799920288,
+    "analyze_ms_per_kloc": 58.859486648066955,
+    "runtime_ms_per_kloc": 54.95041689916302
   },
   "docker": {
     "image_build_success": true,
-    "image_build_time": 38.492148567,
+    "image_build_time": 39.286470238,
     "make_build_success": true,
-    "make_build_time": 0.213366466,
+    "make_build_time": 0.199986815,
     "make_analyze_success": true,
-    "make_analyze_time": 0.15785717,
+    "make_analyze_time": 0.147678452,
     "make_test_success": true,
-    "make_test_time": 0.148596747,
+    "make_test_time": 0.137870596,
     "test_chess_engine_success": true,
-    "test_chess_engine_time": 35.176706216
+    "test_chess_engine_time": 33.505820062
   },
   "task_results": {
     "make_build": true,
