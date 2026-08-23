@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-08-16T06:07:07.903Z
+Generated: 2026-08-23T06:07:57.815Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-dart         completed  31424      5006     626ms, - MB        241ms, - MB        641ms, - MB        20.4s, - MB               1/1              26/26             
+dart         completed  31424      5006     609ms, - MB        244ms, - MB        631ms, - MB        20.3s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: DART
@@ -18,9 +18,9 @@ Profile: full
 Status: completed
 Timings:
   - image_build_seconds: 9.1s
-  - build_seconds: 626ms
-  - analyze_seconds: 241ms
-  - test_seconds: 641ms
-  - test_chess_engine_seconds: 20.4s
-  - test_v2_full_seconds: 20.4s
+  - build_seconds: 609ms
+  - analyze_seconds: 244ms
+  - test_seconds: 631ms
+  - test_chess_engine_seconds: 20.3s
+  - test_v2_full_seconds: 20.3s
 Metrics: TOKENS=31,424, LOC=5,006
