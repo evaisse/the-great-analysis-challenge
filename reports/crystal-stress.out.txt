@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-08-30T06:11:33.549Z
+Generated: 2026-09-06T06:10:57.524Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-crystal      completed  19116      3308     1.3s, - MB         175ms, - MB        3.7s, - MB         19.3s, - MB               1/1              26/26             
+crystal      completed  19116      3308     1.5s, - MB         197ms, - MB        4.5s, - MB         19.3s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: CRYSTAL
@@ -17,10 +17,10 @@ Track: v2-full
 Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 24.7s
-  - build_seconds: 1.3s
-  - analyze_seconds: 175ms
-  - test_seconds: 3.7s
+  - image_build_seconds: 25.7s
+  - build_seconds: 1.5s
+  - analyze_seconds: 197ms
+  - test_seconds: 4.5s
   - test_chess_engine_seconds: 19.3s
   - test_v2_full_seconds: 19.3s
 Metrics: TOKENS=19,116, LOC=3,308
