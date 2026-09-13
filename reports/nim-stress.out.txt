@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-09-06T06:10:47.811Z
+Generated: 2026-09-13T06:15:24.947Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-nim          completed  12412      1636     830ms, - MB        782ms, - MB        148ms, - MB        18.9s, - MB               1/1              26/26             
+nim          completed  12412      1636     954ms, - MB        771ms, - MB        155ms, - MB        19s, - MB                 1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: NIM
@@ -17,10 +17,10 @@ Track: v2-full
 Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 15s
-  - build_seconds: 830ms
-  - analyze_seconds: 782ms
-  - test_seconds: 148ms
-  - test_chess_engine_seconds: 18.9s
-  - test_v2_full_seconds: 18.9s
+  - image_build_seconds: 15.5s
+  - build_seconds: 954ms
+  - analyze_seconds: 771ms
+  - test_seconds: 155ms
+  - test_chess_engine_seconds: 19s
+  - test_v2_full_seconds: 19s
 Metrics: TOKENS=12,412, LOC=1,636
