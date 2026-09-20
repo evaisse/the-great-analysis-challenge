@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-09-13T06:16:12.325Z
+Generated: 2026-09-20T06:12:06.754Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-elixir       completed  13759      2084     403ms, - MB        743ms, - MB        490ms, - MB        20.3s, - MB               1/1              27/27             
+elixir       completed  13759      2084     596ms, - MB        1s, - MB           615ms, - MB        20.7s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: ELIXIR
@@ -17,10 +17,10 @@ Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 30s
-  - build_seconds: 403ms
-  - analyze_seconds: 743ms
-  - test_seconds: 490ms
-  - test_chess_engine_seconds: 20.3s
-  - test_v1_seconds: 20.3s
+  - image_build_seconds: 24s
+  - build_seconds: 596ms
+  - analyze_seconds: 1s
+  - test_seconds: 615ms
+  - test_chess_engine_seconds: 20.7s
+  - test_v1_seconds: 20.7s
 Metrics: TOKENS=13,759, LOC=2,084
