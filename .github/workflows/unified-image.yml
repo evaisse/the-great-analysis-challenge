@@ -58,13 +58,15 @@ jobs:
       fail-fast: false
       matrix:
         # One representative language per included toolchain family
-        # (docs/reference/unified-toolchain-image.md). The 8 excluded
-        # languages (crystal, dart, gleam, julia, kotlin, nim, rust, swift)
-        # are covered by the existing per-language toolchain workflow
-        # instead (.github/workflows/test.yaml, publish-toolchains.yml).
-        # gleam and rust were dropped from this matrix after a real
-        # `docker build` proved neither has a working package-manager-only
-        # install path on Debian bookworm (see docs/reference/
+        # (docs/reference/unified-toolchain-image.md). The 9 excluded
+        # languages (crystal, dart, elixir, gleam, julia, kotlin, nim,
+        # rust, swift) are covered by the existing per-language toolchain
+        # workflow instead (.github/workflows/test.yaml,
+        # publish-toolchains.yml). elixir, gleam and rust were dropped from
+        # this matrix after real build/run failures (this workflow's own
+        # earlier runs, for elixir and rust; a local `docker build`, for
+        # gleam) proved none has a working package-manager-only install
+        # path on Debian bookworm (see docs/reference/
         # unified-toolchain-image.md "Local verification").
         language:
           - c
@@ -73,7 +75,6 @@ jobs:
           - ruby
           - php
           - lua
-          - elixir
           - haskell
           - javascript
           - typescript

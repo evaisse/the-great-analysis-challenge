@@ -16,21 +16,22 @@
 # Full command reference and the monolithic-vs-shared-base trade-off
 # writeup: docs/reference/unified-toolchain-image.md
 #
-# Verified locally with Docker Desktop (linux/amd64, matching GitHub
-# Actions' ubuntu-latest runners): `docker build`, and `build`/`analyze`/
-# `test` for every included language below, plus a full `test-chess-engine
-# --track v1` run for go and python (27/27 each). GitHub Actions CI
-# (.github/workflows/unified-image.yml) caught a real bug local testing
-# alone did not: `go build`'s VCS stamping failing with "error obtaining
-# VCS status" due to root's mismatched ownership of the bind mount on a
-# native Linux runner; fixed below via `git config --system --add
-# safe.directory '*'` and re-verified locally, pending CI re-confirmation.
-# One finding (Elixir's `mix compile` segfaulting) was only reproduced
-# under local QEMU amd64-on-arm64 emulation, not (yet confirmed) on native
-# amd64 CI. See docs/reference/unified-toolchain-image.md "Local
-# verification" for exact commands and every finding, including two
-# languages (gleam, rust) dropped from this image after a real build
-# proved neither installable within the rules below.
+# Verified locally with Docker Desktop (linux/amd64) and on GitHub Actions
+# CI (native amd64, .github/workflows/unified-image.yml): `docker build`,
+# and `build`/`analyze`/`test` for every included language below, plus a
+# full `test-chess-engine --track v1` run for go and python (27/27 each).
+# CI's first run caught a real bug local testing alone did not: `go
+# build`'s VCS stamping failing with "error obtaining VCS status" due to
+# root's mismatched ownership of the bind mount on a native Linux runner;
+# fixed below via `git config --system --add safe.directory '*'`. CI's
+# second run then caught a second real bug: Elixir's apt package (1.14.0)
+# is too old for this repository's `mix.exs` (`~> 1.17`) - a local-only
+# QEMU segfault had masked this simpler, real failure. No apt backport
+# carries a newer Elixir; moved to the excluded list. See
+# docs/reference/unified-toolchain-image.md "Local verification" for exact
+# commands and every finding, including three languages (elixir, gleam,
+# rust) dropped from this image after real build/run failures proved none
+# installable within the rules below.
 #
 # Toolchain coverage: only toolchains with a compliant install path through
 # a system or language package manager (apt-get / npm / pip / cargo / gem)
@@ -42,6 +43,11 @@
 # far behind the pinned per-language toolchain to trust for a
 # correctness-sensitive benchmark (julia, nim), and toolchains with no
 # working package-manager distribution at all are intentionally left out:
+#   - elixir: Debian bookworm's apt `elixir` is 1.14.0; this repository's
+#     `implementations/elixir/mix.exs` requires `~> 1.17`. Confirmed by a
+#     real `mix compile` failure on GitHub Actions CI ("You're trying to
+#     run :chess_engine on Elixir v1.14.0 but it has declared ... ~> 1.17");
+#     `bookworm-backports` does not carry a newer Elixir either.
 #   - gleam: no Debian package; the "gleam" names on both crates.io and npm
 #     are unrelated packages, and crates.io does not host the compiler
 #     under any name, so `cargo install` cannot reach it without `--git`,
@@ -58,14 +64,14 @@
 FROM debian:bookworm-slim
 
 LABEL org.chess.image.kind="unified-toolchain"
-LABEL org.chess.image.languages="c,elixir,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig"
-LABEL org.chess.image.excluded_languages="crystal,dart,gleam,julia,kotlin,nim,rust,swift"
+LABEL org.chess.image.languages="c,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig"
+LABEL org.chess.image.excluded_languages="crystal,dart,elixir,gleam,julia,kotlin,nim,rust,swift"
 
 ENV DEBIAN_FRONTEND=noninteractive \
 	TGAC_UNIFIED_IMAGE=1 \
 	TGAC_WORKSPACE=/workspace \
-	TGAC_UNIFIED_LANGUAGES="c,elixir,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig" \
-	TGAC_UNIFIED_EXCLUDED_LANGUAGES="crystal,dart,gleam,julia,kotlin,nim,rust,swift" \
+	TGAC_UNIFIED_LANGUAGES="c,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig" \
+	TGAC_UNIFIED_EXCLUDED_LANGUAGES="crystal,dart,elixir,gleam,julia,kotlin,nim,rust,swift" \
 	PATH="/usr/local/go/bin:/root/go/bin:${PATH}"
 
 # One combined apt-get layer so the resolver settles shared dependencies
@@ -83,8 +89,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	ruby-full \
 	php-cli \
 	lua5.4 \
-	elixir \
-	erlang \
 	ghc \
 	cabal-install \
 	nodejs \
