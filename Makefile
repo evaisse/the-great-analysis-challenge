@@ -2,7 +2,7 @@
 # IMPORTANT: All tests and builds MUST run inside Docker containers
 # Convention over Configuration: This Makefile is 100% implementation-agnostic
 
-.PHONY: all image test-chess-engine test-unit-contract test build analyze bugit fix benchmark-analysis-error clean help website analyze-tools list-implementations verify workflow validate-website-metadata install-hooks benchmark-stress benchmark-concurrency
+.PHONY: all image test-chess-engine test-unit-contract test build analyze bugit fix benchmark-analysis-error clean help website analyze-tools list-implementations verify workflow validate-website-metadata install-hooks benchmark-stress benchmark-concurrency unified-image unified-shell
 
 # Auto-discover all implementations with Dockerfiles
 IMPLEMENTATIONS := $(shell find implementations -mindepth 1 -maxdepth 1 -type d -exec test -f {}/Dockerfile \; -exec basename {} \; 2>/dev/null | sort)
@@ -10,6 +10,13 @@ TRACK ?= v1
 PROFILE ?= quick
 TIMEOUT ?= 1800
 STRICT ?= 0
+
+# Set by Dockerfile.unified (docs/reference/unified-toolchain-image.md). When
+# running inside that image, build/analyze/test/test-chess-engine run the
+# implementation's org.chess.* command directly instead of via `docker run`,
+# since the toolchain is already present. Outside that image this is empty
+# and behavior is unchanged (per-language Docker images, as before).
+UNIFIED := $(if $(TGAC_UNIFIED_IMAGE),1,)
 
 DOCKER_PROXY_BUILD_ARGS := \
 	--build-arg HTTP_PROXY \
@@ -56,7 +63,12 @@ help:
 	@echo "Other commands:"
 	@echo "  make list-implementations - List all available implementations"
 	@echo "  make analyze-tools        - Static analysis for Bun/TypeScript shared tooling"
+	@echo "  make unified-image        - Build the unified multi-toolchain image (Dockerfile.unified)"
+	@echo "  make unified-shell        - Open a shell in the unified image with the repo mounted"
 	@echo "  make help                 - Show this help message"
+	@echo ""
+	@echo "docs/reference/unified-toolchain-image.md documents the unified image, its"
+	@echo "language coverage, and the trade-offs vs. the per-language toolchain images."
 	@echo ""
 	@echo "Available implementations: $(IMPLEMENTATIONS)"
 
@@ -77,8 +89,12 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
+ifeq ($(UNIFIED),1)
+	@echo "Running inside the unified toolchain image; '$(DIR)' toolchain is already present, skipping docker build."
+else
 	@echo "Building image for $(DIR) implementation in Docker..."
 	@docker build $(DOCKER_PROXY_BUILD_ARGS) -t chess-$(DIR) -f implementations/$(DIR)/Dockerfile implementations/$(DIR)
+endif
 else
 	@echo "Building images for all implementations in Docker..."
 	@for impl in $(IMPLEMENTATIONS); do \
@@ -104,7 +120,11 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
+ifeq ($(UNIFIED),1)
+	@./workflow run-metadata-phase --impl implementations/$(DIR) --phase build --local
+else
 	@./workflow run-metadata-phase --impl implementations/$(DIR) --phase build --image chess-$(DIR)
+endif
 else
 	@echo "Running build phase for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
@@ -130,7 +150,11 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
+ifeq ($(UNIFIED),1)
+	@./workflow run-metadata-phase --impl implementations/$(DIR) --phase analyze --local
+else
 	@./workflow run-metadata-phase --impl implementations/$(DIR) --phase analyze --image chess-$(DIR)
+endif
 else
 	@echo "Running analysis phase for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
@@ -195,7 +219,11 @@ ifdef DIR
 		echo "ERROR: No Dockerfile found for '$(DIR)'"; \
 		exit 1; \
 	fi
+ifeq ($(UNIFIED),1)
+	@./workflow run-metadata-phase --impl implementations/$(DIR) --phase test --local
+else
 	@./workflow run-metadata-phase --impl implementations/$(DIR) --phase test --image chess-$(DIR)
+endif
 else
 	@echo "Running internal tests for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
@@ -254,10 +282,17 @@ ifdef DIR
 		exit 1; \
 	fi
 	@echo "Running chess engine harness for $(DIR) (track=$(TRACK))..."
+ifeq ($(UNIFIED),1)
+	@./workflow test-harness \
+		--impl implementations/$(DIR) \
+		--track $(TRACK) \
+		--local
+else
 	@./workflow test-harness \
 		--impl implementations/$(DIR) \
 		--track $(TRACK) \
 		--docker-image chess-$(DIR)
+endif
 else
 	@echo "Running shared chess engine suite for all implementations..."
 	@for impl in $(IMPLEMENTATIONS); do \
@@ -348,6 +383,19 @@ endif
 analyze-tools:
 	@echo "Running Bun tooling static analysis..."
 	@./workflow analyze-tools
+
+# Build the unified multi-toolchain image (see Dockerfile.unified and
+# docs/reference/unified-toolchain-image.md). Covers a subset of languages;
+# `docker run ... tgac-unified languages` lists what is included/excluded.
+unified-image:
+	@echo "Building unified toolchain image (tgac-unified)..."
+	@docker build $(DOCKER_PROXY_BUILD_ARGS) -f Dockerfile.unified -t tgac-unified .
+
+# Open a shell in the unified image with the repo mounted at /workspace.
+# Inside that shell, make build|analyze|test|test-chess-engine DIR=<impl>
+# run locally against the bundled toolchains instead of per-language Docker.
+unified-shell: unified-image
+	@docker run --rm -it -v "$(CURDIR)":/workspace tgac-unified shell
 
 # Install git hooks
 install-hooks:
