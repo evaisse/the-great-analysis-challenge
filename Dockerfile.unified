@@ -10,16 +10,23 @@
 #   docker build -f Dockerfile.unified -t tgac-unified .
 #   docker run --rm -it -v "$PWD":/workspace tgac-unified shell
 #   docker run --rm -v "$PWD":/workspace tgac-unified build python
-#   docker run --rm -v "$PWD":/workspace tgac-unified test-chess-engine rust
+#   docker run --rm -v "$PWD":/workspace tgac-unified test-chess-engine go
 #   echo -e "new\nai 3\nquit" | docker run --rm -i -v "$PWD":/workspace tgac-unified run python
 #
 # Full command reference and the monolithic-vs-shared-base trade-off
 # writeup: docs/reference/unified-toolchain-image.md
 #
-# NOT BUILT OR RUN in the environment that authored this Dockerfile (no
-# Docker CLI was available there). CI (.github/workflows/unified-image.yml)
-# builds it and smoke-tests one implementation per included toolchain
-# family; treat this image as unverified until that workflow is green.
+# Verified locally with Docker Desktop (linux/amd64, matching GitHub
+# Actions' ubuntu-latest runners): `docker build`, and `build`/`analyze`/
+# `test` for every included language below, plus a full `test-chess-engine
+# --track v1` run for go and python (27/27 each). Not yet confirmed in CI
+# (.github/workflows/unified-image.yml) - one finding (Elixir's `mix
+# compile` segfaulting) was only reproduced under local QEMU amd64-on-arm64
+# emulation and is expected, not confirmed, to work on CI's native amd64
+# runners. See docs/reference/unified-toolchain-image.md "Local
+# verification" for exact commands and every finding, including two
+# languages (gleam, rust) dropped from this image after a real build
+# proved neither installable within the rules below.
 #
 # Toolchain coverage: only toolchains with a compliant install path through
 # a system or language package manager (apt-get / npm / pip / cargo / gem)
@@ -27,24 +34,35 @@
 # Dockerfiles, standard package managers excepted" rule (AGENTS.md).
 # Toolchains whose only Linux install path is a curl-piped installer or a
 # vendor apt repository added via a downloaded signing key (crystal, dart,
-# kotlin, swift), and toolchains for which Debian bookworm's apt version is
-# too far behind the pinned per-language toolchain to trust for a
-# correctness-sensitive benchmark (julia, nim), are intentionally left out.
+# kotlin, swift), toolchains for which Debian bookworm's apt version is too
+# far behind the pinned per-language toolchain to trust for a
+# correctness-sensitive benchmark (julia, nim), and toolchains with no
+# working package-manager distribution at all are intentionally left out:
+#   - gleam: no Debian package; the "gleam" names on both crates.io and npm
+#     are unrelated packages, and crates.io does not host the compiler
+#     under any name, so `cargo install` cannot reach it without `--git`,
+#     which the "no git clone for tools" rule forbids.
+#   - rust: Debian bookworm's apt rustc/cargo (1.63 / 0.66, confirmed via
+#     `apt-cache policy`, incl. bookworm-backports which does not carry a
+#     newer build) cannot parse this repository's Cargo.lock (lockfile
+#     format v4, requires cargo >=1.78 - confirmed by a real `docker build`
+#     failure). The supported newer-Rust install path is the curl-piped
+#     rustup.rs installer, which this repo's rules forbid.
 # Use the existing `make image DIR=<language>` path for those languages;
 # nothing about their per-language workflow changes.
 
 FROM debian:bookworm-slim
 
 LABEL org.chess.image.kind="unified-toolchain"
-LABEL org.chess.image.languages="c,elixir,elm,gleam,go,haskell,imba,javascript,lua,php,python,rescript,ruby,rust,typescript,zig"
-LABEL org.chess.image.excluded_languages="crystal,dart,julia,kotlin,nim,swift"
+LABEL org.chess.image.languages="c,elixir,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig"
+LABEL org.chess.image.excluded_languages="crystal,dart,gleam,julia,kotlin,nim,rust,swift"
 
 ENV DEBIAN_FRONTEND=noninteractive \
 	TGAC_UNIFIED_IMAGE=1 \
 	TGAC_WORKSPACE=/workspace \
-	TGAC_UNIFIED_LANGUAGES="c,elixir,elm,gleam,go,haskell,imba,javascript,lua,php,python,rescript,ruby,rust,typescript,zig" \
-	TGAC_UNIFIED_EXCLUDED_LANGUAGES="crystal,dart,julia,kotlin,nim,swift" \
-	PATH="/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:${PATH}"
+	TGAC_UNIFIED_LANGUAGES="c,elixir,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig" \
+	TGAC_UNIFIED_EXCLUDED_LANGUAGES="crystal,dart,gleam,julia,kotlin,nim,rust,swift" \
+	PATH="/usr/local/go/bin:/root/go/bin:${PATH}"
 
 # One combined apt-get layer so the resolver settles shared dependencies
 # (openssl, libgmp, zlib, ...) coherently instead of across separate layers.
@@ -61,8 +79,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	ruby-full \
 	php-cli \
 	lua5.4 \
-	rustc \
-	cargo \
 	elixir \
 	erlang \
 	ghc \
@@ -80,11 +96,12 @@ RUN gem install bundler --no-document
 # (implementations/{elm,imba}/docker-images/toolchain/Dockerfile). `bun` is
 # installed via its documented npm distribution so this stays a
 # package-manager install rather than the curl-piped bun.sh installer.
-RUN npm install -g elm@0.19.1-5 imba bun
-
-# Gleam has no Debian package; build it from source via cargo, using the
-# Erlang/OTP runtime already installed above.
-RUN cargo install gleam
+# imba is pinned below its latest alpha: imba@2.0.0-alpha.252+ requires
+# Node >=20.19, but Debian bookworm's apt nodejs is 18.x with no compliant
+# (non-curl) upgrade path; alpha.251 is the newest release still declaring
+# node >=13.10 and satisfies implementations/imba's own
+# "imba": "^2.0.0-alpha.247" dependency range.
+RUN npm install -g elm@0.19.1-5 imba@2.0.0-alpha.251 bun
 
 # Zig has no Debian package; the `ziglang` PyPI wheel ships the compiler
 # binary and is installed like any other pip dependency.

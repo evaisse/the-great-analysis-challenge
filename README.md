@@ -103,7 +103,7 @@ All implementation build/test/analyze operations are Docker-only.
 
 ## Unified Toolchain Image
 
-`Dockerfile.unified` builds one image bundling toolchains for most (16 of 22) implementations,
+`Dockerfile.unified` builds one image bundling toolchains for most (14 of 22) implementations,
 as an optional convenience alternative to pulling/building one `tgac-<language>-toolchain`
 image per language:
 

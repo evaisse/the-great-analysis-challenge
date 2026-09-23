@@ -56,11 +56,25 @@ require_language() {
 	fi
 }
 
-ensure_node_deps() {
+# A few implementations keep their build tooling as project-local
+# dependencies (rescript/javascript/typescript's package.json, ruby's
+# Gemfile) rather than a global compiler, mirroring how their dedicated
+# toolchain images preinstall those dependencies at image-build time. The
+# unified image cannot bake those in (they come from the working tree, not
+# a fixed snapshot), so install them here on first use instead.
+ensure_project_deps() {
 	impl_dir="implementations/$1"
 	if [ -f "$impl_dir/package.json" ] && [ ! -d "$impl_dir/node_modules" ]; then
 		echo "Installing npm dependencies for $1 (first run only, needs network)..." >&2
-		(cd "$impl_dir" && bun install)
+		# npm, not bun: matches each implementation's own committed
+		# package-lock.json / toolchain Dockerfile convention (bun still
+		# reads the resulting node_modules fine for bun run/build/test) and
+		# avoids leaving a stray bun.lock next to an npm-managed project.
+		(cd "$impl_dir" && npm install)
+	fi
+	if [ -f "$impl_dir/Gemfile" ] && ! (cd "$impl_dir" && bundle check >/dev/null 2>&1); then
+		echo "Installing gem dependencies for $1 (first run only, needs network)..." >&2
+		(cd "$impl_dir" && bundle install)
 	fi
 }
 
@@ -92,7 +106,7 @@ build | analyze | test)
 	require_workspace "$@"
 	require_language "$lang"
 	ensure_workflow_deps
-	ensure_node_deps "$lang"
+	ensure_project_deps "$lang"
 	exec ./workflow run-metadata-phase --impl "implementations/$lang" --phase "$phase" --local
 	;;
 test-chess-engine)
@@ -101,14 +115,14 @@ test-chess-engine)
 	require_language "$lang"
 	shift 2 2>/dev/null || shift $#
 	ensure_workflow_deps
-	ensure_node_deps "$lang"
+	ensure_project_deps "$lang"
 	exec ./workflow test-chess-engine "$lang" --local "$@"
 	;;
 run)
 	lang="${2:-}"
 	require_workspace "$@"
 	require_language "$lang"
-	ensure_node_deps "$lang"
+	ensure_project_deps "$lang"
 	run_cmd=$(bun run docker-images/unified/print-metadata.ts --impl "implementations/$lang" --field run) || {
 		echo "error: no org.chess.run command found for '$lang'." >&2
 		exit 1
