@@ -118,15 +118,23 @@ A few implementations keep their build tooling as project-local `npm` dependenci
 (`rescript`, `imba`, and `javascript`/`typescript`'s own `package.json`) rather than a global
 compiler, mirroring how their dedicated toolchain images preinstall those dependencies at
 image-build time. The unified image cannot bake those in (they are read from your working
-tree, not a fixed snapshot), so its entrypoint runs `npm install` in the implementation
-directory the first time you `build`/`analyze`/`test`/`run` it (matching each project's own
-committed `package-lock.json` and its dedicated toolchain Dockerfile — `npm`, not `bun`, to
-avoid creating a stray `bun.lock` next to an npm-managed project), Ruby's `bundle install`
-when a `Gemfile` is present, and `bun install --frozen-lockfile` once at the repository root
-for the shared `./workflow` tooling itself. This needs network access; run it once while
-online, then work offline as usual (containers are ephemeral, so `docker run --rm` repeats the
-install every time — use `tgac-unified shell` for a session that keeps it installed across
-several commands).
+tree, not a fixed snapshot), so its entrypoint installs them the first time you
+`build`/`analyze`/`test`/`run` an implementation:
+
+- Node-based implementations: `npm ci` when a `package-lock.json` is committed (`rescript`,
+  `imba`, `typescript`) — confirmed to never rewrite the lockfile, unlike `npm install`, which
+  was observed mutating it even with nothing new to resolve. `elm` and `javascript` have no
+  committed lockfile, so they fall back to `npm install`, which creates one as a new untracked
+  file (see "Bind-mount side effects"). `npm`, not `bun`, to match each project's own
+  toolchain Dockerfile convention and avoid creating a stray `bun.lock`.
+- Ruby: `bundle install` when a `Gemfile` is present (only if `bundle check` reports unmet
+  dependencies).
+- The repository root itself, once, for the shared `./workflow` tooling: `bun install
+  --frozen-lockfile`.
+
+This needs network access; run it once while online, then work offline as usual (containers
+are ephemeral, so `docker run --rm` repeats the install every time — use `tgac-unified shell`
+for a session that keeps it installed across several commands).
 
 ### Bind-mount side effects
 
@@ -142,10 +150,11 @@ local diff. Confirmed during local verification:
   would happen with any local, non-Docker rebuild of these two languages — the unified image
   just makes it visible for the first time. Run `git diff`/`git checkout` on `dist/` afterward
   if you don't want the regenerated output, or work from a scratch clone.
-- **Haskell's compiled binary** (`chess_engine`) and **Elm's compiled** `src/chess.js` land as
-  new, currently un-gitignored files. Clean them up with `git clean` or add `.gitignore`
-  entries if this bothers you; out of scope to fix here since it touches other languages'
-  directories.
+- **Haskell's compiled binary** (`chess_engine`), **Elm's compiled** `src/chess.js`, and a
+  first-run `package-lock.json` for `elm`/`javascript` (the two implementations with no
+  committed lockfile) land as new, currently un-gitignored files. Clean them up with
+  `git clean` or add `.gitignore` entries if this bothers you; out of scope to fix here since
+  it touches other languages' directories.
 - Ruby's `Gemfile.lock` needed a genuine, minimal fix as part of this change (see below) —
   that one *was* fixed, because it was a one-line, purely-additive correction required for the
   feature to work without side effects at all.
@@ -182,13 +191,27 @@ representative `docker run` invocations found, on an Apple Silicon host building
   platform addition once (`bundle lock --add-platform x86_64-linux`, a one-line, additive
   change) as part of this PR, so the unified image's Ruby path is idempotent against a clean
   checkout.
-- **Go's build failed with `error obtaining VCS status`** when tested from this repository's
-  own `.worktrees/` checkout: a git worktree's `.git` file points at an absolute host path
-  (`.git/worktrees/<name>` inside the *main* repository clone) that isn't inside the bind
-  mount, so `git` inside the container can't find it. Confirmed as worktree-specific, not a
-  toolchain bug, by testing the same build against a plain `git clone` of the same branch
-  (succeeded immediately). If you hit this, either run the unified image against a plain
-  clone/checkout instead of a worktree, or set `GOFLAGS=-buildvcs=false`.
+- **Go's build failed with `error obtaining VCS status: exit status 128`**, both locally
+  (tested from this repository's own `.worktrees/` checkout: a git worktree's `.git` file
+  points at an absolute host path — `.git/worktrees/<name>` inside the *main* repository clone
+  — that isn't inside the bind mount, so `git` inside the container can't find it) **and on
+  GitHub Actions CI** (`run 35920887060`, a plain `actions/checkout`, not a worktree): the
+  container always runs as root against a bind mount owned by whatever host/CI user cloned it,
+  which git's ownership check rejects ("detected dubious ownership"). Fixed for the CI/ownership
+  case with `git config --system --add safe.directory '*'` baked into the image (harmless here:
+  this image's only job is to run against whatever repository the caller explicitly bind-mounted,
+  not to broker access to arbitrary git repos). Confirmed fixed by re-running the same build
+  against a fresh clone after adding it. The worktree case is different and not fixed by this —
+  the referenced `.git/worktrees/<name>` directory genuinely does not exist inside the
+  container — so it remains a real caveat: run the unified image against a plain clone/checkout
+  rather than a `.worktrees/` checkout, or set `GOFLAGS=-buildvcs=false`.
+- **`npm install` rewrites `package-lock.json` even when there is nothing new to resolve**
+  (observed for `rescript`: adding no new packages still produced a diff). Since implementations
+  keep this file committed, that would dirty the tree on every first run. Switched the
+  first-run install to `npm ci` when a lockfile is committed (never rewrites it; fails loudly
+  instead if the lockfile and `package.json` disagree) — `elm` and `javascript` have no
+  committed lockfile, so they still use `npm install`, which creates one as a new, currently
+  untracked file (harmless, but worth knowing about).
 - **Elixir's `mix compile` segfaults consistently under `linux/amd64` QEMU emulation** on this
   Apple Silicon host, but `elixir`/`erlang` install and run correctly natively (`arm64`),
   confirmed by installing and invoking `erl`/`elixir --version` directly in a native

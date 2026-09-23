@@ -19,11 +19,15 @@
 # Verified locally with Docker Desktop (linux/amd64, matching GitHub
 # Actions' ubuntu-latest runners): `docker build`, and `build`/`analyze`/
 # `test` for every included language below, plus a full `test-chess-engine
-# --track v1` run for go and python (27/27 each). Not yet confirmed in CI
-# (.github/workflows/unified-image.yml) - one finding (Elixir's `mix
-# compile` segfaulting) was only reproduced under local QEMU amd64-on-arm64
-# emulation and is expected, not confirmed, to work on CI's native amd64
-# runners. See docs/reference/unified-toolchain-image.md "Local
+# --track v1` run for go and python (27/27 each). GitHub Actions CI
+# (.github/workflows/unified-image.yml) caught a real bug local testing
+# alone did not: `go build`'s VCS stamping failing with "error obtaining
+# VCS status" due to root's mismatched ownership of the bind mount on a
+# native Linux runner; fixed below via `git config --system --add
+# safe.directory '*'` and re-verified locally, pending CI re-confirmation.
+# One finding (Elixir's `mix compile` segfaulting) was only reproduced
+# under local QEMU amd64-on-arm64 emulation, not (yet confirmed) on native
+# amd64 CI. See docs/reference/unified-toolchain-image.md "Local
 # verification" for exact commands and every finding, including two
 # languages (gleam, rust) dropped from this image after a real build
 # proved neither installable within the rules below.
@@ -90,6 +94,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Ruby: bundler, for implementations with a Gemfile.
 RUN gem install bundler --no-document
+
+# The container always runs as root against a bind-mounted checkout owned
+# by whatever host/CI user cloned it, which git's ownership check rejects
+# ("detected dubious ownership") - confirmed on GitHub Actions runners via
+# `go build`'s VCS stamping failing with "error obtaining VCS status: exit
+# status 128" until this was added. Trusting every directory is fine here:
+# this image's only job is to run against the repository the caller
+# explicitly bind-mounted, not to broker access to arbitrary git repos.
+RUN git config --system --add safe.directory '*'
 
 # Node-ecosystem compilers, installed globally the same way the dedicated
 # per-language toolchain images do

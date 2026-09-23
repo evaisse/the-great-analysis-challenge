@@ -70,7 +70,15 @@ ensure_project_deps() {
 		# package-lock.json / toolchain Dockerfile convention (bun still
 		# reads the resulting node_modules fine for bun run/build/test) and
 		# avoids leaving a stray bun.lock next to an npm-managed project.
-		(cd "$impl_dir" && npm install)
+		# `npm ci` when a lockfile exists: unlike `npm install`, it never
+		# rewrites package-lock.json (confirmed `npm install` does, even
+		# with nothing new to resolve). Falls back to `npm install` for the
+		# implementations with no committed lockfile (nothing to mutate).
+		if [ -f "$impl_dir/package-lock.json" ]; then
+			(cd "$impl_dir" && npm ci)
+		else
+			(cd "$impl_dir" && npm install)
+		fi
 	fi
 	if [ -f "$impl_dir/Gemfile" ] && ! (cd "$impl_dir" && bundle check >/dev/null 2>&1); then
 		echo "Installing gem dependencies for $1 (first run only, needs network)..." >&2
