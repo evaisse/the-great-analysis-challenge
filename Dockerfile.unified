@@ -1,0 +1,104 @@
+# Unified toolchain image for The Great Analysis Challenge (issue #173).
+#
+# Bundles the language toolchains needed to build/analyze/test the
+# implementations under implementations/<language>/ into a single image, so
+# a fresh checkout does not need to build or pull one dedicated
+# `tgac-<language>-toolchain` image per language before it can work with
+# the whole project.
+#
+# Usage (from the repository root, with the repo bind-mounted at /workspace):
+#   docker build -f Dockerfile.unified -t tgac-unified .
+#   docker run --rm -it -v "$PWD":/workspace tgac-unified shell
+#   docker run --rm -v "$PWD":/workspace tgac-unified build python
+#   docker run --rm -v "$PWD":/workspace tgac-unified test-chess-engine rust
+#   echo -e "new\nai 3\nquit" | docker run --rm -i -v "$PWD":/workspace tgac-unified run python
+#
+# Full command reference and the monolithic-vs-shared-base trade-off
+# writeup: docs/reference/unified-toolchain-image.md
+#
+# NOT BUILT OR RUN in the environment that authored this Dockerfile (no
+# Docker CLI was available there). CI (.github/workflows/unified-image.yml)
+# builds it and smoke-tests one implementation per included toolchain
+# family; treat this image as unverified until that workflow is green.
+#
+# Toolchain coverage: only toolchains with a compliant install path through
+# a system or language package manager (apt-get / npm / pip / cargo / gem)
+# are included, per this repository's "no external downloads in
+# Dockerfiles, standard package managers excepted" rule (AGENTS.md).
+# Toolchains whose only Linux install path is a curl-piped installer or a
+# vendor apt repository added via a downloaded signing key (crystal, dart,
+# kotlin, swift), and toolchains for which Debian bookworm's apt version is
+# too far behind the pinned per-language toolchain to trust for a
+# correctness-sensitive benchmark (julia, nim), are intentionally left out.
+# Use the existing `make image DIR=<language>` path for those languages;
+# nothing about their per-language workflow changes.
+
+FROM debian:bookworm-slim
+
+LABEL org.chess.image.kind="unified-toolchain"
+LABEL org.chess.image.languages="c,elixir,elm,gleam,go,haskell,imba,javascript,lua,php,python,rescript,ruby,rust,typescript,zig"
+LABEL org.chess.image.excluded_languages="crystal,dart,julia,kotlin,nim,swift"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+	TGAC_UNIFIED_IMAGE=1 \
+	TGAC_WORKSPACE=/workspace \
+	TGAC_UNIFIED_LANGUAGES="c,elixir,elm,gleam,go,haskell,imba,javascript,lua,php,python,rescript,ruby,rust,typescript,zig" \
+	TGAC_UNIFIED_EXCLUDED_LANGUAGES="crystal,dart,julia,kotlin,nim,swift" \
+	PATH="/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:${PATH}"
+
+# One combined apt-get layer so the resolver settles shared dependencies
+# (openssl, libgmp, zlib, ...) coherently instead of across separate layers.
+# Package versions trail the pinned per-language toolchain images (see the
+# trade-off doc); this is the primary compromise of the monolithic image.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	ca-certificates \
+	build-essential \
+	gcc \
+	golang-go \
+	python3 \
+	python3-pip \
+	python3-venv \
+	ruby-full \
+	php-cli \
+	lua5.4 \
+	rustc \
+	cargo \
+	elixir \
+	erlang \
+	ghc \
+	cabal-install \
+	nodejs \
+	npm \
+	git \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Ruby: bundler, for implementations with a Gemfile.
+RUN gem install bundler --no-document
+
+# Node-ecosystem compilers, installed globally the same way the dedicated
+# per-language toolchain images do
+# (implementations/{elm,imba}/docker-images/toolchain/Dockerfile). `bun` is
+# installed via its documented npm distribution so this stays a
+# package-manager install rather than the curl-piped bun.sh installer.
+RUN npm install -g elm@0.19.1-5 imba bun
+
+# Gleam has no Debian package; build it from source via cargo, using the
+# Erlang/OTP runtime already installed above.
+RUN cargo install gleam
+
+# Zig has no Debian package; the `ziglang` PyPI wheel ships the compiler
+# binary and is installed like any other pip dependency.
+RUN pip3 install --no-cache-dir --break-system-packages ziglang \
+	&& printf '#!/bin/sh\nexec python3 -m ziglang "$@"\n' >/usr/local/bin/zig \
+	&& chmod +x /usr/local/bin/zig
+
+WORKDIR /workspace
+
+# entrypoint.sh is baked into the image (it must exist before any volume is
+# mounted); print-metadata.ts is invoked from the bind-mounted repository
+# checkout at runtime, like every other file under docker-images/unified/.
+COPY docker-images/unified/entrypoint.sh /usr/local/bin/tgac-entrypoint
+RUN chmod +x /usr/local/bin/tgac-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/tgac-entrypoint"]
+CMD ["help"]

@@ -100,3 +100,19 @@ make test-chess-engine DIR=<language>
 ```
 
 All implementation build/test/analyze operations are Docker-only.
+
+## Unified Toolchain Image
+
+`Dockerfile.unified` builds one image bundling toolchains for most (16 of 22) implementations,
+as an optional convenience alternative to pulling/building one `tgac-<language>-toolchain`
+image per language:
+
+```bash
+make unified-image
+make unified-shell   # then: make build DIR=python / analyze / test / test-chess-engine
+```
+
+The per-language `make image|build|analyze|test|test-chess-engine DIR=<language>` commands
+are unchanged and remain required for the languages the unified image does not cover. See
+[docs/reference/unified-toolchain-image.md](docs/reference/unified-toolchain-image.md) for
+coverage, the monolithic-vs-per-language trade-offs, and current CI verification status.
