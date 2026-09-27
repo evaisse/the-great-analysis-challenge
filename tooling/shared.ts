@@ -461,11 +461,16 @@ async function runDockerShell(
   return await runCommand(dockerCmd, { check: false });
 }
 
+async function runLocalShell(shell: string, command: string, cwd: string): Promise<CommandResult> {
+  return await runCommand([shell, "-c", command], { cwd, check: false });
+}
+
 export async function executePhase(
   impl: string,
   phase: string,
   image?: string,
   workdir?: string,
+  local = false,
 ): Promise<PhaseExecution> {
   const implPath = resolveImplPath(impl);
   const implName = basename(implPath);
@@ -489,6 +494,30 @@ export async function executePhase(
   const command = String(metadata[phase] ?? "").trim();
   if (!command) {
     throw new Error(`Missing metadata command 'org.chess.${phase}' for ${implName}`);
+  }
+
+  if (local) {
+    const cwd = workdir ? resolve(workdir) : implPath;
+    if (!(await fileExists(cwd))) {
+      throw new Error(`Workspace not found: ${cwd}`);
+    }
+
+    let result = await runLocalShell("sh", command, cwd);
+    if (result.exitCode !== 0 && shellMissing(result.stderr, "sh")) {
+      result = await runLocalShell("bash", command, cwd);
+    }
+
+    return {
+      implName,
+      phase,
+      command,
+      returncode: result.exitCode,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      skipped: false,
+      skipReason: null,
+      treatAsSuccessForValidation: false,
+    };
   }
 
   if (!(await dockerImageExists(imageName))) {

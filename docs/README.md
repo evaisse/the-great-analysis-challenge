@@ -25,6 +25,7 @@ Use this page as the main entrypoint for project documentation.
 
 ## Additional References
 
+- Unified multi-toolchain Docker image: [docs/reference/unified-toolchain-image.md](reference/unified-toolchain-image.md)
 - PRD roadmap: [docs/prd/README.md](prd/README.md)
 - Language statistics metadata: [reference/language-statistics.md](reference/language-statistics.md)
 - Archived migration notes: [archive/quarantine-summary.md](archive/quarantine-summary.md)

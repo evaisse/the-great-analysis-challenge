@@ -1,0 +1,138 @@
+# Unified toolchain image for The Great Analysis Challenge (issue #173).
+#
+# Bundles the language toolchains needed to build/analyze/test the
+# implementations under implementations/<language>/ into a single image, so
+# a fresh checkout does not need to build or pull one dedicated
+# `tgac-<language>-toolchain` image per language before it can work with
+# the whole project.
+#
+# Usage (from the repository root, with the repo bind-mounted at /workspace):
+#   docker build -f Dockerfile.unified -t tgac-unified .
+#   docker run --rm -it -v "$PWD":/workspace tgac-unified shell
+#   docker run --rm -v "$PWD":/workspace tgac-unified build python
+#   docker run --rm -v "$PWD":/workspace tgac-unified test-chess-engine go
+#   echo -e "new\nai 3\nquit" | docker run --rm -i -v "$PWD":/workspace tgac-unified run python
+#
+# Full command reference and the monolithic-vs-shared-base trade-off
+# writeup: docs/reference/unified-toolchain-image.md
+#
+# Verified locally with Docker Desktop (linux/amd64) and on GitHub Actions
+# CI (native amd64, .github/workflows/unified-image.yml): `docker build`,
+# and `build`/`analyze`/`test` for every included language below, plus a
+# full `test-chess-engine --track v1` run for go and python (27/27 each).
+# CI's first run caught a real bug local testing alone did not: `go
+# build`'s VCS stamping failing with "error obtaining VCS status" due to
+# root's mismatched ownership of the bind mount on a native Linux runner;
+# fixed below via `git config --system --add safe.directory '*'`. CI's
+# second run then caught a second real bug: Elixir's apt package (1.14.0)
+# is too old for this repository's `mix.exs` (`~> 1.17`) - a local-only
+# QEMU segfault had masked this simpler, real failure. No apt backport
+# carries a newer Elixir; moved to the excluded list. See
+# docs/reference/unified-toolchain-image.md "Local verification" for exact
+# commands and every finding, including three languages (elixir, gleam,
+# rust) dropped from this image after real build/run failures proved none
+# installable within the rules below.
+#
+# Toolchain coverage: only toolchains with a compliant install path through
+# a system or language package manager (apt-get / npm / pip / cargo / gem)
+# are included, per this repository's "no external downloads in
+# Dockerfiles, standard package managers excepted" rule (AGENTS.md).
+# Toolchains whose only Linux install path is a curl-piped installer or a
+# vendor apt repository added via a downloaded signing key (crystal, dart,
+# kotlin, swift), toolchains for which Debian bookworm's apt version is too
+# far behind the pinned per-language toolchain to trust for a
+# correctness-sensitive benchmark (julia, nim), and toolchains with no
+# working package-manager distribution at all are intentionally left out:
+#   - elixir: Debian bookworm's apt `elixir` is 1.14.0; this repository's
+#     `implementations/elixir/mix.exs` requires `~> 1.17`. Confirmed by a
+#     real `mix compile` failure on GitHub Actions CI ("You're trying to
+#     run :chess_engine on Elixir v1.14.0 but it has declared ... ~> 1.17");
+#     `bookworm-backports` does not carry a newer Elixir either.
+#   - gleam: no Debian package; the "gleam" names on both crates.io and npm
+#     are unrelated packages, and crates.io does not host the compiler
+#     under any name, so `cargo install` cannot reach it without `--git`,
+#     which the "no git clone for tools" rule forbids.
+#   - rust: Debian bookworm's apt rustc/cargo (1.63 / 0.66, confirmed via
+#     `apt-cache policy`, incl. bookworm-backports which does not carry a
+#     newer build) cannot parse this repository's Cargo.lock (lockfile
+#     format v4, requires cargo >=1.78 - confirmed by a real `docker build`
+#     failure). The supported newer-Rust install path is the curl-piped
+#     rustup.rs installer, which this repo's rules forbid.
+# Use the existing `make image DIR=<language>` path for those languages;
+# nothing about their per-language workflow changes.
+
+FROM debian:bookworm-slim
+
+LABEL org.chess.image.kind="unified-toolchain"
+LABEL org.chess.image.languages="c,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig"
+LABEL org.chess.image.excluded_languages="crystal,dart,elixir,gleam,julia,kotlin,nim,rust,swift"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+	TGAC_UNIFIED_IMAGE=1 \
+	TGAC_WORKSPACE=/workspace \
+	TGAC_UNIFIED_LANGUAGES="c,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig" \
+	TGAC_UNIFIED_EXCLUDED_LANGUAGES="crystal,dart,elixir,gleam,julia,kotlin,nim,rust,swift" \
+	PATH="/usr/local/go/bin:/root/go/bin:${PATH}"
+
+# One combined apt-get layer so the resolver settles shared dependencies
+# (openssl, libgmp, zlib, ...) coherently instead of across separate layers.
+# Package versions trail the pinned per-language toolchain images (see the
+# trade-off doc); this is the primary compromise of the monolithic image.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	ca-certificates \
+	build-essential \
+	gcc \
+	golang-go \
+	python3 \
+	python3-pip \
+	python3-venv \
+	ruby-full \
+	php-cli \
+	lua5.4 \
+	ghc \
+	cabal-install \
+	nodejs \
+	npm \
+	git \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Ruby: bundler, for implementations with a Gemfile.
+RUN gem install bundler --no-document
+
+# The container always runs as root against a bind-mounted checkout owned
+# by whatever host/CI user cloned it, which git's ownership check rejects
+# ("detected dubious ownership") - confirmed on GitHub Actions runners via
+# `go build`'s VCS stamping failing with "error obtaining VCS status: exit
+# status 128" until this was added. Trusting every directory is fine here:
+# this image's only job is to run against the repository the caller
+# explicitly bind-mounted, not to broker access to arbitrary git repos.
+RUN git config --system --add safe.directory '*'
+
+# Node-ecosystem compilers, installed globally the same way the dedicated
+# per-language toolchain images do
+# (implementations/{elm,imba}/docker-images/toolchain/Dockerfile). `bun` is
+# installed via its documented npm distribution so this stays a
+# package-manager install rather than the curl-piped bun.sh installer.
+# imba is pinned below its latest alpha: imba@2.0.0-alpha.252+ requires
+# Node >=20.19, but Debian bookworm's apt nodejs is 18.x with no compliant
+# (non-curl) upgrade path; alpha.251 is the newest release still declaring
+# node >=13.10 and satisfies implementations/imba's own
+# "imba": "^2.0.0-alpha.247" dependency range.
+RUN npm install -g elm@0.19.1-5 imba@2.0.0-alpha.251 bun
+
+# Zig has no Debian package; the `ziglang` PyPI wheel ships the compiler
+# binary and is installed like any other pip dependency.
+RUN pip3 install --no-cache-dir --break-system-packages ziglang \
+	&& printf '#!/bin/sh\nexec python3 -m ziglang "$@"\n' >/usr/local/bin/zig \
+	&& chmod +x /usr/local/bin/zig
+
+WORKDIR /workspace
+
+# entrypoint.sh is baked into the image (it must exist before any volume is
+# mounted); print-metadata.ts is invoked from the bind-mounted repository
+# checkout at runtime, like every other file under docker-images/unified/.
+COPY docker-images/unified/entrypoint.sh /usr/local/bin/tgac-entrypoint
+RUN chmod +x /usr/local/bin/tgac-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/tgac-entrypoint"]
+CMD ["help"]
