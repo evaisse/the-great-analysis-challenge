@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-10-04T08:02:55.443Z
+Generated: 2026-10-11T06:13:14.036Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-zig          completed  21516      2509     199ms, - MB        165ms, - MB        139ms, - MB        34.3s, - MB               1/1              27/27             
+zig          completed  21516      2509     199ms, - MB        156ms, - MB        142ms, - MB        33.7s, - MB               1/1              27/27             
 
 ============================================================
 DETAILED RESULTS: ZIG
@@ -17,10 +17,10 @@ Track: v1
 Profile: quick
 Status: completed
 Timings:
-  - image_build_seconds: 38.6s
+  - image_build_seconds: 39.1s
   - build_seconds: 199ms
-  - analyze_seconds: 165ms
-  - test_seconds: 139ms
-  - test_chess_engine_seconds: 34.3s
-  - test_v1_seconds: 34.3s
+  - analyze_seconds: 156ms
+  - test_seconds: 142ms
+  - test_chess_engine_seconds: 33.7s
+  - test_v1_seconds: 33.7s
 Metrics: TOKENS=21,516, LOC=2,509
