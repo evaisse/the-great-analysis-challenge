@@ -756,6 +756,7 @@ export interface TestHarnessRunOptions {
   testName?: string;
   performance?: boolean;
   output?: string;
+  local?: boolean;
 }
 
 export async function runTestHarness(options: TestHarnessRunOptions): Promise<number> {
@@ -783,8 +784,8 @@ export async function runTestHarness(options: TestHarnessRunOptions): Promise<nu
     console.log(`\nTesting ${String(metadata.language ?? "Unknown")} implementation at ${implPath}`);
     console.log("-".repeat(40));
 
-    let dockerImage = options.dockerImage;
-    if (!dockerImage && options.impl) {
+    let dockerImage = options.local ? undefined : options.dockerImage;
+    if (!dockerImage && options.impl && !options.local) {
       dockerImage = `chess-${basename(implPath)}`;
     }
     const tester = new ChessEngineTester(implPath, metadata, dockerImage);
