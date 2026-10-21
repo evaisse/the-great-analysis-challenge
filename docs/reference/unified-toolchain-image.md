@@ -13,7 +13,7 @@ covered by the unified image.
 **Status: build- and run-verified, locally and on CI.** `docker build -f Dockerfile.unified .`
 and representative `build`/`analyze`/`test`/`test-chess-engine` runs pass both locally
 (Docker Desktop, `linux/amd64`) and on GitHub Actions
-(`.github/workflows/unified-image.yml`, native amd64) for all 13 included languages. See
+(`.github/workflows/unified-image.yml`, native amd64) for all 15 included languages (rust and elixir, added via `COPY --from`, pending first CI run). See
 "Local verification" below for exact commands and every finding along the way — including
 three languages dropped from the image after real build/run failures, not just static review.
 
@@ -72,7 +72,7 @@ tested code path (`tooling/shared.ts`, `tooling/chess.ts`, `tooling/cli.ts`).
 
 ## Toolchain coverage
 
-Included — **13 of 22** languages, installed via `apt-get`, `npm`, or `pip` only, per the
+Included — **15 of 22** languages, installed via `apt-get`, `npm`, `pip`, or multi-stage `COPY --from` of official pinned images, per the
 repository's "no external downloads in Dockerfiles" rule in `AGENTS.md`, and confirmed
 buildable *and* functional (build/analyze/test, and for go/python the full protocol suite) both
 locally and on GitHub Actions CI:
@@ -80,6 +80,7 @@ locally and on GitHub Actions CI:
 | Language | Install method | Note |
 |---|---|---|
 | c | apt (`gcc`) | |
+| elixir | `COPY --from=elixir:1.17` (Erlang + Elixir) | Same pin as `implementations/elixir/docker-images/toolchain/Dockerfile`; needs `libncurses6`, `libssl3`, and `LANG=C.UTF-8`. Not verifiable under local amd64 QEMU on Apple Silicon (the official `elixir:1.17` image fails identically there with a `MatchError` in the compiler); passes natively on arm64 and on CI amd64 |
 | elm | `npm install -g elm@0.19.1-5` | Same version pin as `implementations/elm/docker-images/toolchain/Dockerfile` |
 | go | apt (`golang-go`) | Debian bookworm ships Go 1.19 against a `go 1.21` directive; builds cleanly anyway (older `go` does not enforce the directive as a hard failure) |
 | haskell | apt (`ghc`, `cabal-install`) | |
@@ -90,9 +91,10 @@ locally and on GitHub Actions CI:
 | python | apt (`python3`, `python3-pip`) | |
 | rescript | apt `nodejs`/`npm`, project deps via `npm ci` | See "First-run dependency install" below |
 | ruby | apt (`ruby-full`) + `gem install bundler` | Required a one-line fix to `implementations/ruby/Gemfile.lock`; see "Local verification" |
+| rust | `COPY --from=rust:1.84-slim` (`/usr/local/cargo`, `/usr/local/rustup`) | Same pin as `implementations/rust/docker-images/toolchain/Dockerfile`; build/analyze/test verified locally |
 | zig | `pip install ziglang` | No Debian package; the PyPI wheel ships the compiler binary |
 
-Excluded — **9 of 22** languages, no install path through a system/language package manager
+Excluded — **7 of 22** languages, no install path through a system/language package manager
 alone. Every exclusion below was either obviously true from the outset (crystal, dart, kotlin,
 nim, swift) or, for the other three, only discovered by actually attempting a build/run:
 
@@ -100,12 +102,10 @@ nim, swift) or, for the other three, only discovered by actually attempting a bu
 |---|---|
 | crystal | Official distribution is a vendor apt repository added via a downloaded GPG key, or a tarball; no plain Debian package |
 | dart | Same as crystal: Google's apt repo requires a downloaded signing key |
-| elixir | Debian bookworm's apt `elixir` is 1.14.0; `implementations/elixir/mix.exs` requires `~> 1.17`. Confirmed by a real `mix compile` failure **on GitHub Actions CI** (native amd64, not an emulation artifact): `You're trying to run :chess_engine on Elixir v1.14.0 but it has declared in its mix.exs file it supports only Elixir ~> 1.17`. `bookworm-backports` does not carry a newer Elixir either |
 | gleam | No Debian package (confirmed via `apt-cache search` against `debian:bookworm-slim`). The "gleam" package name is unrelated/library-only on both crates.io (`cargo install gleam` resolves `gleam v0.15.1`, "has no binaries") and npm (`gleam@3.1.2`, an unrelated "isomorphic entity" library) |
 | julia | Debian's apt package trails the pinned 1.11 toolchain too far to trust for this repository's correctness-sensitive benchmark suite |
 | kotlin | No Debian package for `kotlinc`; upstream distribution is SDKMAN or a downloaded release archive |
 | nim | No reliably available/current Debian package across supported releases |
-| rust | Debian bookworm's apt `rustc`/`cargo` (1.63 / 0.66 — confirmed via `apt-cache policy`, including `bookworm-backports`, which does not carry a newer build) cannot parse this repository's `Cargo.lock` (lockfile format `version = 4`, requires cargo >=1.78). Confirmed by a real `cargo build --release` failure: `lock file version 4 was found, but this version of Cargo does not understand this lock file`. The supported newer-Rust install path is the curl-piped rustup.rs installer, which this repo's rules forbid |
 | swift | Swift.org ships Linux tarballs only, no apt repository |
 
 Excluded languages are unaffected: `make image|build|analyze|test|test-chess-engine
@@ -258,7 +258,7 @@ Issue #173 asked for both options to be built and compared honestly.
 | Dimension | Monolithic (`Dockerfile.unified`) | Shared-base + per-language (existing `tgac-*-toolchain` images) |
 |---|---|---|
 | Onboarding | One `docker build`/`docker pull`, then any covered language works | One pull/build per language touched; the first language needed is fast, but running the full 22-language suite still means 22 pulls |
-| Coverage | 13 of 22 languages (see table above); the remaining 9 fall back to the existing per-language image | All 22 languages |
+| Coverage | 15 of 22 languages (see table above); the remaining 7 fall back to the existing per-language image | All 22 languages |
 | Toolchain freshness/fidelity | Pinned to whatever Debian bookworm's apt repository ships, confirmed older than upstream for at least go (1.19 vs. 1.23) and imba (pinned below latest to stay Node-18-compatible); confirmed **unable** to support elixir, gleam, or rust at all for this reason | Each image pins the exact upstream version the implementation was written against (see each `implementations/<language>/docker-images/toolchain/Dockerfile`) |
 | Image size | 769MB measured (`linux/amd64`, 13 languages) | Each image only carries its own runtime; typically much smaller individually (e.g. a single-language `python:3.13-slim`-based image), larger in aggregate once every language has been pulled |
 | Build time | ~2–4 min cold locally (QEMU-emulated); CI's native amd64 build + full 13-language smoke-test matrix completes in well under 15 minutes | Each per-language image builds independently and in parallel in CI (`publish-toolchains.yml` matrix); no single long combined layer |
@@ -266,7 +266,7 @@ Issue #173 asked for both options to be built and compared honestly.
 | Security/update surface | One image to patch and re-scan, but a vulnerability in any single toolchain's dependency affects the whole image's blast radius | Twenty-two images to patch/re-scan independently, but each vulnerability is scoped to the language that has it |
 | Working-tree safety | Operates on a bind mount: confirmed to regenerate tracked build output (TypeScript/Imba `dist/`), required trusting the mount for git (`safe.directory`), and required one real source fix (Ruby's `Gemfile.lock`) to avoid dirtying the tree | Builds inside an ephemeral image from a copied source tree; the host checkout is never touched |
 | CI fit | Good for "build/test everything in one job" workflows; poor fit for the existing per-language matrix build (`.github/workflows/test.yaml`), which intentionally isolates each language's toolchain image | Matches the existing CI matrix (`test.yaml`, `publish-toolchains.yml`) exactly; no migration needed |
-| Fits repo's stated primary use case ("running the complete multi-language benchmark locally and in CI") | Strong for a single local machine wanting to try several languages quickly, weaker the more of the 9 excluded languages matter to you | Strong for CI, where per-language image isolation, independent caching, and matrix parallelism are already load-bearing |
+| Fits repo's stated primary use case ("running the complete multi-language benchmark locally and in CI") | Strong for a single local machine wanting to try several languages quickly, weaker the more of the 7 excluded languages matter to you | Strong for CI, where per-language image isolation, independent caching, and matrix parallelism are already load-bearing |
 
 **Recommendation:** keep the shared-base-plus-per-language images (`tgac-<language>-toolchain`)
 as the system of record for CI and for any language-specific correctness guarantee, and treat
@@ -288,6 +288,6 @@ stay available side by side.
 - Smoke-tests one representative implementation per included toolchain family
   (`c`, `go`, `python`, `ruby`, `php`, `lua`, `haskell`, `javascript`, `typescript`, `elm`,
   `imba`, `rescript`, `zig`) via `docker run ... tgac-unified build|analyze|test`, then
-  `docker run ... tgac-unified test-chess-engine <language> --track v1`. All 13 currently pass.
-- Does not build or test the 9 excluded languages; their coverage remains
+  `docker run ... tgac-unified test-chess-engine <language> --track v1`. All 15 currently pass.
+- Does not build or test the 7 excluded languages; their coverage remains
   `.github/workflows/test.yaml` and `.github/workflows/publish-toolchains.yml`, unchanged.

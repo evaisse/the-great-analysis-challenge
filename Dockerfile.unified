@@ -33,46 +33,31 @@
 # rust) dropped from this image after real build/run failures proved none
 # installable within the rules below.
 #
-# Toolchain coverage: only toolchains with a compliant install path through
-# a system or language package manager (apt-get / npm / pip / cargo / gem)
-# are included, per this repository's "no external downloads in
-# Dockerfiles, standard package managers excepted" rule (AGENTS.md).
-# Toolchains whose only Linux install path is a curl-piped installer or a
-# vendor apt repository added via a downloaded signing key (crystal, dart,
-# kotlin, swift), toolchains for which Debian bookworm's apt version is too
-# far behind the pinned per-language toolchain to trust for a
-# correctness-sensitive benchmark (julia, nim), and toolchains with no
-# working package-manager distribution at all are intentionally left out:
-#   - elixir: Debian bookworm's apt `elixir` is 1.14.0; this repository's
-#     `implementations/elixir/mix.exs` requires `~> 1.17`. Confirmed by a
-#     real `mix compile` failure on GitHub Actions CI ("You're trying to
-#     run :chess_engine on Elixir v1.14.0 but it has declared ... ~> 1.17");
-#     `bookworm-backports` does not carry a newer Elixir either.
-#   - gleam: no Debian package; the "gleam" names on both crates.io and npm
-#     are unrelated packages, and crates.io does not host the compiler
-#     under any name, so `cargo install` cannot reach it without `--git`,
-#     which the "no git clone for tools" rule forbids.
-#   - rust: Debian bookworm's apt rustc/cargo (1.63 / 0.66, confirmed via
-#     `apt-cache policy`, incl. bookworm-backports which does not carry a
-#     newer build) cannot parse this repository's Cargo.lock (lockfile
-#     format v4, requires cargo >=1.78 - confirmed by a real `docker build`
-#     failure). The supported newer-Rust install path is the curl-piped
-#     rustup.rs installer, which this repo's rules forbid.
-# Use the existing `make image DIR=<language>` path for those languages;
-# nothing about their per-language workflow changes.
+# Toolchain coverage: apt/npm/pip packages, plus rust and elixir/erlang
+# copied via multi-stage `COPY --from` of the official pinned images
+# (no external downloads). Still excluded (use `make image DIR=<language>`):
+# crystal, dart, kotlin, swift, julia, nim, gleam. Rationale and findings:
+# docs/reference/unified-toolchain-image.md
+
+FROM rust:1.84-slim AS rust-toolchain
+FROM elixir:1.17 AS elixir-toolchain
 
 FROM debian:bookworm-slim
 
 LABEL org.chess.image.kind="unified-toolchain"
-LABEL org.chess.image.languages="c,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig"
-LABEL org.chess.image.excluded_languages="crystal,dart,elixir,gleam,julia,kotlin,nim,rust,swift"
+LABEL org.chess.image.languages="c,elixir,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,rust,typescript,zig"
+LABEL org.chess.image.excluded_languages="crystal,dart,gleam,julia,kotlin,nim,swift"
 
 ENV DEBIAN_FRONTEND=noninteractive \
 	TGAC_UNIFIED_IMAGE=1 \
 	TGAC_WORKSPACE=/workspace \
-	TGAC_UNIFIED_LANGUAGES="c,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,typescript,zig" \
-	TGAC_UNIFIED_EXCLUDED_LANGUAGES="crystal,dart,elixir,gleam,julia,kotlin,nim,rust,swift" \
-	PATH="/usr/local/go/bin:/root/go/bin:${PATH}"
+	LANG=C.UTF-8 \
+	LC_ALL=C.UTF-8 \
+	TGAC_UNIFIED_LANGUAGES="c,elixir,elm,go,haskell,imba,javascript,lua,php,python,rescript,ruby,rust,typescript,zig" \
+	TGAC_UNIFIED_EXCLUDED_LANGUAGES="crystal,dart,gleam,julia,kotlin,nim,swift" \
+	RUSTUP_HOME=/usr/local/rustup \
+	CARGO_HOME=/usr/local/cargo \
+	PATH="/usr/local/cargo/bin:/usr/local/go/bin:/root/go/bin:${PATH}"
 
 # One combined apt-get layer so the resolver settles shared dependencies
 # (openssl, libgmp, zlib, ...) coherently instead of across separate layers.
@@ -94,7 +79,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	nodejs \
 	npm \
 	git \
+	libncurses6 \
+	libssl3 \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Rust and Elixir/Erlang: copied from the official pinned images (same
+# versions as the per-language toolchain images). Both are Debian bookworm
+# based, so the binaries are ABI-compatible with this base.
+COPY --from=rust-toolchain /usr/local/cargo /usr/local/cargo
+COPY --from=rust-toolchain /usr/local/rustup /usr/local/rustup
+COPY --from=elixir-toolchain /usr/local/lib/erlang /usr/local/lib/erlang
+COPY --from=elixir-toolchain /usr/local/lib/elixir /usr/local/lib/elixir
+RUN for b in erl erlc escript ct_run dialyzer epmd run_erl to_erl typer; do \
+		ln -sf /usr/local/lib/erlang/bin/$b /usr/local/bin/$b; done \
+	&& for b in elixir elixirc iex mix; do \
+		ln -sf /usr/local/lib/elixir/bin/$b /usr/local/bin/$b; done
 
 # Ruby: bundler, for implementations with a Gemfile.
 RUN gem install bundler --no-document
