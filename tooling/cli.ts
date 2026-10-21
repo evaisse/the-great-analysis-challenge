@@ -47,21 +47,22 @@ async function runMetadataPhaseCli(args: string[]): Promise<number> {
       phase: { type: "string" },
       image: { type: "string" },
       workdir: { type: "string" },
+      local: { type: "boolean" },
     },
   });
 
   if (!values.impl || !values.phase) {
-    console.error("Usage: ./workflow run-metadata-phase --impl <name|path> --phase <build|analyze|test|bugit|fix> [--image IMAGE] [--workdir DIR]");
+    console.error("Usage: ./workflow run-metadata-phase --impl <name|path> --phase <build|analyze|test|bugit|fix> [--image IMAGE] [--workdir DIR] [--local]");
     return 1;
   }
 
   try {
-    const execution = await executePhase(values.impl, values.phase, values.image, values.workdir);
+    const execution = await executePhase(values.impl, values.phase, values.image, values.workdir, Boolean(values.local));
     if (execution.skipped) {
       console.log(execution.skipReason);
       return 0;
     }
-    console.log(`Running ${execution.phase} for ${execution.implName} in ${values.workdir ? "workspace mount" : "Docker image"}...`);
+    console.log(`Running ${execution.phase} for ${execution.implName} in ${values.local ? "local toolchain" : values.workdir ? "workspace mount" : "Docker image"}...`);
     console.log(`Command: ${execution.command}`);
     if (execution.stdout) process.stdout.write(execution.stdout);
     if (execution.stderr) process.stderr.write(execution.stderr);
@@ -245,20 +246,23 @@ export async function main(argv: string[]): Promise<number> {
         test: { type: "string" },
         performance: { type: "boolean" },
         output: { type: "string" },
+        local: { type: "boolean" },
       },
     });
     const engine = command === "test-chess-engine" ? positionals[0] : undefined;
     const impl = values.impl ?? (engine ? join(REPO_ROOT, "implementations", engine) : undefined);
+    const local = Boolean(values.local);
     return await runTestHarness({
       baseDir: values.dir ? resolve(values.dir) : undefined,
       suitePath: values.suite,
       track: values.track ?? (command === "test-chess-engine" ? "v1" : undefined),
-      dockerImage: values["docker-image"] ?? (engine ? `chess-${engine}` : undefined),
+      dockerImage: local ? undefined : (values["docker-image"] ?? (engine ? `chess-${engine}` : undefined)),
       category: values.category,
       impl,
       testName: values.test,
       performance: Boolean(values.performance),
       output: values.output,
+      local,
     });
   }
 
