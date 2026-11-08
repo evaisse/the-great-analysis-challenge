@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-11-01T06:08:15.004Z
+Generated: 2026-11-08T06:08:05.812Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-julia        completed  13680      2083     <1ms, - MB         999ms, - MB        3.7s, - MB         23.3s, - MB               1/1              26/26             
+julia        completed  13680      2083     <1ms, - MB         1s, - MB           3.5s, - MB         23.1s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: JULIA
@@ -17,10 +17,10 @@ Track: v2-full
 Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 11.3s
+  - image_build_seconds: 10.8s
   - build_seconds: <1ms
-  - analyze_seconds: 999ms
-  - test_seconds: 3.7s
-  - test_chess_engine_seconds: 23.3s
-  - test_v2_full_seconds: 23.3s
+  - analyze_seconds: 1s
+  - test_seconds: 3.5s
+  - test_chess_engine_seconds: 23.1s
+  - test_v2_full_seconds: 23.1s
 Metrics: TOKENS=13,680, LOC=2,083

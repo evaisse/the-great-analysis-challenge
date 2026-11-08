@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-11-01T06:07:33.209Z
+Generated: 2026-11-08T06:07:31.744Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-kotlin       completed  13402      1974     9.2s, - MB         9.2s, - MB         226ms, - MB        19.6s, - MB               1/1              26/26             
+kotlin       completed  13402      1974     7.4s, - MB         7.2s, - MB         185ms, - MB        18.9s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: KOTLIN
@@ -17,10 +17,10 @@ Track: v2-full
 Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 16.5s
-  - build_seconds: 9.2s
-  - analyze_seconds: 9.2s
-  - test_seconds: 226ms
-  - test_chess_engine_seconds: 19.6s
-  - test_v2_full_seconds: 19.6s
+  - image_build_seconds: 18.1s
+  - build_seconds: 7.4s
+  - analyze_seconds: 7.2s
+  - test_seconds: 185ms
+  - test_chess_engine_seconds: 18.9s
+  - test_v2_full_seconds: 18.9s
 Metrics: TOKENS=13,402, LOC=1,974
