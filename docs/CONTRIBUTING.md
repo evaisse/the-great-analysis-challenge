@@ -110,8 +110,16 @@ For feature requests, include:
 - Proposed behavior
 - Expected impact
 
+## Unified Toolchain Image (optional)
+
+`make unified-shell` opens a shell with several toolchains preinstalled, so `make build DIR=<language>`
+etc. can run without a per-language Docker image for languages it covers. It is a local
+convenience, not a replacement for the per-language images CI uses. See
+[Unified Toolchain Image](reference/unified-toolchain-image.md) for coverage and trade-offs.
+
 ## Related Docs
 
 - [Documentation Hub](README.md)
 - [Implementation Guidelines](IMPLEMENTATION_GUIDELINES.md)
 - [Issue triage workflow](ISSUE_TRIAGE_WORKFLOW.md)
+- [Unified Toolchain Image](reference/unified-toolchain-image.md)
