@@ -176,3 +176,12 @@ languages:
     github_stars: "150K+"
     github_repos_approx: 150000
     description: "General-purpose programming language"
+
+  bend:
+    emoji: "🌀"
+    website: "https://bend-lang.com/"
+    tiobe_rank: null  # Not in TIOBE top 50
+    tiobe_rating: null
+    github_stars: "20K+"
+    github_repos_approx: 1000
+    description: "Dependently typed, affine, massively parallel language with proofs"
