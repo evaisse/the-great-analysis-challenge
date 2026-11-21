@@ -28,7 +28,7 @@ make test-chess-engine DIR=bend
 
 Bend 2 is distributed as prebuilt archives only, not through a package manager. The
 dedicated toolchain image (`docker-images/toolchain/Dockerfile`) therefore builds it from
-its pinned source tag (`v2.0.40`): the compiler is TypeScript run by Bun, and
+its pinned source tag (`v2.0.40`), an owner-approved exception to the no-download rule: the compiler is TypeScript run by Bun, and
 `bend src/chess.bend -o chess` emits C and compiles it with clang.
 
 ## Commands

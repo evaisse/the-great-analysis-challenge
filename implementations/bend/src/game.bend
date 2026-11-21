@@ -56,12 +56,29 @@ def winner(+p: B.Pos) -> String:
 # Game end and draws
 # ------------------
 
-def same(+a: B.Pos, +b: B.Pos) -> Bool:
+# the en passant target when a legal capture can use it, else 64: a raw
+# target with no capture does not distinguish positions for repetition
+def ep_capture(+ep: U32, +p: B.Pos, ms: List<&2, U32>) -> Bool:
+  match ms:
+    case Nil{}:
+      False{}
+    case Con{+m, t}:
+      Bool.or(Bool.and(B.eq(M.m.to(m), ep), B.eq(U32.and(B.at(p, M.m.from(m)), 7), 1)),
+        ep_capture(ep, p, t))
+
+def effective_ep(+p: B.Pos) -> U32:
+  +ep = B.p.ep(p)
+  B.sel(Bool.and(U32.is_lt(ep, 64), ep_capture(ep, p, M.legal(p))), ep, 64)
+
+def same.raw(+a: B.Pos, +b: B.Pos) -> Bool:
   match a b:
     case B.Pos{B.Board{a0, a1, a2, a3, a4, a5, a6, a7}, sa, ca, ea, ha, fa} B.Pos{B.Board{b0, b1, b2, b3, b4, b5, b6, b7}, sb, cb, eb, hb, fb}:
       Bool.and(Bool.and(Bool.and(B.eq(a0, b0), B.eq(a1, b1)), Bool.and(B.eq(a2, b2), B.eq(a3, b3))),
         Bool.and(Bool.and(Bool.and(B.eq(a4, b4), B.eq(a5, b5)), Bool.and(B.eq(a6, b6), B.eq(a7, b7))),
-          Bool.and(B.eq(sa, sb), Bool.and(B.eq(ca, cb), B.eq(ea, eb)))))
+          Bool.and(B.eq(sa, sb), B.eq(ca, cb))))
+
+def same(+a: B.Pos, +b: B.Pos) -> Bool:
+  Bool.and(same.raw(a, b), B.eq(effective_ep(a), effective_ep(b)))
 
 def occurrences(+p: B.Pos, hs: List<&2, B.Pos>) -> U32:
   match hs:

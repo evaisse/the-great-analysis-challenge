@@ -204,12 +204,12 @@ def fen.castle(s: String, +acc: U32) -> U32:
         sel(eq(c, 113), 8, sel(eq(c, 45), 0, 256)))))
       fen.castle(t, U32.or(acc, m))
 
-# an en passant field: "-" is 64, a square its index, garbage 256
+# an en passant field: "-" is 64, a rank 3 or 6 square its index, else 256
 def fen.ep(s: String) -> U32:
   match s:
     case SCon{Chr{+f}, SCon{Chr{+r}, SNil{}}}:
       +ok = Bool.and(Bool.and(U32.is_ge(f, 97), U32.is_le(f, 104)),
-        Bool.and(U32.is_ge(r, 49), U32.is_le(r, 56)))
+        Bool.or(eq(r, 51), eq(r, 54)))
       sel(ok, U32.add(U32.shln(U32.sub(r, 49), 3n), U32.sub(f, 97)), 256)
     case SCon{Chr{+c}, SNil{}}:
       sel(eq(c, 45), 64, 256)
@@ -223,26 +223,29 @@ def fen.side(s: String) -> U32:
     case _:
       256
 
-def fen.num(s: String, d: U32) -> U32:
-  Maybe.default(&2, U32, U32.read(s), d)
+# a clock field, 4294967295 when not a number
+def fen.num(s: String) -> U32:
+  Maybe.default(&2, U32, U32.read(s), 4294967295)
 
 def fen.done(ok: Bool, +k: Board, +side: U32, +cs: U32, +ep: U32, +h: U32,
   +fu: U32) -> Maybe<&2, Pos>:
   match ok:
     case True{}:
-      Some{Pos{k, side, U32.and(cs, 15), ep, h, sel(eq(fu, 0), 1, fu)}}
+      Some{Pos{k, side, U32.and(cs, 15), ep, h, fu}}
     case False{}:
       None{}
 
 def fen.fin(r: Board & U32, +side: U32, +cs: U32, +ep: U32, +h: U32, +fu: U32) -> Maybe<&2, Pos>:
   (k, +n) = r
-  fen.done(U32.is_lt(U32.or(U32.or(sel(eq(n, 0), 0, 256), side), U32.or(cs, ep)), 256), k, side, cs, ep, h, fu)
+  +fields = U32.is_lt(U32.or(U32.or(sel(eq(n, 0), 0, 256), side), U32.or(cs, ep)), 256)
+  +clocks = Bool.and(U32.is_ne(h, 4294967295), Bool.and(U32.is_ne(fu, 4294967295), U32.is_ne(fu, 0)))
+  fen.done(Bool.and(fields, clocks), k, side, cs, ep, h, fu)
 
 def fen.parse(xs: List<&2, String>) -> Maybe<&2, Pos>:
   match xs:
     case Con{pl, Con{sd, Con{cs, Con{ep, Con{h, Con{fu, Nil{}}}}}}}:
       fen.fin(fen.pl(pl, empty_board(), 7, 0, 0), fen.side(sd), fen.castle(cs, 0),
-        fen.ep(ep), fen.num(h, 0), fen.num(fu, 1))
+        fen.ep(ep), fen.num(h), fen.num(fu))
     case Con{pl, Con{sd, Con{cs, Con{ep, Nil{}}}}}:
       fen.fin(fen.pl(pl, empty_board(), 7, 0, 0), fen.side(sd), fen.castle(cs, 0),
         fen.ep(ep), 0, 1)
