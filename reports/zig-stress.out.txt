@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-11-15T06:08:07.360Z
+Generated: 2026-11-22T06:08:26.887Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-zig          completed  21516      2509     1.2s, - MB         201ms, - MB        294ms, - MB        18.7s, - MB               1/1              26/26             
+zig          failed     21516      2509     -, - MB            -, - MB            -, - MB            -, - MB                   0/1              0/1               
 
 ============================================================
 DETAILED RESULTS: ZIG
@@ -15,12 +15,26 @@ DETAILED RESULTS: ZIG
 Implementation: /home/runner/work/the-great-analysis-challenge/the-great-analysis-challenge/implementations/zig
 Track: v2-full
 Profile: full
-Status: completed
+Status: failed
+Errors:
+  - Docker build failed: #0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.03kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for ghcr.io/evaisse/tgac-zig-toolchain:latest
+#2 DONE 0.8s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 103.92kB done
+#4 DONE 0.0s
+
+#5 [1/3] FROM ghcr.io/evaisse/tgac-zig-toolchain:latest@sha256:24b9ec0c6d482f33cf48
 Timings:
-  - image_build_seconds: 33.6s
-  - build_seconds: 1.2s
-  - analyze_seconds: 201ms
-  - test_seconds: 294ms
-  - test_chess_engine_seconds: 18.7s
-  - test_v2_full_seconds: 18.7s
+  - image_build_seconds: 1m 10s
 Metrics: TOKENS=21,516, LOC=2,509

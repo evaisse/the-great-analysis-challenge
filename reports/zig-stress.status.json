@@ -1,7 +1,7 @@
 {
   "engine": "zig",
   "profile": "full",
-  "outcome": "success",
+  "outcome": "failure",
   "conclusion": "success",
   "report_status": "failed",
   "errors": [
