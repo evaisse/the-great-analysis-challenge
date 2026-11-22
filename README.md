@@ -19,6 +19,7 @@ All implementations target parity for core features: `perft`, `fen`, `ai`, `cast
 <!-- status-table-start -->
 | Language | Complexity | LOC | make build | make analyze | make test | make test-chess-engine | Features |
 |----------|------------|-----|------------|--------------|-----------|------------------------|----------|
+| 🌀 Bend | [-](implementations/bend/src/chess.bend) | 1,398 | - | - | - | - | 🟡 6/9 |
 | 📦 C | [7,151.5](implementations/c/src/chess.c) | 2,406 | 785ms, - MB | 199ms, - MB | 774ms, - MB | 18.3s, - MB | 🟢 9/9 |
 | 💠 Crystal | [8,040.5](implementations/crystal/src/chess_engine.cr) | 3,308 | 1.8s, - MB | 229ms, - MB | 5.2s, - MB | 19.4s, - MB | 🟢 9/9 |
 | 🎯 Dart | [15,055.25](implementations/dart/bin/main.dart) | 5,006 | 673ms, - MB | 298ms, - MB | 717ms, - MB | 19.8s, - MB | 🟡 9/9 |

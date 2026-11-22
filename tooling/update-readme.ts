@@ -20,6 +20,7 @@ import { verifyImplementation } from "./verify.ts";
 
 const CUSTOM_EMOJIS: Record<string, string> = {
   python: "🐍",
+  bend: "🌀",
   crystal: "💠",
   dart: "🎯",
   elixir: "💧",
