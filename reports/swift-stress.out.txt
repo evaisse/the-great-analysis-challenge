@@ -1,13 +1,13 @@
 ================================================================================
 CHESS ENGINE PERFORMANCE TEST REPORT
-Generated: 2026-11-15T06:08:45.526Z
+Generated: 2026-11-22T06:08:55.296Z
 ================================================================================
 
 PERFORMANCE SUMMARY
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Language     Status     TOKENS     LOC      make build         make analyze       make test          make test-chess-engine    make test score  make test-ce score
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-swift        completed  12470      1506     6.7s, - MB         6.4s, - MB         8s, - MB           18.8s, - MB               1/1              26/26             
+swift        completed  12470      1506     8.1s, - MB         7.7s, - MB         10.3s, - MB        19.1s, - MB               1/1              26/26             
 
 ============================================================
 DETAILED RESULTS: SWIFT
@@ -17,10 +17,10 @@ Track: v2-full
 Profile: full
 Status: completed
 Timings:
-  - image_build_seconds: 42.8s
-  - build_seconds: 6.7s
-  - analyze_seconds: 6.4s
-  - test_seconds: 8s
-  - test_chess_engine_seconds: 18.8s
-  - test_v2_full_seconds: 18.8s
+  - image_build_seconds: 48.6s
+  - build_seconds: 8.1s
+  - analyze_seconds: 7.7s
+  - test_seconds: 10.3s
+  - test_chess_engine_seconds: 19.1s
+  - test_v2_full_seconds: 19.1s
 Metrics: TOKENS=12,470, LOC=1,506
